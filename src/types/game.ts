@@ -26,6 +26,7 @@ export interface GameState {
   winner?: string;
   currentCombination?: string;
   turnTimeRemaining?: number;
+  pendingActionType?: string;
 }
 
 export interface GameMove {

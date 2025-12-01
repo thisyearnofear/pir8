@@ -35,6 +35,14 @@ Open [http://localhost:3000](http://localhost:3000) and connect your Solana wall
 - 🏦 **Banking system** for protected points
 - 🏆 **Winner determination** based on total score
 
+### **Tournament System**
+
+- 🏆 **Multi-stage tournaments** with up to 400 players
+- 🏴 **Leader-seeded competitions** with performance rewards
+- 💎 **Progressive liquidity pools** for winner tokens
+- 📊 **Performance-based token distribution** (5% for 1st, 4% for 2nd, etc.)
+- ⏳ **Dynamic registration** with countdown mechanisms
+
 ### **Special Items & Effects**
 
 - 🎁 **Present**: Gift 1000 points to another player

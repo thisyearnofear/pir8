@@ -120,14 +120,14 @@ export default function GameGrid({
       
       <div className="mb-6 text-center pb-4 border-b border-neon-cyan border-opacity-30">
         <h3 className="text-2xl font-bold holographic-text font-tech animate-pulse">
-          🏴‍☠️ TREASURE MAP 🏴‍☠️
+          TREASURE MAP
         </h3>
         <p className={`text-sm font-mono mt-2 transition-all ${
           isMyTurn && !disabled 
             ? 'text-neon-cyan animate-glow-pulse' 
             : 'text-neon-magenta'
         }`}>
-          {isMyTurn && !disabled ? '▶ AWAITING YOUR.COMMAND' : '▲ STANDBY MODE'}
+          {isMyTurn && !disabled ? 'AWAITING COMMAND' : 'STANDBY MODE'}
         </p>
         <div className="scanner-line mt-2"></div>
       </div>
@@ -185,17 +185,17 @@ export default function GameGrid({
       {/* Enhanced Legend */}
       <div className="mt-6 pt-4 border-t border-neon-cyan border-opacity-30">
         <h4 className="text-xs font-bold text-neon-cyan mb-4 font-mono uppercase tracking-wider">
-          ▶ TREASURE LEGEND
+          TREASURE LEGEND
         </h4>
         <div className="grid grid-cols-2 gap-3">
-          <div className="legend-item">🎁 Gift 1000pts</div>
-          <div className="legend-item">👹 Steal points</div>
-          <div className="legend-item">🎄 Choose square</div>
-          <div className="legend-item">🍮 Kill player</div>
-          <div className="legend-item">🌿 Swap scores</div>
-          <div className="legend-item">🧝 Block attack</div>
-          <div className="legend-item">🔮 Reflect attack</div>
-          <div className="legend-item">🏦 Bank points</div>
+          <div className="legend-item">Gift 1000 points</div>
+          <div className="legend-item">Steal points</div>
+          <div className="legend-item">Choose square</div>
+          <div className="legend-item">Reset opponent</div>
+          <div className="legend-item">Swap scores</div>
+          <div className="legend-item">Block attack</div>
+          <div className="legend-item">Reflect attack</div>
+          <div className="legend-item">Bank points</div>
         </div>
       </div>
     </div>

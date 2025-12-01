@@ -8,6 +8,7 @@ import { Connection, PublicKey, SystemProgram } from '@solana/web3.js';
 import { useAnchorWallet, useConnection } from '@solana/wallet-adapter-react';
 import { useMemo } from 'react';
 import { GameItem } from '../types/game';
+import pir8Idl from '../../contracts/pir8-game/target/idl/pir8_game.json';
 
 // Program ID - Update this when you deploy
 export const PROGRAM_ID = new PublicKey(process.env.NEXT_PUBLIC_PROGRAM_ID || '5etQW394NUCprU1ikrbDysFeCGGRYY9usChGpaox9oiK');
@@ -94,13 +95,8 @@ export const useAnchorProgram = () => {
     const provider = new AnchorProvider(connection, wallet, {
       commitment: 'confirmed',
     });
-
-    // Load program (IDL will be generated after compilation)
-    // const program = new Program(IDL, PROGRAM_ID, provider) as Program<PIR8Program>;
-    // return program;
-    
-    // For now, return provider until IDL is generated
-    return { provider, programId: PROGRAM_ID };
+    const program = new Program(pir8Idl as any, PROGRAM_ID, provider) as Program<any>;
+    return { provider, programId: PROGRAM_ID, program };
   }, [connection, wallet]);
 };
 
@@ -146,7 +142,7 @@ export class PIR8Instructions {
         config: configPDA,
         creator: this.provider.wallet.publicKey,
         systemProgram: SystemProgram.programId,
-        // randomnessAccountData: randomnessAccount, // Add Switchboard VRF
+        randomnessAccountData: this.provider.wallet.publicKey,
       })
       .rpc();
   }

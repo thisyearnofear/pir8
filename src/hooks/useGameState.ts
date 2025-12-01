@@ -18,7 +18,7 @@ interface GameStore {
   createGame: (players: Player[], entryFee: number, anchorProgram: any) => void;
   joinGame: (gameId: string, player: Player) => void;
   makeMove: (coordinate: string) => Promise<boolean>;
-  handlePlayerAction: (action: string, targetPlayerId?: string, amount?: number) => void;
+  handlePlayerAction: (action: string, targetPlayerId?: string, amount?: number, coordinate?: string) => Promise<void>;
   setSelectedCoordinate: (coordinate: string | null) => void;
   setMessage: (message: string | null) => void;
   setError: (error: string | null) => void;
@@ -27,7 +27,7 @@ interface GameStore {
   // Getters
   getCurrentPlayer: () => Player | null;
   getAvailableCoordinates: () => string[];
-  isMyTurn: () => boolean;
+  isMyTurn: (walletPk?: string) => boolean;
   getTotalScore: (playerId: string) => number;
 }
 
@@ -39,7 +39,7 @@ export const useGameState = create<GameStore>((set, get) => ({
   selectedCoordinate: null,
   showMessage: null,
 
-  // Create a new game (ENHANCED: Now uses Anchor program)
+  // Create a new game (on-chain if program available, otherwise local)
   createGame: async (players: Player[], entryFee: number, anchorProgram: any) => {
     if (!anchorProgram?.provider) {
       set({ error: 'Wallet not connected' });
@@ -48,34 +48,38 @@ export const useGameState = create<GameStore>((set, get) => ({
 
     try {
       set({ isLoading: true });
-      
-      // TODO: Use actual program once IDL is generated and deployed
-      // For now, using null program - implement actual on-chain interaction when ready
-      const instructions = new PIR8Instructions(null, anchorProgram.provider);
-      
-      // Create game on-chain
-      const signature = await instructions.createGame(entryFee * 1e9, players.length); // Convert SOL to lamports
-      
-      // Wait for confirmation
-      await anchorProgram.provider.connection.confirmTransaction(signature);
-      
-      // Fetch the created game state
-      // For now, create local state until we can fetch from chain
-      const gameId = `onchain_${Date.now()}`;
-      const grid = PirateGameEngine.createGrid();
-      
-      const newGameState: GameState = {
-        gameId,
+
+      if (anchorProgram.program) {
+        const instructions = new PIR8Instructions(anchorProgram.program, anchorProgram.provider);
+        const signature = await instructions.createGame(Math.floor(entryFee * 1e9), players.length);
+        await anchorProgram.provider.connection.confirmTransaction(signature);
+        const gameId = `onchain_${Date.now()}`;
+        const grid = PirateGameEngine.createGrid();
+        const newGameState: GameState = {
+          gameId,
+          players,
+          currentPlayerIndex: 0,
+          grid,
+          chosenCoordinates: [],
+          gameStatus: 'waiting',
+          turnTimeRemaining: 30,
+        };
+        set({ gameState: newGameState, isLoading: false, error: null });
+        return;
+      }
+
+      const localId = `local_${Date.now()}`;
+      const localGrid = PirateGameEngine.createGrid();
+      const localState: GameState = {
+        gameId: localId,
         players,
         currentPlayerIndex: 0,
-        grid,
+        grid: localGrid,
         chosenCoordinates: [],
         gameStatus: 'waiting',
         turnTimeRemaining: 30,
       };
-
-      set({ gameState: newGameState, isLoading: false, error: null });
-      
+      set({ gameState: localState, isLoading: false, error: null });
     } catch (error) {
       set({ 
         isLoading: false, 
@@ -120,23 +124,34 @@ export const useGameState = create<GameStore>((set, get) => ({
     try {
       set({ isLoading: true });
       
-      // Get the item at the coordinate
       const item = PirateGameEngine.getItemAtCoordinate(gameState.grid, coordinate);
       const currentPlayer = gameState.players[gameState.currentPlayerIndex];
       
-      // Apply item effect
       const effect = PirateGameEngine.applyItemEffect(item, currentPlayer);
       
-      // Update game state
       const updatedPlayers = [...gameState.players];
       updatedPlayers[gameState.currentPlayerIndex] = effect.updatedPlayer;
-      
+
+      let nextPlayerIndex = gameState.currentPlayerIndex;
+      let pendingActionType: string | undefined = undefined;
+
+      if (effect.requiresInput) {
+        if (item === 'GRINCH') pendingActionType = 'steal';
+        else if (item === 'PUDDING') pendingActionType = 'kill';
+        else if (item === 'PRESENT') pendingActionType = 'gift';
+        else if (item === 'MISTLETOE') pendingActionType = 'swap';
+        else if (item === 'TREE') pendingActionType = 'choose';
+      } else {
+        nextPlayerIndex = (gameState.currentPlayerIndex + 1) % gameState.players.length;
+      }
+
       const updatedGameState: GameState = {
         ...gameState,
         players: updatedPlayers,
         chosenCoordinates: [...gameState.chosenCoordinates, coordinate],
         currentCombination: coordinate,
-        currentPlayerIndex: (gameState.currentPlayerIndex + 1) % gameState.players.length,
+        currentPlayerIndex: nextPlayerIndex,
+        pendingActionType,
         gameStatus: PirateGameEngine.isGameOver([...gameState.chosenCoordinates, coordinate]) 
           ? 'completed' 
           : 'active',
@@ -184,7 +199,7 @@ export const useGameState = create<GameStore>((set, get) => ({
   },
 
   // Handle player actions (steal, swap, etc.)
-  handlePlayerAction: (action: string, targetPlayerId?: string, amount?: number) => {
+  handlePlayerAction: async (action: string, targetPlayerId?: string, amount?: number, coordinate?: string) => {
     const { gameState } = get();
     if (!gameState) return;
 
@@ -197,19 +212,32 @@ export const useGameState = create<GameStore>((set, get) => ({
     }
 
     try {
+      if (action === 'choose' && coordinate) {
+        const v = PirateGameEngine.validateCoordinate(coordinate, gameState.chosenCoordinates);
+        if (!v.isValid) {
+          set({ error: v.error || 'Invalid coordinate' });
+          return;
+        }
+        set({ gameState: { ...gameState, pendingActionType: undefined } });
+        await get().makeMove(coordinate);
+        return;
+      }
+
       if (targetPlayer) {
         const result = PirateGameEngine.handlePlayerAction(action, currentPlayer, targetPlayer, amount);
-        
         const updatedPlayers = gameState.players.map(p => {
           if (p.publicKey === currentPlayer.publicKey) return result.updatedPlayer;
           if (p.publicKey === targetPlayer.publicKey) return result.updatedTargetPlayer;
           return p;
         });
-
-        set({ 
-          gameState: { ...gameState, players: updatedPlayers },
-          showMessage: result.message 
-        });
+        const nextIndex = (gameState.currentPlayerIndex + 1) % gameState.players.length;
+        const updatedState: GameState = {
+          ...gameState,
+          players: updatedPlayers,
+          currentPlayerIndex: nextIndex,
+          pendingActionType: undefined,
+        };
+        set({ gameState: updatedState, showMessage: result.message });
       }
     } catch (error) {
       set({ error: error instanceof Error ? error.message : 'Action failed' });
@@ -249,10 +277,12 @@ export const useGameState = create<GameStore>((set, get) => ({
     );
   },
 
-  isMyTurn: () => {
+  isMyTurn: (walletPk?: string) => {
     const { gameState } = get();
-    // TODO: Replace with actual wallet check
-    return gameState?.gameStatus === 'active';
+    if (!gameState || gameState.gameStatus !== 'active') return false;
+    if (!walletPk) return false;
+    const current = gameState.players[gameState.currentPlayerIndex];
+    return current.publicKey === walletPk;
   },
 
   getTotalScore: (playerId: string) => {

@@ -7,6 +7,7 @@ import { useErrorHandler } from "@/hooks/useErrorHandler";
 import { ErrorBoundary } from "@/components/ErrorBoundary";
 import { ErrorToast, SuccessToast } from "@/components/Toast";
 import GameGrid from "@/components/GameGrid";
+import GameControls from "@/components/GameControls";
 import PlayerStats from "@/components/PlayerStats";
 import dynamic from "next/dynamic";
 const GameCockpit = dynamic(() => import("@/components/GameCockpit"), {
@@ -22,6 +23,7 @@ export default function Home() {
     createGame,
     joinGame,
     makeMove,
+    handlePlayerAction,
     error,
     clearError,
     showMessage,
@@ -107,43 +109,10 @@ export default function Home() {
         onCreateGame={handleCreateGame}
         onQuickStart={handleQuickStart}
         isCreating={isCreatingGame}
+        onCoordinateSelect={handleCoordinateSelect}
+        isMyTurn={isMyTurn(publicKey?.toString())}
+        onPlayerAction={handlePlayerAction}
       />
-
-      {gameState?.gameStatus === "active" && (
-        <div
-          style={{
-            position: "fixed",
-            top: "50%",
-            left: "50%",
-            transform: "translate(-50%, -50%)",
-            zIndex: 100,
-            background: "rgba(18, 16, 15, 0.95)",
-            backdropFilter: "blur(10px)",
-            padding: "2rem",
-            borderRadius: "8px",
-            border: "1px solid rgba(255, 78, 66, 0.3)",
-            maxWidth: "90vw",
-            maxHeight: "90vh",
-            overflow: "auto",
-          }}
-        >
-          <div style={{ marginBottom: "1rem" }}>
-            <GameGrid
-              grid={gameState.grid}
-              chosenCoordinates={gameState.chosenCoordinates}
-              onCoordinateSelect={handleCoordinateSelect}
-              isMyTurn={isMyTurn()}
-              disabled={false}
-            />
-          </div>
-          <PlayerStats
-            players={gameState.players}
-            currentPlayerIndex={gameState.currentPlayerIndex}
-            gameStatus={gameState.gameStatus}
-            winner={gameState.winner}
-          />
-        </div>
-      )}
     </ErrorBoundary>
   );
 }

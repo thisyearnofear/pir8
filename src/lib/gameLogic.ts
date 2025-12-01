@@ -164,9 +164,13 @@ export class PirateGameEngine {
         break;
       
       case 'gift':
-        updatedPlayer.points -= 1000;
-        updatedTargetPlayer.points += 1000;
-        message = 'Gifted 1000 points!';
+        if (updatedPlayer.points >= 1000) {
+          updatedPlayer.points -= 1000;
+          updatedTargetPlayer.points += 1000;
+          message = 'Gifted 1000 points!';
+        } else {
+          message = 'Not enough points to gift!';
+        }
         break;
       
       case 'kill':
