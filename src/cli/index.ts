@@ -1,0 +1,143 @@
+#!/usr/bin/env node
+
+import dotenv from 'dotenv';
+import path from 'path';
+
+dotenv.config({ path: path.join(process.cwd(), '.env.local') });
+
+import { getAnchorClient } from '../lib/anchorClient';
+import { initConfig, createGame, joinGame, handleShieldedMemo, GameCommandResult } from './commands/game';
+
+interface CliArgs {
+  command?: string;
+  positional: string[];
+  memo?: string;
+  gameId?: string;
+  help?: boolean;
+}
+
+function parseArgs(): CliArgs {
+  const args: CliArgs = { positional: [] };
+  const argv = process.argv.slice(2);
+
+  for (let i = 0; i < argv.length; i++) {
+    const arg = argv[i];
+    if (arg === '--memo' && argv[i + 1]) {
+      args.memo = argv[i + 1];
+      i++;
+    } else if (arg === '--game-id' && argv[i + 1]) {
+      args.gameId = argv[i + 1];
+      i++;
+    } else if (arg === '--help' || arg === '-h') {
+      args.help = true;
+    } else if (!arg.startsWith('--')) {
+      if (!args.command) {
+        args.command = arg;
+      } else {
+        args.positional.push(arg);
+      }
+    }
+  }
+
+  return args;
+}
+
+function printHelp() {
+  console.log(`
+PIR8 Game CLI
+
+Usage: pir8-cli <command> [options]
+
+Commands:
+  init              Initialize game config (required before create/join)
+  create            Create a new game on-chain
+  join <gameId>     Join an existing game (gameId format: number or onchain_<number>)
+  memo              Handle Zcash shielded memo (requires --memo flag)
+
+Options:
+  --memo <json>     Zcash memo JSON (e.g., '{"v":"1","gameId":"demo_game",...}')
+  --game-id <id>    Game ID for join command
+  --help, -h        Show this help message
+
+Examples:
+  pir8-cli init
+  pir8-cli create
+  pir8-cli join 0
+  pir8-cli memo --memo '{"v":"1","gameId":"demo_game","solanaPubkey":"...","amountZEC":0.1}'
+`);
+}
+
+async function main() {
+  const args = parseArgs();
+
+  if (args.help || !args.command) {
+    printHelp();
+    process.exit(0);
+  }
+
+  try {
+    const { program, provider } = await getAnchorClient();
+    let result: GameCommandResult;
+
+    switch (args.command) {
+      case 'init':
+        result = await initConfig(program, provider);
+        break;
+
+      case 'create':
+        result = await createGame(program, provider);
+        break;
+
+      case 'join': {
+        const gameId = args.gameId || args.positional[0];
+        if (!gameId) {
+          console.error('Error: join requires a game ID');
+          console.log('Usage: pir8-cli join <gameId>');
+          process.exit(1);
+        }
+        const gidNum = parseInt(gameId.replace('onchain_', ''), 10);
+        if (isNaN(gidNum)) {
+          console.error('Error: invalid game ID format');
+          process.exit(1);
+        }
+        result = await joinGame(program, provider, gidNum);
+        break;
+      }
+
+      case 'memo': {
+        if (!args.memo) {
+          console.error('Error: memo command requires --memo flag');
+          process.exit(1);
+        }
+        try {
+          const memoData = JSON.parse(args.memo);
+          result = await handleShieldedMemo(program, provider, memoData.gameId);
+          // Add Zcash-specific fields to result
+          result = { ...result, ...memoData };
+        } catch (e) {
+          console.error('Error: invalid memo JSON');
+          process.exit(1);
+        }
+        break;
+      }
+
+      default:
+        console.error(`Unknown command: ${args.command}`);
+        printHelp();
+        process.exit(1);
+    }
+
+    // Output result as JSON for scripting and logging
+    console.log(JSON.stringify(result, null, 2));
+
+    // Exit with error code if failed
+    if (!result.success) {
+      process.exit(1);
+    }
+  } catch (err) {
+    console.error('Fatal error:', err instanceof Error ? err.message : String(err));
+    process.exit(1);
+  }
+}
+
+main();

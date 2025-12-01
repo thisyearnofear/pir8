@@ -10,6 +10,7 @@
     "type-check": "tsc --noEmit",
     "test": "jest",
     "test:integration": "npx tsx tests/helius-transaction-monitor.ts && npx tsx tests/pump-token-creator.ts",
+    "cli": "npx tsx src/cli/index.ts",
     "anchor:build": "anchor build",
     "anchor:deploy": "anchor deploy --provider.cluster devnet",
     "anchor:test": "anchor test",

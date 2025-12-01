@@ -5,7 +5,8 @@ dotenv.config({ path: path.join(process.cwd(), '.env.local') });
 
 import { ZCASH_CONFIG, API_ENDPOINTS, GAME_CONFIG } from '../src/utils/constants';
 import { ZcashMemoBridge } from '../src/lib/integrations';
-import { getAnchorClient, ensureConfig, createGameOnChain, joinGameOnChain } from '../src/lib/anchorClient';
+import { getAnchorClient } from '../src/lib/anchorClient';
+import { handleShieldedMemo } from '../src/cli/commands/game';
 
 type Action = 'join' | 'create';
 
@@ -34,27 +35,24 @@ async function main() {
   }
 
   const bridge = new ZcashMemoBridge(async ({ gameId, solanaPubkey, amountZEC }) => {
-    const action: Action = gameId && gameId.startsWith('onchain_') ? 'join' : 'create';
     let onchain = false;
     try {
       const client = await getAnchorClient();
-      await ensureConfig(client.program, client.provider);
-      if (action === 'create') {
-        const gid = await createGameOnChain(client.program, client.provider);
+      const result = await handleShieldedMemo(client.program, client.provider, gameId);
+      
+      if (result.success) {
         onchain = true;
-        console.log(JSON.stringify({ action, onchain, gameId: `onchain_${gid}`, solanaPubkey, amountZEC }));
-        return;
-      } else {
-        const gidNum = parseInt(gameId.replace('onchain_', ''), 10);
-        await joinGameOnChain(client.program, client.provider, gidNum);
-        onchain = true;
-        console.log(JSON.stringify({ action, onchain, gameId, solanaPubkey, amountZEC }));
+        const action = result.action as Action;
+        const resultGameId = typeof result.gameId === 'number' ? `onchain_${result.gameId}` : result.gameId;
+        console.log(JSON.stringify({ action, onchain, gameId: resultGameId, solanaPubkey, amountZEC }));
         return;
       }
     } catch (err) {
       console.error('On-chain error:', err instanceof Error ? err.message : String(err));
     }
 
+    // Fallback to API route
+    const action: Action = gameId && gameId.startsWith('onchain_') ? 'join' : 'create';
     const ok = await postGame(action, gameId, solanaPubkey);
     console.log(JSON.stringify({ action, ok, gameId, solanaPubkey, amountZEC }));
   });
