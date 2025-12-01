@@ -7,6 +7,7 @@ import { Program, AnchorProvider, BN } from '@project-serum/anchor';
 import { Connection, PublicKey, SystemProgram } from '@solana/web3.js';
 import { useAnchorWallet, useConnection } from '@solana/wallet-adapter-react';
 import { useMemo } from 'react';
+import { GameItem } from '../types/game';
 
 // Program ID - Update this when you deploy
 export const PROGRAM_ID = new PublicKey(process.env.NEXT_PUBLIC_PROGRAM_ID || '5etQW394NUCprU1ikrbDysFeCGGRYY9usChGpaox9oiK');
@@ -265,9 +266,9 @@ export const numberToBN = (num: number): BN => {
 };
 
 // Event parsing helpers
-export const parseGameEvents = (logs: string[]) => {
+export const parseGameEvents = (logs: string[]): any[] => {
   // Parse program events from transaction logs
-  const events = [];
+  const events: any[] = [];
   
   for (const log of logs) {
     if (log.includes('GameCreated')) {

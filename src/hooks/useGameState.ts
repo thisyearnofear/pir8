@@ -50,7 +50,9 @@ export const useGameState = create<GameStore>((set, get) => ({
     try {
       set({ isLoading: true });
       
-      const instructions = new PIR8Instructions(anchorProgram.program, anchorProgram.provider);
+      // TODO: Use actual program once IDL is generated and deployed
+      // For now, using null program - implement actual on-chain interaction when ready
+      const instructions = new PIR8Instructions(null, anchorProgram.provider);
       
       // Create game on-chain
       const signature = await instructions.createGame(entryFee * 1e9, players.length); // Convert SOL to lamports
