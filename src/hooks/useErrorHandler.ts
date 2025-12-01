@@ -60,7 +60,8 @@ export const useErrorHandler = () => {
     setError(enhancedMessage);
 
     // Auto-clear after 8 seconds for most errors
-    if (!error.toString().includes('User rejected') && !error.toString().includes('insufficient funds')) {
+    const errorString = String(error);
+    if (!errorString.includes('User rejected') && !errorString.includes('insufficient funds')) {
       setTimeout(() => setError(null), 8000);
     }
   }, [setError]);
