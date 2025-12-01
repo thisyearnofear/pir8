@@ -8,17 +8,19 @@ module.exports = {
   theme: {
     extend: {
       colors: {
-        'pirate-gold': '#FFD700',
-        'pirate-brown': '#8B4513',
-        'pirate-red': '#DC143C',
-        'ocean-blue': '#006994',
-        'ship-wood': '#8B4513',
-        'treasure-gold': '#DAA520',
-        'skull-white': '#F5F5DC',
+        'neon-cyan': '#00D9FF',
+        'neon-magenta': '#FF006E',
+        'neon-orange': '#FF6B35',
+        'neon-purple': '#C71585',
+        'neon-gold': '#FFD700',
+        'bg-dark-0': '#0a0e27',
+        'bg-dark-1': '#0f1629',
+        'bg-dark-2': '#151d3b',
+        'bg-dark-3': '#1a2550',
       },
       fontFamily: {
-        pirate: ['Creepster', 'cursive'],
-        maritime: ['Pirata One', 'serif'],
+        mono: ['JetBrains Mono', 'monospace'],
+        tech: ['Orbitron', 'sans-serif'],
       },
       animation: {
         'treasure-glow': 'treasure-glow 2s ease-in-out infinite alternate',

@@ -111,25 +111,25 @@ export default function Home() {
     <main className={`min-h-screen p-4 ${mobileClasses.container}`}>
       {/* Header */}
       <header className="text-center mb-6 safe-area-inset-top">
-        <h1 className="text-3xl sm:text-4xl md:text-5xl lg:text-7xl font-bold text-pirate-gold font-pirate mb-2 sm:mb-4 animate-treasure-glow">
-          🏴‍☠️ PIR8 🏴‍☠️
+        <h1 className="text-3xl sm:text-4xl md:text-5xl lg:text-7xl font-bold font-tech mb-2 sm:mb-4 animate-neon-flicker">
+          ⚓ PIR8.SYSTEM ⚓
         </h1>
-        <p className="text-sm sm:text-base md:text-xl lg:text-2xl text-gray-300 font-maritime mb-4 sm:mb-6">
-          Fast battles, private moves, viral wins
+        <p className="text-sm sm:text-base md:text-xl lg:text-2xl text-neon-cyan font-mono mb-4 sm:mb-6">
+          &gt; FAST BATTLES | PRIVATE MOVES | CRYPTO WINS
         </p>
         
         {/* Wallet Connection */}
         <div className="flex justify-center mb-6">
-          <WalletMultiButton className="!bg-gradient-to-r !from-pirate-gold !to-treasure-gold !text-pirate-brown !font-bold !border-2 !border-pirate-brown" />
+          <WalletMultiButton className="!bg-gradient-to-r !from-neon-cyan !to-neon-orange !text-bg-dark-0 !font-bold !border-2 !border-neon-cyan !font-tech" />
         </div>
 
         {connected && publicKey && (
-          <div className="text-sm text-gray-400 space-y-1">
-            <p>Welcome aboard, {publicKey.toString().slice(0, 4)}...{publicKey.toString().slice(-4)}!</p>
+          <div className="text-sm text-neon-cyan space-y-1 font-mono">
+            <p className="animate-glow-pulse">&gt; PILOT {publicKey.toString().slice(0, 4)}...{publicKey.toString().slice(-4)} ONLINE</p>
             <div className="flex items-center justify-center space-x-2">
-              <div className={`w-2 h-2 rounded-full ${isMonitorConnected ? 'bg-green-400 animate-pulse' : 'bg-gray-500'}`}></div>
-              <span className="text-xs">
-                {isMonitorConnected ? '🔥 Helius Monitor Active' : '⏳ Connecting to Helius...'}
+              <div className={`w-2 h-2 rounded-full animate-pulse ${isMonitorConnected ? 'bg-neon-cyan' : 'bg-neon-magenta'}`}></div>
+              <span className="text-xs font-mono">
+                {isMonitorConnected ? '◆ HELIUS.SCANNER ACTIVE' : '▲ HELIUS.SCANNER CONNECTING...'}
               </span>
             </div>
           </div>
@@ -148,26 +148,26 @@ export default function Home() {
       {!connected ? (
         <div className="text-center py-20">
           <div className="pirate-card max-w-md mx-auto">
-            <h2 className="text-2xl font-bold text-pirate-gold mb-4">
-              Connect Your Wallet to Start
+            <h2 className="text-2xl font-bold font-tech mb-4">
+              &gt; INITIALIZE.WALLET
             </h2>
-            <p className="text-gray-300 mb-6">
-              Connect your Solana wallet to join the pirate battles and hunt for treasure!
+            <p className="text-neon-cyan mb-6 font-mono">
+              &gt; Connect Solana wallet to access PIR8.SYSTEM
             </p>
-            <div className="text-6xl mb-6">🏴‍☠️</div>
-            <p className="text-sm text-gray-400">
-              Supported wallets: Phantom, Solflare
+            <div className="text-6xl mb-6 animate-float">⚓</div>
+            <p className="text-sm text-neon-cyan font-mono">
+              &gt; COMPATIBLE: PHANTOM | SOLFLARE
             </p>
           </div>
         </div>
       ) : !gameState ? (
         <div className="text-center py-20">
           <div className="pirate-card max-w-md mx-auto">
-            <h2 className="text-2xl font-bold text-pirate-gold mb-4">
-              Ready to Sail?
+            <h2 className="text-2xl font-bold font-tech mb-4">
+              &gt; BATTLE.INITIALIZE
             </h2>
-            <p className="text-gray-300 mb-6">
-              Create a new game or join an existing battle!
+            <p className="text-neon-cyan mb-6 font-mono">
+              &gt; Create new instance or join active battle
             </p>
             <button
               onClick={handleCreateGame}
@@ -177,16 +177,16 @@ export default function Home() {
               {isCreatingGame ? (
                 <div className="flex items-center justify-center space-x-2">
                   <div className="pirate-spinner w-5 h-5"></div>
-                  <span>Creating Game...</span>
+                  <span className="font-mono">INITIALIZING...</span>
                 </div>
               ) : (
-                '🚢 Create New Battle'
+                '▶ BATTLE.CREATE'
               )}
             </button>
-            <div className="text-sm text-gray-400">
-              <p>Entry Fee: 0.1 SOL</p>
-              <p>Platform Fee: 5%</p>
-              <p>Winner Takes: 85%</p>
+            <div className="text-sm text-neon-orange font-mono space-y-1">
+              <p>&gt; ENTRY FEE: 0.1 SOL</p>
+              <p>&gt; PLATFORM FEE: 5%</p>
+              <p>&gt; WINNER PRIZE: 85%</p>
             </div>
           </div>
         </div>
@@ -263,12 +263,12 @@ export default function Home() {
       )}
 
       {/* Footer */}
-      <footer className="text-center mt-12 py-8 border-t border-gray-700">
-        <p className="text-gray-400 text-sm">
-          Built with ⚡ Solana, 🔥 Helius, and 🏴‍☠️ Pirate Spirit
+      <footer className="text-center mt-12 py-8 border-t border-neon-cyan border-opacity-20">
+        <p className="text-neon-cyan text-sm font-mono">
+          &gt; RUNTIME: SOLANA | HELIUS | CYBER.PIRATE
         </p>
-        <p className="text-xs text-gray-500 mt-2">
-          Game ID: {gameState?.gameId || 'No active game'} • PIR8 v1.0
+        <p className="text-xs text-neon-magenta mt-2 font-mono">
+          ID: {gameState?.gameId || 'STANDBY'} | V1.0.ALPHA | ⚓
         </p>
       </footer>
     </main>
