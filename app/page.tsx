@@ -2,6 +2,7 @@
 
 import { useWallet } from "@solana/wallet-adapter-react";
 import { useGameState } from "@/hooks/useGameState";
+import { useGameJoin } from "@/hooks/useGameJoin";
 import { useHeliusMonitor, GameEvent } from "@/hooks/useHeliusMonitor";
 import { useErrorHandler } from "@/hooks/useErrorHandler";
 import { ErrorBoundary } from "@/components/ErrorBoundary";
@@ -15,6 +16,7 @@ const GameCockpit = dynamic(() => import("@/components/GameCockpit"), {
 });
 import { useState } from "react";
 import { useAnchorProgram } from "@/lib/anchor";
+import { createPlayerFromWallet, createAIPlayer } from "@/lib/playerHelper";
 
 export default function Home() {
   const { publicKey } = useWallet();
@@ -34,6 +36,7 @@ export default function Home() {
   const [isCreatingGame, setIsCreatingGame] = useState(false);
   const { handleGameError } = useErrorHandler();
   const anchorProgram = useAnchorProgram();
+  const { isJoining, error: joinError, joinGame: joinGameStore, clearError: clearJoinError } = useGameJoin();
 
   useHeliusMonitor({
     gameId: gameState?.gameId,
@@ -60,14 +63,7 @@ export default function Home() {
 
     setIsCreatingGame(true);
     try {
-      const player = {
-        publicKey: publicKey.toString(),
-        points: 0,
-        bankedPoints: 0,
-        hasElf: false,
-        hasBauble: false,
-        username: `Pirate_${publicKey.toString().slice(0, 4)}`,
-      };
+      const player = createPlayerFromWallet(publicKey);
       await createGame([player], 0.1, anchorProgram);
       setMessage("🏴‍☠️ Arena created!");
     } catch (error) {
@@ -77,18 +73,47 @@ export default function Home() {
     }
   };
 
-  const handleQuickStart = () => {
-    if (!gameState) return;
-    const ai = {
-      publicKey: `AI_${gameState.gameId}`,
-      points: 0,
-      bankedPoints: 0,
-      hasElf: false,
-      hasBauble: false,
-      username: "AI Pirate",
-    };
-    joinGame(gameState.gameId, ai);
-    setMessage("🧭 AI joined!");
+  const handleQuickStart = async () => {
+    if (!gameState || !anchorProgram?.program) return;
+
+    try {
+      setIsCreatingGame(true);
+      const ai = createAIPlayer(gameState.gameId);
+      // Add AI player locally
+      joinGame(gameState.gameId, ai);
+      setMessage("🧭 AI joined!");
+
+      // Call start_game on-chain
+      const { PIR8Instructions } = await import("@/lib/anchor");
+      const instructions = new PIR8Instructions(
+        anchorProgram.program,
+        anchorProgram.provider
+      );
+      const gameId = parseInt(gameState.gameId.split("_")[1]);
+      const signature = await instructions.startGame(gameId);
+      await anchorProgram.provider.connection.confirmTransaction(signature);
+      setMessage("⚔️ Battle started on-chain!");
+    } catch (error) {
+      handleGameError(error, "start game");
+    } finally {
+      setIsCreatingGame(false);
+    }
+  };
+
+  const handleJoinGame = async (gameIdInput: string): Promise<boolean> => {
+    if (!publicKey) return false;
+
+    try {
+      const player = createPlayerFromWallet(publicKey);
+      const success = await joinGameStore(gameIdInput, player);
+      if (success) {
+        setMessage(`🏴‍☠️ Joined game ${gameIdInput}!`);
+      }
+      return success;
+    } catch (error) {
+      handleGameError(error, "join game");
+      return false;
+    }
   };
 
   const handleCoordinateSelect = async (coordinate: string) => {
@@ -108,7 +133,11 @@ export default function Home() {
         gameState={gameState}
         onCreateGame={handleCreateGame}
         onQuickStart={handleQuickStart}
+        onJoinGame={handleJoinGame}
         isCreating={isCreatingGame}
+        isJoining={isJoining}
+        joinError={joinError}
+        onClearJoinError={clearJoinError}
         onCoordinateSelect={handleCoordinateSelect}
         isMyTurn={isMyTurn(publicKey?.toString())}
         onPlayerAction={handlePlayerAction}

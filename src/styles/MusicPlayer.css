@@ -217,12 +217,13 @@
 }
 
 .music-player .data-panels {
-  display: flex;
-  justify-content: space-between;
-  padding: 0 1.25rem;
-  margin-bottom: 1.25rem;
-  margin-top: auto;
-}
+   display: flex;
+   justify-content: space-between;
+   padding: 0 1.25rem;
+   margin-bottom: 1.25rem;
+   margin-top: auto;
+   flex-shrink: 0;
+ }
 
 @media (max-width: 1200px) {
   .music-player .interface-container {

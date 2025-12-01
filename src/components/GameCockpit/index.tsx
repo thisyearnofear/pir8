@@ -12,7 +12,11 @@ interface GameCockpitProps {
   gameState: any;
   onCreateGame: () => void;
   onQuickStart: () => void;
+  onJoinGame?: (gameId: string) => Promise<boolean>;
   isCreating: boolean;
+  isJoining?: boolean;
+  joinError?: string | null;
+  onClearJoinError?: () => void;
   onCoordinateSelect?: (coordinate: string) => void;
   isMyTurn?: boolean;
   onPlayerAction?: (
@@ -26,7 +30,11 @@ export default function GameCockpit({
   gameState,
   onCreateGame,
   onQuickStart,
+  onJoinGame,
   isCreating,
+  isJoining,
+  joinError,
+  onClearJoinError,
   onCoordinateSelect,
   isMyTurn,
   onPlayerAction,
@@ -209,9 +217,14 @@ export default function GameCockpit({
               state={state}
               onCreateGame={onCreateGame}
               onQuickStart={onQuickStart}
+              onJoinGame={onJoinGame}
               isCreating={isCreating}
+              isJoining={isJoining}
+              joinError={joinError}
+              onClearJoinError={onClearJoinError}
               winner={gameState?.winner}
               players={gameState?.players || []}
+              gameId={gameState?.gameId}
               grid={gameState?.grid}
               chosenCoordinates={gameState?.chosenCoordinates || []}
               onCoordinateSelect={onCoordinateSelect}
