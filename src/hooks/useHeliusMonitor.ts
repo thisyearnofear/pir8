@@ -43,7 +43,9 @@ export const useHeliusMonitor = ({ gameId, onGameEvent }: UseHeliusMonitorProps 
         }
       }
     } catch (error) {
-      console.error('Error handling game transaction');
+      if (LOG_LEVEL === 'debug') {
+        console.error('Error handling game transaction');
+      }
     }
   }, [onGameEvent, setMessage, LOG_LEVEL]);
 
@@ -62,7 +64,9 @@ export const useHeliusMonitor = ({ gameId, onGameEvent }: UseHeliusMonitorProps 
       }
       clearError();
     } catch (error) {
-      console.error('Failed to connect Helius monitor');
+      if (LOG_LEVEL === 'debug') {
+        console.error('Failed to connect Helius monitor');
+      }
     }
   }, [handleTransaction, gameId, clearError, LOG_LEVEL]);
 
@@ -85,18 +89,17 @@ export const useHeliusMonitor = ({ gameId, onGameEvent }: UseHeliusMonitorProps 
     return () => {
       disconnect();
     };
-  }, [connect, disconnect]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
 
   // Reconnect when gameId changes
   useEffect(() => {
-    if (gameId && monitorRef.current) {
+    if (gameId && isConnectedRef.current) {
       disconnect();
-      // Use monitorRef to access current connection state
-      if (isConnectedRef.current) {
-        connect();
-      }
+      setTimeout(() => connect(), 100);
     }
-  }, [gameId, connect, disconnect]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [gameId]);
 
   return {
     isConnected: isConnectedRef.current,
@@ -173,7 +176,9 @@ function parseGameEvent(data: any): GameEvent | null {
     
     return null;
   } catch (error) {
-    console.error('Error parsing game event:', error);
+    if (process.env.NEXT_PUBLIC_LOG_LEVEL === 'debug') {
+      console.error('Error parsing game event:', error);
+    }
     return null;
   }
 }

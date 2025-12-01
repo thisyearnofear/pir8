@@ -44,7 +44,7 @@ export function Toast({ message, type = 'info', duration = 5000, onClose }: Toas
     } else {
       setIsVisible(false);
     }
-  }, [message, type, duration, isMobile, triggerHaptic, handleClose]);
+  }, [message, type, duration, isMobile, triggerHaptic]);
 
   
 

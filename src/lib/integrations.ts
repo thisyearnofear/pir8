@@ -11,6 +11,9 @@ export class HeliusMonitor {
   private reconnectAttempts = 0;
   private maxReconnectAttempts = 5;
   private gameId: string | null = null;
+  private lastErrorAt = 0;
+  private errorThrottleMs = 30000;
+  private pingInterval: any = null;
   private logLevel: 'silent' | 'error' | 'warn' | 'info' | 'debug' =
     (process.env.NEXT_PUBLIC_LOG_LEVEL as any) || 'error';
 
@@ -19,6 +22,12 @@ export class HeliusMonitor {
   }
 
   connect() {
+    // Prevent duplicate connections
+    if (this.ws && (this.ws.readyState === WebSocket.CONNECTING || this.ws.readyState === WebSocket.OPEN)) {
+      this.log('warn', 'WebSocket already connected or connecting');
+      return;
+    }
+
     if (!API_ENDPOINTS.HELIUS_RPC) {
       throw new Error('Helius RPC URL not configured');
     }
@@ -30,6 +39,17 @@ export class HeliusMonitor {
     this.ws.onopen = () => {
       this.log('info', 'Helius WebSocket connected');
       this.reconnectAttempts = 0;
+      if (!this.pingInterval) {
+        this.pingInterval = setInterval(() => {
+          if (this.ws && this.ws.readyState === WebSocket.OPEN) {
+            try {
+              this.ws.send(
+                JSON.stringify({ jsonrpc: '2.0', id: Math.random(), method: 'ping' })
+              );
+            } catch {}
+          }
+        }, 60000);
+      }
       this.subscribeToGameTransactions();
     };
 
@@ -48,12 +68,20 @@ export class HeliusMonitor {
     };
 
     this.ws.onclose = () => {
+      if (this.pingInterval) {
+        clearInterval(this.pingInterval);
+        this.pingInterval = null;
+      }
       this.log('warn', 'Helius WebSocket disconnected');
       this.handleReconnect();
     };
 
     this.ws.onerror = () => {
-      this.log('error', 'Helius WebSocket error');
+      const now = Date.now();
+      if (now - this.lastErrorAt > this.errorThrottleMs) {
+        this.lastErrorAt = now;
+        this.log('error', 'Helius WebSocket error');
+      }
     };
   }
 
@@ -84,7 +112,9 @@ export class HeliusMonitor {
       ]
     };
 
-    this.ws.send(JSON.stringify(subscribeMessage));
+    try {
+      this.ws.send(JSON.stringify(subscribeMessage));
+    } catch {}
     this.log('debug', 'Subscribed to PIR8 game transactions');
   }
 
@@ -165,6 +195,10 @@ export class HeliusMonitor {
     if (this.ws) {
       this.ws.close();
       this.ws = null;
+    }
+    if (this.pingInterval) {
+      clearInterval(this.pingInterval);
+      this.pingInterval = null;
     }
   }
 
