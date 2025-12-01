@@ -700,33 +700,21 @@ const MusicPlayer = () => {
       ></div>
 
       <div className="interface-container">
-        <div className="header">
-          <div className="header-item"></div>
-          <div className="header-item">
-            GSAP.INERTIA.WEBFLOW.TIMELINE
-            <br />
-            v3.13.0
-          </div>
-          <div className="header-item" id="timestamp" ref={timestampRef}>
-            TIME: 00:00:00
-          </div>
-        </div>
-
         <div className="scanner-frame">
           <div className="corner-tl"></div>
           <div className="corner-tr"></div>
           <div className="corner-bl"></div>
           <div className="corner-br"></div>
           <div className="scanner-id">
-            GSAP.TIMELINE({`{ONSTART: WEBFLOW.INIT}`})
+            TREASURE.MAP.INIT({`{GRID: 7x7}`})
           </div>
-          <div className="scanner-id-right">IX2.ANIMATION.SEQUENCE(0x4F2E)</div>
+          <div className="scanner-id-right">SOLANA.DEVNET.CHAIN(0x4F2E)</div>
         </div>
       </div>
 
       <div
         className="data-panel"
-        style={{ position: "absolute", top: "20px", left: "20px" }}
+        style={{ position: "absolute", top: "100px", left: "20px" }}
       >
         <div className="data-panel-title">
           <span>ANOMALY METRICS</span>
@@ -778,7 +766,7 @@ const MusicPlayer = () => {
 
       <div
         className="data-panel"
-        style={{ position: "absolute", top: "20px", right: "20px" }}
+        style={{ position: "absolute", top: "100px", right: "20px" }}
       >
         <div className="data-panel-title">ANOMALY METRICS</div>
         <div className="waveform">

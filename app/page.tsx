@@ -173,31 +173,9 @@ export default function Home() {
         </div>
 
         {/* Wallet Connection - Floating */}
-        <div className="fixed top-4 right-4 z-40 pointer-events-auto">
-          <WalletMultiButton className="!bg-gradient-to-r !from-neon-cyan !to-neon-orange !text-bg-dark-0 !font-bold !border-2 !border-neon-cyan !font-tech !text-xs !py-2 !px-3" />
+        <div className="fixed top-36 right-8 z-40 pointer-events-auto">
+          <WalletMultiButton className="!bg-gradient-to-r !from-neon-cyan !to-neon-orange !text-bg-dark-0 !font-bold !border-2 !border-neon-cyan !font-tech !text-sm !py-3 !px-4 !shadow-lg !shadow-neon-cyan/50" />
         </div>
-
-        {/* Status Indicator - Top left */}
-        {connected && publicKey && (
-          <div className="fixed top-16 left-4 z-40 pointer-events-none">
-            <div className="text-xs text-neon-cyan space-y-1 font-mono">
-              <p className="animate-glow-pulse text-opacity-80">
-                &gt; {publicKey.toString().slice(0, 4)}...
-                {publicKey.toString().slice(-4)}
-              </p>
-              <div className="flex items-center space-x-1">
-                <div
-                  className={`w-1.5 h-1.5 rounded-full animate-pulse ${
-                    isMonitorConnected ? "bg-neon-cyan" : "bg-neon-magenta"
-                  }`}
-                ></div>
-                <span className="text-xs font-mono">
-                  {isMonitorConnected ? "SCANNER ACTIVE" : "CONNECTING..."}
-                </span>
-              </div>
-            </div>
-          </div>
-        )}
 
         {/* Enhanced Toast Notifications */}
         <ErrorToast error={error} onClose={clearError} />
