@@ -1,5 +1,43 @@
 # 📋 PIR8 Changelog
 
+## [0.2.1] - Enhanced UX & Error Handling (2024-01-XX)
+
+### 🎯 **User Experience Enhancements**
+
+#### **Granular Error Handling (NEW)**
+- ✅ **Smart error messages** - User-friendly translations of technical errors
+- ✅ **Context-aware feedback** - Different handling for wallet, game, and transaction errors
+- ✅ **Auto-recovery hints** - Actionable suggestions for common issues
+- ✅ **Error boundaries** - Graceful fallbacks with pirate-themed recovery options
+
+#### **Mobile-First Optimizations (NEW)**
+- ✅ **Touch-optimized interactions** - Haptic feedback and visual confirmation
+- ✅ **Long-press support** - Enhanced grid cell selection with feedback
+- ✅ **Zoom prevention** - Smooth mobile gameplay without interference
+- ✅ **Responsive scaling** - Adaptive sizing for all screen sizes
+
+#### **Enhanced UI Components**
+- ✅ **Professional toast system** - Animated notifications with type-specific styling
+- ✅ **Loading state improvements** - Context-aware loading messages
+- ✅ **Accessibility enhancements** - ARIA labels, keyboard navigation, screen reader support
+- ✅ **Visual feedback system** - Immediate response to all user interactions
+
+### 🛠️ **Technical Improvements**
+
+#### **Error Handling Architecture**
+- ✅ **useErrorHandler hook** - Centralized error processing with context
+- ✅ **Toast notification system** - Professional messaging with animations
+- ✅ **Error boundary implementation** - Component-level fault isolation
+- ✅ **Enhanced validation** - Better coordinate and game state checking
+
+#### **Mobile UX Framework**
+- ✅ **useMobileOptimized hook** - Touch detection and optimization
+- ✅ **Haptic feedback integration** - Native mobile tactile responses
+- ✅ **Touch gesture handling** - Long press, tap, and swipe recognition
+- ✅ **Performance optimizations** - Reduced re-renders and smooth animations
+
+---
+
 ## [0.2.0] - Day 2 Complete (2024-01-XX)
 
 ### 🚀 **Major Features Added**
