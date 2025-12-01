@@ -115,6 +115,7 @@
  justify-content: center;
  align-items: center;
  pointer-events: none;
+ z-index: 5;
 }
 
 .music-player .scanner-frame::before,
@@ -374,6 +375,29 @@
 
 .music-player .btn:hover {
  background: var(--panel-border);
+}
+
+.music-player .control-button {
+ padding: 0.5rem 1rem;
+ background: var(--panel-highlight);
+ border: 1px solid var(--panel-border);
+ color: var(--accent-primary);
+ font-size: 0.75rem;
+ border-radius: 3px;
+ cursor: pointer;
+ transition: all 0.2s;
+ text-transform: uppercase;
+ font-family: inherit;
+}
+
+.music-player .control-button:hover:not(:disabled) {
+ background: var(--panel-border);
+ box-shadow: 0 0 10px var(--accent-primary);
+}
+
+.music-player .control-button:disabled {
+ opacity: 0.5;
+ cursor: not-allowed;
 }
 
 .music-player .terminal-panel {

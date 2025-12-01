@@ -1,30 +1,26 @@
 "use client";
 
 import { useWallet } from "@solana/wallet-adapter-react";
-import { WalletMultiButton } from "@solana/wallet-adapter-react-ui";
 import { useGameState } from "@/hooks/useGameState";
 import { useHeliusMonitor, GameEvent } from "@/hooks/useHeliusMonitor";
 import { useErrorHandler } from "@/hooks/useErrorHandler";
-import { useMobileOptimized } from "@/hooks/useMobileOptimized";
 import { ErrorBoundary } from "@/components/ErrorBoundary";
-import { ErrorToast, SuccessToast, LoadingToast } from "@/components/Toast";
+import { ErrorToast, SuccessToast } from "@/components/Toast";
 import GameGrid from "@/components/GameGrid";
 import PlayerStats from "@/components/PlayerStats";
-import GameControls from "@/components/GameControls";
-import Preloader from "@/components/Preloader";
-import Notification from "@/components/Notification";
 import dynamic from "next/dynamic";
-const MusicPlayer = dynamic(() => import("@/components/MusicPlayer"), {
+const GameCockpit = dynamic(() => import("@/components/GameCockpit"), {
   ssr: false,
 });
-import { useState, useEffect } from "react";
+import { useState } from "react";
 import { useAnchorProgram } from "@/lib/anchor";
 
 export default function Home() {
-  const { connected, publicKey } = useWallet();
+  const { publicKey } = useWallet();
   const {
     gameState,
     createGame,
+    joinGame,
     makeMove,
     error,
     clearError,
@@ -34,74 +30,34 @@ export default function Home() {
   } = useGameState();
 
   const [isCreatingGame, setIsCreatingGame] = useState(false);
-  const [showPreloader, setShowPreloader] = useState(false);
-  const [showRules, setShowRules] = useState(false);
-  const [notification, setNotification] = useState<{
-    message: string;
-    isVisible: boolean;
-  }>({
-    message: "",
-    isVisible: false,
-  });
-  const { handleWalletError, handleGameError } = useErrorHandler();
-  const { isMobile, mobileClasses } = useMobileOptimized();
-  const [prefersReducedMotion, setPrefersReducedMotion] = useState(false);
-  const [isHydrated, setIsHydrated] = useState(false);
+  const { handleGameError } = useErrorHandler();
   const anchorProgram = useAnchorProgram();
 
-  useEffect(() => {
-    setIsHydrated(true);
-    if (typeof window !== "undefined") {
-      const mq = window.matchMedia("(prefers-reduced-motion: reduce)");
-      const handler = () => setPrefersReducedMotion(mq.matches);
-      setPrefersReducedMotion(mq.matches);
-      mq.addEventListener("change", handler);
-      return () => mq.removeEventListener("change", handler);
-    }
-  }, []);
-
-  // Show rules when wallet connects
-  useEffect(() => {
-    if (connected && !gameState && !showRules) {
-      setShowRules(true);
-    }
-  }, [connected, gameState, showRules]);
-
-  // ENHANCED: Real-time game monitoring with Helius
-  const { isConnected: isMonitorConnected } = useHeliusMonitor({
+  useHeliusMonitor({
     gameId: gameState?.gameId,
     onGameEvent: (event: GameEvent) => {
-      // Handle real-time game events
       switch (event.type) {
         case "playerJoined":
-          setMessage("🏴‍☠️ A new pirate has joined the crew!");
+          setMessage("🏴☠️ A new pirate has joined!");
           break;
         case "gameStarted":
-          setMessage("⚔️ Battle has begun! May the best pirate win!");
+          setMessage("⚔️ Battle has begun!");
           break;
         case "moveMade":
-          setMessage("⚡ A pirate has made their move...");
+          setMessage("⚡ Move made...");
           break;
         case "gameCompleted":
-          setMessage("🏆 The battle is over! A champion has emerged!");
+          setMessage("🏆 Battle over!");
           break;
       }
     },
   });
 
   const handleCreateGame = async () => {
-    try {
-      if (!publicKey) {
-        handleWalletError(new Error("Wallet not connected"));
-        return;
-      }
+    if (!publicKey) return;
 
-      setIsCreatingGame(true);
-      setShowPreloader(true);
-      setNotification({
-        message: "ESTABLISHING SECURE CONNECTION",
-        isVisible: true,
-      });
+    setIsCreatingGame(true);
+    try {
       const player = {
         publicKey: publicKey.toString(),
         points: 0,
@@ -110,25 +66,27 @@ export default function Home() {
         hasBauble: false,
         username: `Pirate_${publicKey.toString().slice(0, 4)}`,
       };
-      try {
-        setNotification({
-          message: "GENERATING TREASURE MAP",
-          isVisible: true,
-        });
-        await createGame([player], 0.1, anchorProgram);
-        setNotification({ message: "ARENA READY FOR BATTLE", isVisible: true });
-      } catch (error) {
-        handleGameError(error, "create game");
-        setNotification({ message: "CONNECTION FAILED", isVisible: true });
-      } finally {
-        setIsCreatingGame(false);
-        setShowPreloader(false);
-      }
+      await createGame([player], 0.1, anchorProgram);
+      setMessage("🏴‍☠️ Arena created!");
     } catch (error) {
       handleGameError(error, "create game");
+    } finally {
       setIsCreatingGame(false);
-      setShowPreloader(false);
     }
+  };
+
+  const handleQuickStart = () => {
+    if (!gameState) return;
+    const ai = {
+      publicKey: `AI_${gameState.gameId}`,
+      points: 0,
+      bankedPoints: 0,
+      hasElf: false,
+      hasBauble: false,
+      username: "AI Pirate",
+    };
+    joinGame(gameState.gameId, ai);
+    setMessage("🧭 AI joined!");
   };
 
   const handleCoordinateSelect = async (coordinate: string) => {
@@ -139,348 +97,53 @@ export default function Home() {
     }
   };
 
-  // Clear messages after 5 seconds
-  useEffect(() => {
-    if (showMessage) {
-      const timer = setTimeout(() => {
-        setMessage(null);
-      }, 5000);
-      return () => clearTimeout(timer);
-    }
-  }, [showMessage, setMessage]);
-
-  // Clear errors after 3 seconds
-  useEffect(() => {
-    if (error) {
-      const timer = setTimeout(() => {
-        clearError();
-      }, 3000);
-      return () => clearTimeout(timer);
-    }
-  }, [error, clearError]);
-
   return (
     <ErrorBoundary>
-      {isHydrated && !isMobile && !prefersReducedMotion && <MusicPlayer />}
-      <main
-        suppressHydrationWarning
-        className={`min-h-screen flex flex-col ${
-          isHydrated ? mobileClasses.container : ""
-        }`}
-      >
-        {/* Centered Header */}
-        <div className="fixed top-0 left-0 right-0 z-50 pointer-events-none bg-gradient-to-b from-bg-dark-0 via-bg-dark-0/80 to-transparent pb-4">
-          <header className="text-center pt-4 safe-area-inset-top">
-            <h1 className="text-2xl sm:text-3xl md:text-4xl lg:text-5xl font-bold font-tech mb-1 animate-neon-flicker">
-              ⚓ PIR8.SYSTEM ⚓
-            </h1>
-            <p className="text-xs sm:text-sm text-neon-cyan font-mono">
-              &gt; FAST BATTLES | PRIVATE MOVES | CRYPTO WINS
-            </p>
-          </header>
+      <ErrorToast error={error} onClose={clearError} />
+      <SuccessToast message={showMessage} onClose={() => setMessage(null)} />
+
+      <GameCockpit
+        gameState={gameState}
+        onCreateGame={handleCreateGame}
+        onQuickStart={handleQuickStart}
+        isCreating={isCreatingGame}
+      />
+
+      {gameState?.gameStatus === "active" && (
+        <div
+          style={{
+            position: "fixed",
+            top: "50%",
+            left: "50%",
+            transform: "translate(-50%, -50%)",
+            zIndex: 100,
+            background: "rgba(18, 16, 15, 0.95)",
+            backdropFilter: "blur(10px)",
+            padding: "2rem",
+            borderRadius: "8px",
+            border: "1px solid rgba(255, 78, 66, 0.3)",
+            maxWidth: "90vw",
+            maxHeight: "90vh",
+            overflow: "auto",
+          }}
+        >
+          <div style={{ marginBottom: "1rem" }}>
+            <GameGrid
+              grid={gameState.grid}
+              chosenCoordinates={gameState.chosenCoordinates}
+              onCoordinateSelect={handleCoordinateSelect}
+              isMyTurn={isMyTurn()}
+              disabled={false}
+            />
+          </div>
+          <PlayerStats
+            players={gameState.players}
+            currentPlayerIndex={gameState.currentPlayerIndex}
+            gameStatus={gameState.gameStatus}
+            winner={gameState.winner}
+          />
         </div>
-
-        {/* Wallet Connection - Floating */}
-        <div className="fixed top-36 right-8 z-40 pointer-events-auto">
-          <WalletMultiButton className="!bg-gradient-to-r !from-neon-cyan !to-neon-orange !text-bg-dark-0 !font-bold !border-2 !border-neon-cyan !font-tech !text-sm !py-3 !px-4 !shadow-lg !shadow-neon-cyan/50" />
-        </div>
-
-        {/* Enhanced Toast Notifications */}
-        <ErrorToast error={error} onClose={clearError} />
-        <SuccessToast message={showMessage} onClose={() => setMessage(null)} />
-        <LoadingToast
-          message={isCreatingGame ? "🚢 Creating your pirate battle..." : null}
-          isLoading={isCreatingGame}
-        />
-
-        {/* Preloader */}
-        <Preloader
-          isVisible={showPreloader}
-          message="INITIALIZING PIRATE ARENA"
-        />
-
-        {/* Notification System */}
-        <Notification
-          message={notification.message}
-          isVisible={notification.isVisible}
-          onClose={() =>
-            setNotification((prev) => ({ ...prev, isVisible: false }))
-          }
-        />
-
-        {/* Main Content - With proper spacing */}
-        <div className="flex-1 w-full pt-24 pb-16 px-4">
-        {!connected ? (
-          <div className="flex items-center justify-center min-h-full relative">
-            {/* Animated Background */}
-            <div className="absolute inset-0 bg-gradient-radial from-ocean-blue via-bg-dark-0 to-bg-dark-2 opacity-80"></div>
-            <div className="absolute inset-0 bg-grid-overlay opacity-10"></div>
-            <div className="floating-particles absolute inset-0"></div>
-
-            {/* Central Scanner Frame */}
-            <div className="relative z-10 flex items-center justify-center">
-              <div className="scanner-frame-center">
-                <div className="corner-tl"></div>
-                <div className="corner-tr"></div>
-                <div className="corner-bl"></div>
-                <div className="corner-br"></div>
-
-                <div className="wallet-card max-w-md mx-auto transform hover:scale-105 transition-all duration-500">
-                  <div className="text-center space-y-8">
-                    {/* Animated Logo */}
-                    <div className="relative mb-8">
-                      <div className="text-8xl mb-4 animate-float opacity-90">
-                        ⚓
-                      </div>
-                      <div className="scanner-line"></div>
-                    </div>
-
-                    <div className="space-y-4">
-                      <h2 className="text-3xl font-bold font-tech text-neon-cyan animate-glow-pulse">
-                        &gt; SYSTEM.INIT
-                      </h2>
-                      <p className="text-neon-orange font-mono text-sm tracking-wider">
-                        WALLET CONNECTION REQUIRED
-                      </p>
-                    </div>
-
-                    <div className="wallet-button-container">
-                      <WalletMultiButton className="!bg-gradient-to-r !from-neon-cyan !to-neon-orange !text-bg-dark-0 !font-bold !border-2 !border-neon-cyan !font-tech !text-sm !py-4 !px-8 !rounded-lg transform hover:scale-105 transition-all duration-300 shadow-xl hover:shadow-neon-cyan/50" />
-                    </div>
-
-                    <div className="space-y-3">
-                      <p className="text-xs text-neon-cyan font-mono opacity-80">
-                        SUPPORTED WALLETS:
-                      </p>
-                      <div className="flex justify-center space-x-6 text-neon-orange">
-                        <span className="text-sm font-mono">PHANTOM</span>
-                        <span className="text-sm font-mono">•</span>
-                        <span className="text-sm font-mono">SOLFLARE</span>
-                        <span className="text-sm font-mono">•</span>
-                        <span className="text-sm font-mono">BACKPACK</span>
-                      </div>
-                    </div>
-                  </div>
-                </div>
-
-                <div className="scanner-id-bottom">PIR8.SYSTEM.V1.0</div>
-                <div className="scanner-id-bottom-right">
-                  BLOCKCHAIN: SOLANA
-                </div>
-              </div>
-            </div>
-          </div>
-        ) : connected && showRules && !gameState ? (
-          <div className="flex items-center justify-center min-h-full relative">
-            <div className="absolute inset-0 bg-gradient-radial from-ocean-blue via-bg-dark-0 to-bg-dark-2 opacity-80"></div>
-            <div className="relative z-10 flex items-center justify-center">
-              <div className="scanner-frame-center">
-                <div className="corner-tl"></div>
-                <div className="corner-tr"></div>
-                <div className="corner-bl"></div>
-                <div className="corner-br"></div>
-
-                <div className="game-card max-w-2xl mx-auto">
-                  <div className="text-center space-y-6">
-                    <h2 className="text-4xl font-bold font-tech text-neon-cyan animate-glow-pulse">
-                      ⚓ HOW TO PLAY ⚓
-                    </h2>
-                    
-                    <div className="text-left space-y-4 text-sm font-mono text-neon-cyan">
-                      <div className="p-4 border border-neon-cyan/30 rounded">
-                        <p className="text-neon-orange font-bold mb-2">🗺️ THE TREASURE MAP</p>
-                        <p>Navigate a 7x7 grid filled with treasures and traps. Take turns choosing coordinates to reveal items.</p>
-                      </div>
-                      
-                      <div className="p-4 border border-neon-cyan/30 rounded">
-                        <p className="text-neon-orange font-bold mb-2">💰 COLLECT POINTS</p>
-                        <p>Earn points from treasures. Bank them to protect from attacks. Highest total score wins!</p>
-                      </div>
-                      
-                      <div className="p-4 border border-neon-cyan/30 rounded">
-                        <p className="text-neon-orange font-bold mb-2">⚔️ SPECIAL ITEMS</p>
-                        <p>🎁 Gift points • 👹 Steal points • 🍮 Reset player • 🌿 Swap scores • 🏦 Bank points</p>
-                      </div>
-                      
-                      <div className="p-4 border border-neon-cyan/30 rounded">
-                        <p className="text-neon-orange font-bold mb-2">🏆 WIN CONDITIONS</p>
-                        <p>Game ends when all 49 coordinates are chosen. Winner takes 85% of the pot!</p>
-                      </div>
-                    </div>
-
-                    <button
-                      onClick={() => setShowRules(false)}
-                      className="pirate-button-primary w-full py-4 text-lg font-tech"
-                    >
-                      ▶ READY TO BATTLE
-                    </button>
-                  </div>
-                </div>
-
-                <div className="scanner-id-bottom">RULES BRIEFING COMPLETE</div>
-                <div className="scanner-id-bottom-right">PROCEED WHEN READY</div>
-              </div>
-            </div>
-          </div>
-        ) : connected && !showRules && !gameState ? (
-          <div className="flex items-center justify-center min-h-screen relative">
-            {/* Animated Background */}
-            <div className="absolute inset-0 bg-gradient-radial from-ocean-blue via-bg-dark-0 to-bg-dark-2 opacity-80"></div>
-            <div className="absolute inset-0 bg-grid-overlay opacity-10"></div>
-            <div className="floating-particles absolute inset-0"></div>
-
-            {/* Central Scanner Frame */}
-            <div className="relative z-10 flex items-center justify-center min-h-screen">
-              <div className="scanner-frame-center">
-                <div className="corner-tl"></div>
-                <div className="corner-tr"></div>
-                <div className="corner-bl"></div>
-                <div className="corner-br"></div>
-
-                <div className="game-card max-w-lg mx-auto transform hover:scale-105 transition-all duration-500">
-                  <div className="text-center space-y-8">
-                    {/* Preloader Canvas */}
-                    <div className="preloader-container">
-                      <canvas
-                        id="preloader-canvas"
-                        className="preloader-canvas"
-                        width="120"
-                        height="120"
-                      ></canvas>
-                    </div>
-
-                    <div className="space-y-4">
-                      <h2 className="text-3xl font-bold font-tech text-neon-orange animate-glow-pulse">
-                        &gt; BATTLE.CREATE
-                      </h2>
-                      <p className="text-neon-cyan font-mono text-sm tracking-wider">
-                        INITIALIZE PIRATE ARENA
-                      </p>
-                    </div>
-
-                    <button
-                      onClick={handleCreateGame}
-                      disabled={isCreatingGame}
-                      className="pirate-button-primary w-full py-4 mb-8 text-lg font-tech transform hover:scale-105 transition-all duration-300 shadow-xl hover:shadow-neon-orange/50"
-                    >
-                      {isCreatingGame ? (
-                        <div className="flex items-center justify-center space-x-3">
-                          <div className="pirate-spinner w-6 h-6"></div>
-                          <span>CREATING ARENA...</span>
-                        </div>
-                      ) : (
-                        "▶ LAUNCH BATTLE"
-                      )}
-                    </button>
-
-                    <div className="game-info-grid">
-                      <div className="info-item">
-                        <span className="info-label">ENTRY FEE</span>
-                        <span className="info-value">0.1 SOL</span>
-                      </div>
-                      <div className="info-item">
-                        <span className="info-label">PLATFORM FEE</span>
-                        <span className="info-value">5%</span>
-                      </div>
-                      <div className="info-item">
-                        <span className="info-label">WINNER PRIZE</span>
-                        <span className="info-value">85%</span>
-                      </div>
-                    </div>
-                  </div>
-                </div>
-
-                <div className="scanner-id-bottom">
-                  STATUS: AWAITING COMMAND
-                </div>
-                <div className="scanner-id-bottom-right">
-                  MODE: SOLANA DEVNET
-                </div>
-              </div>
-            </div>
-          </div>
-        ) : gameState ? (
-          <div className="w-full h-full flex items-center justify-center">
-            <div className="w-full max-w-7xl mx-auto grid grid-cols-1 lg:grid-cols-3 gap-4 items-start">
-              {/* Main Game Grid - Centered */}
-              <div className="lg:col-span-2 flex justify-center">
-                <div className="w-full max-w-2xl">
-                  <GameGrid
-                    grid={gameState.grid}
-                    chosenCoordinates={gameState.chosenCoordinates}
-                    onCoordinateSelect={handleCoordinateSelect}
-                    isMyTurn={isMyTurn()}
-                    disabled={gameState.gameStatus !== "active"}
-                  />
-                </div>
-              </div>
-
-              {/* Right Sidebar */}
-              <div className="lg:col-span-1 space-y-4">
-                {/* Player Stats */}
-                <div>
-                  <PlayerStats
-                    players={gameState.players}
-                    currentPlayerIndex={gameState.currentPlayerIndex}
-                    gameStatus={gameState.gameStatus}
-                    winner={gameState.winner}
-                  />
-                </div>
-
-                {/* Game Controls */}
-                {gameState.gameStatus === "active" && (
-                  <div>
-                    <GameControls
-                      gameId={gameState.gameId}
-                      isMyTurn={isMyTurn()}
-                      disabled={gameState.gameStatus !== "active"}
-                    />
-                  </div>
-                )}
-
-                {/* Game Over Panel */}
-                {gameState.gameStatus === "completed" && (
-                  <div className="pirate-card text-center transform hover:scale-105 transition-transform">
-                    <h3 className="text-2xl font-bold text-pirate-gold mb-4 animate-pulse">
-                      🏆 VICTOR CROWNED 🏆
-                    </h3>
-                    {gameState.winner && (
-                      <div className="mb-6">
-                        <p className="text-xs text-neon-cyan font-mono mb-2">
-                          WINNER
-                        </p>
-                        <p className="text-lg font-bold text-pirate-gold font-tech">
-                          {gameState.players.find(
-                            (p) => p.publicKey === gameState.winner
-                          )?.username ||
-                            `${gameState.winner.slice(
-                              0,
-                              4
-                            )}...${gameState.winner.slice(-4)}`}
-                        </p>
-                      </div>
-                    )}
-                    <button
-                      onClick={() => window.location.reload()}
-                      className="pirate-button w-full text-sm font-tech"
-                    >
-                      ▶ NEW.BATTLE
-                    </button>
-                  </div>
-                )}
-              </div>
-            </div>
-          </div>
-        ) : null}
-        </div>
-
-        {/* Footer */}
-        <footer className="w-full text-center py-2 border-t border-neon-cyan border-opacity-20 bg-gradient-to-t from-ocean-blue via-ocean-blue/80 to-transparent pointer-events-none">
-          <p className="text-neon-cyan text-xs font-mono">
-            SOLANA | HELIUS | ⚓ v1.0.ALPHA
-          </p>
-        </footer>
-      </main>
+      )}
     </ErrorBoundary>
   );
 }
