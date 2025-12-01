@@ -156,30 +156,30 @@ export default function Home() {
       {isHydrated && !isMobile && !prefersReducedMotion && <MusicPlayer />}
       <main
         suppressHydrationWarning
-        className={`min-h-screen flex flex-col items-center justify-center p-4 ${
+        className={`min-h-screen flex flex-col ${
           isHydrated ? mobileClasses.container : ""
         }`}
       >
         {/* Centered Header */}
-        <div className="fixed top-0 left-0 right-0 z-50 pointer-events-none">
-          <header className="text-center pt-6 safe-area-inset-top">
-            <h1 className="text-3xl sm:text-4xl md:text-5xl lg:text-6xl font-bold font-tech mb-1 sm:mb-2 animate-neon-flicker">
+        <div className="fixed top-0 left-0 right-0 z-50 pointer-events-none bg-gradient-to-b from-bg-dark-0 via-bg-dark-0/80 to-transparent pb-4">
+          <header className="text-center pt-4 safe-area-inset-top">
+            <h1 className="text-2xl sm:text-3xl md:text-4xl lg:text-5xl font-bold font-tech mb-1 animate-neon-flicker">
               ⚓ PIR8.SYSTEM ⚓
             </h1>
-            <p className="text-xs sm:text-sm md:text-lg text-neon-cyan font-mono">
+            <p className="text-xs sm:text-sm text-neon-cyan font-mono">
               &gt; FAST BATTLES | PRIVATE MOVES | CRYPTO WINS
             </p>
           </header>
         </div>
 
         {/* Wallet Connection - Floating */}
-        <div className="fixed top-20 right-4 z-40 pointer-events-auto">
+        <div className="fixed top-4 right-4 z-40 pointer-events-auto">
           <WalletMultiButton className="!bg-gradient-to-r !from-neon-cyan !to-neon-orange !text-bg-dark-0 !font-bold !border-2 !border-neon-cyan !font-tech !text-xs !py-2 !px-3" />
         </div>
 
         {/* Status Indicator - Top left */}
         {connected && publicKey && (
-          <div className="fixed top-20 left-4 z-40 pointer-events-none">
+          <div className="fixed top-16 left-4 z-40 pointer-events-none">
             <div className="text-xs text-neon-cyan space-y-1 font-mono">
               <p className="animate-glow-pulse text-opacity-80">
                 &gt; {publicKey.toString().slice(0, 4)}...
@@ -222,16 +222,17 @@ export default function Home() {
           }
         />
 
-        {/* Main Content - Fully Centered */}
+        {/* Main Content - With proper spacing */}
+        <div className="flex-1 w-full pt-24 pb-16 px-4">
         {!connected ? (
-          <div className="flex items-center justify-center min-h-screen relative">
+          <div className="flex items-center justify-center min-h-full relative">
             {/* Animated Background */}
             <div className="absolute inset-0 bg-gradient-radial from-ocean-blue via-bg-dark-0 to-bg-dark-2 opacity-80"></div>
             <div className="absolute inset-0 bg-grid-overlay opacity-10"></div>
             <div className="floating-particles absolute inset-0"></div>
 
             {/* Central Scanner Frame */}
-            <div className="relative z-10 flex items-center justify-center min-h-screen">
+            <div className="relative z-10 flex items-center justify-center">
               <div className="scanner-frame-center">
                 <div className="corner-tl"></div>
                 <div className="corner-tr"></div>
@@ -361,8 +362,8 @@ export default function Home() {
             </div>
           </div>
         ) : (
-          <div className="min-h-screen w-full grid place-items-center">
-            <div className="w-full max-w-6xl grid grid-cols-1 lg:grid-cols-3 gap-6 items-center">
+          <div className="w-full h-full flex items-center justify-center">
+            <div className="w-full max-w-7xl mx-auto grid grid-cols-1 lg:grid-cols-3 gap-4 items-start">
               {/* Main Game Grid - Centered */}
               <div className="lg:col-span-2 flex justify-center">
                 <div className="w-full max-w-2xl">
@@ -377,7 +378,7 @@ export default function Home() {
               </div>
 
               {/* Right Sidebar */}
-              <div className="lg:col-span-1 space-y-6">
+              <div className="lg:col-span-1 space-y-4">
                 {/* Player Stats */}
                 <div>
                   <PlayerStats
@@ -433,9 +434,10 @@ export default function Home() {
             </div>
           </div>
         )}
+        </div>
 
         {/* Footer */}
-        <footer className="fixed bottom-0 left-0 right-0 text-center py-3 border-t border-neon-cyan border-opacity-20 bg-gradient-to-t from-ocean-blue via-ocean-blue to-transparent pointer-events-none">
+        <footer className="w-full text-center py-2 border-t border-neon-cyan border-opacity-20 bg-gradient-to-t from-ocean-blue via-ocean-blue/80 to-transparent pointer-events-none">
           <p className="text-neon-cyan text-xs font-mono">
             SOLANA | HELIUS | ⚓ v1.0.ALPHA
           </p>

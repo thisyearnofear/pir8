@@ -22,7 +22,6 @@ export class HeliusMonitor {
   }
 
   connect() {
-    // Prevent duplicate connections
     if (this.ws && (this.ws.readyState === WebSocket.CONNECTING || this.ws.readyState === WebSocket.OPEN)) {
       this.log('warn', 'WebSocket already connected or connecting');
       return;

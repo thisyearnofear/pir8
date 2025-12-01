@@ -817,7 +817,7 @@ const MusicPlayer = () => {
       <div
         className="control-panel"
         ref={controlPanelRef}
-        style={{ top: "50%", left: "20px", transform: "translateY(-50%)" }}
+        style={{ top: "35%", left: "20px", transform: "translateY(-50%)" }}
       >
         <div className="panel-header">
           <span className="data-panel-title">ANOMALY CONTROLS</span>

@@ -89,7 +89,6 @@ export const useHeliusMonitor = ({ gameId, onGameEvent }: UseHeliusMonitorProps 
     return () => {
       disconnect();
     };
-    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   // Reconnect when gameId changes
@@ -98,7 +97,6 @@ export const useHeliusMonitor = ({ gameId, onGameEvent }: UseHeliusMonitorProps 
       disconnect();
       setTimeout(() => connect(), 100);
     }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [gameId]);
 
   return {
