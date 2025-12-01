@@ -13,6 +13,7 @@ export const SOLANA_CONFIG = {
   NETWORK: process.env.NEXT_PUBLIC_SOLANA_NETWORK || 'devnet',
   RPC_URL: process.env.NEXT_PUBLIC_HELIUS_RPC_URL,
   PROGRAM_ID: process.env.NEXT_PUBLIC_PROGRAM_ID,
+  TREASURY_ADDRESS: process.env.NEXT_PUBLIC_TREASURY_ADDRESS || '',
 } as const;
 
 // API Endpoints

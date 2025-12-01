@@ -60,6 +60,9 @@ export class HeliusMonitor {
   private subscribeToGameTransactions() {
     if (!this.ws || this.ws.readyState !== WebSocket.OPEN) return;
 
+    const includeAccounts = [SOLANA_CONFIG.PROGRAM_ID].filter(Boolean);
+    if (SOLANA_CONFIG.TREASURY_ADDRESS) includeAccounts.push(SOLANA_CONFIG.TREASURY_ADDRESS);
+
     const subscribeMessage = {
       jsonrpc: '2.0',
       id: 1,
@@ -69,7 +72,7 @@ export class HeliusMonitor {
           vote: false,
           failed: false,
           signature: null,
-          accountInclude: [SOLANA_CONFIG.PROGRAM_ID], // PIR8 program ID
+          accountInclude: includeAccounts,
         },
         {
           commitment: 'finalized',
