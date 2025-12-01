@@ -65,3 +65,173 @@
   --text-primary: #FFFFFF;
   --background-primary: #000000;
 }
+
+/* Enhanced Dynamic Animations - Inspired by CodePen */
+@keyframes neon-glow {
+  0%, 100% {
+    text-shadow: 0 0 10px rgba(0, 255, 255, 0.5), 0 0 20px rgba(0, 255, 255, 0.3);
+    box-shadow: 0 0 20px rgba(0, 255, 255, 0.2), inset 0 0 20px rgba(0, 255, 255, 0.1);
+  }
+  50% {
+    text-shadow: 0 0 20px rgba(0, 255, 255, 1), 0 0 30px rgba(0, 255, 255, 0.6);
+    box-shadow: 0 0 30px rgba(0, 255, 255, 0.4), inset 0 0 30px rgba(0, 255, 255, 0.2);
+  }
+}
+
+@keyframes border-pulse {
+  0%, 100% {
+    border-color: rgba(0, 255, 255, 0.3);
+    box-shadow: inset 0 0 20px rgba(0, 255, 255, 0.05);
+  }
+  50% {
+    border-color: rgba(0, 255, 255, 0.8);
+    box-shadow: inset 0 0 30px rgba(0, 255, 255, 0.15), 0 0 20px rgba(0, 255, 255, 0.2);
+  }
+}
+
+@keyframes float-smooth {
+  0%, 100% {
+    transform: translateY(0px) rotate(0deg);
+  }
+  25% {
+    transform: translateY(-8px) rotate(2deg);
+  }
+  75% {
+    transform: translateY(-8px) rotate(-2deg);
+  }
+}
+
+@keyframes scan-line {
+  0% {
+    transform: translateY(0);
+  }
+  100% {
+    transform: translateY(100%);
+  }
+}
+
+@keyframes grid-pulse {
+  0%, 100% {
+    background-color: rgba(0, 255, 255, 0.03);
+  }
+  50% {
+    background-color: rgba(0, 255, 255, 0.1);
+  }
+}
+
+@keyframes shimmer {
+  0% {
+    background-position: -1000px 0;
+  }
+  100% {
+    background-position: 1000px 0;
+  }
+}
+
+@keyframes data-flow {
+  0% {
+    opacity: 0;
+    transform: translateX(-20px);
+  }
+  50% {
+    opacity: 1;
+  }
+  100% {
+    opacity: 0;
+    transform: translateX(20px);
+  }
+}
+
+@keyframes panel-glow {
+  0%, 100% {
+    box-shadow: 
+      0 0 20px rgba(0, 255, 255, 0.1),
+      inset 0 0 20px rgba(0, 255, 255, 0.05);
+  }
+  50% {
+    box-shadow: 
+      0 0 40px rgba(0, 255, 255, 0.3),
+      inset 0 0 40px rgba(0, 255, 255, 0.1);
+  }
+}
+
+/* Apply animations to card elements */
+.pirate-card {
+  animation: panel-glow 4s ease-in-out infinite;
+  border-color: rgba(0, 255, 255, 0.4);
+  transition: all 0.3s ease;
+}
+
+.pirate-card:hover {
+  border-color: rgba(0, 255, 255, 0.8);
+  box-shadow: 
+    0 0 30px rgba(0, 255, 255, 0.2),
+    inset 0 0 30px rgba(0, 255, 255, 0.1);
+  transform: translateY(-4px);
+}
+
+/* Enhanced button animations */
+.pirate-button {
+  position: relative;
+  overflow: hidden;
+  transition: all 0.3s cubic-bezier(0.34, 1.56, 0.64, 1);
+}
+
+.pirate-button::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: -100%;
+  width: 100%;
+  height: 100%;
+  background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.2), transparent);
+  animation: shimmer 2s infinite;
+}
+
+.pirate-button:hover {
+  box-shadow: 0 0 20px rgba(255, 78, 66, 0.5);
+  transform: scale(1.05);
+}
+
+.pirate-button:active {
+  transform: scale(0.95);
+}
+
+/* Grid cell dynamic effects */
+.grid-cell {
+  position: relative;
+  transition: all 0.2s ease;
+}
+
+.grid-cell.available {
+  animation: grid-pulse 3s ease-in-out infinite;
+}
+
+.grid-cell:hover.available::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background: radial-gradient(circle, rgba(0, 255, 255, 0.2) 0%, transparent 70%);
+  pointer-events: none;
+}
+
+/* Text glow for important elements */
+.text-glow {
+  animation: neon-glow 2s ease-in-out infinite;
+}
+
+/* Floating anchor animation */
+.animate-float {
+  animation: float-smooth 3s ease-in-out infinite !important;
+  display: inline-block;
+}
+
+/* Data visualization effects */
+.data-flow {
+  animation: data-flow 2s ease-in-out infinite;
+}
+
+/* Smooth transitions for state changes */
+* {
+  transition: color 0.3s ease, border-color 0.3s ease, background-color 0.3s ease;
+}

@@ -26,6 +26,11 @@ module.exports = {
         'treasure-glow': 'treasure-glow 2s ease-in-out infinite alternate',
         'ship-rock': 'ship-rock 3s ease-in-out infinite',
         'coin-flip': 'coin-flip 0.6s ease-in-out',
+        'neon-glow': 'neon-glow 2s ease-in-out infinite',
+        'glow-pulse': 'glow-pulse 2s ease-in-out infinite',
+        'float': 'float-smooth 3s ease-in-out infinite',
+        'grid-pulse': 'grid-pulse 3s ease-in-out infinite',
+        'panel-glow': 'panel-glow 4s ease-in-out infinite',
       },
       keyframes: {
         'treasure-glow': {
@@ -39,6 +44,14 @@ module.exports = {
         'coin-flip': {
           '0%': { transform: 'rotateY(0deg)' },
           '100%': { transform: 'rotateY(180deg)' },
+        },
+        'glow-pulse': {
+          '0%, 100%': { opacity: '0.6' },
+          '50%': { opacity: '1' },
+        },
+        'float-smooth': {
+          '0%, 100%': { transform: 'translateY(0px)' },
+          '50%': { transform: 'translateY(-8px)' },
         },
       },
     },

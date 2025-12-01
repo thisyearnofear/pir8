@@ -116,13 +116,17 @@ export default function GameGrid({
   };
 
   return (
-    <div className="pirate-card">
-      <div className="mb-4 text-center">
-        <h3 className="text-xl font-bold text-pirate-gold font-maritime">
-          🏴‍☠️ Treasure Map 🏴‍☠️
+    <div className="pirate-card transform transition-all hover:shadow-2xl">
+      <div className="mb-6 text-center pb-4 border-b border-neon-cyan border-opacity-30">
+        <h3 className="text-2xl font-bold text-pirate-gold font-maritime animate-pulse">
+          🏴‍☠️ TREASURE MAP 🏴‍☠️
         </h3>
-        <p className="text-sm text-gray-300 mt-1">
-          {isMyTurn && !disabled ? 'Choose your coordinates, matey!' : 'Wait for your turn...'}
+        <p className={`text-sm font-mono mt-2 transition-all ${
+          isMyTurn && !disabled 
+            ? 'text-neon-cyan animate-glow-pulse' 
+            : 'text-neon-magenta'
+        }`}>
+          {isMyTurn && !disabled ? '▶ AWAITING YOUR.COMMAND' : '▲ STANDBY MODE'}
         </p>
       </div>
       
@@ -176,18 +180,18 @@ export default function GameGrid({
         ))}
       </div>
       
-      {/* Legend */}
-      <div className="mt-4 p-3 bg-black bg-opacity-30 rounded-lg">
-        <h4 className="text-xs sm:text-sm font-bold text-pirate-gold mb-2">Legend:</h4>
-        <div className="grid grid-cols-2 lg:grid-cols-4 gap-1 sm:gap-2 text-xs">
-          <div className="truncate">🎁 Gift 1000pts</div>
-          <div className="truncate">👹 Steal points</div>
-          <div className="truncate">🎄 Choose square</div>
-          <div className="truncate">🍮 Kill player</div>
-          <div className="truncate">🌿 Swap scores</div>
-          <div className="truncate">🧝 Block attack</div>
-          <div className="truncate">🔮 Reflect attack</div>
-          <div className="truncate">🏦 Bank points</div>
+      {/* Legend - Enhanced */}
+      <div className="mt-6 pt-4 border-t border-neon-cyan border-opacity-30">
+        <h4 className="text-xs font-bold text-neon-cyan mb-3 font-mono uppercase">▶ ITEMS LEGEND</h4>
+        <div className="grid grid-cols-2 gap-2 text-xs">
+          <div className="px-2 py-1 rounded bg-neon-cyan bg-opacity-5 border border-neon-cyan border-opacity-20 hover:bg-opacity-10 transition">🎁 Gift 1000pts</div>
+          <div className="px-2 py-1 rounded bg-neon-cyan bg-opacity-5 border border-neon-cyan border-opacity-20 hover:bg-opacity-10 transition">👹 Steal points</div>
+          <div className="px-2 py-1 rounded bg-neon-cyan bg-opacity-5 border border-neon-cyan border-opacity-20 hover:bg-opacity-10 transition">🎄 Choose square</div>
+          <div className="px-2 py-1 rounded bg-neon-cyan bg-opacity-5 border border-neon-cyan border-opacity-20 hover:bg-opacity-10 transition">🍮 Kill player</div>
+          <div className="px-2 py-1 rounded bg-neon-cyan bg-opacity-5 border border-neon-cyan border-opacity-20 hover:bg-opacity-10 transition">🌿 Swap scores</div>
+          <div className="px-2 py-1 rounded bg-neon-cyan bg-opacity-5 border border-neon-cyan border-opacity-20 hover:bg-opacity-10 transition">🧝 Block attack</div>
+          <div className="px-2 py-1 rounded bg-neon-cyan bg-opacity-5 border border-neon-cyan border-opacity-20 hover:bg-opacity-10 transition">🔮 Reflect attack</div>
+          <div className="px-2 py-1 rounded bg-neon-cyan bg-opacity-5 border border-neon-cyan border-opacity-20 hover:bg-opacity-10 transition">🏦 Bank points</div>
         </div>
       </div>
     </div>

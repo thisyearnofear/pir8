@@ -85,7 +85,10 @@ export const useHeliusMonitor = ({ gameId, onGameEvent }: UseHeliusMonitorProps 
   useEffect(() => {
     if (gameId && monitorRef.current) {
       disconnect();
-      setTimeout(connect, 100); // Brief delay to ensure clean disconnect
+      // Use monitorRef to access current connection state
+      if (isConnectedRef.current) {
+        connect();
+      }
     }
   }, [gameId, connect, disconnect]);
 

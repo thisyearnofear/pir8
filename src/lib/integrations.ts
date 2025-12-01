@@ -54,6 +54,8 @@ export class HeliusMonitor {
 
     this.ws.onerror = (error) => {
       console.error('Helius WebSocket error:', error);
+      // Don't trigger reconnect on error - let onclose handle it
+      // Prevents infinite reconnect loops
     };
   }
 

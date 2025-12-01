@@ -108,33 +108,38 @@ export default function Home() {
 
   return (
     <ErrorBoundary>
-    <main className={`min-h-screen p-4 ${mobileClasses.container}`}>
-      {/* Header */}
-      <header className="text-center mb-6 safe-area-inset-top">
-        <h1 className="text-3xl sm:text-4xl md:text-5xl lg:text-7xl font-bold font-tech mb-2 sm:mb-4 animate-neon-flicker">
-          ⚓ PIR8.SYSTEM ⚓
-        </h1>
-        <p className="text-sm sm:text-base md:text-xl lg:text-2xl text-neon-cyan font-mono mb-4 sm:mb-6">
-          &gt; FAST BATTLES | PRIVATE MOVES | CRYPTO WINS
-        </p>
-        
-        {/* Wallet Connection */}
-        <div className="flex justify-center mb-6">
-          <WalletMultiButton className="!bg-gradient-to-r !from-neon-cyan !to-neon-orange !text-bg-dark-0 !font-bold !border-2 !border-neon-cyan !font-tech" />
-        </div>
+    <main className={`min-h-screen flex flex-col items-center justify-center p-4 ${mobileClasses.container}`}>
+      {/* Centered Header */}
+      <div className="fixed top-0 left-0 right-0 z-50 pointer-events-none">
+        <header className="text-center pt-6 safe-area-inset-top">
+          <h1 className="text-3xl sm:text-4xl md:text-5xl lg:text-6xl font-bold font-tech mb-1 sm:mb-2 animate-neon-flicker">
+            ⚓ PIR8.SYSTEM ⚓
+          </h1>
+          <p className="text-xs sm:text-sm md:text-lg text-neon-cyan font-mono">
+            &gt; FAST BATTLES | PRIVATE MOVES | CRYPTO WINS
+          </p>
+        </header>
+      </div>
 
-        {connected && publicKey && (
-          <div className="text-sm text-neon-cyan space-y-1 font-mono">
-            <p className="animate-glow-pulse">&gt; PILOT {publicKey.toString().slice(0, 4)}...{publicKey.toString().slice(-4)} ONLINE</p>
-            <div className="flex items-center justify-center space-x-2">
-              <div className={`w-2 h-2 rounded-full animate-pulse ${isMonitorConnected ? 'bg-neon-cyan' : 'bg-neon-magenta'}`}></div>
+      {/* Wallet Connection - Floating */}
+      <div className="fixed top-20 right-4 z-40 pointer-events-auto">
+        <WalletMultiButton className="!bg-gradient-to-r !from-neon-cyan !to-neon-orange !text-bg-dark-0 !font-bold !border-2 !border-neon-cyan !font-tech !text-xs !py-2 !px-3" />
+      </div>
+
+      {/* Status Indicator - Top left */}
+      {connected && publicKey && (
+        <div className="fixed top-20 left-4 z-40 pointer-events-none">
+          <div className="text-xs text-neon-cyan space-y-1 font-mono">
+            <p className="animate-glow-pulse text-opacity-80">&gt; {publicKey.toString().slice(0, 4)}...{publicKey.toString().slice(-4)}</p>
+            <div className="flex items-center space-x-1">
+              <div className={`w-1.5 h-1.5 rounded-full animate-pulse ${isMonitorConnected ? 'bg-neon-cyan' : 'bg-neon-magenta'}`}></div>
               <span className="text-xs font-mono">
-                {isMonitorConnected ? '◆ HELIUS.SCANNER ACTIVE' : '▲ HELIUS.SCANNER CONNECTING...'}
+                {isMonitorConnected ? 'SCANNER ACTIVE' : 'CONNECTING...'}
               </span>
             </div>
           </div>
-        )}
-      </header>
+        </div>
+      )}
 
       {/* Enhanced Toast Notifications */}
       <ErrorToast error={error} onClose={clearError} />
@@ -144,107 +149,104 @@ export default function Home() {
         isLoading={isCreatingGame} 
       />
 
-      {/* Main Content */}
+      {/* Main Content - Centered */}
       {!connected ? (
-        <div className="text-center py-20">
-          <div className="pirate-card max-w-md mx-auto">
-            <h2 className="text-2xl font-bold font-tech mb-4">
-              &gt; INITIALIZE.WALLET
-            </h2>
-            <p className="text-neon-cyan mb-6 font-mono">
-              &gt; Connect Solana wallet to access PIR8.SYSTEM
-            </p>
-            <div className="text-6xl mb-6 animate-float">⚓</div>
-            <p className="text-sm text-neon-cyan font-mono">
-              &gt; COMPATIBLE: PHANTOM | SOLFLARE
-            </p>
+        <div className="flex items-center justify-center min-h-screen">
+          <div className="pirate-card max-w-sm mx-auto transform hover:scale-105 transition-transform duration-300">
+            <div className="text-center">
+              <h2 className="text-2xl font-bold font-tech mb-4">
+                &gt; INITIALIZE.WALLET
+              </h2>
+              <p className="text-neon-cyan mb-6 font-mono text-sm">
+                Connect Solana wallet to join the battle
+              </p>
+              <div className="text-7xl mb-6 animate-float">⚓</div>
+              <p className="text-xs text-neon-cyan font-mono">
+                PHANTOM | SOLFLARE | BACKPACK
+              </p>
+            </div>
           </div>
         </div>
       ) : !gameState ? (
-        <div className="text-center py-20">
-          <div className="pirate-card max-w-md mx-auto">
-            <h2 className="text-2xl font-bold font-tech mb-4">
-              &gt; BATTLE.INITIALIZE
-            </h2>
-            <p className="text-neon-cyan mb-6 font-mono">
-              &gt; Create new instance or join active battle
-            </p>
-            <button
-              onClick={handleCreateGame}
-              disabled={isCreatingGame}
-              className="pirate-button w-full text-xl py-4 mb-4"
-            >
-              {isCreatingGame ? (
-                <div className="flex items-center justify-center space-x-2">
-                  <div className="pirate-spinner w-5 h-5"></div>
-                  <span className="font-mono">INITIALIZING...</span>
-                </div>
-              ) : (
-                '▶ BATTLE.CREATE'
-              )}
-            </button>
-            <div className="text-sm text-neon-orange font-mono space-y-1">
-              <p>&gt; ENTRY FEE: 0.1 SOL</p>
-              <p>&gt; PLATFORM FEE: 5%</p>
-              <p>&gt; WINNER PRIZE: 85%</p>
+        <div className="flex items-center justify-center min-h-screen">
+          <div className="pirate-card max-w-sm mx-auto transform hover:scale-105 transition-transform duration-300">
+            <div className="text-center">
+              <h2 className="text-2xl font-bold font-tech mb-4">
+                &gt; BATTLE.INITIALIZE
+              </h2>
+              <p className="text-neon-cyan mb-8 font-mono text-sm">
+                Start your pirate adventure
+              </p>
+              <button
+                onClick={handleCreateGame}
+                disabled={isCreatingGame}
+                className="pirate-button w-full py-3 mb-6 text-lg font-tech"
+              >
+                {isCreatingGame ? (
+                  <div className="flex items-center justify-center space-x-2">
+                    <div className="pirate-spinner w-5 h-5"></div>
+                    <span>INITIALIZING...</span>
+                  </div>
+                ) : (
+                  '▶ BATTLE.CREATE'
+                )}
+              </button>
+              <div className="text-xs text-neon-orange font-mono space-y-1 bg-neon-orange bg-opacity-10 p-3 rounded border border-neon-orange border-opacity-30">
+                <p>ENTRY: 0.1 SOL</p>
+                <p>PLATFORM FEE: 5%</p>
+                <p>WINNER: 85%</p>
+              </div>
             </div>
           </div>
         </div>
       ) : (
-        <div className="grid grid-cols-1 lg:grid-cols-3 gap-4 lg:gap-6 max-w-7xl mx-auto">
-          {/* Mobile Priority: Controls first */}
-          <div className="lg:hidden order-1 space-y-4">
-            {gameState.gameStatus === 'active' && (
-              <GameControls
-                gameId={gameState.gameId}
+        <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 items-start">
+          {/* Main Game Grid - Centered */}
+          <div className="lg:col-span-2 flex justify-center">
+            <div className="w-full max-w-2xl">
+              <GameGrid
+                grid={gameState.grid}
+                chosenCoordinates={gameState.chosenCoordinates}
+                onCoordinateSelect={handleCoordinateSelect}
                 isMyTurn={isMyTurn()}
                 disabled={gameState.gameStatus !== 'active'}
               />
-            )}
+            </div>
           </div>
 
-          {/* Game Grid - Main area */}
-          <div className="lg:col-span-2 order-2 lg:order-1">
-            <GameGrid
-              grid={gameState.grid}
-              chosenCoordinates={gameState.chosenCoordinates}
-              onCoordinateSelect={handleCoordinateSelect}
-              isMyTurn={isMyTurn()}
-              disabled={gameState.gameStatus !== 'active'}
-            />
-          </div>
-
-          {/* Side Panel */}
-          <div className="order-3 lg:order-2 space-y-4 lg:space-y-6">
+          {/* Right Sidebar - Sticky */}
+          <div className="lg:col-span-1 space-y-6">
             {/* Player Stats */}
-            <PlayerStats
-              players={gameState.players}
-              currentPlayerIndex={gameState.currentPlayerIndex}
-              gameStatus={gameState.gameStatus}
-              winner={gameState.winner}
-            />
+            <div className="sticky top-32">
+              <PlayerStats
+                players={gameState.players}
+                currentPlayerIndex={gameState.currentPlayerIndex}
+                gameStatus={gameState.gameStatus}
+                winner={gameState.winner}
+              />
+            </div>
 
-            {/* Game Controls - Desktop only */}
-            <div className="hidden lg:block">
-              {gameState.gameStatus === 'active' && (
+            {/* Game Controls */}
+            {gameState.gameStatus === 'active' && (
+              <div className="sticky top-80">
                 <GameControls
                   gameId={gameState.gameId}
                   isMyTurn={isMyTurn()}
                   disabled={gameState.gameStatus !== 'active'}
                 />
-              )}
-            </div>
+              </div>
+            )}
 
             {/* Game Over Panel */}
             {gameState.gameStatus === 'completed' && (
-              <div className="pirate-card text-center">
-                <h3 className="text-lg sm:text-2xl font-bold text-pirate-gold mb-4">
-                  🏆 Battle Complete! 🏆
+              <div className="pirate-card text-center sticky top-80 transform hover:scale-105 transition-transform">
+                <h3 className="text-2xl font-bold text-pirate-gold mb-4 animate-pulse">
+                  🏆 VICTOR CROWNED 🏆
                 </h3>
                 {gameState.winner && (
-                  <div className="mb-4">
-                    <p className="text-sm sm:text-base text-gray-300">Winner:</p>
-                    <p className="text-base sm:text-xl font-bold text-pirate-gold">
+                  <div className="mb-6">
+                    <p className="text-xs text-neon-cyan font-mono mb-2">WINNER</p>
+                    <p className="text-lg font-bold text-pirate-gold font-tech">
                       {gameState.players.find(p => p.publicKey === gameState.winner)?.username ||
                        `${gameState.winner.slice(0, 4)}...${gameState.winner.slice(-4)}`}
                     </p>
@@ -252,23 +254,20 @@ export default function Home() {
                 )}
                 <button
                   onClick={() => window.location.reload()}
-                  className="pirate-button w-full text-sm sm:text-base"
+                  className="pirate-button w-full text-sm font-tech"
                 >
-                  🚢 Start New Battle
+                  ▶ NEW.BATTLE
                 </button>
               </div>
             )}
           </div>
         </div>
-      )}
+        )}
 
       {/* Footer */}
-      <footer className="text-center mt-12 py-8 border-t border-neon-cyan border-opacity-20">
-        <p className="text-neon-cyan text-sm font-mono">
-          &gt; RUNTIME: SOLANA | HELIUS | CYBER.PIRATE
-        </p>
-        <p className="text-xs text-neon-magenta mt-2 font-mono">
-          ID: {gameState?.gameId || 'STANDBY'} | V1.0.ALPHA | ⚓
+      <footer className="fixed bottom-0 left-0 right-0 text-center py-3 border-t border-neon-cyan border-opacity-20 bg-gradient-to-t from-ocean-blue via-ocean-blue to-transparent pointer-events-none">
+        <p className="text-neon-cyan text-xs font-mono">
+          SOLANA | HELIUS | ⚓ v1.0.ALPHA
         </p>
       </footer>
     </main>
