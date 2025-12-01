@@ -7,6 +7,9 @@ dotenv.config({ path: path.join(process.cwd(), '.env.local') });
 
 import { getAnchorClient } from '../lib/anchorClient';
 import { initConfig, createGame, joinGame, handleShieldedMemo, GameCommandResult } from './commands/game';
+import { monitorHelius, HeliusMonitorResult } from './commands/monitoring';
+import { createWinnerToken, TokenCreateResult } from './commands/token';
+import { SOLANA_CONFIG } from '../utils/constants';
 
 interface CliArgs {
   command?: string;
@@ -49,10 +52,15 @@ PIR8 Game CLI
 Usage: pir8-cli <command> [options]
 
 Commands:
-  init              Initialize game config (required before create/join)
-  create            Create a new game on-chain
-  join <gameId>     Join an existing game (gameId format: number or onchain_<number>)
-  memo              Handle Zcash shielded memo (requires --memo flag)
+  Game Operations:
+    init              Initialize game config (required before create/join)
+    create            Create a new game on-chain
+    join <gameId>     Join an existing game (gameId format: number or onchain_<number>)
+    memo              Handle Zcash shielded memo (requires --memo flag)
+
+  Monitoring & Tokens:
+    monitor           Monitor Helius for treasury transactions
+    token <gameId>    Create winner token for game
 
 Options:
   --memo <json>     Zcash memo JSON (e.g., '{"v":"1","gameId":"demo_game",...}')
@@ -64,6 +72,8 @@ Examples:
   pir8-cli create
   pir8-cli join 0
   pir8-cli memo --memo '{"v":"1","gameId":"demo_game","solanaPubkey":"...","amountZEC":0.1}'
+  pir8-cli monitor
+  pir8-cli token 0
 `);
 }
 
@@ -76,19 +86,23 @@ async function main() {
   }
 
   try {
-    const { program, provider } = await getAnchorClient();
-    let result: GameCommandResult;
+    let result: GameCommandResult | HeliusMonitorResult | TokenCreateResult;
 
     switch (args.command) {
-      case 'init':
+      case 'init': {
+        const { program, provider } = await getAnchorClient();
         result = await initConfig(program, provider);
         break;
+      }
 
-      case 'create':
+      case 'create': {
+        const { program, provider } = await getAnchorClient();
         result = await createGame(program, provider);
         break;
+      }
 
       case 'join': {
+        const { program, provider } = await getAnchorClient();
         const gameId = args.gameId || args.positional[0];
         if (!gameId) {
           console.error('Error: join requires a game ID');
@@ -110,6 +124,7 @@ async function main() {
           process.exit(1);
         }
         try {
+          const { program, provider } = await getAnchorClient();
           const memoData = JSON.parse(args.memo);
           result = await handleShieldedMemo(program, provider, memoData.gameId);
           // Add Zcash-specific fields to result
@@ -118,6 +133,33 @@ async function main() {
           console.error('Error: invalid memo JSON');
           process.exit(1);
         }
+        break;
+      }
+
+      case 'monitor': {
+        const apiKey = process.env.NEXT_PUBLIC_HELIUS_API_KEY;
+        const treasury = process.env.NEXT_PUBLIC_TREASURY_ADDRESS;
+        if (!apiKey || !treasury) {
+          console.error('Error: NEXT_PUBLIC_HELIUS_API_KEY and NEXT_PUBLIC_TREASURY_ADDRESS required');
+          process.exit(1);
+        }
+        result = await monitorHelius(apiKey, treasury);
+        break;
+      }
+
+      case 'token': {
+        const gameId = args.positional[0];
+        if (!gameId) {
+          console.error('Error: token command requires a game ID');
+          process.exit(1);
+        }
+        const gidNum = parseInt(gameId, 10);
+        if (isNaN(gidNum)) {
+          console.error('Error: invalid game ID');
+          process.exit(1);
+        }
+        // TODO: Get winner pubkey from game state
+        result = await createWinnerToken(gidNum, 'WINNER_PUBKEY');
         break;
       }
 
