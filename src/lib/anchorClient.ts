@@ -63,6 +63,10 @@ export async function createGameOnChain(program: any, provider: AnchorProvider) 
   const gameId = configAccount.totalGames.toNumber();
   const [gamePDA] = getGamePDA(gameId);
   const entryLamports = new BN(Math.floor(GAME_CONFIG.ENTRY_FEE * 1e9));
+  
+  // Use a dummy randomness account (program will use timestamp-based seed as fallback)
+  const dummyRandomness = new PublicKey('7PmpDAJe7mZj8BEZEYDd1jkDEEW4WZXzMjHCdU4PrzrL');
+  
   await program.methods
     .createGame(entryLamports, GAME_CONFIG.MAX_PLAYERS)
     .accounts({
@@ -70,6 +74,7 @@ export async function createGameOnChain(program: any, provider: AnchorProvider) 
       config: configPDA,
       creator: provider.wallet.publicKey,
       systemProgram: SystemProgram.programId,
+      randomnessAccountData: dummyRandomness,
     })
     .rpc();
   return gameId;

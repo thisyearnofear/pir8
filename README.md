@@ -70,6 +70,8 @@ Open [http://localhost:3000](http://localhost:3000) and connect your Solana wall
 ### ✅ **Implemented**
 
 - ✅ **Complete Anchor smart contracts** - Full game logic on Solana blockchain
+- ✅ **Node.js Anchor client** - On-chain game creation and joining via watcher
+- ✅ **Zcash memo watcher integration** - Creates/joins games from shielded memos
 - ✅ **Real-time multiplayer** - Live updates via Helius WebSocket monitoring
 - ✅ **Economic model** - Entry fees, platform fees, winner payouts
 - ✅ **Game state validation** - On-chain turn validation and item effects
@@ -77,6 +79,7 @@ Open [http://localhost:3000](http://localhost:3000) and connect your Solana wall
 - ✅ **Solana wallet integration** (Phantom, Solflare, Backpack)
 - ✅ **Type-safe blockchain integration** with Anchor program calls
 - ✅ **Mobile-optimized interface** for seamless gameplay
+- ✅ **IDL generation** - Complete program interface definition for client calls
 
 ### 🚧 **Next: Post-Deployment Enhancements**
 
@@ -140,6 +143,9 @@ anchor deploy --provider.cluster devnet
 ### **Integration Testing**
 
 ```bash
+# Test Zcash memo watcher with on-chain game creation
+npx tsx tests/zcash-memo-watcher.ts --memo '{"v":"1","gameId":"demo_game","solanaPubkey":"YOUR_PUBKEY","amountZEC":0.1}'
+
 # Test Helius WebSocket monitoring
 npx tsx tests/helius-transaction-monitor.ts
 

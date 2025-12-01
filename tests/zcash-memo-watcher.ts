@@ -1,3 +1,8 @@
+import dotenv from 'dotenv';
+import path from 'path';
+
+dotenv.config({ path: path.join(process.cwd(), '.env.local') });
+
 import { ZCASH_CONFIG, API_ENDPOINTS, GAME_CONFIG } from '../src/utils/constants';
 import { ZcashMemoBridge } from '../src/lib/integrations';
 import { getAnchorClient, ensureConfig, createGameOnChain, joinGameOnChain } from '../src/lib/anchorClient';
@@ -46,7 +51,9 @@ async function main() {
         console.log(JSON.stringify({ action, onchain, gameId, solanaPubkey, amountZEC }));
         return;
       }
-    } catch {}
+    } catch (err) {
+      console.error('On-chain error:', err instanceof Error ? err.message : String(err));
+    }
 
     const ok = await postGame(action, gameId, solanaPubkey);
     console.log(JSON.stringify({ action, ok, gameId, solanaPubkey, amountZEC }));

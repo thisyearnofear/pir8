@@ -383,9 +383,43 @@ npx tsx tests/pump-token-creator.ts
 
 ### Anchor (On-Chain) Env Keys
 
-- `NEXT_PUBLIC_PROGRAM_ID`
-- `PIR8_IDL_PATH`
-- `PAYER_SECRET_KEY` (JSON array)
+Required to run on-chain game operations via Node.js:
+
+```bash
+NEXT_PUBLIC_PROGRAM_ID=5etQW394NUCprU1ikrbDysFeCGGRYY9usChGpaox9oiK
+PIR8_IDL_PATH=contracts/pir8-game/target/idl/pir8_game.json
+PAYER_SECRET_KEY=[...] # Your Devnet wallet keypair as JSON array [1,2,3,...,255]
+NEXT_PUBLIC_TREASURY_ADDRESS=YourTreasuryPubkey
+```
+
+### Anchor Client Integration (Verified ✓)
+
+The Node.js Anchor client is fully integrated and tested:
+
+- **Loads IDL** from `PIR8_IDL_PATH` automatically
+- **Creates AnchorProvider** using `PAYER_SECRET_KEY` wallet on Devnet
+- **Exports key functions**:
+  - `getAnchorClient()` - Initialize provider & program
+  - `ensureConfig()` - Initialize config if missing
+  - `createGameOnChain()` - Create game, returns game ID
+  - `joinGameOnChain()` - Join existing game
+
+### Zcash Memo Watcher (Verified ✓)
+
+The watcher now integrates on-chain game creation via the Anchor client:
+
+```bash
+# Test create on-chain
+npx tsx tests/zcash-memo-watcher.ts --memo '{"v":"1","gameId":"demo_game","solanaPubkey":"YOUR_PUBKEY","amountZEC":0.1}'
+
+# Output on success:
+# {"action":"create","onchain":true,"gameId":"onchain_0","solanaPubkey":"...","amountZEC":0.1}
+```
+
+**Behavior**:
+- If `gameId` doesn't exist → calls `createGameOnChain()` → returns `onchain_<id>`
+- If `gameId=onchain_*` → calls `joinGameOnChain()` → returns same game ID
+- Falls back to API route if on-chain fails
 
 ---
 
