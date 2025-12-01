@@ -50,6 +50,18 @@ const MusicPlayer = () => {
   useEffect(() => {
     if (typeof window === "undefined") return;
 
+    // Capture ref values for cleanup
+    const rotationSlider = rotationSliderRef.current;
+    const resolutionSlider = resolutionSliderRef.current;
+    const distortionSlider = distortionSliderRef.current;
+    const reactivitySlider = reactivitySliderRef.current;
+    const resetBtn = resetBtnRef.current;
+    const analyzeBtn = analyzeBtnRef.current;
+    const fileBtn = fileBtnRef.current;
+    const audioFileInput = audioFileInputRef.current;
+    const audioPlayer = audioPlayerRef.current;
+    const threeContainer = threeContainerRef.current;
+
     let animationFrameId: number;
 
     const setupExpandingCirclesPreloader = () => {
@@ -621,35 +633,18 @@ const MusicPlayer = () => {
       clearInterval(timestampInterval);
       clearTimeout(notificationTimeout);
 
-      rotationSliderRef.current?.removeEventListener(
-        "input",
-        handleRotationChange
-      );
-      resolutionSliderRef.current?.removeEventListener(
-        "input",
-        handleResolutionChange
-      );
-      distortionSliderRef.current?.removeEventListener(
-        "input",
-        handleDistortionChange
-      );
-      reactivitySliderRef.current?.removeEventListener(
-        "input",
-        handleReactivityChange
-      );
-      resetBtnRef.current?.removeEventListener("click", handleReset);
-      analyzeBtnRef.current?.removeEventListener("click", handleAnalyze);
-      fileBtnRef.current?.removeEventListener("click", () =>
-        audioFileInputRef.current?.click()
-      );
-      audioFileInputRef.current?.removeEventListener(
-        "change",
-        handleFileChange
-      );
+      rotationSlider?.removeEventListener("input", handleRotationChange);
+      resolutionSlider?.removeEventListener("input", handleResolutionChange);
+      distortionSlider?.removeEventListener("input", handleDistortionChange);
+      reactivitySlider?.removeEventListener("input", handleReactivityChange);
+      resetBtn?.removeEventListener("click", handleReset);
+      analyzeBtn?.removeEventListener("click", handleAnalyze);
+      fileBtn?.removeEventListener("click", () => audioFileInput?.click());
+      audioFileInput?.removeEventListener("change", handleFileChange);
 
-      if (audioPlayerRef.current) {
-        audioPlayerRef.current.pause();
-        audioPlayerRef.current.src = "";
+      if (audioPlayer) {
+        audioPlayer.pause();
+        audioPlayer.src = "";
       }
       if (audioSource) {
         audioSource.disconnect();
@@ -660,8 +655,8 @@ const MusicPlayer = () => {
       if (renderer) {
         renderer.dispose();
       }
-      if (threeContainerRef.current) {
-        threeContainerRef.current.innerHTML = "";
+      if (threeContainer) {
+        threeContainer.innerHTML = "";
       }
     };
   }, []);

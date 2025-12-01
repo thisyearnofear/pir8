@@ -45,7 +45,7 @@ export const useHeliusMonitor = ({ gameId, onGameEvent }: UseHeliusMonitorProps 
     } catch (error) {
       console.error('Error handling game transaction');
     }
-  }, [onGameEvent, setMessage]);
+  }, [onGameEvent, setMessage, LOG_LEVEL]);
 
   const connect = useCallback(() => {
     if (isConnectedRef.current || !process.env.NEXT_PUBLIC_HELIUS_RPC_URL) {
@@ -64,7 +64,7 @@ export const useHeliusMonitor = ({ gameId, onGameEvent }: UseHeliusMonitorProps 
     } catch (error) {
       console.error('Failed to connect Helius monitor');
     }
-  }, [handleTransaction, gameId, clearError]);
+  }, [handleTransaction, gameId, clearError, LOG_LEVEL]);
 
   const disconnect = useCallback(() => {
     if (monitorRef.current) {
@@ -76,7 +76,7 @@ export const useHeliusMonitor = ({ gameId, onGameEvent }: UseHeliusMonitorProps 
         console.log('Helius monitor disconnected');
       }
     }
-  }, []);
+  }, [LOG_LEVEL]);
 
   // Auto-connect when component mounts
   useEffect(() => {

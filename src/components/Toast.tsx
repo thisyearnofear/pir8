@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useState } from 'react';
+import { useEffect, useState, useCallback } from 'react';
 import { useMobileOptimized } from '../hooks/useMobileOptimized';
 
 interface ToastProps {
@@ -14,6 +14,14 @@ export function Toast({ message, type = 'info', duration = 5000, onClose }: Toas
   const [isVisible, setIsVisible] = useState(false);
   const [isLeaving, setIsLeaving] = useState(false);
   const { isMobile, triggerHaptic } = useMobileOptimized();
+
+  const handleClose = useCallback(() => {
+    setIsLeaving(true);
+    setTimeout(() => {
+      setIsVisible(false);
+      onClose?.();
+    }, 300);
+  }, [onClose]);
 
   useEffect(() => {
     if (message) {
@@ -36,15 +44,9 @@ export function Toast({ message, type = 'info', duration = 5000, onClose }: Toas
     } else {
       setIsVisible(false);
     }
-  }, [message, type, duration, isMobile, triggerHaptic]);
+  }, [message, type, duration, isMobile, triggerHaptic, handleClose]);
 
-  const handleClose = () => {
-    setIsLeaving(true);
-    setTimeout(() => {
-      setIsVisible(false);
-      onClose?.();
-    }, 300);
-  };
+  
 
   if (!isVisible || !message) return null;
 

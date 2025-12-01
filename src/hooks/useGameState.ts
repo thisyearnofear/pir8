@@ -15,7 +15,7 @@ interface GameStore {
   showMessage: string | null;
   
   // Actions
-  createGame: (players: Player[], entryFee: number) => void;
+  createGame: (players: Player[], entryFee: number, anchorProgram: any) => void;
   joinGame: (gameId: string, player: Player) => void;
   makeMove: (coordinate: string) => Promise<boolean>;
   handlePlayerAction: (action: string, targetPlayerId?: string, amount?: number) => void;
@@ -40,8 +40,7 @@ export const useGameState = create<GameStore>((set, get) => ({
   showMessage: null,
 
   // Create a new game (ENHANCED: Now uses Anchor program)
-  createGame: async (players: Player[], entryFee: number) => {
-    const anchorProgram = useAnchorProgram();
+  createGame: async (players: Player[], entryFee: number, anchorProgram: any) => {
     if (!anchorProgram?.provider) {
       set({ error: 'Wallet not connected' });
       return;

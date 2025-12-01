@@ -52,7 +52,7 @@ function DefaultErrorFallback({ error, resetError }: { error: Error; resetError:
           Shiver me timbers!
         </h2>
         <p className="text-gray-300 mb-6">
-          Something went wrong on the high seas. But fear not, we'll get you back to battle!
+          Something went wrong on the high seas. But fear not, we&apos;ll get you back to battle!
         </p>
         <div className="bg-red-900 bg-opacity-30 rounded-lg p-4 mb-6">
           <p className="text-sm text-red-300 font-mono break-words">

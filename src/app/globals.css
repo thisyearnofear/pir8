@@ -1785,3 +1785,24 @@ h3 {
     }
   }
 }
+
+/* Reduced Motion Accessibility */
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after {
+    animation: none !important;
+    transition: none !important;
+  }
+
+  .animate-glow-pulse,
+  .animate-neon-flicker,
+  .animate-float,
+  .scanner-frame-center,
+  .scanner-frame-game::before,
+  .scanner-frame-game .corner-tl,
+  .scanner-frame-game .corner-tr,
+  .scanner-frame-game .corner-bl,
+  .scanner-frame-game .corner-br,
+  .pirate-spinner {
+    animation: none !important;
+  }
+}
