@@ -325,7 +325,7 @@ impl PlayerState {
     }
 }
 
-#[derive(AnchorSerialize, AnchorDeserialize, Clone)]
+#[derive(AnchorSerialize, AnchorDeserialize, Clone, Debug)]
 pub enum GameItem {
     Points(u16),
     Grinch,
@@ -341,7 +341,7 @@ pub enum GameItem {
     Bank,
 }
 
-#[derive(AnchorSerialize, AnchorDeserialize, Clone)]
+#[derive(AnchorSerialize, AnchorDeserialize, Clone, Debug)]
 pub enum ItemAction {
     Steal { amount: u64 },
     Swap,
