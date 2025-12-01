@@ -156,7 +156,7 @@ export default function Home() {
             </p>
             <div className="text-6xl mb-6">🏴‍☠️</div>
             <p className="text-sm text-gray-400">
-              Supported wallets: Phantom, Solflare, Backpack
+              Supported wallets: Phantom, Solflare
             </p>
           </div>
         </div>
