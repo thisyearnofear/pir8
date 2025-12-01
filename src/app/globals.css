@@ -1,0 +1,195 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@import url('https://fonts.googleapis.com/css2?family=Creepster&family=Pirata+One&display=swap');
+
+:root {
+  --pirate-gold: #FFD700;
+  --pirate-brown: #8B4513;
+  --pirate-red: #DC143C;
+  --ocean-blue: #006994;
+  --ship-wood: #8B4513;
+  --treasure-gold: #DAA520;
+  --skull-white: #F5F5DC;
+}
+
+* {
+  box-sizing: border-box;
+  padding: 0;
+  margin: 0;
+}
+
+body {
+  color: white;
+  background: linear-gradient(135deg, var(--ocean-blue), #1e40af, #0f172a);
+  min-height: 100vh;
+}
+
+/* Pirate-themed custom styles */
+.pirate-gold-gradient {
+  background: linear-gradient(135deg, #FFD700, #DAA520);
+}
+
+.pirate-border {
+  border: 2px solid var(--pirate-gold);
+  border-radius: 8px;
+}
+
+.treasure-glow {
+  box-shadow: 0 0 20px rgba(255, 215, 0, 0.5);
+}
+
+.ship-wood-texture {
+  background: linear-gradient(45deg, #8B4513, #A0522D);
+  background-size: 20px 20px;
+}
+
+/* Game Grid Styling */
+.game-grid {
+  display: grid;
+  grid-template-columns: repeat(7, 1fr);
+  gap: 2px;
+  background: var(--ship-wood);
+  padding: 8px;
+  border-radius: 8px;
+  border: 3px solid var(--pirate-gold);
+}
+
+.grid-cell {
+  aspect-ratio: 1;
+  background: rgba(245, 245, 220, 0.9);
+  border: 1px solid var(--pirate-brown);
+  border-radius: 4px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-weight: bold;
+  color: var(--pirate-brown);
+  cursor: pointer;
+  transition: all 0.3s ease;
+}
+
+.grid-cell:hover {
+  background: var(--pirate-gold);
+  transform: scale(1.05);
+  box-shadow: 0 4px 8px rgba(0, 0, 0, 0.3);
+}
+
+.grid-cell.chosen {
+  background: var(--pirate-red);
+  color: white;
+  cursor: not-allowed;
+}
+
+.grid-cell.available {
+  background: rgba(245, 245, 220, 0.9);
+}
+
+/* Animation classes */
+.animate-treasure-glow {
+  animation: treasure-glow 2s ease-in-out infinite alternate;
+}
+
+.animate-ship-rock {
+  animation: ship-rock 3s ease-in-out infinite;
+}
+
+.animate-coin-flip {
+  animation: coin-flip 0.6s ease-in-out;
+}
+
+/* Wallet button styling */
+.wallet-adapter-button {
+  background: linear-gradient(135deg, var(--pirate-gold), var(--treasure-gold));
+  border: 2px solid var(--pirate-brown);
+  border-radius: 8px;
+  color: var(--pirate-brown);
+  font-weight: bold;
+  padding: 12px 24px;
+  transition: all 0.3s ease;
+}
+
+.wallet-adapter-button:hover {
+  background: linear-gradient(135deg, var(--treasure-gold), var(--pirate-gold));
+  transform: translateY(-2px);
+  box-shadow: 0 4px 12px rgba(255, 215, 0, 0.4);
+}
+
+/* Game UI Components */
+.pirate-card {
+  background: rgba(139, 69, 19, 0.9);
+  border: 2px solid var(--pirate-gold);
+  border-radius: 12px;
+  padding: 16px;
+  backdrop-filter: blur(10px);
+}
+
+.pirate-button {
+  background: linear-gradient(135deg, var(--pirate-gold), var(--treasure-gold));
+  border: 2px solid var(--pirate-brown);
+  border-radius: 8px;
+  color: var(--pirate-brown);
+  font-weight: bold;
+  padding: 12px 24px;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  text-transform: uppercase;
+  letter-spacing: 1px;
+}
+
+.pirate-button:hover {
+  background: linear-gradient(135deg, var(--treasure-gold), var(--pirate-gold));
+  transform: translateY(-2px);
+  box-shadow: 0 6px 16px rgba(255, 215, 0, 0.4);
+}
+
+.pirate-button:active {
+  transform: translateY(0);
+}
+
+.pirate-button:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+  transform: none;
+}
+
+/* Toast/Message styling */
+.message-toast {
+  background: linear-gradient(135deg, var(--pirate-brown), var(--ship-wood));
+  border: 2px solid var(--pirate-gold);
+  border-radius: 8px;
+  padding: 12px 16px;
+  color: var(--skull-white);
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
+}
+
+/* Loading spinner */
+.pirate-spinner {
+  border: 3px solid rgba(255, 215, 0, 0.3);
+  border-top: 3px solid var(--pirate-gold);
+  border-radius: 50%;
+  animation: spin 1s linear infinite;
+}
+
+@keyframes spin {
+  0% { transform: rotate(0deg); }
+  100% { transform: rotate(360deg); }
+}
+
+/* Responsive design */
+@media (max-width: 768px) {
+  .game-grid {
+    gap: 1px;
+    padding: 4px;
+  }
+  
+  .grid-cell {
+    font-size: 12px;
+  }
+  
+  .pirate-button {
+    padding: 8px 16px;
+    font-size: 14px;
+  }
+}

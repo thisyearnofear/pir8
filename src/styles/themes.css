@@ -1,0 +1,67 @@
+/* Pirate Theme Variables */
+:root {
+  /* Primary Colors */
+  --pirate-gold: #FFD700;
+  --pirate-brown: #8B4513;
+  --pirate-red: #DC143C;
+  --ocean-blue: #006994;
+  --ship-wood: #8B4513;
+  --treasure-gold: #DAA520;
+  --skull-white: #F5F5DC;
+  
+  /* Semantic Colors */
+  --background-primary: #0f172a;
+  --background-secondary: #1e40af;
+  --background-tertiary: #006994;
+  
+  --text-primary: #F5F5DC;
+  --text-secondary: #e2e8f0;
+  --text-muted: #64748b;
+  
+  --border-primary: #FFD700;
+  --border-secondary: #8B4513;
+  
+  /* Game State Colors */
+  --success: #10b981;
+  --warning: #f59e0b;
+  --danger: #ef4444;
+  --info: #3b82f6;
+  
+  /* Interactive States */
+  --hover-opacity: 0.8;
+  --active-scale: 0.95;
+  --disabled-opacity: 0.5;
+  
+  /* Animation Timing */
+  --transition-fast: 0.15s;
+  --transition-normal: 0.3s;
+  --transition-slow: 0.5s;
+  
+  /* Spacing Scale */
+  --space-xs: 0.25rem;
+  --space-sm: 0.5rem;
+  --space-md: 1rem;
+  --space-lg: 1.5rem;
+  --space-xl: 2rem;
+  --space-2xl: 3rem;
+  
+  /* Border Radius */
+  --radius-sm: 0.25rem;
+  --radius-md: 0.5rem;
+  --radius-lg: 0.75rem;
+  --radius-xl: 1rem;
+}
+
+/* Dark theme override */
+[data-theme="dark"] {
+  --background-primary: #020617;
+  --background-secondary: #0f172a;
+  --text-primary: #f8fafc;
+}
+
+/* High contrast theme */
+[data-theme="high-contrast"] {
+  --pirate-gold: #FFFF00;
+  --text-primary: #FFFFFF;
+  --background-primary: #000000;
+}
