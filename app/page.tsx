@@ -59,16 +59,29 @@ export default function Home() {
   });
 
   const handleCreateGame = async () => {
-    if (!publicKey) return;
+    console.log("[handleCreateGame] Starting game creation...");
+    console.log("[handleCreateGame] publicKey:", publicKey?.toString());
+    console.log("[handleCreateGame] anchorProgram:", anchorProgram);
+    
+    if (!publicKey) {
+      console.error("[handleCreateGame] No public key available");
+      return;
+    }
 
     setIsCreatingGame(true);
     try {
       const player = createPlayerFromWallet(publicKey);
+      console.log("[handleCreateGame] Created player:", player);
+      
       await createGame([player], 0.1, anchorProgram);
+      console.log("[handleCreateGame] Game created successfully");
+      
       setMessage("🏴‍☠️ Arena created!");
     } catch (error) {
+      console.error("[handleCreateGame] Error creating game:", error);
       handleGameError(error, "create game");
     } finally {
+      console.log("[handleCreateGame] Setting isCreatingGame to false");
       setIsCreatingGame(false);
     }
   };

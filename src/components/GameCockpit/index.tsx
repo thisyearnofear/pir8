@@ -81,6 +81,7 @@ export default function GameCockpit({
     | "waiting"
     | "active"
     | "complete" => {
+    console.log("[GameCockpit.getCurrentState] connected:", connected, "gameState:", gameState);
     if (!connected) return "disconnected";
     if (!gameState) return "connected";
     if (gameState.gameStatus === "waiting") return "waiting";
@@ -90,6 +91,7 @@ export default function GameCockpit({
   };
 
   const state = getCurrentState();
+  console.log("[GameCockpit] Current state:", state, "gameState:", gameState);
 
   return (
     <div className="music-player">

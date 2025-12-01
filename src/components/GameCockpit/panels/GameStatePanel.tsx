@@ -48,6 +48,8 @@ export default function GameStatePanel({
   onToggle,
 }: GameStatePanelProps) {
   const [joinGameId, setJoinGameId] = useState("");
+  console.log("[GameStatePanel] Rendering state:", state, { isCreating, gameId, playersCount: players.length });
+  
   switch (state) {
     case "disconnected":
       return (

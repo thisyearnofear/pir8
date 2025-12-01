@@ -12,6 +12,9 @@ export const metadata: Metadata = {
   description: 'Fast battles, private moves, viral wins on Solana blockchain',
   keywords: ['pir8', 'solana', 'gaming', 'pirates', 'blockchain', 'privacy', 'web3'],
   viewport: 'width=device-width, initial-scale=1, viewport-fit=cover, maximum-scale=5, user-scalable=yes',
+  icons: {
+    icon: 'data:image/svg+xml,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100"><text y="75" font-size="75">🏴‍☠️</text></svg>',
+  },
   appleWebApp: {
     capable: true,
     statusBarStyle: 'black-translucent',

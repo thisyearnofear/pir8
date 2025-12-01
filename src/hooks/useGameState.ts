@@ -41,20 +41,32 @@ export const useGameState = create<GameStore>((set, get) => ({
 
   // Create a new game (on-chain if program available, otherwise local)
   createGame: async (players: Player[], entryFee: number, anchorProgram: any) => {
+    console.log("[useGameState.createGame] Starting...", { players, entryFee, hasProgramProvider: !!anchorProgram?.provider });
+    
     if (!anchorProgram?.provider) {
+      console.error("[useGameState.createGame] No provider available");
       set({ error: 'Wallet not connected' });
       return;
     }
 
     try {
+      console.log("[useGameState.createGame] Setting isLoading: true");
       set({ isLoading: true });
 
       if (anchorProgram.program) {
+        console.log("[useGameState.createGame] Using on-chain program");
         const instructions = new PIR8Instructions(anchorProgram.program, anchorProgram.provider);
+        console.log("[useGameState.createGame] Calling instructions.createGame with fee:", Math.floor(entryFee * 1e9), "players:", players.length);
+        
         const signature = await instructions.createGame(Math.floor(entryFee * 1e9), players.length);
+        console.log("[useGameState.createGame] Transaction signature:", signature);
+        
         await anchorProgram.provider.connection.confirmTransaction(signature);
+        console.log("[useGameState.createGame] Transaction confirmed");
+        
         const gameId = `onchain_${Date.now()}`;
         const grid = PirateGameEngine.createGrid();
+        
         const newGameState: GameState = {
           gameId,
           players,
@@ -64,10 +76,13 @@ export const useGameState = create<GameStore>((set, get) => ({
           gameStatus: 'waiting',
           turnTimeRemaining: 30,
         };
+        
+        console.log("[useGameState.createGame] Setting game state to waiting:", newGameState);
         set({ gameState: newGameState, isLoading: false, error: null });
         return;
       }
 
+      console.log("[useGameState.createGame] No program, using local game");
       const localId = `local_${Date.now()}`;
       const localGrid = PirateGameEngine.createGrid();
       const localState: GameState = {
@@ -79,8 +94,10 @@ export const useGameState = create<GameStore>((set, get) => ({
         gameStatus: 'waiting',
         turnTimeRemaining: 30,
       };
+      console.log("[useGameState.createGame] Setting local game state:", localState);
       set({ gameState: localState, isLoading: false, error: null });
     } catch (error) {
+      console.error("[useGameState.createGame] Error:", error);
       set({ 
         isLoading: false, 
         error: error instanceof Error ? error.message : 'Failed to create game' 
