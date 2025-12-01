@@ -110,11 +110,11 @@ export default function Home() {
     <ErrorBoundary>
     <main className={`min-h-screen p-4 ${mobileClasses.container}`}>
       {/* Header */}
-      <header className="text-center mb-8">
-        <h1 className="text-5xl md:text-7xl font-bold text-pirate-gold font-pirate mb-4 animate-treasure-glow">
+      <header className="text-center mb-6 safe-area-inset-top">
+        <h1 className="text-3xl sm:text-4xl md:text-5xl lg:text-7xl font-bold text-pirate-gold font-pirate mb-2 sm:mb-4 animate-treasure-glow">
           🏴‍☠️ PIR8 🏴‍☠️
         </h1>
-        <p className="text-xl md:text-2xl text-gray-300 font-maritime mb-6">
+        <p className="text-sm sm:text-base md:text-xl lg:text-2xl text-gray-300 font-maritime mb-4 sm:mb-6">
           Fast battles, private moves, viral wins
         </p>
         
@@ -191,7 +191,18 @@ export default function Home() {
           </div>
         </div>
       ) : (
-        <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 max-w-7xl mx-auto">
+        <div className="grid grid-cols-1 lg:grid-cols-3 gap-4 lg:gap-6 max-w-7xl mx-auto">
+          {/* Mobile Priority: Controls first */}
+          <div className="lg:hidden order-1 space-y-4">
+            {gameState.gameStatus === 'active' && (
+              <GameControls
+                gameId={gameState.gameId}
+                isMyTurn={isMyTurn()}
+                disabled={gameState.gameStatus !== 'active'}
+              />
+            )}
+          </div>
+
           {/* Game Grid - Main area */}
           <div className="lg:col-span-2 order-2 lg:order-1">
             <GameGrid
@@ -204,7 +215,7 @@ export default function Home() {
           </div>
 
           {/* Side Panel */}
-          <div className="order-1 lg:order-2 space-y-6">
+          <div className="order-3 lg:order-2 space-y-4 lg:space-y-6">
             {/* Player Stats */}
             <PlayerStats
               players={gameState.players}
@@ -213,25 +224,27 @@ export default function Home() {
               winner={gameState.winner}
             />
 
-            {/* Game Controls */}
-            {gameState.gameStatus === 'active' && (
-              <GameControls
-                gameId={gameState.gameId}
-                isMyTurn={isMyTurn()}
-                disabled={gameState.gameStatus !== 'active'}
-              />
-            )}
+            {/* Game Controls - Desktop only */}
+            <div className="hidden lg:block">
+              {gameState.gameStatus === 'active' && (
+                <GameControls
+                  gameId={gameState.gameId}
+                  isMyTurn={isMyTurn()}
+                  disabled={gameState.gameStatus !== 'active'}
+                />
+              )}
+            </div>
 
             {/* Game Over Panel */}
             {gameState.gameStatus === 'completed' && (
               <div className="pirate-card text-center">
-                <h3 className="text-2xl font-bold text-pirate-gold mb-4">
+                <h3 className="text-lg sm:text-2xl font-bold text-pirate-gold mb-4">
                   🏆 Battle Complete! 🏆
                 </h3>
                 {gameState.winner && (
                   <div className="mb-4">
-                    <p className="text-lg text-gray-300">Winner:</p>
-                    <p className="text-xl font-bold text-pirate-gold">
+                    <p className="text-sm sm:text-base text-gray-300">Winner:</p>
+                    <p className="text-base sm:text-xl font-bold text-pirate-gold">
                       {gameState.players.find(p => p.publicKey === gameState.winner)?.username ||
                        `${gameState.winner.slice(0, 4)}...${gameState.winner.slice(-4)}`}
                     </p>
@@ -239,7 +252,7 @@ export default function Home() {
                 )}
                 <button
                   onClick={() => window.location.reload()}
-                  className="pirate-button w-full"
+                  className="pirate-button w-full text-sm sm:text-base"
                 >
                   🚢 Start New Battle
                 </button>

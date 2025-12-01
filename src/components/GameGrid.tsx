@@ -181,16 +181,16 @@ export default function GameGrid({
       
       {/* Legend */}
       <div className="mt-4 p-3 bg-black bg-opacity-30 rounded-lg">
-        <h4 className="text-sm font-bold text-pirate-gold mb-2">Legend:</h4>
-        <div className="grid grid-cols-2 md:grid-cols-4 gap-2 text-xs">
-          <div>🎁 Gift 1000pts</div>
-          <div>👹 Steal points</div>
-          <div>🎄 Choose square</div>
-          <div>🍮 Kill player</div>
-          <div>🌿 Swap scores</div>
-          <div>🧝 Block attack</div>
-          <div>🔮 Reflect attack</div>
-          <div>🏦 Bank points</div>
+        <h4 className="text-xs sm:text-sm font-bold text-pirate-gold mb-2">Legend:</h4>
+        <div className="grid grid-cols-2 lg:grid-cols-4 gap-1 sm:gap-2 text-xs">
+          <div className="truncate">🎁 Gift 1000pts</div>
+          <div className="truncate">👹 Steal points</div>
+          <div className="truncate">🎄 Choose square</div>
+          <div className="truncate">🍮 Kill player</div>
+          <div className="truncate">🌿 Swap scores</div>
+          <div className="truncate">🧝 Block attack</div>
+          <div className="truncate">🔮 Reflect attack</div>
+          <div className="truncate">🏦 Bank points</div>
         </div>
       </div>
     </div>

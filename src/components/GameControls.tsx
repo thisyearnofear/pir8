@@ -153,17 +153,17 @@ export default function GameControls({ gameId, isMyTurn, disabled = false }: Gam
         </div>
       </div>
 
-      {/* Quick coordinate buttons for mobile */}
-      <div className="grid grid-cols-7 gap-1 mb-4">
+      {/* Quick coordinate buttons for mobile - optimized touch targets */}
+      <div className="grid grid-cols-7 gap-2 mb-4">
         {['A', 'B', 'C', 'D', 'E', 'F', 'G'].map(letter => (
           <button
             key={letter}
             onClick={() => setCoordinateInput(coordinateInput[0] === letter ? '' : letter)}
             disabled={disabled || !isMyTurn}
-            className={`aspect-square text-xs font-bold rounded border ${
+            className={`h-12 text-sm sm:text-base font-bold rounded border touch-manipulation ${
               coordinateInput[0] === letter
                 ? 'bg-pirate-gold text-pirate-brown border-pirate-brown'
-                : 'bg-black bg-opacity-50 text-white border-gray-600 hover:bg-pirate-gold hover:text-pirate-brown'
+                : 'bg-black bg-opacity-50 text-white border-gray-600 active:bg-pirate-gold active:text-pirate-brown'
             }`}
           >
             {letter}
@@ -171,16 +171,16 @@ export default function GameControls({ gameId, isMyTurn, disabled = false }: Gam
         ))}
       </div>
 
-      <div className="grid grid-cols-7 gap-1">
+      <div className="grid grid-cols-7 gap-2">
         {[1, 2, 3, 4, 5, 6, 7].map(number => (
           <button
             key={number}
             onClick={() => setCoordinateInput(coordinateInput[1] === number.toString() ? coordinateInput[0] || '' : (coordinateInput[0] || '') + number)}
             disabled={disabled || !isMyTurn}
-            className={`aspect-square text-xs font-bold rounded border ${
+            className={`h-12 text-sm sm:text-base font-bold rounded border touch-manipulation ${
               coordinateInput[1] === number.toString()
                 ? 'bg-pirate-gold text-pirate-brown border-pirate-brown'
-                : 'bg-black bg-opacity-50 text-white border-gray-600 hover:bg-pirate-gold hover:text-pirate-brown'
+                : 'bg-black bg-opacity-50 text-white border-gray-600 active:bg-pirate-gold active:text-pirate-brown'
             }`}
           >
             {number}
