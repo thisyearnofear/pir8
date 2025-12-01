@@ -73,12 +73,20 @@ export default function Home() {
       const player = createPlayerFromWallet(publicKey);
       console.log("[handleCreateGame] Created player:", player);
       
-      await createGame([player], 0.1, anchorProgram);
-      console.log("[handleCreateGame] Game created successfully");
+      // max_players is the capacity of the game (4), not current player count (1)
+      const success = await createGame([player], 0.1, anchorProgram, 4);
+      console.log("[handleCreateGame] createGame returned:", success);
       
+      if (!success) {
+        console.error("[handleCreateGame] Game creation failed");
+        // Error is already in gameState.error from the hook
+        return;
+      }
+      
+      console.log("[handleCreateGame] Game created successfully");
       setMessage("🏴‍☠️ Arena created!");
     } catch (error) {
-      console.error("[handleCreateGame] Error creating game:", error);
+      console.error("[handleCreateGame] Unexpected error creating game:", error);
       handleGameError(error, "create game");
     } finally {
       console.log("[handleCreateGame] Setting isCreatingGame to false");

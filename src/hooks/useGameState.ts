@@ -15,7 +15,7 @@ interface GameStore {
   showMessage: string | null;
   
   // Actions
-  createGame: (players: Player[], entryFee: number, anchorProgram: any) => void;
+  createGame: (players: Player[], entryFee: number, anchorProgram: any, maxPlayers?: number) => Promise<boolean>;
   joinGame: (gameId: string, player: Player) => void;
   makeMove: (coordinate: string) => Promise<boolean>;
   handlePlayerAction: (action: string, targetPlayerId?: string, amount?: number, coordinate?: string) => Promise<void>;
@@ -40,13 +40,13 @@ export const useGameState = create<GameStore>((set, get) => ({
   showMessage: null,
 
   // Create a new game (on-chain if program available, otherwise local)
-  createGame: async (players: Player[], entryFee: number, anchorProgram: any) => {
-    console.log("[useGameState.createGame] Starting...", { players, entryFee, hasProgramProvider: !!anchorProgram?.provider });
+  createGame: async (players: Player[], entryFee: number, anchorProgram: any, maxPlayers: number = 4): Promise<boolean> => {
+    console.log("[useGameState.createGame] Starting...", { players, entryFee, maxPlayers, hasProgramProvider: !!anchorProgram?.provider });
     
     if (!anchorProgram?.provider) {
       console.error("[useGameState.createGame] No provider available");
       set({ error: 'Wallet not connected' });
-      return;
+      return false;
     }
 
     try {
@@ -56,9 +56,9 @@ export const useGameState = create<GameStore>((set, get) => ({
       if (anchorProgram.program) {
         console.log("[useGameState.createGame] Using on-chain program");
         const instructions = new PIR8Instructions(anchorProgram.program, anchorProgram.provider);
-        console.log("[useGameState.createGame] Calling instructions.createGame with fee:", Math.floor(entryFee * 1e9), "players:", players.length);
+        console.log("[useGameState.createGame] Calling instructions.createGame with fee:", Math.floor(entryFee * 1e9), "maxPlayers:", maxPlayers);
         
-        const signature = await instructions.createGame(Math.floor(entryFee * 1e9), players.length);
+        const signature = await instructions.createGame(Math.floor(entryFee * 1e9), maxPlayers);
         console.log("[useGameState.createGame] Transaction signature:", signature);
         
         await anchorProgram.provider.connection.confirmTransaction(signature);
@@ -79,7 +79,7 @@ export const useGameState = create<GameStore>((set, get) => ({
         
         console.log("[useGameState.createGame] Setting game state to waiting:", newGameState);
         set({ gameState: newGameState, isLoading: false, error: null });
-        return;
+        return true;
       }
 
       console.log("[useGameState.createGame] No program, using local game");
@@ -96,12 +96,16 @@ export const useGameState = create<GameStore>((set, get) => ({
       };
       console.log("[useGameState.createGame] Setting local game state:", localState);
       set({ gameState: localState, isLoading: false, error: null });
+      return true;
     } catch (error) {
       console.error("[useGameState.createGame] Error:", error);
+      const errorMsg = error instanceof Error ? error.message : 'Failed to create game';
+      console.error("[useGameState.createGame] Setting error state:", errorMsg);
       set({ 
         isLoading: false, 
-        error: error instanceof Error ? error.message : 'Failed to create game' 
+        error: errorMsg
       });
+      return false;
     }
   },
 
