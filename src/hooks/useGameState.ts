@@ -111,12 +111,35 @@ export const useGameState = create<GameStore>((set, get) => ({
 
   // Join an existing game
   joinGame: (gameId: string, player: Player) => {
+    console.log("[useGameState.joinGame] Starting with gameId:", gameId, "player:", player);
     const { gameState } = get();
-    if (!gameState || gameState.gameId !== gameId) {
-      set({ error: 'Game not found' });
+    console.log("[useGameState.joinGame] Current gameState:", gameState);
+    
+    // If joining a game that doesn't exist locally, create a minimal game state
+    if (!gameState) {
+      console.log("[useGameState.joinGame] No existing game state, creating new one for joining");
+      const newGameState: GameState = {
+        gameId,
+        players: [player],
+        currentPlayerIndex: 0,
+        grid: PirateGameEngine.createGrid(),
+        chosenCoordinates: [],
+        gameStatus: 'waiting',
+        turnTimeRemaining: 30,
+      };
+      console.log("[useGameState.joinGame] Created new game state:", newGameState);
+      set({ gameState: newGameState });
       return;
     }
 
+    // If joining a different game, error
+    if (gameState.gameId !== gameId) {
+      console.error("[useGameState.joinGame] Game ID mismatch. Current:", gameState.gameId, "Attempting to join:", gameId);
+      set({ error: `Game ID mismatch. Cannot join different game.` });
+      return;
+    }
+
+    console.log("[useGameState.joinGame] Joining existing game, adding player");
     const updatedPlayers = [...gameState.players, player];
     const updatedGameState: GameState = {
       ...gameState,
@@ -124,6 +147,7 @@ export const useGameState = create<GameStore>((set, get) => ({
       gameStatus: updatedPlayers.length >= 2 ? 'active' : 'waiting',
     };
 
+    console.log("[useGameState.joinGame] Updated game state:", updatedGameState);
     set({ gameState: updatedGameState });
   },
 

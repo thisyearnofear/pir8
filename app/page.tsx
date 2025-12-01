@@ -122,16 +122,28 @@ export default function Home() {
   };
 
   const handleJoinGame = async (gameIdInput: string): Promise<boolean> => {
-    if (!publicKey) return false;
+    console.log("[handleJoinGame] Starting with gameId:", gameIdInput);
+    
+    if (!publicKey) {
+      console.error("[handleJoinGame] No public key");
+      return false;
+    }
 
     try {
       const player = createPlayerFromWallet(publicKey);
+      console.log("[handleJoinGame] Created player:", player);
+      
       const success = await joinGameStore(gameIdInput, player);
+      console.log("[handleJoinGame] joinGameStore returned:", success);
+      
       if (success) {
         setMessage(`🏴‍☠️ Joined game ${gameIdInput}!`);
+      } else {
+        console.error("[handleJoinGame] Join failed");
       }
       return success;
     } catch (error) {
+      console.error("[handleJoinGame] Error:", error);
       handleGameError(error, "join game");
       return false;
     }
