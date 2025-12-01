@@ -1,9 +1,9 @@
 import type { Metadata } from 'next'
 import { Inter } from 'next/font/google'
 import './globals.css'
-import '../styles/MusicPlayer.css'
+import '@/styles/MusicPlayer.css'
 import '@solana/wallet-adapter-react-ui/styles.css'
-import { WalletContextProvider } from '../components/WalletProvider'
+import { WalletContextProvider } from '@/components/WalletProvider'
 
 const inter = Inter({ subsets: ['latin'], display: 'swap' })
 

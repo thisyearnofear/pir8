@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { GameState, Player } from '../../../types/game';
-import { validateMove } from '../../../utils/validation';
-import { PirateGameEngine } from '../../../lib/gameLogic';
+import { GameState, Player } from '@/types/game';
+import { validateMove } from '@/utils/validation';
+import { PirateGameEngine } from '@/lib/gameLogic';
 
 // In-memory game storage (will be replaced with Anchor program)
 const games = new Map<string, GameState>();
