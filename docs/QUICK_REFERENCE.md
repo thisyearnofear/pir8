@@ -381,6 +381,12 @@ npx tsx tests/helius-transaction-monitor.ts
 npx tsx tests/pump-token-creator.ts
 ```
 
+### Anchor (On-Chain) Env Keys
+
+- `NEXT_PUBLIC_PROGRAM_ID`
+- `PIR8_IDL_PATH`
+- `PAYER_SECRET_KEY` (JSON array)
+
 ---
 
 **Print this page for reference! 🎉**
