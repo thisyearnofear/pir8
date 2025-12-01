@@ -373,7 +373,31 @@ function generatePirateToken() {
 
 ---
 
-## Quick Test Commands
+## Quick Commands: PIR8 CLI
+
+The unified CLI consolidates all operations. Use this instead of direct test invocations.
+
+```bash
+# Initialize (required once)
+npm run cli -- init
+
+# Create game
+npm run cli -- create
+
+# Join game (gameId as number or onchain_<number>)
+npm run cli -- join 0
+
+# Handle Zcash memo
+npm run cli -- memo --memo '{"v":"1","gameId":"demo_game","solanaPubkey":"YOUR_KEY","amountZEC":0.1}'
+
+# Monitor treasury via Helius
+npm run cli -- monitor
+
+# Create winner token
+npm run cli -- token 0
+```
+
+### Legacy Test Commands (kept for reference)
 
 ```bash
 npx tsx tests/zcash-memo-watcher.ts --memo '{"v":"1","gameId":"onchain_1","solanaPubkey":"YOUR_KEY","amountZEC":0.1}'
@@ -404,22 +428,35 @@ The Node.js Anchor client is fully integrated and tested:
   - `createGameOnChain()` - Create game, returns game ID
   - `joinGameOnChain()` - Join existing game
 
-### Zcash Memo Watcher (Verified ✓)
+### PIR8 CLI - Game Commands (Verified ✓)
 
-The watcher now integrates on-chain game creation via the Anchor client:
+All game operations routed through unified CLI for DRY code:
 
+**Command Module**: `src/cli/commands/game.ts`
+- `initConfig()` - Initialize game config account
+- `createGame()` - Create new game, returns gameId
+- `joinGame()` - Join existing game by ID
+- `handleShieldedMemo()` - Smart create/join from Zcash memo
+
+**Usage**:
 ```bash
-# Test create on-chain
-npx tsx tests/zcash-memo-watcher.ts --memo '{"v":"1","gameId":"demo_game","solanaPubkey":"YOUR_PUBKEY","amountZEC":0.1}'
-
-# Output on success:
-# {"action":"create","onchain":true,"gameId":"onchain_0","solanaPubkey":"...","amountZEC":0.1}
+npm run cli -- init          # One-time setup
+npm run cli -- create        # Returns: {"success":true,"gameId":N}
+npm run cli -- join 0        # Join game ID 0
+npm run cli -- memo --memo '...'  # Auto-route based on gameId
 ```
 
-**Behavior**:
-- If `gameId` doesn't exist → calls `createGameOnChain()` → returns `onchain_<id>`
-- If `gameId=onchain_*` → calls `joinGameOnChain()` → returns same game ID
-- Falls back to API route if on-chain fails
+**Tested on Devnet**:
+- ✓ Create: `{"action":"create","onchain":true,"gameId":"onchain_1",...}`
+- ✓ Join: `{"action":"join","onchain":true,"gameId":"onchain_1",...}`
+- ✓ Fallback to API route when on-chain unavailable
+
+### PIR8 CLI - Monitoring & Tokens (Stubs)
+
+**Command Module**: `src/cli/commands/monitoring.ts` & `src/cli/commands/token.ts`
+
+- `monitor` - Helius WebSocket for treasury transactions (connected, ready)
+- `token` - PumpPortal token creation (structure ready, awaiting game state queries)
 
 ---
 

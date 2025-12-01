@@ -71,6 +71,7 @@ Open [http://localhost:3000](http://localhost:3000) and connect your Solana wall
 
 - ✅ **Complete Anchor smart contracts** - Full game logic on Solana blockchain
 - ✅ **Node.js Anchor client** - On-chain game creation and joining via watcher
+- ✅ **Unified CLI tool** - Single entry point for all on-chain operations (init, create, join, memo)
 - ✅ **Zcash memo watcher integration** - Creates/joins games from shielded memos
 - ✅ **Real-time multiplayer** - Live updates via Helius WebSocket monitoring
 - ✅ **Economic model** - Entry fees, platform fees, winner payouts
@@ -80,10 +81,14 @@ Open [http://localhost:3000](http://localhost:3000) and connect your Solana wall
 - ✅ **Type-safe blockchain integration** with Anchor program calls
 - ✅ **Mobile-optimized interface** for seamless gameplay
 - ✅ **IDL generation** - Complete program interface definition for client calls
+- ✅ **Modular command structure** - Reusable game, monitoring, and token commands
+- ✅ **Tested on Devnet** - Create and join games verified with real on-chain transactions
 
-### 🚧 **Next: Post-Deployment Enhancements**
+### 🚧 **Next: Core Feature Completion**
 
-- 🪙 **Pump Fun winner tokens** - Automatic meme coin creation for victors
+- 🪙 **Pump Fun winner tokens** - Detect game completion, create tokens via PumpPortal API
+- 🔗 **Lightwalletd integration** - Real Zcash shielded address monitoring (replace --memo arg)
+- 📊 **Game state queries** - Fetch winner pubkey and final scores from on-chain
 - 🎭 **Interactive onboarding** - "Treasure map" tutorial system
 - ✨ **User delight features** - Animations, sound effects, pirate personas
 - 🏆 **Viral mechanics** - Social sharing, leaderboards, achievement system
@@ -127,7 +132,32 @@ This project targets multiple bounties in the Zcash privacy hackathon:
 - Novel combination of gaming + DeFi + privacy + viral mechanics
 - Professional UI/UX that rivals traditional games
 
-## 🧪 Testing
+## 🧪 Testing & CLI
+
+### **PIR8 Game CLI** (Recommended)
+
+```bash
+# Show available commands
+npm run cli -- --help
+
+# Initialize game config (do this first)
+npm run cli -- init
+
+# Create a new game on-chain
+npm run cli -- create
+
+# Join an existing game
+npm run cli -- join 0
+
+# Handle Zcash shielded memo
+npm run cli -- memo --memo '{"v":"1","gameId":"demo_game","solanaPubkey":"YOUR_PUBKEY","amountZEC":0.1}'
+
+# Monitor Helius for treasury transactions
+npm run cli -- monitor
+
+# Create winner token for a game
+npm run cli -- token 0
+```
 
 ### **Smart Contract Testing**
 
@@ -140,7 +170,7 @@ anchor test
 anchor deploy --provider.cluster devnet
 ```
 
-### **Integration Testing**
+### **Integration Testing (Legacy)**
 
 ```bash
 # Test Zcash memo watcher with on-chain game creation
