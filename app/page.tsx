@@ -35,6 +35,7 @@ export default function Home() {
 
   const [isCreatingGame, setIsCreatingGame] = useState(false);
   const [showPreloader, setShowPreloader] = useState(false);
+  const [showRules, setShowRules] = useState(false);
   const [notification, setNotification] = useState<{
     message: string;
     isVisible: boolean;
@@ -58,6 +59,13 @@ export default function Home() {
       return () => mq.removeEventListener("change", handler);
     }
   }, []);
+
+  // Show rules when wallet connects
+  useEffect(() => {
+    if (connected && !gameState && !showRules) {
+      setShowRules(true);
+    }
+  }, [connected, gameState, showRules]);
 
   // ENHANCED: Real-time game monitoring with Helius
   const { isConnected: isMonitorConnected } = useHeliusMonitor({
@@ -262,7 +270,59 @@ export default function Home() {
               </div>
             </div>
           </div>
-        ) : !gameState ? (
+        ) : connected && showRules && !gameState ? (
+          <div className="flex items-center justify-center min-h-full relative">
+            <div className="absolute inset-0 bg-gradient-radial from-ocean-blue via-bg-dark-0 to-bg-dark-2 opacity-80"></div>
+            <div className="relative z-10 flex items-center justify-center">
+              <div className="scanner-frame-center">
+                <div className="corner-tl"></div>
+                <div className="corner-tr"></div>
+                <div className="corner-bl"></div>
+                <div className="corner-br"></div>
+
+                <div className="game-card max-w-2xl mx-auto">
+                  <div className="text-center space-y-6">
+                    <h2 className="text-4xl font-bold font-tech text-neon-cyan animate-glow-pulse">
+                      ⚓ HOW TO PLAY ⚓
+                    </h2>
+                    
+                    <div className="text-left space-y-4 text-sm font-mono text-neon-cyan">
+                      <div className="p-4 border border-neon-cyan/30 rounded">
+                        <p className="text-neon-orange font-bold mb-2">🗺️ THE TREASURE MAP</p>
+                        <p>Navigate a 7x7 grid filled with treasures and traps. Take turns choosing coordinates to reveal items.</p>
+                      </div>
+                      
+                      <div className="p-4 border border-neon-cyan/30 rounded">
+                        <p className="text-neon-orange font-bold mb-2">💰 COLLECT POINTS</p>
+                        <p>Earn points from treasures. Bank them to protect from attacks. Highest total score wins!</p>
+                      </div>
+                      
+                      <div className="p-4 border border-neon-cyan/30 rounded">
+                        <p className="text-neon-orange font-bold mb-2">⚔️ SPECIAL ITEMS</p>
+                        <p>🎁 Gift points • 👹 Steal points • 🍮 Reset player • 🌿 Swap scores • 🏦 Bank points</p>
+                      </div>
+                      
+                      <div className="p-4 border border-neon-cyan/30 rounded">
+                        <p className="text-neon-orange font-bold mb-2">🏆 WIN CONDITIONS</p>
+                        <p>Game ends when all 49 coordinates are chosen. Winner takes 85% of the pot!</p>
+                      </div>
+                    </div>
+
+                    <button
+                      onClick={() => setShowRules(false)}
+                      className="pirate-button-primary w-full py-4 text-lg font-tech"
+                    >
+                      ▶ READY TO BATTLE
+                    </button>
+                  </div>
+                </div>
+
+                <div className="scanner-id-bottom">RULES BRIEFING COMPLETE</div>
+                <div className="scanner-id-bottom-right">PROCEED WHEN READY</div>
+              </div>
+            </div>
+          </div>
+        ) : connected && !showRules && !gameState ? (
           <div className="flex items-center justify-center min-h-screen relative">
             {/* Animated Background */}
             <div className="absolute inset-0 bg-gradient-radial from-ocean-blue via-bg-dark-0 to-bg-dark-2 opacity-80"></div>
@@ -339,7 +399,7 @@ export default function Home() {
               </div>
             </div>
           </div>
-        ) : (
+        ) : gameState ? (
           <div className="w-full h-full flex items-center justify-center">
             <div className="w-full max-w-7xl mx-auto grid grid-cols-1 lg:grid-cols-3 gap-4 items-start">
               {/* Main Game Grid - Centered */}
@@ -411,7 +471,7 @@ export default function Home() {
               </div>
             </div>
           </div>
-        )}
+        ) : null}
         </div>
 
         {/* Footer */}
