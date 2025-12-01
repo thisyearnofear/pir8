@@ -5,6 +5,7 @@ import { GameItem, COORDINATE_LETTERS } from '../types/game';
 import { useGameState } from '../hooks/useGameState';
 import { useMobileOptimized } from '../hooks/useMobileOptimized';
 import { useErrorHandler } from '../hooks/useErrorHandler';
+import { ITEM_EMOJIS } from '../utils/constants';
 
 interface GameGridProps {
   grid: GameItem[][];
@@ -48,13 +49,9 @@ export default function GameGrid({
       return <span className="text-lg font-bold">{item.toString()}</span>;
     }
     
-    // Return SVG icons for special items
-    const iconId = item.toLowerCase();
-    return (
-      <svg className="w-6 h-6" aria-label={item}>
-        <use href={`#${iconId}`} />
-      </svg>
-    );
+    // Return emoji for special items
+    const emoji = ITEM_EMOJIS[item as keyof typeof ITEM_EMOJIS];
+    return <span className="text-2xl" aria-label={item}>{emoji || item}</span>;
   };
 
   const getCellStyles = (row: number, col: number, coordinate: string): string => {
