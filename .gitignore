@@ -14,6 +14,7 @@ dist/
 
 # Solana/Anchor
 target/
+!target/idl/
 .anchor/
 test-ledger/
 .solana/

@@ -1,0 +1,1053 @@
+{
+  "version": "0.1.0",
+  "name": "pir8_game",
+  "description": "PIR8 - Fast battles, private moves, viral wins",
+  "instructions": [
+    {
+      "name": "initializeConfig",
+      "docs": [],
+      "accounts": [
+        {
+          "name": "config",
+          "isMut": true,
+          "isSigner": false,
+          "docs": []
+        },
+        {
+          "name": "authority",
+          "isMut": true,
+          "isSigner": true,
+          "docs": []
+        },
+        {
+          "name": "treasury",
+          "isMut": false,
+          "isSigner": false,
+          "docs": []
+        },
+        {
+          "name": "systemProgram",
+          "isMut": false,
+          "isSigner": false,
+          "docs": []
+        }
+      ],
+      "args": [
+        {
+          "name": "entryFee",
+          "type": "u64"
+        },
+        {
+          "name": "platformFeeBps",
+          "type": "u16"
+        },
+        {
+          "name": "maxPlayers",
+          "type": "u8"
+        }
+      ]
+    },
+    {
+      "name": "createGame",
+      "docs": [],
+      "accounts": [
+        {
+          "name": "game",
+          "isMut": true,
+          "isSigner": false,
+          "docs": []
+        },
+        {
+          "name": "config",
+          "isMut": true,
+          "isSigner": false,
+          "docs": []
+        },
+        {
+          "name": "creator",
+          "isMut": true,
+          "isSigner": true,
+          "docs": []
+        },
+        {
+          "name": "systemProgram",
+          "isMut": false,
+          "isSigner": false,
+          "docs": []
+        },
+        {
+          "name": "randomnessAccountData",
+          "isMut": false,
+          "isSigner": false,
+          "docs": []
+        }
+      ],
+      "args": [
+        {
+          "name": "entryFee",
+          "type": "u64"
+        },
+        {
+          "name": "maxPlayers",
+          "type": "u8"
+        }
+      ]
+    },
+    {
+      "name": "joinGame",
+      "docs": [],
+      "accounts": [
+        {
+          "name": "game",
+          "isMut": true,
+          "isSigner": false,
+          "docs": []
+        },
+        {
+          "name": "config",
+          "isMut": false,
+          "isSigner": false,
+          "docs": []
+        },
+        {
+          "name": "player",
+          "isMut": true,
+          "isSigner": true,
+          "docs": []
+        },
+        {
+          "name": "treasury",
+          "isMut": true,
+          "isSigner": false,
+          "docs": []
+        },
+        {
+          "name": "systemProgram",
+          "isMut": false,
+          "isSigner": false,
+          "docs": []
+        }
+      ],
+      "args": []
+    },
+    {
+      "name": "makeMove",
+      "docs": [],
+      "accounts": [
+        {
+          "name": "game",
+          "isMut": true,
+          "isSigner": false,
+          "docs": []
+        },
+        {
+          "name": "player",
+          "isMut": false,
+          "isSigner": true,
+          "docs": []
+        }
+      ],
+      "args": [
+        {
+          "name": "coordinate",
+          "type": "string"
+        }
+      ]
+    },
+    {
+      "name": "executeItemEffect",
+      "docs": [],
+      "accounts": [
+        {
+          "name": "game",
+          "isMut": true,
+          "isSigner": false,
+          "docs": []
+        },
+        {
+          "name": "player",
+          "isMut": false,
+          "isSigner": true,
+          "docs": []
+        }
+      ],
+      "args": [
+        {
+          "name": "action",
+          "type": {
+            "defined": "ItemAction"
+          }
+        },
+        {
+          "name": "targetPlayer",
+          "type": {
+            "option": "publicKey"
+          }
+        },
+        {
+          "name": "amount",
+          "type": {
+            "option": "u64"
+          }
+        }
+      ]
+    },
+    {
+      "name": "startGame",
+      "docs": [],
+      "accounts": [
+        {
+          "name": "game",
+          "isMut": true,
+          "isSigner": false,
+          "docs": []
+        },
+        {
+          "name": "config",
+          "isMut": false,
+          "isSigner": false,
+          "docs": []
+        },
+        {
+          "name": "creator",
+          "isMut": false,
+          "isSigner": true,
+          "docs": []
+        }
+      ],
+      "args": []
+    },
+    {
+      "name": "completeGame",
+      "docs": [],
+      "accounts": [
+        {
+          "name": "game",
+          "isMut": true,
+          "isSigner": false,
+          "docs": []
+        },
+        {
+          "name": "player",
+          "isMut": false,
+          "isSigner": true,
+          "docs": []
+        }
+      ],
+      "args": []
+    },
+    {
+      "name": "claimWinnings",
+      "docs": [],
+      "accounts": [
+        {
+          "name": "game",
+          "isMut": true,
+          "isSigner": false,
+          "docs": []
+        },
+        {
+          "name": "winner",
+          "isMut": true,
+          "isSigner": true,
+          "docs": []
+        },
+        {
+          "name": "systemProgram",
+          "isMut": false,
+          "isSigner": false,
+          "docs": []
+        }
+      ],
+      "args": []
+    },
+    {
+      "name": "setGameStatus",
+      "docs": [],
+      "accounts": [
+        {
+          "name": "config",
+          "isMut": true,
+          "isSigner": false,
+          "docs": []
+        },
+        {
+          "name": "authority",
+          "isMut": false,
+          "isSigner": true,
+          "docs": []
+        }
+      ],
+      "args": [
+        {
+          "name": "isPaused",
+          "type": "bool"
+        }
+      ]
+    }
+  ],
+  "accounts": [
+    {
+      "name": "GameConfig",
+      "docs": [],
+      "type": {
+        "kind": "struct",
+        "fields": [
+          {
+            "name": "authority",
+            "docs": [],
+            "type": "publicKey"
+          },
+          {
+            "name": "defaultEntryFee",
+            "docs": [],
+            "type": "u64"
+          },
+          {
+            "name": "platformFeeBps",
+            "docs": [],
+            "type": "u16"
+          },
+          {
+            "name": "maxPlayersPerGame",
+            "docs": [],
+            "type": "u8"
+          },
+          {
+            "name": "turnTimeout",
+            "docs": [],
+            "type": "u64"
+          },
+          {
+            "name": "treasury",
+            "docs": [],
+            "type": "publicKey"
+          },
+          {
+            "name": "isPaused",
+            "docs": [],
+            "type": "bool"
+          },
+          {
+            "name": "totalGames",
+            "docs": [],
+            "type": "u64"
+          },
+          {
+            "name": "totalVolume",
+            "docs": [],
+            "type": "u64"
+          },
+          {
+            "name": "reserved",
+            "docs": [],
+            "type": {
+              "array": [
+                "u8",
+                128
+              ]
+            }
+          }
+        ]
+      }
+    },
+    {
+      "name": "Game",
+      "docs": [],
+      "type": {
+        "kind": "struct",
+        "fields": [
+          {
+            "name": "gameId",
+            "docs": [],
+            "type": "u64"
+          },
+          {
+            "name": "creator",
+            "docs": [],
+            "type": "publicKey"
+          },
+          {
+            "name": "status",
+            "docs": [],
+            "type": {
+              "defined": "GameStatus"
+            }
+          },
+          {
+            "name": "players",
+            "docs": [],
+            "type": {
+              "vec": {
+                "defined": "PlayerState"
+              }
+            }
+          },
+          {
+            "name": "currentPlayerIndex",
+            "docs": [],
+            "type": "u8"
+          },
+          {
+            "name": "grid",
+            "docs": [],
+            "type": {
+              "vec": {
+                "defined": "GameItem"
+              }
+            }
+          },
+          {
+            "name": "chosenCoordinates",
+            "docs": [],
+            "type": {
+              "vec": "string"
+            }
+          },
+          {
+            "name": "entryFee",
+            "docs": [],
+            "type": "u64"
+          },
+          {
+            "name": "totalPot",
+            "docs": [],
+            "type": "u64"
+          },
+          {
+            "name": "maxPlayers",
+            "docs": [],
+            "type": "u8"
+          },
+          {
+            "name": "turnTimeout",
+            "docs": [],
+            "type": "i64"
+          },
+          {
+            "name": "createdAt",
+            "docs": [],
+            "type": "i64"
+          },
+          {
+            "name": "startedAt",
+            "docs": [],
+            "type": {
+              "option": "i64"
+            }
+          },
+          {
+            "name": "completedAt",
+            "docs": [],
+            "type": {
+              "option": "i64"
+            }
+          },
+          {
+            "name": "winner",
+            "docs": [],
+            "type": {
+              "option": "publicKey"
+            }
+          },
+          {
+            "name": "finalScores",
+            "docs": [],
+            "type": {
+              "vec": "u64"
+            }
+          },
+          {
+            "name": "randomSeed",
+            "docs": [],
+            "type": "u64"
+          },
+          {
+            "name": "metadata",
+            "docs": [],
+            "type": {
+              "defined": "GameMetadata"
+            }
+          },
+          {
+            "name": "reserved",
+            "docs": [],
+            "type": {
+              "array": [
+                "u8",
+                64
+              ]
+            }
+          }
+        ]
+      }
+    }
+  ],
+  "types": [
+    {
+      "name": "GameStatus",
+      "docs": [],
+      "type": {
+        "kind": "enum",
+        "variants": [
+          {
+            "name": "Waiting"
+          },
+          {
+            "name": "Active"
+          },
+          {
+            "name": "Completed"
+          },
+          {
+            "name": "Cancelled"
+          }
+        ]
+      }
+    },
+    {
+      "name": "PlayerState",
+      "docs": [],
+      "type": {
+        "kind": "struct",
+        "fields": [
+          {
+            "name": "playerKey",
+            "docs": [],
+            "type": "publicKey"
+          },
+          {
+            "name": "points",
+            "docs": [],
+            "type": "u64"
+          },
+          {
+            "name": "bankedPoints",
+            "docs": [],
+            "type": "u64"
+          },
+          {
+            "name": "hasElf",
+            "docs": [],
+            "type": "bool"
+          },
+          {
+            "name": "hasBauble",
+            "docs": [],
+            "type": "bool"
+          },
+          {
+            "name": "isActive",
+            "docs": [],
+            "type": "bool"
+          },
+          {
+            "name": "joinedAt",
+            "docs": [],
+            "type": "i64"
+          },
+          {
+            "name": "lastMoveAt",
+            "docs": [],
+            "type": "i64"
+          }
+        ]
+      }
+    },
+    {
+      "name": "GameItem",
+      "docs": [],
+      "type": {
+        "kind": "enum",
+        "variants": [
+          {
+            "name": "Points",
+            "fields": [
+              "u16"
+            ]
+          },
+          {
+            "name": "Grinch"
+          },
+          {
+            "name": "Pudding"
+          },
+          {
+            "name": "Present"
+          },
+          {
+            "name": "Snowball"
+          },
+          {
+            "name": "Mistletoe"
+          },
+          {
+            "name": "Tree"
+          },
+          {
+            "name": "Elf"
+          },
+          {
+            "name": "Bauble"
+          },
+          {
+            "name": "Turkey"
+          },
+          {
+            "name": "Cracker"
+          },
+          {
+            "name": "Bank"
+          }
+        ]
+      }
+    },
+    {
+      "name": "ItemAction",
+      "docs": [],
+      "type": {
+        "kind": "enum",
+        "variants": [
+          {
+            "name": "Steal",
+            "fields": [
+              {
+                "name": "amount",
+                "type": "u64"
+              }
+            ]
+          },
+          {
+            "name": "Swap"
+          },
+          {
+            "name": "Gift"
+          },
+          {
+            "name": "Kill"
+          },
+          {
+            "name": "Choose",
+            "fields": [
+              {
+                "name": "coordinate",
+                "type": "string"
+              }
+            ]
+          }
+        ]
+      }
+    },
+    {
+      "name": "GameMetadata",
+      "docs": [],
+      "type": {
+        "kind": "struct",
+        "fields": [
+          {
+            "name": "name",
+            "docs": [],
+            "type": "string"
+          },
+          {
+            "name": "description",
+            "docs": [],
+            "type": "string"
+          },
+          {
+            "name": "imageUri",
+            "docs": [],
+            "type": {
+              "option": "string"
+            }
+          },
+          {
+            "name": "externalUrl",
+            "docs": [],
+            "type": {
+              "option": "string"
+            }
+          }
+        ]
+      }
+    }
+  ],
+  "events": [
+    {
+      "name": "GameCreated",
+      "fields": [
+        {
+          "name": "gameId",
+          "type": "u64",
+          "index": false
+        },
+        {
+          "name": "creator",
+          "type": "publicKey",
+          "index": true
+        },
+        {
+          "name": "entryFee",
+          "type": "u64",
+          "index": false
+        },
+        {
+          "name": "maxPlayers",
+          "type": "u8",
+          "index": false
+        },
+        {
+          "name": "timestamp",
+          "type": "i64",
+          "index": false
+        }
+      ]
+    },
+    {
+      "name": "PlayerJoined",
+      "fields": [
+        {
+          "name": "gameId",
+          "type": "u64",
+          "index": false
+        },
+        {
+          "name": "player",
+          "type": "publicKey",
+          "index": true
+        },
+        {
+          "name": "playerCount",
+          "type": "u8",
+          "index": false
+        },
+        {
+          "name": "timestamp",
+          "type": "i64",
+          "index": false
+        }
+      ]
+    },
+    {
+      "name": "GameStarted",
+      "fields": [
+        {
+          "name": "gameId",
+          "type": "u64",
+          "index": false
+        },
+        {
+          "name": "players",
+          "type": {
+            "vec": "publicKey"
+          },
+          "index": false
+        },
+        {
+          "name": "gridSeed",
+          "type": "u64",
+          "index": false
+        },
+        {
+          "name": "timestamp",
+          "type": "i64",
+          "index": false
+        }
+      ]
+    },
+    {
+      "name": "MoveMade",
+      "fields": [
+        {
+          "name": "gameId",
+          "type": "u64",
+          "index": false
+        },
+        {
+          "name": "player",
+          "type": "publicKey",
+          "index": true
+        },
+        {
+          "name": "coordinate",
+          "type": "string",
+          "index": false
+        },
+        {
+          "name": "itemFound",
+          "type": "string",
+          "index": false
+        },
+        {
+          "name": "pointsGained",
+          "type": "u64",
+          "index": false
+        },
+        {
+          "name": "timestamp",
+          "type": "i64",
+          "index": false
+        }
+      ]
+    },
+    {
+      "name": "SpecialItemUsed",
+      "fields": [
+        {
+          "name": "gameId",
+          "type": "u64",
+          "index": false
+        },
+        {
+          "name": "player",
+          "type": "publicKey",
+          "index": true
+        },
+        {
+          "name": "item",
+          "type": "string",
+          "index": false
+        },
+        {
+          "name": "targetPlayer",
+          "type": {
+            "option": "publicKey"
+          },
+          "index": false
+        },
+        {
+          "name": "effectDescription",
+          "type": "string",
+          "index": false
+        },
+        {
+          "name": "timestamp",
+          "type": "i64",
+          "index": false
+        }
+      ]
+    },
+    {
+      "name": "GameCompleted",
+      "fields": [
+        {
+          "name": "gameId",
+          "type": "u64",
+          "index": false
+        },
+        {
+          "name": "winner",
+          "type": "publicKey",
+          "index": true
+        },
+        {
+          "name": "finalScores",
+          "type": {
+            "vec": "u64"
+          },
+          "index": false
+        },
+        {
+          "name": "totalPot",
+          "type": "u64",
+          "index": false
+        },
+        {
+          "name": "winnerPayout",
+          "type": "u64",
+          "index": false
+        },
+        {
+          "name": "timestamp",
+          "type": "i64",
+          "index": false
+        }
+      ]
+    },
+    {
+      "name": "TurnAdvanced",
+      "fields": [
+        {
+          "name": "gameId",
+          "type": "u64",
+          "index": false
+        },
+        {
+          "name": "currentPlayer",
+          "type": "publicKey",
+          "index": true
+        },
+        {
+          "name": "turnIndex",
+          "type": "u8",
+          "index": false
+        },
+        {
+          "name": "timestamp",
+          "type": "i64",
+          "index": false
+        }
+      ]
+    }
+  ],
+  "errors": [
+    {
+      "code": 6000,
+      "name": "GameFull",
+      "msg": "Game is full - maximum players reached"
+    },
+    {
+      "code": 6001,
+      "name": "GameNotActive",
+      "msg": "Game is not in active state"
+    },
+    {
+      "code": 6002,
+      "name": "NotYourTurn",
+      "msg": "Not your turn to play"
+    },
+    {
+      "code": 6003,
+      "name": "InvalidCoordinate",
+      "msg": "Invalid coordinate format - use A1 to G7"
+    },
+    {
+      "code": 6004,
+      "name": "CoordinateTaken",
+      "msg": "Coordinate has already been chosen"
+    },
+    {
+      "code": 6005,
+      "name": "InsufficientFunds",
+      "msg": "Insufficient funds for entry fee"
+    },
+    {
+      "code": 6006,
+      "name": "Unauthorized",
+      "msg": "You are not authorized to perform this action"
+    },
+    {
+      "code": 6007,
+      "name": "PlayerNotInGame",
+      "msg": "Player is not in this game"
+    },
+    {
+      "code": 6008,
+      "name": "GameAlreadyStarted",
+      "msg": "Game has already started"
+    },
+    {
+      "code": 6009,
+      "name": "GameNotReadyToStart",
+      "msg": "Game is not ready to start - need more players"
+    },
+    {
+      "code": 6010,
+      "name": "GameAlreadyCompleted",
+      "msg": "Game is already completed"
+    },
+    {
+      "code": 6011,
+      "name": "InvalidPlayerIndex",
+      "msg": "Invalid player index"
+    },
+    {
+      "code": 6012,
+      "name": "PlatformFeeTooHigh",
+      "msg": "Platform fee is too high"
+    },
+    {
+      "code": 6013,
+      "name": "EntryFeeTooLow",
+      "msg": "Entry fee is too low"
+    },
+    {
+      "code": 6014,
+      "name": "MaxPlayersExceeded",
+      "msg": "Maximum players exceeded"
+    },
+    {
+      "code": 6015,
+      "name": "TargetPlayerNotFound",
+      "msg": "Target player not found"
+    },
+    {
+      "code": 6016,
+      "name": "InvalidItemAction",
+      "msg": "Invalid item action for this item type"
+    },
+    {
+      "code": 6017,
+      "name": "NotEnoughPoints",
+      "msg": "Not enough points to perform this action"
+    },
+    {
+      "code": 6018,
+      "name": "DefensiveItemAlreadyOwned",
+      "msg": "Player already has this defensive item"
+    },
+    {
+      "code": 6019,
+      "name": "CannotTargetSelf",
+      "msg": "Cannot target yourself with this action"
+    },
+    {
+      "code": 6020,
+      "name": "GamePaused",
+      "msg": "Game is paused"
+    },
+    {
+      "code": 6021,
+      "name": "TurnTimeout",
+      "msg": "Turn timeout exceeded"
+    },
+    {
+      "code": 6022,
+      "name": "InvalidGridSeed",
+      "msg": "Invalid grid generation seed"
+    },
+    {
+      "code": 6023,
+      "name": "ArithmeticOverflow",
+      "msg": "Arithmetic overflow"
+    },
+    {
+      "code": 6024,
+      "name": "InvalidStringLength",
+      "msg": "Invalid string length"
+    },
+    {
+      "code": 6025,
+      "name": "RandomGenerationFailed",
+      "msg": "Random number generation failed"
+    },
+    {
+      "code": 6026,
+      "name": "ConfigNotInitialized",
+      "msg": "Game configuration not initialized"
+    },
+    {
+      "code": 6027,
+      "name": "WinnerAlreadyClaimed",
+      "msg": "Winner already claimed"
+    },
+    {
+      "code": 6028,
+      "name": "NoWinnerDetermined",
+      "msg": "No winner determined yet"
+    },
+    {
+      "code": 6029,
+      "name": "InvalidTreasury",
+      "msg": "Invalid treasury account"
+    },
+    {
+      "code": 6030,
+      "name": "TokenTransferFailed",
+      "msg": "Token transfer failed"
+    }
+  ],
+  "metadata": {
+    "address": "5etQW394NUCprU1ikrbDysFeCGGRYY9usChGpaox9oiK"
+  }
+}
