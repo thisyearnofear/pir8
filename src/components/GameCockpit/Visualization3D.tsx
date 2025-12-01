@@ -27,6 +27,7 @@ export default function Visualization3D({
   const rendererRef = useRef<THREE.WebGLRenderer>();
   const controlsRef = useRef<OrbitControls>();
   const sphereRef = useRef<THREE.Mesh>();
+  const sphereGroupRef = useRef<THREE.Group>();
   const uniformsRef = useRef<any>();
   const animationIdRef = useRef<number>();
   const frequencyDataRef = useRef<Uint8Array>(new Uint8Array(128));
@@ -42,7 +43,7 @@ export default function Visualization3D({
   useEffect(() => {
     distortionRef.current = distortionFactor;
     reactivityRef.current = audioReactivity;
-    
+
     if (uniformsRef.current) {
       uniformsRef.current.u_reactivity.value = audioReactivity;
       uniformsRef.current.u_distortion.value = distortionFactor;
@@ -56,6 +57,7 @@ export default function Visualization3D({
 
     // Initialize Three.js scene
     const scene = new THREE.Scene();
+    const clock = new THREE.Clock();
     const camera = new THREE.PerspectiveCamera(
       75,
       container.clientWidth / container.clientHeight,
@@ -63,6 +65,7 @@ export default function Visualization3D({
       1000
     );
     const renderer = new THREE.WebGLRenderer({ antialias: true, alpha: true });
+    renderer.setPixelRatio(window.devicePixelRatio);
     renderer.setSize(container.clientWidth, container.clientHeight);
     container.appendChild(renderer.domElement);
 
@@ -78,9 +81,17 @@ export default function Visualization3D({
     controls.maxPolarAngle = Math.PI / 2;
 
     // Set bounds to keep the anomaly centered, even on different screen sizes
-    controls.enablePan = false; // Disable panning to ensure it stays centered
+    (controls as any).enablePan = false;
+    (controls as any).target.set(0, 0, 0);
+    (controls as any).autoRotate = true;
+    (controls as any).autoRotateSpeed = 0.5;
+    controls.update();
 
-    const geometry = new THREE.SphereGeometry(1, sphereResolution, sphereResolution);
+    const geometry = new THREE.SphereGeometry(
+      1,
+      sphereResolution,
+      sphereResolution
+    );
 
     const uniforms = {
       u_time: { type: "f", value: 1.0 },
@@ -233,15 +244,20 @@ export default function Visualization3D({
     // Create a group to ensure the sphere stays centered
     const sphereGroup = new THREE.Group();
     const sphere = new THREE.Mesh(geometry, material);
-    sphereGroup.add(sphere);  // Add sphere to group
-    scene.add(sphereGroup);   // Add group to scene
+    sphereGroup.add(sphere); // Add sphere to group
+    scene.add(sphereGroup); // Add group to scene
+
+    // Add initial rotation to make it more visible
+    sphereGroup.rotation.x = 0.1;
+    sphereGroup.rotation.y = 0.1;
 
     // Update ref to point to the sphere itself, not the group
     sceneRef.current = scene;
     cameraRef.current = camera;
     rendererRef.current = renderer;
     controlsRef.current = controls;
-    sphereRef.current = sphere;  // Keep reference to the sphere mesh
+    sphereRef.current = sphere; // Keep reference to the sphere mesh
+    sphereGroupRef.current = sphereGroup;
     uniformsRef.current = uniforms;
 
     // Animation loop
@@ -251,9 +267,14 @@ export default function Visualization3D({
       if (uniformsRef.current) {
         uniformsRef.current.u_time.value += 0.05;
       }
-      
+
+      // Debug log to verify animation loop is running
+      // console.log('Animation frame running');
+
       // Rotate the sphere group to ensure it stays centered while rotating
-      if (sphereRef.current && rotationSpeedRef.current !== undefined) {
+      // Simplified condition for testing
+      if (sphereGroupRef.current || sphereRef.current) {
+        // Always apply rotation regardless of audio
         let audioRotationFactor = 1;
 
         // Calculate audio level for rotation if audio is playing
@@ -264,32 +285,34 @@ export default function Visualization3D({
           for (let i = 0; i < tempData.length; i++) {
             sum += tempData[i];
           }
-          const avgLevel = (sum / tempData.length) / 255; // Normalize to 0-1
-          audioRotationFactor = 1 + (avgLevel * reactivityRef.current);
+          const avgLevel = sum / tempData.length / 255; // Normalize to 0-1
+          audioRotationFactor = 1 + avgLevel * reactivityRef.current;
         }
 
         // Base rotation speed with time-based component as fallback - increased for more visible rotation
-        const baseRotationSpeed = 0.05 * rotationSpeedRef.current; // Further increased for more visible rotation
-        const timeBasedRotation = 0.02 * Math.sin(uniformsRef.current.u_time.value * 0.5) * rotationSpeedRef.current;
-        const rotationSpeedWithAudio = baseRotationSpeed * audioRotationFactor + timeBasedRotation;
+        const dt = clock.getDelta();
+        const baseRotationSpeed = 0.5 * rotationSpeedRef.current * dt; // radians per second
+        const timeBasedRotation =
+          0.05 * Math.sin(uniformsRef.current.u_time.value * 0.5) * dt;
+        const rotationSpeedWithAudio =
+          baseRotationSpeed * audioRotationFactor + timeBasedRotation;
 
         // Apply rotation to the parent group to ensure centered rotation
         // Also apply directly to sphere as fallback
-        if (sphereRef.current.parent) {
-          sphereRef.current.parent.rotation.y += rotationSpeedWithAudio;
-          sphereRef.current.parent.rotation.x += rotationSpeedWithAudio * 0.3;
-          sphereRef.current.parent.rotation.z += rotationSpeedWithAudio * 0.2;
-        } else if (sphereRef.current) {
-          sphereRef.current.rotation.y += rotationSpeedWithAudio;
-          sphereRef.current.rotation.x += rotationSpeedWithAudio * 0.3;
-          sphereRef.current.rotation.z += rotationSpeedWithAudio * 0.2;
+        // console.log('Applying rotation:', rotationSpeedWithAudio);
+        const targetGroup = sphereGroupRef.current || sphereRef.current?.parent;
+        if (targetGroup) {
+          targetGroup.rotation.y += rotationSpeedWithAudio;
+          targetGroup.rotation.x += rotationSpeedWithAudio * 0.3;
+          targetGroup.rotation.z += rotationSpeedWithAudio * 0.2;
         }
       }
 
       if (isAudioPlaying && audioAnalyser && uniformsRef.current) {
         audioAnalyser.getByteFrequencyData(frequencyDataRef.current);
         for (let i = 0; i < 128; i++) {
-          uniformsRef.current.u_frequency.value[i] = frequencyDataRef.current[i] / 255.0;
+          uniformsRef.current.u_frequency.value[i] =
+            frequencyDataRef.current[i] / 255.0;
         }
         uniformsRef.current.u_reactivity.value = reactivityRef.current;
         uniformsRef.current.u_distortion.value = distortionRef.current;
@@ -301,7 +324,8 @@ export default function Visualization3D({
         color.setHSL(0.0, 1.0, 0.5 + glowIntensity * 0.3);
         uniformsRef.current.u_glowColor.value.copy(color);
       } else if (uniformsRef.current) {
-        const timeFactor = Math.sin(uniformsRef.current.u_time.value * 0.1) * 0.5 + 0.5;
+        const timeFactor =
+          Math.sin(uniformsRef.current.u_time.value * 0.1) * 0.5 + 0.5;
         const color = new THREE.Color();
         color.setHSL(0.0, 1.0, 0.5 + timeFactor * 0.1);
         uniformsRef.current.u_glowColor.value.copy(color);
@@ -328,15 +352,26 @@ export default function Visualization3D({
     // Handle resize
     const handleResize = () => {
       if (!container || !cameraRef.current || !rendererRef.current) return;
-      cameraRef.current.aspect = container.clientWidth / container.clientHeight;
+      const rect = container.getBoundingClientRect();
+      const width = rect.width || container.clientWidth || window.innerWidth;
+      const height =
+        rect.height || container.clientHeight || window.innerHeight;
+      cameraRef.current.aspect = width / height;
       cameraRef.current.updateProjectionMatrix();
-      rendererRef.current.setSize(container.clientWidth, container.clientHeight);
+      rendererRef.current.setSize(width, height);
+      if (controlsRef.current) {
+        (controlsRef.current as any).target.set(0, 0, 0);
+        controlsRef.current.update();
+      }
     };
+    const resizeObserver = new ResizeObserver(() => handleResize());
+    resizeObserver.observe(container);
     window.addEventListener("resize", handleResize);
 
     // Cleanup
     return () => {
       window.removeEventListener("resize", handleResize);
+      resizeObserver.disconnect();
       if (animationIdRef.current) {
         cancelAnimationFrame(animationIdRef.current);
       }

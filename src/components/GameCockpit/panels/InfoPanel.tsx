@@ -15,16 +15,16 @@ export default function InfoPanel({ state, players = [] }: InfoPanelProps) {
           <div className="data-panel-title">FEATURES</div>
           <div className="data-readouts">
             <div className="data-row">
-              <span className="data-value">⚡ SOLANA BLOCKCHAIN</span>
+              <span className="data-value">⚡ SOLANA</span>
             </div>
             <div className="data-row">
-              <span className="data-value">🔒 HELIUS RPC</span>
+              <span className="data-value">🔒 HELIUS</span>
             </div>
             <div className="data-row">
-              <span className="data-value">🪙 PUMP FUN TOKENS</span>
+              <span className="data-value">🪙 PUMPFUN</span>
             </div>
             <div className="data-row">
-              <span className="data-value">🎮 REAL-TIME BATTLES</span>
+              <span className="data-value">🎮 BATTLES</span>
             </div>
           </div>
         </>
