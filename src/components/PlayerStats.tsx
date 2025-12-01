@@ -40,16 +40,16 @@ export default function PlayerStats({
     
     if (player.hasElf) {
       badges.push(
-        <span key="elf" className="inline-block bg-green-600 text-white px-2 py-1 rounded text-xs mr-1">
-          🧝 Shield
+        <span key="elf" className="inline-block bg-neon-cyan bg-opacity-20 text-neon-cyan px-3 py-1 rounded text-xs font-mono font-bold border border-neon-cyan border-opacity-50">
+          🧝 SHIELD
         </span>
       );
     }
     
     if (player.hasBauble) {
       badges.push(
-        <span key="bauble" className="inline-block bg-purple-600 text-white px-2 py-1 rounded text-xs mr-1">
-          🔮 Reflect
+        <span key="bauble" className="inline-block bg-neon-magenta bg-opacity-20 text-neon-magenta px-3 py-1 rounded text-xs font-mono font-bold border border-neon-magenta border-opacity-50">
+          🔮 REFLECT
         </span>
       );
     }
@@ -59,13 +59,13 @@ export default function PlayerStats({
 
   return (
     <div className="pirate-card">
-      <div className="mb-4 text-center">
-        <h3 className="text-xl font-bold text-pirate-gold font-maritime">
-          ⚔️ Crew Status ⚔️
+      <div className="mb-6 text-center border-b border-neon-cyan border-opacity-30 pb-4">
+        <h3 className="text-xl font-bold font-tech text-neon-magenta">
+          ▶ PILOT.STATUS
         </h3>
         {gameStatus === 'active' && (
-          <p className="text-sm text-gray-300 mt-1">
-            Current Turn: {getPlayerDisplayName(players[currentPlayerIndex])}
+          <p className="text-sm text-neon-cyan font-mono mt-2">
+            &gt; ACTIVE PILOT: {getPlayerDisplayName(players[currentPlayerIndex])}
           </p>
         )}
       </div>
@@ -76,54 +76,54 @@ export default function PlayerStats({
             key={player.publicKey}
             className={`p-4 rounded-lg border-2 transition-all ${
               isCurrentPlayer(index)
-                ? 'border-pirate-gold bg-pirate-gold bg-opacity-20 animate-treasure-glow'
-                : 'border-gray-600 bg-black bg-opacity-30'
+                ? 'border-neon-cyan bg-neon-cyan bg-opacity-10 animate-glow-pulse'
+                : 'border-neon-magenta border-opacity-30 bg-neon-magenta bg-opacity-5'
             } ${
-              isMyPlayer(player) ? 'ring-2 ring-blue-400' : ''
+              isMyPlayer(player) ? 'ring-2 ring-neon-orange' : ''
             }`}
           >
-            <div className="flex items-center justify-between mb-2">
+            <div className="flex items-center justify-between mb-3">
               <div className="flex items-center space-x-2">
                 <span className="text-lg">
-                  {isMyPlayer(player) ? '👑' : '🏴‍☠️'}
+                  {isMyPlayer(player) ? '◆' : '◇'}
                 </span>
-                <span className="font-bold text-white">
+                <span className="font-bold font-tech text-neon-cyan">
                   {getPlayerDisplayName(player)}
-                  {isMyPlayer(player) && <span className="text-blue-400 ml-1">(You)</span>}
+                  {isMyPlayer(player) && <span className="text-neon-orange ml-1 text-xs">[YOU]</span>}
                 </span>
                 {winner === player.publicKey && (
-                  <span className="text-pirate-gold text-lg animate-bounce">👑 WINNER!</span>
+                  <span className="text-neon-gold text-sm font-bold animate-glow-pulse ml-2">★ VICTOR ★</span>
                 )}
               </div>
               
               {isCurrentPlayer(index) && (
-                <div className="flex items-center space-x-1">
-                  <div className="w-2 h-2 bg-green-400 rounded-full animate-pulse"></div>
-                  <span className="text-xs text-green-400">Active</span>
+                <div className="flex items-center space-x-2">
+                  <div className="w-2 h-2 bg-neon-cyan rounded-full animate-pulse"></div>
+                  <span className="text-xs text-neon-cyan font-mono font-bold">ACTIVE</span>
                 </div>
               )}
             </div>
 
-            <div className="grid grid-cols-2 gap-4 text-sm">
-              <div>
-                <div className="text-gray-400">Current Points</div>
-                <div className="text-lg font-bold text-pirate-gold">
+            <div className="grid grid-cols-2 gap-4 text-sm mb-3">
+              <div className="bg-neon-cyan bg-opacity-5 p-2 rounded border border-neon-cyan border-opacity-20">
+                <div className="text-xs text-neon-cyan font-mono uppercase mb-1">Live Points</div>
+                <div className="text-lg font-bold text-neon-cyan font-tech">
                   {player.points.toLocaleString()}
                 </div>
               </div>
               
-              <div>
-                <div className="text-gray-400">Banked Points</div>
-                <div className="text-lg font-bold text-green-400">
+              <div className="bg-neon-magenta bg-opacity-5 p-2 rounded border border-neon-magenta border-opacity-20">
+                <div className="text-xs text-neon-magenta font-mono uppercase mb-1">Banked</div>
+                <div className="text-lg font-bold text-neon-magenta font-tech">
                   {player.bankedPoints.toLocaleString()}
                 </div>
               </div>
             </div>
 
-            <div className="mt-2 pt-2 border-t border-gray-600">
+            <div className="pt-3 border-t border-neon-cyan border-opacity-20">
               <div className="flex items-center justify-between">
-                <span className="text-gray-400 text-sm">Total Score:</span>
-                <span className="text-xl font-bold text-white">
+                <span className="text-neon-cyan text-xs font-mono font-bold">TOTAL SCORE:</span>
+                <span className="text-xl font-bold text-neon-orange font-tech">
                   {getTotalScore(player).toLocaleString()}
                 </span>
               </div>
@@ -131,9 +131,9 @@ export default function PlayerStats({
 
             {/* Player abilities/badges */}
             {(player.hasElf || player.hasBauble) && (
-              <div className="mt-2 pt-2 border-t border-gray-600">
-                <div className="text-xs text-gray-400 mb-1">Abilities:</div>
-                <div>{getPlayerBadges(player)}</div>
+              <div className="mt-3 pt-3 border-t border-neon-cyan border-opacity-20">
+                <div className="text-xs text-neon-orange font-mono font-bold mb-2">ACTIVE MODULES:</div>
+                <div className="flex gap-2">{getPlayerBadges(player)}</div>
               </div>
             )}
           </div>
@@ -141,16 +141,18 @@ export default function PlayerStats({
       </div>
 
       {/* Game status indicator */}
-      <div className="mt-4 p-3 rounded-lg bg-black bg-opacity-50 text-center">
-        <div className="text-sm text-gray-400">Game Status</div>
-        <div className={`text-lg font-bold ${
-          gameStatus === 'waiting' ? 'text-yellow-400' :
-          gameStatus === 'active' ? 'text-green-400' :
-          'text-pirate-gold'
+      <div className="mt-6 pt-4 border-t border-neon-cyan border-opacity-30">
+        <div className="text-xs text-neon-cyan font-mono font-bold mb-2 uppercase">SYSTEM STATUS</div>
+        <div className={`p-3 rounded-lg text-center font-mono border-2 ${
+          gameStatus === 'waiting' ? 'border-neon-orange bg-neon-orange bg-opacity-10 text-neon-orange' :
+          gameStatus === 'active' ? 'border-neon-cyan bg-neon-cyan bg-opacity-10 text-neon-cyan' :
+          'border-neon-magenta bg-neon-magenta bg-opacity-10 text-neon-magenta'
         }`}>
-          {gameStatus === 'waiting' && '⏳ Waiting for players'}
-          {gameStatus === 'active' && '⚔️ Battle in progress'}
-          {gameStatus === 'completed' && '🏆 Battle completed'}
+          <div className="text-sm font-bold">
+            {gameStatus === 'waiting' && '▲ AWAITING PLAYERS'}
+            {gameStatus === 'active' && '◆ BATTLE ACTIVE'}
+            {gameStatus === 'completed' && '★ VICTOR CROWNED'}
+          </div>
         </div>
       </div>
     </div>

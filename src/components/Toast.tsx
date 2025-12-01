@@ -50,28 +50,28 @@ export function Toast({ message, type = 'info', duration = 5000, onClose }: Toas
 
   const getToastStyles = () => {
     const baseStyles = `
-      fixed top-4 left-1/2 transform -translate-x-1/2 z-50 
-      max-w-sm w-full mx-4 p-4 rounded-lg shadow-lg
-      transition-all duration-300 ease-in-out
+      fixed top-6 left-1/2 transform -translate-x-1/2 z-50 
+      max-w-md w-full mx-4 p-4 rounded-lg backdrop-filter backdrop-blur-lg
+      transition-all duration-300 ease-in-out font-mono
       ${isLeaving ? 'opacity-0 translate-y-[-20px]' : 'opacity-100 translate-y-0'}
     `;
 
     const typeStyles = {
-      success: 'bg-green-800 border-green-600 text-green-100',
-      error: 'bg-red-800 border-red-600 text-red-100',
-      info: 'bg-pirate-brown border-pirate-gold text-skull-white',
-      loading: 'bg-blue-800 border-blue-600 text-blue-100'
+      success: 'bg-neon-cyan bg-opacity-10 border-neon-cyan text-neon-cyan',
+      error: 'bg-neon-orange bg-opacity-10 border-neon-orange text-neon-orange',
+      info: 'bg-neon-magenta bg-opacity-10 border-neon-magenta text-neon-magenta',
+      loading: 'bg-neon-cyan bg-opacity-10 border-neon-cyan text-neon-cyan'
     };
 
-    return `${baseStyles} border-2 ${typeStyles[type]}`;
+    return `${baseStyles} border-2 shadow-lg shadow-neon-cyan shadow-opacity-20 ${typeStyles[type]}`;
   };
 
   const getIcon = () => {
     switch (type) {
-      case 'success': return '🎉';
-      case 'error': return '⚠️';
-      case 'loading': return '⏳';
-      default: return '🏴‍☠️';
+      case 'success': return '◆';
+      case 'error': return '▲';
+      case 'loading': return '●';
+      default: return '⚓';
     }
   };
 
@@ -79,7 +79,7 @@ export function Toast({ message, type = 'info', duration = 5000, onClose }: Toas
     <div className={getToastStyles()}>
       <div className="flex items-center justify-between">
         <div className="flex items-center space-x-3">
-          <span className="text-lg">{getIcon()}</span>
+          <span className="text-xl animate-pulse">{getIcon()}</span>
           <div className="flex-1">
             <p className="text-sm font-medium whitespace-pre-line">
               {message}

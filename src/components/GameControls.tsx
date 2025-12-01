@@ -87,130 +87,144 @@ export default function GameControls({ gameId, isMyTurn, disabled = false }: Gam
 
   return (
     <div className="pirate-card">
-      <div className="mb-4 text-center">
-        <h3 className="text-xl font-bold text-pirate-gold font-maritime">
-          🎯 Battle Controls 🎯
+      <div className="mb-6 text-center border-b border-neon-cyan border-opacity-30 pb-4">
+        <h3 className="text-xl font-bold font-tech text-neon-orange">
+          ▶ TARGET.SYSTEM
         </h3>
-        <p className="text-sm text-gray-300 mt-1">
-          {remainingCoordinates} coordinates remaining
+        <p className="text-sm text-neon-cyan font-mono mt-2">
+          &gt; {remainingCoordinates} / 49 COORDINATES AVAILABLE
         </p>
+      </div>
+
+      {/* Turn indicator - PROMINENT */}
+      <div className={`mb-6 p-4 rounded-lg border-2 font-mono text-center transition-all ${
+        isMyTurn
+          ? 'border-neon-cyan bg-neon-cyan bg-opacity-10 animate-glow-pulse'
+          : 'border-neon-magenta border-opacity-50 bg-neon-magenta bg-opacity-5'
+      }`}>
+        {isMyTurn ? (
+          <div>
+            <div className="text-neon-cyan font-bold text-lg mb-1">◆ YOUR TURN ◆</div>
+            <div className="text-neon-cyan text-xs">SELECT TARGET COORDINATE</div>
+          </div>
+        ) : (
+          <div>
+            <div className="text-neon-magenta font-bold">▲ AWAITING INPUT</div>
+            <div className="text-neon-magenta text-xs">OTHER PILOTS EXECUTING</div>
+          </div>
+        )}
       </div>
 
       {/* Current coordinate display */}
       {selectedCoordinate && (
-        <div className="mb-4 p-3 bg-pirate-gold bg-opacity-20 rounded-lg text-center">
-          <div className="text-sm text-gray-300">Selected Coordinate:</div>
-          <div className="text-2xl font-bold text-pirate-gold animate-treasure-glow">
+        <div className="mb-6 p-4 bg-neon-cyan bg-opacity-10 rounded-lg text-center border border-neon-cyan border-opacity-50">
+          <div className="text-xs text-neon-cyan font-mono mb-2">TARGET LOCKED:</div>
+          <div className="text-3xl font-bold text-neon-cyan font-tech animate-glow-pulse">
             {selectedCoordinate}
           </div>
         </div>
       )}
+
+      {/* Manual Coordinate Input */}
+      <div className="mb-6">
+        <label className="block text-xs font-tech text-neon-orange font-bold mb-3 uppercase">
+          &gt; MANUAL TARGET INPUT
+        </label>
+        <div className="flex space-x-2 mb-4">
+          <input
+            type="text"
+            value={coordinateInput}
+            onChange={(e) => setCoordinateInput(e.target.value.toUpperCase())}
+            placeholder="A1"
+            maxLength={2}
+            disabled={disabled || !isMyTurn}
+            className="flex-1 px-4 py-3 bg-bg-dark-2 bg-opacity-50 border border-neon-cyan border-opacity-30 rounded-lg text-neon-cyan placeholder-neon-cyan placeholder-opacity-50 focus:outline-none focus:ring-2 focus:ring-neon-cyan focus:border-transparent font-mono font-bold transition-all"
+          />
+          <button
+            onClick={handleManualCoordinate}
+            disabled={disabled || !isMyTurn || !coordinateInput}
+            className="pirate-button px-6 py-2 text-sm font-tech"
+          >
+            FIRE
+          </button>
+        </div>
+      </div>
+
+      {/* Quick coordinate buttons for mobile - optimized touch targets */}
+      <div className="mb-4">
+        <div className="text-xs text-neon-orange font-tech font-bold mb-2 uppercase">&gt; COLUMN SELECT</div>
+        <div className="grid grid-cols-7 gap-2 mb-4">
+          {['A', 'B', 'C', 'D', 'E', 'F', 'G'].map(letter => (
+            <button
+              key={letter}
+              onClick={() => setCoordinateInput(coordinateInput[0] === letter ? '' : letter)}
+              disabled={disabled || !isMyTurn}
+              className={`h-10 text-sm font-bold font-tech rounded border transition-all ${
+                coordinateInput[0] === letter
+                  ? 'bg-neon-cyan border-neon-cyan text-bg-dark-0'
+                  : 'bg-transparent border-neon-cyan border-opacity-30 text-neon-cyan hover:border-opacity-60 active:bg-neon-cyan active:text-bg-dark-0'
+              } disabled:opacity-30 disabled:cursor-not-allowed`}
+            >
+              {letter}
+            </button>
+          ))}
+        </div>
+      </div>
+
+      <div className="mb-6">
+        <div className="text-xs text-neon-orange font-tech font-bold mb-2 uppercase">&gt; ROW SELECT</div>
+        <div className="grid grid-cols-7 gap-2">
+          {[1, 2, 3, 4, 5, 6, 7].map(number => (
+            <button
+              key={number}
+              onClick={() => setCoordinateInput(coordinateInput[1] === number.toString() ? coordinateInput[0] || '' : (coordinateInput[0] || '') + number)}
+              disabled={disabled || !isMyTurn}
+              className={`h-10 text-sm font-bold font-tech rounded border transition-all ${
+                coordinateInput[1] === number.toString()
+                  ? 'bg-neon-magenta border-neon-magenta text-bg-dark-0'
+                  : 'bg-transparent border-neon-magenta border-opacity-30 text-neon-magenta hover:border-opacity-60 active:bg-neon-magenta active:text-bg-dark-0'
+              } disabled:opacity-30 disabled:cursor-not-allowed`}
+            >
+              {number}
+            </button>
+          ))}
+        </div>
+      </div>
 
       {/* Generate Random Coordinate */}
       <div className="mb-6">
         <button
           onClick={handleGenerateCoordinate}
           disabled={disabled || !isMyTurn || isGenerating}
-          className={`pirate-button w-full ${
-            disabled || !isMyTurn || isGenerating
-              ? 'opacity-50 cursor-not-allowed'
-              : 'hover:bg-opacity-80'
-          }`}
+          className="pirate-button w-full"
         >
           {isGenerating ? (
             <div className="flex items-center justify-center space-x-2">
               <div className="pirate-spinner w-4 h-4"></div>
-              <span>Generating...</span>
+              <span className="font-mono">RANDOMIZE...</span>
             </div>
           ) : (
-            '🎲 Generate Random Coordinate'
+            '▶ AUTO.TARGET'
           )}
         </button>
       </div>
 
-      {/* Manual Coordinate Input */}
-      <div className="mb-6">
-        <label className="block text-sm font-medium text-gray-300 mb-2">
-          Or choose manually (e.g., A1, B3, G7):
-        </label>
-        <div className="flex space-x-2">
-          <input
-            type="text"
-            value={coordinateInput}
-            onChange={(e) => setCoordinateInput(e.target.value)}
-            placeholder="A1"
-            maxLength={2}
-            disabled={disabled || !isMyTurn}
-            className="flex-1 px-3 py-2 bg-black bg-opacity-50 border border-pirate-gold rounded text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-pirate-gold"
-          />
-          <button
-            onClick={handleManualCoordinate}
-            disabled={disabled || !isMyTurn || !coordinateInput}
-            className="pirate-button px-6 py-2 text-sm"
-          >
-            ⚡ Fire!
-          </button>
-        </div>
-      </div>
-
-      {/* Quick coordinate buttons for mobile - optimized touch targets */}
-      <div className="grid grid-cols-7 gap-2 mb-4">
-        {['A', 'B', 'C', 'D', 'E', 'F', 'G'].map(letter => (
-          <button
-            key={letter}
-            onClick={() => setCoordinateInput(coordinateInput[0] === letter ? '' : letter)}
-            disabled={disabled || !isMyTurn}
-            className={`h-12 text-sm sm:text-base font-bold rounded border touch-manipulation ${
-              coordinateInput[0] === letter
-                ? 'bg-pirate-gold text-pirate-brown border-pirate-brown'
-                : 'bg-black bg-opacity-50 text-white border-gray-600 active:bg-pirate-gold active:text-pirate-brown'
-            }`}
-          >
-            {letter}
-          </button>
-        ))}
-      </div>
-
-      <div className="grid grid-cols-7 gap-2">
-        {[1, 2, 3, 4, 5, 6, 7].map(number => (
-          <button
-            key={number}
-            onClick={() => setCoordinateInput(coordinateInput[1] === number.toString() ? coordinateInput[0] || '' : (coordinateInput[0] || '') + number)}
-            disabled={disabled || !isMyTurn}
-            className={`h-12 text-sm sm:text-base font-bold rounded border touch-manipulation ${
-              coordinateInput[1] === number.toString()
-                ? 'bg-pirate-gold text-pirate-brown border-pirate-brown'
-                : 'bg-black bg-opacity-50 text-white border-gray-600 active:bg-pirate-gold active:text-pirate-brown'
-            }`}
-          >
-            {number}
-          </button>
-        ))}
-      </div>
-
-      {/* Turn indicator */}
-      <div className="mt-4 p-2 rounded text-center text-sm">
-        {isMyTurn ? (
-          <span className="text-green-400 font-bold">🎯 Your turn to fire!</span>
-        ) : (
-          <span className="text-gray-400">⏳ Waiting for other players...</span>
-        )}
-      </div>
-
       {/* Game progress */}
       {gameState && (
-        <div className="mt-4 pt-4 border-t border-gray-600">
-          <div className="text-xs text-gray-400 mb-1">Battle Progress:</div>
-          <div className="w-full bg-gray-700 rounded-full h-2">
+        <div className="pt-4 border-t border-neon-cyan border-opacity-30">
+          <div className="text-xs text-neon-cyan font-mono font-bold mb-2 uppercase">
+            &gt; SCAN.PROGRESS
+          </div>
+          <div className="w-full bg-bg-dark-3 rounded-full h-2 overflow-hidden border border-neon-cyan border-opacity-30">
             <div
-              className="bg-gradient-to-r from-pirate-gold to-treasure-gold h-2 rounded-full transition-all duration-500"
+              className="h-2 rounded-full transition-all duration-500 bg-gradient-to-r from-neon-cyan via-neon-magenta to-neon-orange"
               style={{
                 width: `${(gameState.chosenCoordinates.length / 49) * 100}%`
               }}
             ></div>
           </div>
-          <div className="text-xs text-gray-400 mt-1 text-center">
-            {gameState.chosenCoordinates.length} / 49 squares revealed
+          <div className="text-xs text-neon-cyan font-mono mt-2 text-center">
+            {gameState.chosenCoordinates.length} / 49 SCANNED | {Math.round((gameState.chosenCoordinates.length / 49) * 100)}%
           </div>
         </div>
       )}
