@@ -13,6 +13,7 @@ import PlayerStats from '@/components/PlayerStats';
 import GameControls from '@/components/GameControls';
 import Preloader from '@/components/Preloader';
 import Notification from '@/components/Notification';
+import MusicPlayer from '@/components/MusicPlayer';
 import { useState, useEffect } from 'react';
 
 export default function Home() {
@@ -132,6 +133,7 @@ export default function Home() {
 
   return (
     <ErrorBoundary>
+    <MusicPlayer />
     <main className={`min-h-screen flex flex-col items-center justify-center p-4 ${mobileClasses.container}`}>
       {/* Centered Header */}
       <div className="fixed top-0 left-0 right-0 z-50 pointer-events-none">

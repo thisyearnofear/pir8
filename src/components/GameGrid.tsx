@@ -55,29 +55,25 @@ export default function GameGrid({
   };
 
   const getCellStyles = (row: number, col: number, coordinate: string): string => {
-    const baseStyles = `grid-cell flex items-center justify-center font-bold transition-all duration-200 ${mobileClasses.text} `;
+    const baseStyles = `grid-cell-enhanced flex items-center justify-center font-bold transition-all duration-200 ${mobileClasses.text} `;
     
     if (chosenCoordinates.includes(coordinate)) {
-      return baseStyles + 'chosen bg-red-600 text-white cursor-not-allowed opacity-75';
+      return baseStyles + 'chosen cursor-not-allowed opacity-75';
     }
     
     if (disabled || !isMyTurn) {
-      return baseStyles + 'cursor-not-allowed opacity-50 grayscale';
+      return baseStyles + 'disabled cursor-not-allowed';
     }
     
     if (selectedCell === coordinate) {
-      return baseStyles + 'available bg-pirate-gold text-pirate-brown scale-110 shadow-xl ring-2 ring-yellow-300 cursor-pointer animate-pulse';
+      return baseStyles + 'selected cursor-pointer';
     }
     
     if (hoveredCell === coordinate && !isMobile) {
-      return baseStyles + 'available bg-yellow-400 text-black scale-105 shadow-lg cursor-pointer';
+      return baseStyles + 'hover-effect cursor-pointer';
     }
     
-    const hoverStyles = isMobile 
-      ? 'active:bg-pirate-gold active:scale-95' 
-      : 'hover:bg-pirate-gold hover:scale-105';
-    
-    return baseStyles + `available bg-skull-white text-pirate-brown cursor-pointer ${hoverStyles}`;
+    return baseStyles + 'available cursor-pointer';
   };
 
   const handleCellSelect = (coordinate: string) => {
@@ -116,9 +112,14 @@ export default function GameGrid({
   };
 
   return (
-    <div className="pirate-card transform transition-all hover:shadow-2xl">
+    <div className="scanner-frame-game transform transition-all hover:shadow-2xl">
+      <div className="corner-tl"></div>
+      <div className="corner-tr"></div>
+      <div className="corner-bl"></div>
+      <div className="corner-br"></div>
+      
       <div className="mb-6 text-center pb-4 border-b border-neon-cyan border-opacity-30">
-        <h3 className="text-2xl font-bold text-pirate-gold font-maritime animate-pulse">
+        <h3 className="text-2xl font-bold holographic-text font-tech animate-pulse">
           🏴‍☠️ TREASURE MAP 🏴‍☠️
         </h3>
         <p className={`text-sm font-mono mt-2 transition-all ${
@@ -128,6 +129,7 @@ export default function GameGrid({
         }`}>
           {isMyTurn && !disabled ? '▶ AWAITING YOUR.COMMAND' : '▲ STANDBY MODE'}
         </p>
+        <div className="scanner-line mt-2"></div>
       </div>
       
       {/* Column headers */}
@@ -180,18 +182,20 @@ export default function GameGrid({
         ))}
       </div>
       
-      {/* Legend - Enhanced */}
+      {/* Enhanced Legend */}
       <div className="mt-6 pt-4 border-t border-neon-cyan border-opacity-30">
-        <h4 className="text-xs font-bold text-neon-cyan mb-3 font-mono uppercase">▶ ITEMS LEGEND</h4>
-        <div className="grid grid-cols-2 gap-2 text-xs">
-          <div className="px-2 py-1 rounded bg-neon-cyan bg-opacity-5 border border-neon-cyan border-opacity-20 hover:bg-opacity-10 transition">🎁 Gift 1000pts</div>
-          <div className="px-2 py-1 rounded bg-neon-cyan bg-opacity-5 border border-neon-cyan border-opacity-20 hover:bg-opacity-10 transition">👹 Steal points</div>
-          <div className="px-2 py-1 rounded bg-neon-cyan bg-opacity-5 border border-neon-cyan border-opacity-20 hover:bg-opacity-10 transition">🎄 Choose square</div>
-          <div className="px-2 py-1 rounded bg-neon-cyan bg-opacity-5 border border-neon-cyan border-opacity-20 hover:bg-opacity-10 transition">🍮 Kill player</div>
-          <div className="px-2 py-1 rounded bg-neon-cyan bg-opacity-5 border border-neon-cyan border-opacity-20 hover:bg-opacity-10 transition">🌿 Swap scores</div>
-          <div className="px-2 py-1 rounded bg-neon-cyan bg-opacity-5 border border-neon-cyan border-opacity-20 hover:bg-opacity-10 transition">🧝 Block attack</div>
-          <div className="px-2 py-1 rounded bg-neon-cyan bg-opacity-5 border border-neon-cyan border-opacity-20 hover:bg-opacity-10 transition">🔮 Reflect attack</div>
-          <div className="px-2 py-1 rounded bg-neon-cyan bg-opacity-5 border border-neon-cyan border-opacity-20 hover:bg-opacity-10 transition">🏦 Bank points</div>
+        <h4 className="text-xs font-bold text-neon-cyan mb-4 font-mono uppercase tracking-wider">
+          ▶ TREASURE LEGEND
+        </h4>
+        <div className="grid grid-cols-2 gap-3">
+          <div className="legend-item">🎁 Gift 1000pts</div>
+          <div className="legend-item">👹 Steal points</div>
+          <div className="legend-item">🎄 Choose square</div>
+          <div className="legend-item">🍮 Kill player</div>
+          <div className="legend-item">🌿 Swap scores</div>
+          <div className="legend-item">🧝 Block attack</div>
+          <div className="legend-item">🔮 Reflect attack</div>
+          <div className="legend-item">🏦 Bank points</div>
         </div>
       </div>
     </div>

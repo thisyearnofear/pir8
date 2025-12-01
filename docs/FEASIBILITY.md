@@ -107,13 +107,13 @@ const fees = await client.getPriorityFees();
    - Pool struct increased: 243 → 244 bytes
 
 3. **Fee Recipients for Mayhem Mode**:
-   ```
-   Mayhem Fee Recipients (use randomly):
-   - GesfTA3X2arioaHp8bbKdjG9vJtskViWACZoYvxp4twS
-   - 4budycTjhs9fD6xw62VBducVTNgMgJJ5BgtKq7mAZwn6
-   - 8SBKzEQU4nLSzcwF4a74F2iaUDQyTfjGndn6qUWBnrpR
-   (and 4 more alternatives)
-   ```
+```
+Mayhem Fee Recipients (use randomly):
+- GesfTA3X2arioaHp8bbKdjG9vJtskViWACZoYvxp4twS
+- 4budycTjhs9fD6xw62VBducVTNgMgJJ5BgtKq7mAZwn6
+- 8SBKzEQU4nLSzcwF4a74F2iaUDQyTfjGndn6qUWBnrpR
+(and 4 more alternatives)
+```
 
 #### Pump Fun Feature List For Gaming Integration:
 
@@ -169,15 +169,6 @@ const fees = await client.getPriorityFees();
 - Cross-chain bridges are **NOT standard** - custom implementation required
 - **NO official Zcash ↔ Solana bridge exists**
 
-#### Current Zcash Landscape:
-
-| Tool | Status | For Gaming | Notes |
-|------|--------|-----------|-------|
-| **Zcash CLI** | Stable | No - requires server setup | Complex, not SDK-friendly |
-| **Zcash-JS SDK** | Experimental | Limited | Missing key features for automated payments |
-| **Shielded Protocol** | Stable | Partial | Adds 2-3 second verification time |
-| **Custom Bridge** | TBD | ???| Not documented, requires custom contracts |
-
 #### Zcash Integration Challenges:
 
 1. **Deposit Detection**
@@ -191,35 +182,15 @@ const fees = await client.getPriorityFees();
    - KYC regulations may apply
 
 3. **Cross-Chain Bridge**
-   - No official solution from Zcash Foundation
    - Would need custom Solana program + Zcash node monitoring
    - Estimated effort: **3-4 weeks** for MVP
    - Security audit: **2+ weeks**
 
-#### Helius + Zcash Workaround (RECOMMENDED):
-
-Instead of native Zcash shielded transactions, use:
-1. **USDC** on Solana (via Helius webhooks)
-2. Bridge to **privacy protocol** on Solana (e.g., Tornado Cash - but check regulations)
-3. Or **delay Zcash integration** to post-launch
-
-**Status**: 🚨 **NOT FEASIBLE IN 14 DAYS** - Requires 4+ weeks minimum and external expertise
-
----
-
-### 4. MINA PROTOCOL INTEGRATION 🟡 Lower Priority
-
-**Current Status**: Mina zkApps are stable but:
-- Limited developer ecosystem
-- Fewer audited examples
-- Takes 3-5 weeks to learn properly
-
-**For Gaming**: Use Mina for:
-- Privacy-preserving leaderboards (via zero-knowledge proofs)
-- Verifying game outcomes without revealing moves
-- Anonymous achievement NFTs
-
-**Recommendation**: Deprioritize for MVP. Add post-launch if time permits.
+#### Minimal Viable Zcash (Zypherpunk)
+- Shielded memo schema for private entry (JSON)
+- Lightwalletd watcher reads memos and triggers Solana join/create
+- No custody or private payouts (entry only)
+- Threat model awareness for lightwalletd and memo parsing
 
 ---
 
@@ -248,11 +219,12 @@ Instead of native Zcash shielded transactions, use:
 - ✅ Add `create_v2` + Mayhem mode support
 
 #### **Phase 4: Privacy MVP (Days 21-25)** ⚠️ Realistic
-- ⚠️ **REPLACE Zcash with privacy solution**:
-  - Option A: USDC deposits + Helius monitoring (simplest)
-  - Option B: Switchboard oracle for privacy (medium)
-  - Option C: Tornado Cash integration (complex, regulatory risk)
-- ⚠️ Implement viewing key system (basic privacy)
+- ✅ **Minimal Zcash integration for Zypherpunk**:
+  - Shielded memo schema for private entry (JSON)
+  - Lightwalletd watcher reads memos and triggers Solana join/create
+  - No custody or private payouts (entry only)
+  - Threat model awareness for lightwalletd and memo parsing
+- ⚠️ Implement basic viewing key guidance (documentation only)
 
 #### **Phase 5: Polish & Demo (Days 26-30)** ✅ Feasible
 - ✅ UI/UX improvements
@@ -260,12 +232,11 @@ Instead of native Zcash shielded transactions, use:
 - ✅ Demo video preparation
 - ✅ Documentation
 
-### Updated ROADMAP.md Changes
-
 **REMOVE/DEFER:**
-- ❌ Days 8-10: Zcash ↔ Solana bridge (too complex)
+- ❌ Full Zcash ↔ Solana bridge (too complex)
+- ❌ Private payouts via Zcash (custody risk)
 - ❌ Mina Protocol zkApps (deprioritize)
-- ❌ Cross-chain expansion (post-launch)
+- ❌ Broad cross-chain expansion (post-launch)
 
 **ADD/PRIORITIZE:**
 - ✅ PumpPortal/Bitquery data integration
@@ -312,82 +283,19 @@ Deployment: Vercel (frontend) + Railway (backend) + Solana Devnet
 | **Mina** 🥉 | LIGHT (Privacy proofs - deferred) | Post-launch | $8k potential |
 
 ### Submission Focus
-1. **Problem**: Boring games lack privacy + fun token mechanics
-2. **Solution**: "Shielded Seas" - game with meme token creation
-3. **Demo**: 
-   - Player plays game → Wins SOL
-   - Creates pirate-themed meme token on Pump.fun
-   - Token graduates to PumpSwap
-   - Game tracks tokens in leaderboard
+1. **Problem**: Lack of practical, user-friendly privacy in games
+2. **Solution**: "Shielded Seas" — private ZEC entry + Solana gameplay + meme token rewards
+3. **Demo**:
+   - Player sends ZEC with shielded memo containing `gameId` and `solanaPubkey`
+   - Watcher detects memo and joins/creates game on Solana
+   - Live updates via Helius WebSocket
+   - Winner triggers Pump Fun token creation
 
 ### Why This Wins
-- ✅ Helius integration (webhook-based deposit detection)
-- ✅ Pump Fun integration (token creation hooks into gameplay)
-- ✅ Novel use case (gaming + memecoin creation fusion)
-- ✅ Achievable in 14-21 days (realistic scope)
-
----
-
-## Part 6: Action Items - IMMEDIATE
-
-### Week 1 (Critical Path)
-1. [ ] Decide: **Zcash or alternative privacy solution?** (BLOCKING)
-   - Option A: Defer to post-launch
-   - Option B: Use USDC + Helius webhooks instead
-   - Option C: Use Solana privacy protocol
-
-2. [ ] Create JavaScript/TypeScript port of game logic
-   - Extract `Classes.py` → `gameEngine.ts`
-   - Unit test all mechanics
-
-3. [ ] Set up Helius dashboard + get API key
-   - Create free account: https://dashboard.helius.dev
-   - Set up test webhook
-
-4. [ ] Review Pump Fun `create_v2` breaking changes
-   - Evaluate PumpPortal vs direct contract interaction
-   - Create mock `isMayhemMode` parameter
-
-### Week 2
-5. [ ] Bootstrap Solana program (Anchor)
-   - Player registration instruction
-   - Score tracking state
-
-6. [ ] Integrate Helius Priority Fee API
-   - Show in demo: fast transaction landing
-
-7. [ ] Integrate PumpPortal Data API
-   - Real-time token prices
-   - Leaderboard integration
-
-### Documentation Updates
-- [ ] Update ROADMAP.md with revised timeline
-- [ ] Add Helius integration section
-- [ ] Add Pump Fun integration section
-- [ ] Create privacy solution decision matrix
-
----
-
-## Conclusion
-
-**Your ROADMAP is ambitious but needs tactical adjustments:**
-
-✅ **KEEP:**
-- Helius integration (straightforward, high impact)
-- Pump Fun token creation (fun, achievable)
-- Game logic extraction (necessary foundation)
-
-⚠️ **PIVOT:**
-- Zcash shielded transactions → Defer or replace with USDC
-- Mina zkApps → Post-launch feature
-- 14-day timeline → Realistic 30-day MVP
-
-🚨 **WARN:**
-- Cross-chain privacy is hard (custom bridge = 3-4 weeks)
-- Pump Fun recent breaking changes require API selection
-- Zcash integration needs dedicated expert (not part of standard stack)
-
-**Best Path Forward**: Focus on **Helius + Pump Fun + Solana gameplay** for MVP, then add privacy layers post-launch.
+- ✅ Aligns with Private Payments & Transactions track
+- ✅ Uses Helius and Pump Fun sponsors prominently
+- ✅ Minimal Zcash path reduces risk while showcasing privacy
+- ✅ Achievable in 14-21 days with clear demo narrative
 
 ---
 
@@ -396,4 +304,3 @@ Deployment: Vercel (frontend) + Railway (backend) + Solana Devnet
 - Helius Docs: https://www.helius.dev/docs
 - Pump Fun Breaking Changes: https://github.com/pump-fun/pump-public-docs
 - PumpPortal API: https://pumpportal.fun/
-- Bitquery Pump.fun API: https://docs.bitquery.io/docs/blockchain/Solana/Pumpfun/Pump-Fun-API/

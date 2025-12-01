@@ -28,6 +28,7 @@ Open [http://localhost:3000](http://localhost:3000) and connect your Solana wall
 ## 🎮 Game Features
 
 ### **Core Gameplay**
+
 - 🗺️ **7x7 treasure map** with randomized rewards
 - ⚔️ **Turn-based multiplayer** battles (2-4 players)
 - 💰 **Dynamic scoring** with special item effects
@@ -35,6 +36,7 @@ Open [http://localhost:3000](http://localhost:3000) and connect your Solana wall
 - 🏆 **Winner determination** based on total score
 
 ### **Special Items & Effects**
+
 - 🎁 **Present**: Gift 1000 points to another player
 - 👹 **Grinch**: Steal points from opponents
 - 🍮 **Pudding**: Reset target player to 0 points
@@ -47,6 +49,7 @@ Open [http://localhost:3000](http://localhost:3000) and connect your Solana wall
 - 🏦 **Bank**: Move points to protected vault
 
 ### **Blockchain Features**
+
 - ⚡ **Lightning-fast transactions** via Helius enhanced RPC
 - 🔒 **Private move verification** using zero-knowledge proofs
 - 🪙 **Winner token creation** via Pump Fun integration
@@ -65,6 +68,7 @@ Open [http://localhost:3000](http://localhost:3000) and connect your Solana wall
 ## 📱 Features
 
 ### ✅ **Implemented**
+
 - ✅ **Complete Anchor smart contracts** - Full game logic on Solana blockchain
 - ✅ **Real-time multiplayer** - Live updates via Helius WebSocket monitoring
 - ✅ **Economic model** - Entry fees, platform fees, winner payouts
@@ -74,14 +78,16 @@ Open [http://localhost:3000](http://localhost:3000) and connect your Solana wall
 - ✅ **Type-safe blockchain integration** with Anchor program calls
 - ✅ **Mobile-optimized interface** for seamless gameplay
 
-### 🚧 **Next: Post-Deployment Enhancements** 
+### 🚧 **Next: Post-Deployment Enhancements**
+
 - 🪙 **Pump Fun winner tokens** - Automatic meme coin creation for victors
-- 🎭 **Interactive onboarding** - "Treasure map" tutorial system  
+- 🎭 **Interactive onboarding** - "Treasure map" tutorial system
 - ✨ **User delight features** - Animations, sound effects, pirate personas
 - 🏆 **Viral mechanics** - Social sharing, leaderboards, achievement system
 - 🔒 **Privacy features** - Zero-knowledge proofs for private moves
 
 ### 🔮 **Planned**
+
 - Tournament modes with entry fees
 - Achievement NFTs and leaderboards
 - Cross-platform mobile app
@@ -90,16 +96,15 @@ Open [http://localhost:3000](http://localhost:3000) and connect your Solana wall
 ## 📚 Documentation
 
 ### **Quick Links**
-- 🚀 [Getting Started](docs/GETTING_STARTED.md) - 5-minute setup guide
-- 📖 [Full Documentation](docs/) - Complete guides and references
-- 🧪 [Integration Testing](docs/integration/TESTING.md) - API test implementations
-- 📋 [Development Roadmap](ROADMAP.md) - 14-day sprint plan
-- ✅ [Day 2 Complete](DAY_2_COMPLETE.md) - Smart contracts ready for deployment
+
+- 🚀 [Getting Started](docs/GETTING_STARTED.md)
+- 🧭 [Quick Reference](docs/QUICK_REFERENCE.md)
+- � [Feasibility](docs/FEASIBILITY.md)
+- � [Deployment](docs/DEPLOYMENT.md)
 
 ### **For Developers**
-- 🏗️ [Architecture Guide](docs/guides/SETUP.md)
-- 🔌 [API Reference](docs/integration/PUMP_FUN.md)
-- 🎯 [Quick Reference](docs/reference/QUICK_REFERENCE.md)
+
+- 🎯 [Quick Reference](docs/QUICK_REFERENCE.md)
 - 🦀 [Smart Contracts](programs/pir8-game/src/) - Anchor program source code
 
 ## 🎯 Hackathon Strategy
@@ -107,11 +112,13 @@ Open [http://localhost:3000](http://localhost:3000) and connect your Solana wall
 This project targets multiple bounties in the Zcash privacy hackathon:
 
 ### **Primary Targets**
+
 - 🥇 **Helius Bounty** ($10k) - Solana ↔ Zcash solutions
 - 🥈 **Pump Fun Bounty** ($5k) - Meme coin integration
 - 🥉 **Gaming Innovation** ($3-7k) - Creative privacy applications
 
 ### **Technical Differentiators**
+
 - First blockchain implementation of classic Pirate Game
 - Real-time multiplayer with sub-second response times
 - Novel combination of gaming + DeFi + privacy + viral mechanics
@@ -120,6 +127,7 @@ This project targets multiple bounties in the Zcash privacy hackathon:
 ## 🧪 Testing
 
 ### **Smart Contract Testing**
+
 ```bash
 # Build and test Anchor programs
 anchor build
@@ -130,6 +138,7 @@ anchor deploy --provider.cluster devnet
 ```
 
 ### **Integration Testing**
+
 ```bash
 # Test Helius WebSocket monitoring
 npx tsx tests/helius-transaction-monitor.ts

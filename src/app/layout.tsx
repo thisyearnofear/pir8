@@ -2,6 +2,7 @@ import type { Metadata } from 'next'
 import { Inter } from 'next/font/google'
 import './globals.css'
 import '../styles/themes.css'
+import '../styles/MusicPlayer.css'
 import { WalletContextProvider } from '../components/WalletProvider'
 
 const inter = Inter({ subsets: ['latin'], display: 'swap' })

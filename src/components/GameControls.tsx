@@ -86,14 +86,19 @@ export default function GameControls({ gameId, isMyTurn, disabled = false }: Gam
   const remainingCoordinates = getAvailableCoordinates().length;
 
   return (
-    <div className="pirate-card">
+    <div className="game-controls-scanner">
+      <div className="corner-tl"></div>
+      <div className="corner-tr"></div>
+      <div className="corner-bl"></div>
+      <div className="corner-br"></div>
       <div className="mb-6 text-center border-b border-neon-cyan border-opacity-30 pb-4">
-        <h3 className="text-xl font-bold font-tech text-neon-orange">
+        <h3 className="text-xl font-bold font-tech holographic-text">
           ▶ TARGET.SYSTEM
         </h3>
-        <p className="text-sm text-neon-cyan font-mono mt-2">
+        <p className="text-sm text-neon-cyan font-mono mt-2 animate-glow-pulse">
           &gt; {remainingCoordinates} / 49 COORDINATES AVAILABLE
         </p>
+        <div className="scanner-line mt-2"></div>
       </div>
 
       {/* Turn indicator - PROMINENT */}
@@ -138,7 +143,7 @@ export default function GameControls({ gameId, isMyTurn, disabled = false }: Gam
             placeholder="A1"
             maxLength={2}
             disabled={disabled || !isMyTurn}
-            className="flex-1 px-4 py-3 bg-bg-dark-2 bg-opacity-50 border border-neon-cyan border-opacity-30 rounded-lg text-neon-cyan placeholder-neon-cyan placeholder-opacity-50 focus:outline-none focus:ring-2 focus:ring-neon-cyan focus:border-transparent font-mono font-bold transition-all"
+            className="coordinate-input-enhanced flex-1"
           />
           <button
             onClick={handleManualCoordinate}

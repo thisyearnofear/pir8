@@ -58,26 +58,32 @@ export default function PlayerStats({
   };
 
   return (
-    <div className="pirate-card">
+    <div className="player-stats-scanner">
+      <div className="corner-tl"></div>
+      <div className="corner-tr"></div>
+      <div className="corner-bl"></div>
+      <div className="corner-br"></div>
+      
       <div className="mb-6 text-center border-b border-neon-cyan border-opacity-30 pb-4">
-        <h3 className="text-xl font-bold font-tech text-neon-magenta">
+        <h3 className="text-xl font-bold font-tech holographic-text">
           ▶ PILOT.STATUS
         </h3>
         {gameStatus === 'active' && (
-          <p className="text-sm text-neon-cyan font-mono mt-2">
+          <p className="text-sm text-neon-cyan font-mono mt-2 animate-glow-pulse">
             &gt; ACTIVE PILOT: {getPlayerDisplayName(players[currentPlayerIndex])}
           </p>
         )}
+        <div className="scanner-line mt-2"></div>
       </div>
 
       <div className="space-y-3">
         {players.map((player, index) => (
           <div
             key={player.publicKey}
-            className={`p-4 rounded-lg border-2 transition-all ${
-              isCurrentPlayer(index)
-                ? 'border-neon-cyan bg-neon-cyan bg-opacity-10 animate-glow-pulse'
-                : 'border-neon-magenta border-opacity-30 bg-neon-magenta bg-opacity-5'
+            className={`player-card-enhanced ${
+              isCurrentPlayer(index) ? 'current-player' : ''
+            } ${
+              winner === player.publicKey ? 'winner' : ''
             } ${
               isMyPlayer(player) ? 'ring-2 ring-neon-orange' : ''
             }`}
@@ -104,17 +110,17 @@ export default function PlayerStats({
               )}
             </div>
 
-            <div className="grid grid-cols-2 gap-4 text-sm mb-3">
-              <div className="bg-neon-cyan bg-opacity-5 p-2 rounded border border-neon-cyan border-opacity-20">
-                <div className="text-xs text-neon-cyan font-mono uppercase mb-1">Live Points</div>
-                <div className="text-lg font-bold text-neon-cyan font-tech">
+            <div className="grid grid-cols-2 gap-3 mb-4">
+              <div className="score-display">
+                <div className="score-label">LIVE POINTS</div>
+                <div className="score-value text-neon-cyan">
                   {player.points.toLocaleString()}
                 </div>
               </div>
               
-              <div className="bg-neon-magenta bg-opacity-5 p-2 rounded border border-neon-magenta border-opacity-20">
-                <div className="text-xs text-neon-magenta font-mono uppercase mb-1">Banked</div>
-                <div className="text-lg font-bold text-neon-magenta font-tech">
+              <div className="score-display">
+                <div className="score-label">BANKED</div>
+                <div className="score-value text-neon-magenta">
                   {player.bankedPoints.toLocaleString()}
                 </div>
               </div>

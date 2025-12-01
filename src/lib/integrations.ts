@@ -3,7 +3,7 @@
  * Consolidates your test implementations from /tests directory
  */
 
-import { SOLANA_CONFIG, API_ENDPOINTS } from '../utils/constants';
+import { SOLANA_CONFIG, API_ENDPOINTS, ZCASH_CONFIG } from '../utils/constants';
 
 // ENHANCED Helius Integration (based on helius-transaction-monitor.ts)
 export class HeliusMonitor {
@@ -275,6 +275,27 @@ export function setupGameIntegrations(gameId: string) {
     heliusMonitor,
     cleanup: () => heliusMonitor.disconnect(),
   };
+}
+
+// Zcash Bridge (memo-based private entry)
+export class ZcashMemoBridge {
+  constructor(private onEntry: (payload: { gameId: string; solanaPubkey: string; amountZEC: number }) => void) {}
+
+  parseMemo(memo: string) {
+    try {
+      const data = JSON.parse(memo);
+      if (data.v !== ZCASH_CONFIG.MEMO_SCHEMA_VERSION) return null;
+      if (!data.gameId || !data.solanaPubkey || typeof data.amountZEC !== 'number') return null;
+      return { gameId: data.gameId, solanaPubkey: data.solanaPubkey, amountZEC: data.amountZEC };
+    } catch {
+      return null;
+    }
+  }
+
+  async handleIncomingShieldedMemo(memo: string) {
+    const parsed = this.parseMemo(memo);
+    if (parsed) this.onEntry(parsed);
+  }
 }
 
 export async function createWinnerToken(winner: { name: string; score: number }) {

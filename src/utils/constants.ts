@@ -21,6 +21,14 @@ export const API_ENDPOINTS = {
   HELIUS_WEBHOOK: '/api/webhooks/helius',
   PUMP_FUN: '/api/pump-fun',
   GAME_STATE: '/api/game',
+  ZCASH_BRIDGE: '/api/zcash',
+} as const;
+
+// Zcash Configuration
+export const ZCASH_CONFIG = {
+  LIGHTWALLETD_URL: process.env.NEXT_PUBLIC_LIGHTWALLETD_URL || 'https://lightwalletd.com:9067',
+  SHIELDED_ADDRESS: process.env.NEXT_PUBLIC_ZCASH_SHIELDED_ADDR || '',
+  MEMO_SCHEMA_VERSION: '1',
 } as const;
 
 // Game Item Mappings
