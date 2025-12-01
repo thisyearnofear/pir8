@@ -1,0 +1,23 @@
+[package]
+name = "pir8-game"
+version = "0.1.0"
+description = "PIR8 - Privacy-First Gaming on Solana"
+edition = "2021"
+
+[lib]
+crate-type = ["cdylib", "lib"]
+name = "pir8_game"
+
+[features]
+no-entrypoint = []
+no-idl = []
+no-log-ix-name = []
+cpi = ["no-entrypoint"]
+default = []
+
+[dependencies]
+anchor-lang = "0.28.0"
+anchor-spl = "0.28.0"
+spl-token = "3.5.0"
+solana-program = "~1.16.0"
+switchboard-v2 = "0.4.0"

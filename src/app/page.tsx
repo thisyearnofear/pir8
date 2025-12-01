@@ -3,6 +3,7 @@
 import { useWallet } from '@solana/wallet-adapter-react';
 import { WalletMultiButton } from '@solana/wallet-adapter-react-ui';
 import { useGameState } from '../src/hooks/useGameState';
+import { useHeliusMonitor, GameEvent } from '../src/hooks/useHeliusMonitor';
 import GameGrid from '../src/components/GameGrid';
 import PlayerStats from '../src/components/PlayerStats';
 import GameControls from '../src/components/GameControls';
@@ -22,6 +23,28 @@ export default function Home() {
   } = useGameState();
 
   const [isCreatingGame, setIsCreatingGame] = useState(false);
+
+  // ENHANCED: Real-time game monitoring with Helius
+  const { isConnected: isMonitorConnected } = useHeliusMonitor({
+    gameId: gameState?.gameId,
+    onGameEvent: (event: GameEvent) => {
+      // Handle real-time game events
+      switch (event.type) {
+        case 'playerJoined':
+          setMessage('🏴‍☠️ A new pirate has joined the crew!');
+          break;
+        case 'gameStarted':
+          setMessage('⚔️ Battle has begun! May the best pirate win!');
+          break;
+        case 'moveMade':
+          setMessage('⚡ A pirate has made their move...');
+          break;
+        case 'gameCompleted':
+          setMessage('🏆 The battle is over! A champion has emerged!');
+          break;
+      }
+    }
+  });
 
   const handleCreateGame = async () => {
     if (!publicKey) return;
@@ -82,9 +105,15 @@ export default function Home() {
         </div>
 
         {connected && publicKey && (
-          <p className="text-sm text-gray-400">
-            Welcome aboard, {publicKey.toString().slice(0, 4)}...{publicKey.toString().slice(-4)}!
-          </p>
+          <div className="text-sm text-gray-400 space-y-1">
+            <p>Welcome aboard, {publicKey.toString().slice(0, 4)}...{publicKey.toString().slice(-4)}!</p>
+            <div className="flex items-center justify-center space-x-2">
+              <div className={`w-2 h-2 rounded-full ${isMonitorConnected ? 'bg-green-400 animate-pulse' : 'bg-gray-500'}`}></div>
+              <span className="text-xs">
+                {isMonitorConnected ? '🔥 Helius Monitor Active' : '⏳ Connecting to Helius...'}
+              </span>
+            </div>
+          </div>
         )}
       </header>
 

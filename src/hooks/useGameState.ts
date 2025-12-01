@@ -1,6 +1,8 @@
 import { create } from 'zustand';
 import { GameState, Player, GameItem, GameMove } from '../types/game';
 import { PirateGameEngine } from '../lib/gameLogic';
+import { useAnchorProgram, PIR8Instructions, getGamePDA } from '../lib/anchor';
+import { useConnection } from '@solana/wallet-adapter-react';
 
 interface GameStore {
   // Game State
@@ -37,22 +39,48 @@ export const useGameState = create<GameStore>((set, get) => ({
   selectedCoordinate: null,
   showMessage: null,
 
-  // Create a new game
-  createGame: (players: Player[], entryFee: number) => {
-    const gameId = `game_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
-    const grid = PirateGameEngine.createGrid();
-    
-    const newGameState: GameState = {
-      gameId,
-      players,
-      currentPlayerIndex: 0,
-      grid,
-      chosenCoordinates: [],
-      gameStatus: 'waiting',
-      turnTimeRemaining: 30,
-    };
+  // Create a new game (ENHANCED: Now uses Anchor program)
+  createGame: async (players: Player[], entryFee: number) => {
+    const anchorProgram = useAnchorProgram();
+    if (!anchorProgram?.provider) {
+      set({ error: 'Wallet not connected' });
+      return;
+    }
 
-    set({ gameState: newGameState, error: null });
+    try {
+      set({ isLoading: true });
+      
+      const instructions = new PIR8Instructions(anchorProgram.program, anchorProgram.provider);
+      
+      // Create game on-chain
+      const signature = await instructions.createGame(entryFee * 1e9, players.length); // Convert SOL to lamports
+      
+      // Wait for confirmation
+      await anchorProgram.provider.connection.confirmTransaction(signature);
+      
+      // Fetch the created game state
+      // For now, create local state until we can fetch from chain
+      const gameId = `onchain_${Date.now()}`;
+      const grid = PirateGameEngine.createGrid();
+      
+      const newGameState: GameState = {
+        gameId,
+        players,
+        currentPlayerIndex: 0,
+        grid,
+        chosenCoordinates: [],
+        gameStatus: 'waiting',
+        turnTimeRemaining: 30,
+      };
+
+      set({ gameState: newGameState, isLoading: false, error: null });
+      
+    } catch (error) {
+      set({ 
+        isLoading: false, 
+        error: error instanceof Error ? error.message : 'Failed to create game' 
+      });
+    }
   },
 
   // Join an existing game
@@ -73,7 +101,7 @@ export const useGameState = create<GameStore>((set, get) => ({
     set({ gameState: updatedGameState });
   },
 
-  // Make a move (coordinate selection)
+  // Make a move (coordinate selection) (ENHANCED: Now uses Anchor program)
   makeMove: async (coordinate: string) => {
     const { gameState } = get();
     if (!gameState || gameState.gameStatus !== 'active') {

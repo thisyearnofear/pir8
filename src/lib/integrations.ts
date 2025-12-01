@@ -5,34 +5,43 @@
 
 import { SOLANA_CONFIG, API_ENDPOINTS } from '../utils/constants';
 
-// Helius Integration (based on helius-transaction-monitor.ts)
+// ENHANCED Helius Integration (based on helius-transaction-monitor.ts)
 export class HeliusMonitor {
   private ws: WebSocket | null = null;
   private reconnectAttempts = 0;
   private maxReconnectAttempts = 5;
+  private gameId: string | null = null;
 
-  constructor(private onTransaction: (data: any) => void) {}
+  constructor(private onTransaction: (data: any) => void, gameId?: string) {
+    this.gameId = gameId || null;
+  }
 
   connect() {
     if (!API_ENDPOINTS.HELIUS_RPC) {
       throw new Error('Helius RPC URL not configured');
     }
 
-    const wsUrl = API_ENDPOINTS.HELIUS_RPC.replace('https://', 'wss://');
+    // Use WebSocket endpoint
+    const wsUrl = API_ENDPOINTS.HELIUS_RPC.replace('https://', 'wss://').replace('http://', 'ws://');
     this.ws = new WebSocket(wsUrl);
 
     this.ws.onopen = () => {
-      console.log('Helius WebSocket connected');
+      console.log('🔥 Helius WebSocket connected for PIR8');
       this.reconnectAttempts = 0;
       
-      // Subscribe to game-related transactions
-      this.subscribe();
+      // Subscribe to PIR8 game transactions
+      this.subscribeToGameTransactions();
     };
 
     this.ws.onmessage = (event) => {
       try {
         const data = JSON.parse(event.data);
-        this.onTransaction(data);
+        
+        // Filter and process PIR8 game events
+        if (this.isPir8GameTransaction(data)) {
+          this.processGameTransaction(data);
+          this.onTransaction(data);
+        }
       } catch (error) {
         console.error('Failed to parse Helius message:', error);
       }
@@ -48,7 +57,7 @@ export class HeliusMonitor {
     };
   }
 
-  private subscribe() {
+  private subscribeToGameTransactions() {
     if (!this.ws || this.ws.readyState !== WebSocket.OPEN) return;
 
     const subscribeMessage = {
@@ -60,7 +69,7 @@ export class HeliusMonitor {
           vote: false,
           failed: false,
           signature: null,
-          accountInclude: [SOLANA_CONFIG.PROGRAM_ID]
+          accountInclude: [SOLANA_CONFIG.PROGRAM_ID], // PIR8 program ID
         },
         {
           commitment: 'finalized',
@@ -73,6 +82,74 @@ export class HeliusMonitor {
     };
 
     this.ws.send(JSON.stringify(subscribeMessage));
+    console.log('🎯 Subscribed to PIR8 game transactions');
+  }
+
+  private isPir8GameTransaction(data: any): boolean {
+    // Check if transaction involves PIR8 program
+    try {
+      const transaction = data?.result?.value?.transaction;
+      if (!transaction) return false;
+
+      const accountKeys = transaction?.message?.accountKeys;
+      if (!accountKeys) return false;
+
+      return accountKeys.some((key: any) => 
+        key?.pubkey === SOLANA_CONFIG.PROGRAM_ID || 
+        key === SOLANA_CONFIG.PROGRAM_ID
+      );
+    } catch {
+      return false;
+    }
+  }
+
+  private processGameTransaction(data: any) {
+    try {
+      const transaction = data.result?.value;
+      const logs = transaction?.meta?.logMessages || [];
+      
+      // Parse PIR8 game events from logs
+      for (const log of logs) {
+        if (log.includes('GameCreated')) {
+          this.handleGameCreated(log);
+        } else if (log.includes('PlayerJoined')) {
+          this.handlePlayerJoined(log);
+        } else if (log.includes('GameStarted')) {
+          this.handleGameStarted(log);
+        } else if (log.includes('MoveMade')) {
+          this.handleMoveMade(log);
+        } else if (log.includes('GameCompleted')) {
+          this.handleGameCompleted(log);
+        }
+      }
+    } catch (error) {
+      console.error('Error processing game transaction:', error);
+    }
+  }
+
+  private handleGameCreated(log: string) {
+    console.log('🎮 Game Created:', log);
+    // Extract game details and notify UI
+  }
+
+  private handlePlayerJoined(log: string) {
+    console.log('👤 Player Joined:', log);
+    // Update player count in UI
+  }
+
+  private handleGameStarted(log: string) {
+    console.log('🚀 Game Started:', log);
+    // Switch UI to active game mode
+  }
+
+  private handleMoveMade(log: string) {
+    console.log('⚡ Move Made:', log);
+    // Update game grid and player stats in real-time
+  }
+
+  private handleGameCompleted(log: string) {
+    console.log('🏆 Game Completed:', log);
+    // Show winner and enable claim winnings
   }
 
   private handleReconnect() {
