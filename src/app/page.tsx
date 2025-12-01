@@ -2,15 +2,15 @@
 
 import { useWallet } from '@solana/wallet-adapter-react';
 import { WalletMultiButton } from '@solana/wallet-adapter-react-ui';
-import { useGameState } from '../src/hooks/useGameState';
-import { useHeliusMonitor, GameEvent } from '../src/hooks/useHeliusMonitor';
-import { useErrorHandler } from '../src/hooks/useErrorHandler';
-import { useMobileOptimized } from '../src/hooks/useMobileOptimized';
-import { ErrorBoundary } from '../src/components/ErrorBoundary';
-import { ErrorToast, SuccessToast, LoadingToast } from '../src/components/Toast';
-import GameGrid from '../src/components/GameGrid';
-import PlayerStats from '../src/components/PlayerStats';
-import GameControls from '../src/components/GameControls';
+import { useGameState } from '@/hooks/useGameState';
+import { useHeliusMonitor, GameEvent } from '@/hooks/useHeliusMonitor';
+import { useErrorHandler } from '@/hooks/useErrorHandler';
+import { useMobileOptimized } from '@/hooks/useMobileOptimized';
+import { ErrorBoundary } from '@/components/ErrorBoundary';
+import { ErrorToast, SuccessToast, LoadingToast } from '@/components/Toast';
+import GameGrid from '@/components/GameGrid';
+import PlayerStats from '@/components/PlayerStats';
+import GameControls from '@/components/GameControls';
 import { useState, useEffect } from 'react';
 
 export default function Home() {
