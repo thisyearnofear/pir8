@@ -25,6 +25,7 @@ export const useHeliusMonitor = ({ gameId, onGameEvent }: UseHeliusMonitorProps 
   const { setMessage, clearError } = useGameState();
   const monitorRef = useRef<HeliusMonitor | null>(null);
   const isConnectedRef = useRef(false);
+  const LOG_LEVEL = (process.env.NEXT_PUBLIC_LOG_LEVEL as any) || 'error';
 
   const handleTransaction = useCallback((data: any) => {
     try {
@@ -37,11 +38,12 @@ export const useHeliusMonitor = ({ gameId, onGameEvent }: UseHeliusMonitorProps 
         // Call custom handler
         onGameEvent?.(event);
         
-        // Log for debugging
-        console.log('PIR8 Game Event:', event);
+        if (LOG_LEVEL === 'debug') {
+          console.log('PIR8 Game Event', event);
+        }
       }
     } catch (error) {
-      console.error('Error handling game transaction:', error);
+      console.error('Error handling game transaction');
     }
   }, [onGameEvent, setMessage]);
 
@@ -55,10 +57,12 @@ export const useHeliusMonitor = ({ gameId, onGameEvent }: UseHeliusMonitorProps 
       monitorRef.current.connect();
       isConnectedRef.current = true;
       
-      console.log('🔥 Helius monitor connected for PIR8');
+      if (LOG_LEVEL === 'debug' || LOG_LEVEL === 'info') {
+        console.log('Helius monitor connected');
+      }
       clearError();
     } catch (error) {
-      console.error('Failed to connect Helius monitor:', error);
+      console.error('Failed to connect Helius monitor');
     }
   }, [handleTransaction, gameId, clearError]);
 
@@ -68,7 +72,9 @@ export const useHeliusMonitor = ({ gameId, onGameEvent }: UseHeliusMonitorProps 
       monitorRef.current = null;
       isConnectedRef.current = false;
       
-      console.log('🔥 Helius monitor disconnected');
+      if (LOG_LEVEL === 'debug' || LOG_LEVEL === 'info') {
+        console.log('Helius monitor disconnected');
+      }
     }
   }, []);
 

@@ -11,6 +11,8 @@ export class HeliusMonitor {
   private reconnectAttempts = 0;
   private maxReconnectAttempts = 5;
   private gameId: string | null = null;
+  private logLevel: 'silent' | 'error' | 'warn' | 'info' | 'debug' =
+    (process.env.NEXT_PUBLIC_LOG_LEVEL as any) || 'error';
 
   constructor(private onTransaction: (data: any) => void, gameId?: string) {
     this.gameId = gameId || null;
@@ -26,10 +28,8 @@ export class HeliusMonitor {
     this.ws = new WebSocket(wsUrl);
 
     this.ws.onopen = () => {
-      console.log('🔥 Helius WebSocket connected for PIR8');
+      this.log('info', 'Helius WebSocket connected');
       this.reconnectAttempts = 0;
-      
-      // Subscribe to PIR8 game transactions
       this.subscribeToGameTransactions();
     };
 
@@ -43,19 +43,17 @@ export class HeliusMonitor {
           this.onTransaction(data);
         }
       } catch (error) {
-        console.error('Failed to parse Helius message:', error);
+        this.log('error', 'Failed to parse Helius message');
       }
     };
 
     this.ws.onclose = () => {
-      console.log('Helius WebSocket disconnected');
+      this.log('warn', 'Helius WebSocket disconnected');
       this.handleReconnect();
     };
 
-    this.ws.onerror = (error) => {
-      console.error('Helius WebSocket error:', error);
-      // Don't trigger reconnect on error - let onclose handle it
-      // Prevents infinite reconnect loops
+    this.ws.onerror = () => {
+      this.log('error', 'Helius WebSocket error');
     };
   }
 
@@ -84,7 +82,7 @@ export class HeliusMonitor {
     };
 
     this.ws.send(JSON.stringify(subscribeMessage));
-    console.log('🎯 Subscribed to PIR8 game transactions');
+    this.log('debug', 'Subscribed to PIR8 game transactions');
   }
 
   private isPir8GameTransaction(data: any): boolean {
@@ -124,43 +122,37 @@ export class HeliusMonitor {
           this.handleGameCompleted(log);
         }
       }
-    } catch (error) {
-      console.error('Error processing game transaction:', error);
+    } catch {
+      this.log('error', 'Error processing game transaction');
     }
   }
 
   private handleGameCreated(log: string) {
-    console.log('🎮 Game Created:', log);
-    // Extract game details and notify UI
+    this.log('debug', 'Game Created');
   }
 
   private handlePlayerJoined(log: string) {
-    console.log('👤 Player Joined:', log);
-    // Update player count in UI
+    this.log('debug', 'Player Joined');
   }
 
   private handleGameStarted(log: string) {
-    console.log('🚀 Game Started:', log);
-    // Switch UI to active game mode
+    this.log('debug', 'Game Started');
   }
 
   private handleMoveMade(log: string) {
-    console.log('⚡ Move Made:', log);
-    // Update game grid and player stats in real-time
+    this.log('debug', 'Move Made');
   }
 
   private handleGameCompleted(log: string) {
-    console.log('🏆 Game Completed:', log);
-    // Show winner and enable claim winnings
+    this.log('debug', 'Game Completed');
   }
 
   private handleReconnect() {
     if (this.reconnectAttempts < this.maxReconnectAttempts) {
       this.reconnectAttempts++;
       const delay = Math.pow(2, this.reconnectAttempts) * 1000;
-      
       setTimeout(() => {
-        console.log(`Attempting to reconnect (${this.reconnectAttempts}/${this.maxReconnectAttempts})...`);
+        this.log('warn', `Reconnecting (${this.reconnectAttempts}/${this.maxReconnectAttempts})`);
         this.connect();
       }, delay);
     }
@@ -170,6 +162,17 @@ export class HeliusMonitor {
     if (this.ws) {
       this.ws.close();
       this.ws = null;
+    }
+  }
+
+  private log(level: 'error' | 'warn' | 'info' | 'debug' | 'silent', message: string) {
+    const order = { silent: 0, error: 1, warn: 2, info: 3, debug: 4 } as const;
+    const current = order[this.logLevel];
+    const target = order[level];
+    if (target <= current && level !== 'silent') {
+      if (level === 'error') console.error(message);
+      else if (level === 'warn') console.warn(message);
+      else console.log(message);
     }
   }
 }
@@ -264,11 +267,7 @@ export class PumpFunCreator {
 
 // Game Integration Helpers
 export function setupGameIntegrations(gameId: string) {
-  // Initialize Helius monitoring for game
-  const heliusMonitor = new HeliusMonitor((transaction) => {
-    // Process game-related transactions
-    console.log('Game transaction detected:', transaction);
-  });
+  const heliusMonitor = new HeliusMonitor(() => {});
 
   heliusMonitor.connect();
 
