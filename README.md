@@ -74,10 +74,12 @@ Open [http://localhost:3000](http://localhost:3000) and connect your Solana wall
 - ✅ **Type-safe blockchain integration** with Anchor program calls
 - ✅ **Mobile-optimized interface** for seamless gameplay
 
-### 🚧 **In Development** 
-- PumpPortal token creation for winners (API integration ready)
-- Zero-knowledge privacy features for private moves
-- Tournament modes and advanced game mechanics
+### 🚧 **Next: Post-Deployment Enhancements** 
+- 🪙 **Pump Fun winner tokens** - Automatic meme coin creation for victors
+- 🎭 **Interactive onboarding** - "Treasure map" tutorial system  
+- ✨ **User delight features** - Animations, sound effects, pirate personas
+- 🏆 **Viral mechanics** - Social sharing, leaderboards, achievement system
+- 🔒 **Privacy features** - Zero-knowledge proofs for private moves
 
 ### 🔮 **Planned**
 - Tournament modes with entry fees
