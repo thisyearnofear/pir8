@@ -2,6 +2,8 @@
 
 import { useState } from 'react';
 import { useGameState } from '../hooks/useGameState';
+import { useErrorHandler } from '../hooks/useErrorHandler';
+import { useMobileOptimized } from '../hooks/useMobileOptimized';
 import { PirateGameEngine } from '../lib/gameLogic';
 
 interface GameControlsProps {
@@ -15,6 +17,8 @@ export default function GameControls({ gameId, isMyTurn, disabled = false }: Gam
   const [isGenerating, setIsGenerating] = useState(false);
   const [selectedCoordinate, setSelectedCoordinate] = useState<string>('');
   const [coordinateInput, setCoordinateInput] = useState<string>('');
+  const { handleGameError } = useErrorHandler();
+  const { isMobile, mobileClasses, triggerHaptic } = useMobileOptimized();
 
   const handleGenerateCoordinate = async () => {
     if (!gameState || disabled || !isMyTurn) return;
@@ -25,16 +29,25 @@ export default function GameControls({ gameId, isMyTurn, disabled = false }: Gam
     try {
       const coordinate = PirateGameEngine.generateRandomCoordinate(gameState.chosenCoordinates);
       setSelectedCoordinate(coordinate);
+      triggerHaptic('medium');
       
       // Auto-make the move after a short delay for dramatic effect
       setTimeout(async () => {
-        await makeMove(coordinate);
-        setIsGenerating(false);
-        setSelectedCoordinate('');
+        try {
+          await makeMove(coordinate);
+          triggerHaptic('light');
+        } catch (error) {
+          handleGameError(error, 'make move');
+          triggerHaptic('heavy');
+        } finally {
+          setIsGenerating(false);
+          setSelectedCoordinate('');
+        }
       }, 1000);
     } catch (error) {
+      handleGameError(error, 'generate coordinate');
+      triggerHaptic('heavy');
       setIsGenerating(false);
-      console.error('Failed to generate coordinate:', error);
     }
   };
 
@@ -48,12 +61,19 @@ export default function GameControls({ gameId, isMyTurn, disabled = false }: Gam
     );
 
     if (!validation.isValid) {
-      alert(validation.error);
+      handleGameError(new Error(validation.error || 'Invalid coordinate'), 'validate coordinate');
+      triggerHaptic('heavy');
       return;
     }
 
-    await makeMove(coordinate);
-    setCoordinateInput('');
+    try {
+      await makeMove(coordinate);
+      triggerHaptic('medium');
+      setCoordinateInput('');
+    } catch (error) {
+      handleGameError(error, 'make move');
+      triggerHaptic('heavy');
+    }
   };
 
   const getAvailableCoordinates = (): string[] => {

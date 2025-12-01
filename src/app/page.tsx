@@ -4,6 +4,10 @@ import { useWallet } from '@solana/wallet-adapter-react';
 import { WalletMultiButton } from '@solana/wallet-adapter-react-ui';
 import { useGameState } from '../src/hooks/useGameState';
 import { useHeliusMonitor, GameEvent } from '../src/hooks/useHeliusMonitor';
+import { useErrorHandler } from '../src/hooks/useErrorHandler';
+import { useMobileOptimized } from '../src/hooks/useMobileOptimized';
+import { ErrorBoundary } from '../src/components/ErrorBoundary';
+import { ErrorToast, SuccessToast, LoadingToast } from '../src/components/Toast';
 import GameGrid from '../src/components/GameGrid';
 import PlayerStats from '../src/components/PlayerStats';
 import GameControls from '../src/components/GameControls';
@@ -23,6 +27,8 @@ export default function Home() {
   } = useGameState();
 
   const [isCreatingGame, setIsCreatingGame] = useState(false);
+  const { handleWalletError, handleGameError } = useErrorHandler();
+  const { isMobile, mobileClasses } = useMobileOptimized();
 
   // ENHANCED: Real-time game monitoring with Helius
   const { isConnected: isMonitorConnected } = useHeliusMonitor({
@@ -47,25 +53,37 @@ export default function Home() {
   });
 
   const handleCreateGame = async () => {
-    if (!publicKey) return;
+    try {
+      if (!publicKey) {
+        handleWalletError(new Error('Wallet not connected'));
+        return;
+      }
 
-    setIsCreatingGame(true);
-    
-    const player = {
-      publicKey: publicKey.toString(),
-      points: 0,
-      bankedPoints: 0,
-      hasElf: false,
-      hasBauble: false,
-      username: `Pirate_${publicKey.toString().slice(0, 4)}`
-    };
+      setIsCreatingGame(true);
+      
+      const player = {
+        publicKey: publicKey.toString(),
+        points: 0,
+        bankedPoints: 0,
+        hasElf: false,
+        hasBauble: false,
+        username: `Pirate_${publicKey.toString().slice(0, 4)}`
+      };
 
-    createGame([player], 0.1); // 0.1 SOL entry fee
-    setIsCreatingGame(false);
+      await createGame([player], 0.1); // 0.1 SOL entry fee
+    } catch (error) {
+      handleGameError(error, 'create game');
+    } finally {
+      setIsCreatingGame(false);
+    }
   };
 
   const handleCoordinateSelect = async (coordinate: string) => {
-    await makeMove(coordinate);
+    try {
+      await makeMove(coordinate);
+    } catch (error) {
+      handleGameError(error, 'make move');
+    }
   };
 
   // Clear messages after 5 seconds
@@ -89,7 +107,8 @@ export default function Home() {
   }, [error, clearError]);
 
   return (
-    <main className="min-h-screen p-4">
+    <ErrorBoundary>
+    <main className={`min-h-screen p-4 ${mobileClasses.container}`}>
       {/* Header */}
       <header className="text-center mb-8">
         <h1 className="text-5xl md:text-7xl font-bold text-pirate-gold font-pirate mb-4 animate-treasure-glow">
@@ -117,25 +136,13 @@ export default function Home() {
         )}
       </header>
 
-      {/* Error Display */}
-      {error && (
-        <div className="fixed top-4 right-4 z-50 bg-red-600 text-white p-4 rounded-lg shadow-lg max-w-sm">
-          <div className="flex items-center justify-between">
-            <span>{error}</span>
-            <button onClick={clearError} className="ml-2 text-xl">&times;</button>
-          </div>
-        </div>
-      )}
-
-      {/* Success Message Display */}
-      {showMessage && (
-        <div className="fixed top-4 left-4 z-50 message-toast max-w-sm">
-          <div className="flex items-center justify-between">
-            <span>{showMessage}</span>
-            <button onClick={() => setMessage(null)} className="ml-2 text-xl">&times;</button>
-          </div>
-        </div>
-      )}
+      {/* Enhanced Toast Notifications */}
+      <ErrorToast error={error} onClose={clearError} />
+      <SuccessToast message={showMessage} onClose={() => setMessage(null)} />
+      <LoadingToast 
+        message={isCreatingGame ? "🚢 Creating your pirate battle..." : null} 
+        isLoading={isCreatingGame} 
+      />
 
       {/* Main Content */}
       {!connected ? (
@@ -252,5 +259,6 @@ export default function Home() {
         </p>
       </footer>
     </main>
+    </ErrorBoundary>
   );
 }

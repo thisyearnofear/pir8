@@ -156,9 +156,27 @@ export const useGameState = create<GameStore>((set, get) => ({
 
       return true;
     } catch (error) {
+      console.error('Make move error:', error);
+      
+      // Enhanced error handling with user-friendly messages
+      let errorMessage = 'Failed to make move';
+      if (error instanceof Error) {
+        if (error.message.includes('User rejected')) {
+          errorMessage = '🏴‍☠️ Transaction cancelled by captain\'s orders';
+        } else if (error.message.includes('insufficient funds')) {
+          errorMessage = '💰 Not enough SOL for this move';
+        } else if (error.message.includes('Not your turn')) {
+          errorMessage = '⏳ Hold your horses! It\'s not your turn yet';
+        } else if (error.message.includes('Coordinate already chosen')) {
+          errorMessage = '🎯 That treasure spot is already claimed, matey!';
+        } else {
+          errorMessage = `⚡ ${error.message}`;
+        }
+      }
+      
       set({ 
         isLoading: false, 
-        error: error instanceof Error ? error.message : 'Failed to make move' 
+        error: errorMessage
       });
       return false;
     }
