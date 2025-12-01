@@ -9,7 +9,7 @@ import { useAnchorWallet, useConnection } from '@solana/wallet-adapter-react';
 import { useMemo } from 'react';
 
 // Program ID - Update this when you deploy
-export const PROGRAM_ID = new PublicKey(process.env.NEXT_PUBLIC_PROGRAM_ID || 'Fg6PaFpoGXkYsidMpWTK6W2BeZ7FEfcYkg476zPFsLnS');
+export const PROGRAM_ID = new PublicKey(process.env.NEXT_PUBLIC_PROGRAM_ID || '5etQW394NUCprU1ikrbDysFeCGGRYY9usChGpaox9oiK');
 
 // Program IDL type definitions
 export interface PIR8Program {

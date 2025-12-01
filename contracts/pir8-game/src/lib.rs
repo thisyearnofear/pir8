@@ -1,8 +1,7 @@
 use anchor_lang::prelude::*;
 use anchor_lang::system_program;
-use anchor_spl::token::{self, Token, TokenAccount, Transfer};
 
-declare_id!("Fg6PaFpoGXkYsidMpWTK6W2BeZ7FEfcYkg476zPFsLnS");
+declare_id!("5etQW394NUCprU1ikrbDysFeCGGRYY9usChGpaox9oiK");
 
 // ============================================================================
 // CONSTANTS
@@ -609,73 +608,58 @@ pub mod pir8_game {
         require!(game.is_coordinate_available(&coordinate), PIR8Error::CoordinateTaken);
 
         let coordinate_index = coordinate_to_grid_index(&coordinate)?;
-        let item = &game.grid[coordinate_index];
+        let item = game.grid[coordinate_index].clone();
 
         game.add_coordinate(coordinate.clone());
 
         let mut points_gained = 0;
-        let mut item_description = String::new();
         let mut requires_action = false;
 
         {
             let current_player = game.get_current_player_mut()?;
             current_player.last_move_at = clock.unix_timestamp;
 
-            match item {
+            match &item {
                 GameItem::Points(points) => {
                     points_gained = *points as u64;
                     current_player.points = current_player.points.checked_add(points_gained).ok_or(PIR8Error::ArithmeticOverflow)?;
-                    item_description = format!("Gained {} points", points_gained);
                 },
                 GameItem::Grinch => {
-                    item_description = "Found Grinch - can steal points".to_string();
                     requires_action = true;
                 },
                 GameItem::Pudding => {
-                    item_description = "Found Pudding - can reset player points".to_string();
                     requires_action = true;
                 },
                 GameItem::Present => {
-                    item_description = "Found Present - can gift 1000 points".to_string();
                     requires_action = true;
                 },
-                GameItem::Snowball => {
-                    item_description = "Found Snowball - area attack".to_string();
-                },
+                GameItem::Snowball => {},
                 GameItem::Mistletoe => {
-                    item_description = "Found Mistletoe - can swap scores".to_string();
                     requires_action = true;
                 },
                 GameItem::Tree => {
-                    item_description = "Found Tree - choose next coordinate".to_string();
                     requires_action = true;
                 },
                 GameItem::Elf => {
                     if !current_player.has_elf {
                         current_player.has_elf = true;
-                        item_description = "Gained Elf - block one attack".to_string();
                     }
                 },
                 GameItem::Bauble => {
                     if !current_player.has_bauble {
                         current_player.has_bauble = true;
-                        item_description = "Gained Bauble - reflect one attack".to_string();
                     }
                 },
                 GameItem::Turkey => {
                     current_player.points = 0;
-                    item_description = "Found Turkey - points reset to 0!".to_string();
                 },
                 GameItem::Cracker => {
-                    let old_points = current_player.points;
                     current_player.points = current_player.points.checked_mul(2).ok_or(PIR8Error::ArithmeticOverflow)?;
-                    item_description = format!("Cracker - doubled score!");
                 },
                 GameItem::Bank => {
                     if current_player.points > 0 {
                         current_player.banked_points = current_player.banked_points.checked_add(current_player.points).ok_or(PIR8Error::ArithmeticOverflow)?;
                         current_player.points = 0;
-                        item_description = "Banked points - now safe!".to_string();
                     }
                 },
             }
@@ -710,7 +694,7 @@ pub mod pir8_game {
         ctx: Context<ExecuteItemEffect>,
         action: ItemAction,
         target_player: Option<Pubkey>,
-        amount: Option<u64>,
+        _amount: Option<u64>,
     ) -> Result<()> {
         let game = &mut ctx.accounts.game;
         let player = &ctx.accounts.player;
@@ -726,7 +710,7 @@ pub mod pir8_game {
             0
         };
 
-        match action {
+        match &action {
             ItemAction::Steal { amount: steal_amount } => {
                 if game.players[target_player_index].has_elf {
                     game.players[target_player_index].has_elf = false;
@@ -734,15 +718,15 @@ pub mod pir8_game {
                 } else if game.players[target_player_index].has_bauble {
                     game.players[target_player_index].has_bauble = false;
                     let current_points = game.players[current_player_index].points;
-                    let reflected_amount = steal_amount.min(current_points);
-                    game.players[current_player_index].points = current_points.saturating_sub(reflected_amount);
-                    game.players[target_player_index].points = game.players[target_player_index].points.saturating_add(reflected_amount);
+                    let reflected_amount = steal_amount.min(&current_points);
+                    game.players[current_player_index].points = current_points.saturating_sub(*reflected_amount);
+                    game.players[target_player_index].points = game.players[target_player_index].points.saturating_add(*reflected_amount);
                     effect_description = "Steal reflected by Bauble!".to_string();
                 } else {
                     let target_points = game.players[target_player_index].points;
-                    let actual_steal = steal_amount.min(target_points);
-                    game.players[target_player_index].points = target_points.saturating_sub(actual_steal);
-                    game.players[current_player_index].points = game.players[current_player_index].points.saturating_add(actual_steal);
+                    let actual_steal = steal_amount.min(&target_points);
+                    game.players[target_player_index].points = target_points.saturating_sub(*actual_steal);
+                    game.players[current_player_index].points = game.players[current_player_index].points.saturating_add(*actual_steal);
                     effect_description = "Stole points!".to_string();
                 }
             },
@@ -775,7 +759,7 @@ pub mod pir8_game {
                 }
             },
             ItemAction::Choose { coordinate } => {
-                require!(is_valid_coordinate(&coordinate), PIR8Error::InvalidCoordinate);
+                require!(is_valid_coordinate(coordinate), PIR8Error::InvalidCoordinate);
                 effect_description = format!("Chose: {}", coordinate);
             },
         }

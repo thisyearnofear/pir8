@@ -2,14 +2,16 @@
 
 Complete documentation for PIR8 gaming platform - smart contracts, integrations, and development guides.
 
-## 🚀 **Latest: Day 2 Complete - Smart Contracts Ready!**
+## 🚀 **Latest: Smart Contracts Deployed to Devnet!**
 
-PIR8 now includes production-ready Solana smart contracts with real-time multiplayer infrastructure! 
-📋 See [Day 2 Complete](../DAY_2_COMPLETE.md) for full technical details.
+PIR8 smart contracts are now **LIVE on Solana Devnet**! Program ID: `5etQW394NUCprU1ikrbDysFeCGGRYY9usChGpaox9oiK`
+
+📋 See [DEPLOYMENT.md](./DEPLOYMENT.md) for deployment details and testing instructions.
 
 ## Quick Navigation
 
 ### 🚀 Getting Started
+- **Deployment**: [DEPLOYMENT.md](./DEPLOYMENT.md) - Live contract details & testing (5 min)
 - **START HERE**: [GETTING_STARTED.md](./GETTING_STARTED.md) - Your 4-phase action plan (5 min)
 - **Setup**: [guides/SETUP.md](./guides/SETUP.md) - Step-by-step installation (15 min)
 
@@ -32,6 +34,7 @@ PIR8 now includes production-ready Solana smart contracts with real-time multipl
 ```
 docs/
 ├── README.md                     ← You are here
+├── DEPLOYMENT.md                 ← Live contract details
 ├── GETTING_STARTED.md           ← Start here
 ├── INDEX.md                      ← Full documentation index
 ├── guides/
@@ -57,12 +60,13 @@ Located in `/tests/` (at project root):
 
 ## First Steps
 
-1. Read [GETTING_STARTED.md](./GETTING_STARTED.md) (5 min)
-2. Follow [guides/SETUP.md](./guides/SETUP.md) (15 min)
-3. Run both test files (2×5 min)
-4. Keep [reference/QUICK_REFERENCE.md](./reference/QUICK_REFERENCE.md) handy
+1. Check [DEPLOYMENT.md](./DEPLOYMENT.md) - See live contract (5 min)
+2. Read [GETTING_STARTED.md](./GETTING_STARTED.md) (5 min)
+3. Follow [guides/SETUP.md](./guides/SETUP.md) (15 min)
+4. Run both test files (2×5 min)
+5. Keep [reference/QUICK_REFERENCE.md](./reference/QUICK_REFERENCE.md) handy
 
-**Total time: 2.5 hours to be production-ready**
+**Total time: 45 minutes to be ready for testing**
 
 ---
 

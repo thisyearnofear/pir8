@@ -3,13 +3,13 @@ seeds = false
 skip-lint = false
 
 [programs.localnet]
-pir8_game = "Fg6PaFpoGXkYsidMpWTK6W2BeZ7FEfcYkg476zPFsLnS"
+pir8_game = "5etQW394NUCprU1ikrbDysFeCGGRYY9usChGpaox9oiK"
 
 [programs.devnet]
-pir8_game = "Fg6PaFpoGXkYsidMpWTK6W2BeZ7FEfcYkg476zPFsLnS"
+pir8_game = "5etQW394NUCprU1ikrbDysFeCGGRYY9usChGpaox9oiK"
 
 [programs.mainnet]
-pir8_game = "Fg6PaFpoGXkYsidMpWTK6W2BeZ7FEfcYkg476zPFsLnS"
+pir8_game = "5etQW394NUCprU1ikrbDysFeCGGRYY9usChGpaox9oiK"
 
 [registry]
 url = "https://api.apr.dev"
