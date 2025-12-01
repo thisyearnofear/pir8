@@ -1,6 +1,11 @@
-# Documentation
+# PIR8 Documentation
 
-Complete documentation for Helius & Pump Fun integration.
+Complete documentation for PIR8 gaming platform - smart contracts, integrations, and development guides.
+
+## 🚀 **Latest: Day 2 Complete - Smart Contracts Ready!**
+
+PIR8 now includes production-ready Solana smart contracts with real-time multiplayer infrastructure! 
+📋 See [Day 2 Complete](../DAY_2_COMPLETE.md) for full technical details.
 
 ## Quick Navigation
 
