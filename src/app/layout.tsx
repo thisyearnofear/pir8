@@ -4,9 +4,6 @@ import './globals.css'
 import '../styles/themes.css'
 import { WalletContextProvider } from '../components/WalletProvider'
 
-// Import SVG sprite for game icons
-import IconSprite from '../assets/icons/game-items.svg'
-
 const inter = Inter({ subsets: ['latin'], display: 'swap' })
 
 export const metadata: Metadata = {
@@ -36,9 +33,6 @@ export default function RootLayout({
         <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
       </head>
       <body className={`${inter.className} bg-gradient-to-br from-ocean-blue via-blue-900 to-slate-900 min-h-screen safe-area-inset`}>
-        {/* Hidden SVG sprite for icons */}
-        <div dangerouslySetInnerHTML={{ __html: IconSprite }} style={{ display: 'none' }} />
-        
         <WalletContextProvider>
           <div className="min-h-screen bg-gradient-to-br from-ocean-blue via-blue-900 to-slate-900 text-white">
             {children}
