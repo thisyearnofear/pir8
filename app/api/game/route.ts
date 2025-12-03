@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { GameState, Player } from '@/types/game';
-import { validateMove } from '@/utils/validation';
+import { validateShipMove } from '@/utils/validation';
 import { PirateGameEngine } from '@/lib/gameLogic';
 
 // In-memory game storage (will be replaced with Anchor program)
@@ -103,10 +103,15 @@ function handleJoinGame(gameId: string, data: { player: Player }) {
   return NextResponse.json({ game });
 }
 
-function handleMove(gameId: string, playerId: string, data: { coordinate: string }) {
+function handleMove(gameId: string, playerId: string, data: { shipId: string; coordinate: string }) {
   const game = games.get(gameId);
   if (!game) return NextResponse.json({ error: 'Game not found' }, { status: 404 });
-  const validation = validateMove(game, playerId, data.coordinate);
+  
+  if (!data.shipId) {
+    return NextResponse.json({ error: 'Ship ID required' }, { status: 400 });
+  }
+  
+  const validation = validateShipMove(game, playerId, data.shipId, data.coordinate);
   if (!validation.isValid) return NextResponse.json({ error: validation.error }, { status: 400 });
   
   // Update game state with the move

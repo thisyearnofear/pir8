@@ -3,10 +3,13 @@ import {
   GameState, 
   GameMap, 
   Ship, 
+  ShipType,
   Coordinate,
   GameAction,
   Resources,
-  GameEvent
+  GameEvent,
+  WeatherEffect,
+  TERRITORY_RESOURCE_GENERATION
 } from '../types/game';
 import { GAME_CONFIG } from '../utils/constants';
 import { PirateGameEngine } from './gameLogic';
@@ -170,7 +173,7 @@ export class PirateGameManager {
       turnNumber: gameState.turnNumber,
       timestamp: Date.now(),
       description: `${moveResult.updatedShip!.type} moved to ${toCoordinate}`,
-      data: { shipId, from: this.coordinateToString(ship.position), to: toCoordinate }
+      data: { shipId, from: PirateGameEngine.coordinateToString(ship.position), to: toCoordinate }
     };
 
     const updatedGameState = {
@@ -417,11 +420,7 @@ export class PirateGameManager {
       };
     }
 
-    // Update game state
-    const coord = PirateGameEngine.stringToCoordinate(toCoordinate);
-    const updatedGameMap = { ...gameState.gameMap };
-    updatedGameMap.cells[coord.x][coord.y] = claimResult.updatedCell!;
-
+    // Update game state using the updated map from claimResult
     const updatedPlayers = [...gameState.players];
     updatedPlayers[playerIndex] = {
       ...currentPlayer,
@@ -430,7 +429,7 @@ export class PirateGameManager {
 
     const updatedGameState = {
       ...gameState,
-      gameMap: updatedGameMap,
+      gameMap: claimResult.updatedMap,
       players: updatedPlayers,
     };
 

@@ -3,14 +3,19 @@
 import { useWallet } from "@solana/wallet-adapter-react";
 import { usePirateGameState } from "@/hooks/usePirateGameState";
 import { useErrorHandler } from "@/hooks/useErrorHandler";
+import { useShowOnboarding } from "@/hooks/useShowOnboarding";
 import { ErrorBoundary } from "@/components/ErrorBoundary";
 import { ErrorToast, SuccessToast } from "@/components/Toast";
 import PirateMap from "@/components/PirateMap";
 import PirateControls from "@/components/PirateControls";
 import PlayerStats from "@/components/PlayerStats";
 import BattleInfoPanel from "@/components/BattleInfoPanel";
+import TurnBanner from "@/components/TurnBanner";
+import OnboardingModal from "@/components/OnboardingModal";
+import ShipActionModal from "@/components/ShipActionModal";
 import { useState, useEffect } from "react";
 import { createPlayerFromWallet, createAIPlayer } from "@/lib/playerHelper";
+import { Ship } from "@/types/game";
 
 export default function Home() {
   const { publicKey } = useWallet();
@@ -47,7 +52,16 @@ export default function Home() {
   const [isCreatingGame, setIsCreatingGame] = useState(false);
   const [isJoining, setIsJoining] = useState(false);
   const [joinError, setJoinError] = useState<string | undefined>();
+  const [shipActionModalShip, setShipActionModalShip] = useState<Ship | null>(null);
   const { handleGameError } = useErrorHandler();
+  const { shown: showOnboarding, dismiss: dismissOnboarding } = useShowOnboarding();
+
+  // Get current player name for TurnBanner
+  const getCurrentPlayerName = () => {
+    if (!gameState) return 'opponent';
+    const currentPlayer = gameState.players[gameState.currentPlayerIndex];
+    return currentPlayer?.username || currentPlayer?.publicKey?.slice(0, 8) || 'opponent';
+  };
 
   // Start turn timer when it becomes player's turn
   useEffect(() => {
@@ -173,6 +187,7 @@ export default function Home() {
     switch (action) {
       case 'move':
         handleGameEvent('Select a destination for your ship on the map');
+        setShipActionModalShip(null); // Close modal, wait for map click
         break;
       case 'attack':
         // Find nearby enemy ships and attack
@@ -215,11 +230,19 @@ export default function Home() {
         }
         break;
       case 'build':
-        // For now, show build options (in a real implementation, this would open a ship selection modal)
         handleGameEvent('🛠️ Ship building: Select water near controlled port');
-        // Example: await buildShip('sloop', '5,5');
         break;
     }
+    setShipActionModalShip(null); // Close modal after action
+  };
+
+  // Handle ship click to open action modal
+  const handleShipClick = (ship: Ship) => {
+    if (!publicKey || !isMyTurn(publicKey.toString())) return;
+    if (!ship.id.startsWith(publicKey.toString())) return; // Only my ships
+    
+    selectShip(ship.id);
+    setShipActionModalShip(ship);
   };
 
   const clearJoinError = () => setJoinError(undefined);
@@ -228,10 +251,23 @@ export default function Home() {
     <ErrorBoundary>
       <ErrorToast error={error} onClose={clearError} />
       <SuccessToast message={showMessage} onClose={() => setMessage(null)} />
+      
+      {/* Onboarding Modal */}
+      <OnboardingModal isOpen={showOnboarding} onDismiss={dismissOnboarding} />
+      
+      {/* Ship Action Modal */}
+      {shipActionModalShip && (
+        <ShipActionModal
+          ship={shipActionModalShip}
+          isOpen={true}
+          onClose={() => setShipActionModalShip(null)}
+          onAction={(action) => handleShipAction(shipActionModalShip.id, action)}
+        />
+      )}
 
       <div className="min-h-screen bg-gradient-to-b from-slate-900 to-slate-800 text-white">
         <div className="container mx-auto px-4 py-6">
-          <header className="text-center mb-8">
+          <header className="text-center mb-4">
             <h1 className="text-4xl font-bold text-neon-cyan mb-2">
               🏴‍☠️ PIR8 BATTLE ARENA
             </h1>
@@ -239,6 +275,17 @@ export default function Home() {
               Strategic naval warfare on the blockchain
             </p>
           </header>
+
+          {/* Turn Banner - shown when game is active */}
+          {gameState?.gameStatus === 'active' && (
+            <div className="mb-4">
+              <TurnBanner
+                isMyTurn={isMyTurn(publicKey?.toString())}
+                decisionTimeMs={decisionTime}
+                currentPlayerName={getCurrentPlayerName()}
+              />
+            </div>
+          )}
 
           <div className="grid grid-cols-1 lg:grid-cols-4 gap-6 h-screen max-h-[800px]">
             {/* Left Panel: Player Stats & Battle Info */}
@@ -263,6 +310,7 @@ export default function Home() {
                   gameMap={gameState.gameMap}
                   ships={getAllShips()}
                   onCellSelect={handleCellSelect}
+                  onShipClick={handleShipClick}
                   isMyTurn={isMyTurn(publicKey?.toString())}
                   selectedShipId={selectedShipId || undefined}
                   currentPlayerPK={publicKey?.toString()}

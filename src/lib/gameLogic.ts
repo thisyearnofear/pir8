@@ -418,4 +418,78 @@ export class PirateGameEngine {
       return { isValid: false, error: 'Invalid coordinate' };
     }
   }
+
+  /**
+   * Process territory claim
+   */
+  static processTerritoryClaim(
+    playerPublicKey: string,
+    coordinate: string,
+    gameMap: GameMap
+  ): { success: boolean; message: string; updatedMap: GameMap } {
+    const coord = this.stringToCoordinate(coordinate);
+    const cell = gameMap.cells[coord.x]?.[coord.y];
+    
+    if (!cell) {
+      return { success: false, message: 'Invalid coordinate', updatedMap: gameMap };
+    }
+    
+    if (cell.type === 'water') {
+      return { success: false, message: 'Cannot claim water territories', updatedMap: gameMap };
+    }
+    
+    if (cell.owner === playerPublicKey) {
+      return { success: false, message: 'You already control this territory', updatedMap: gameMap };
+    }
+    
+    // Create updated map
+    const updatedCells = gameMap.cells.map((row, x) =>
+      row.map((c, y) => {
+        if (x === coord.x && y === coord.y) {
+          return { ...c, owner: playerPublicKey };
+        }
+        return c;
+      })
+    );
+    
+    return {
+      success: true,
+      message: `Territory claimed: ${cell.type}`,
+      updatedMap: { ...gameMap, cells: updatedCells }
+    };
+  }
+
+  /**
+   * Process ship-to-ship combat
+   */
+  static processShipCombat(
+    attacker: Ship,
+    defender: Ship
+  ): { attackerShip: Ship; defenderShip: Ship; message: string; defenderDestroyed: boolean } {
+    // Calculate damage: attacker's attack minus defender's defense, minimum 10
+    const rawDamage = Math.max(10, attacker.attack - defender.defense);
+    
+    // Add some randomness (±20%)
+    const variance = rawDamage * 0.2;
+    const actualDamage = Math.floor(rawDamage + (Math.random() * variance * 2 - variance));
+    
+    const newDefenderHealth = Math.max(0, defender.health - actualDamage);
+    const defenderDestroyed = newDefenderHealth <= 0;
+    
+    const defenderShip = {
+      ...defender,
+      health: newDefenderHealth
+    };
+    
+    const message = defenderDestroyed
+      ? `${attacker.type} destroyed ${defender.type}!`
+      : `${attacker.type} dealt ${actualDamage} damage to ${defender.type} (${newDefenderHealth} HP remaining)`;
+    
+    return {
+      attackerShip: attacker,
+      defenderShip,
+      message,
+      defenderDestroyed
+    };
+  }
 }

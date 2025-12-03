@@ -31,41 +31,45 @@
 
 ### 🚧 In Progress (Priority Order for Zypherpunk)
 
-#### Phase 1A: UX/UI Polish to 9/10 (Days 1-3) ← START HERE
-**HIGH-QUALITY EXECUTION**: Create focused, single-responsibility components (<150 lines each)
+#### Phase 1A: UX/UI Polish to 9/10 ✅ COMPLETE
+**HIGH-QUALITY EXECUTION**: Created focused, single-responsibility components (<150 lines each)
 
-**Day 1 - Create Core Components** (4 hours):
-- [ ] **TurnBanner.tsx** ⭐⭐⭐ (~60 lines)
+**Completed Components**:
+- [x] **TurnBanner.tsx** ⭐⭐⭐ (~65 lines)
    - "YOUR TURN ⏱️" indicator with pulsing animation
    - Speed bonus display with color coding
    - "Select a ship to begin" hint
    - **File**: `src/components/TurnBanner.tsx`
 
-- [ ] **ShipActionModal.tsx** ⭐⭐⭐ (~120 lines)
+- [x] **ShipActionModal.tsx** ⭐⭐⭐ (~130 lines)
    - Unified action menu: [⛵ Move] [💥 Attack] [🏴‍☠️ Claim] [💎 Collect]
    - Ship health/status in header
    - Responsive 2x2 grid layout
    - **File**: `src/components/ShipActionModal.tsx`
 
-- [ ] **useShowOnboarding.ts** (~50 lines)
+- [x] **useShowOnboarding.ts** (~45 lines)
    - localStorage-based "first visit" detection
    - `shown` state + `dismiss()` function
    - **File**: `src/hooks/useShowOnboarding.ts`
 
-**Day 2 - Complete Components + Integration** (4 hours):
-- [ ] **OnboardingModal.tsx** (~100 lines)
+- [x] **OnboardingModal.tsx** (~135 lines)
    - 4-slide tutorial carousel (60 seconds)
    - Skip button, navigation dots
    - **File**: `src/components/OnboardingModal.tsx`
    
-- [ ] **TerritoryTooltip.tsx** (~80 lines)
+- [x] **TerritoryTooltip.tsx** (~95 lines)
    - Hover tooltips for territory effects
    - Uses shared TERRITORY_INFO constants
    - **File**: `src/components/TerritoryTooltip.tsx`
 
-- [ ] **PirateMap.tsx Enhancement** (+20 lines)
-   - Integrate TerritoryTooltip on hover
-   - Add copy button for Game ID in waiting state
+- [x] **PirateMap.tsx Enhancement** (+30 lines)
+   - Integrated TerritoryTooltip on hover
+   - Added ship click handler for action modal
+
+- [x] **app/page.tsx Integration**
+   - TurnBanner above game grid
+   - OnboardingModal on first visit
+   - ShipActionModal on ship click
 
 #### Phase 1B: Dev Environment & Testing (Days 3-4)
 - [ ] Deploy contracts to devnet

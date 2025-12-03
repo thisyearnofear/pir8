@@ -1,5 +1,6 @@
-import { GameState, Player, GameItem } from '../types/game';
+import { GameState, Player, Ship, Coordinate } from '../types/game';
 import { ERROR_MESSAGES } from './constants';
+import { PirateGameEngine } from '../lib/gameLogic';
 
 /**
  * Validation utilities for game logic
@@ -11,12 +12,13 @@ export interface ValidationResult {
 }
 
 /**
- * Validate player move
+ * Validate ship movement
  */
-export function validateMove(
+export function validateShipMove(
   gameState: GameState,
   playerId: string,
-  coordinate: string
+  shipId: string,
+  toCoordinate: string
 ): ValidationResult {
   // Check if game is active
   if (gameState.gameStatus !== 'active') {
@@ -35,19 +37,38 @@ export function validateMove(
     };
   }
   
-  // Check coordinate format
-  if (!/^[A-G][1-7]$/.test(coordinate)) {
+  // Find the ship
+  const ship = currentPlayer.ships.find(s => s.id === shipId);
+  if (!ship) {
     return {
       isValid: false,
-      error: ERROR_MESSAGES.INVALID_COORDINATE
+      error: 'Ship not found'
     };
   }
   
-  // Check if coordinate is already taken
-  if (gameState.chosenCoordinates.includes(coordinate)) {
+  // Check if ship is alive
+  if (ship.health <= 0) {
     return {
       isValid: false,
-      error: ERROR_MESSAGES.COORDINATE_TAKEN
+      error: 'Ship has been destroyed'
+    };
+  }
+  
+  // Check coordinate validity
+  try {
+    const targetCoord = PirateGameEngine.stringToCoordinate(toCoordinate);
+    const distance = PirateGameEngine.calculateDistance(ship.position, targetCoord);
+    
+    if (distance > ship.speed) {
+      return {
+        isValid: false,
+        error: `Ship can only move ${ship.speed} cells per turn`
+      };
+    }
+  } catch {
+    return {
+      isValid: false,
+      error: ERROR_MESSAGES.INVALID_COORDINATE
     };
   }
   
@@ -109,15 +130,6 @@ export function validatePlayerAction(
       }
       break;
       
-    case 'kill':
-      if (!targetPlayer) {
-        return {
-          isValid: false,
-          error: 'Target player required for kill'
-        };
-      }
-      break;
-      
     default:
       return {
         isValid: false,
@@ -149,31 +161,12 @@ export function validateGameState(gameState: GameState): ValidationResult {
     };
   }
   
-  // Check grid
-  if (!gameState.grid || gameState.grid.length !== 7) {
+  // Check game map
+  if (!gameState.gameMap || !gameState.gameMap.cells) {
     return {
       isValid: false,
-      error: 'Invalid game grid'
+      error: 'Invalid game map'
     };
-  }
-  
-  for (const row of gameState.grid) {
-    if (row.length !== 7) {
-      return {
-        isValid: false,
-        error: 'Invalid game grid row'
-      };
-    }
-  }
-  
-  // Check chosen coordinates
-  for (const coord of gameState.chosenCoordinates) {
-    if (!/^[A-G][1-7]$/.test(coord)) {
-      return {
-        isValid: false,
-        error: `Invalid coordinate in chosen list: ${coord}`
-      };
-    }
   }
   
   return { isValid: true };
@@ -208,46 +201,63 @@ export function validateBalance(balance: number, entryFee: number): ValidationRe
 }
 
 /**
- * Validate game item effect application
+ * Validate attack action
  */
-export function validateItemEffect(item: GameItem, player: Player): ValidationResult {
-  switch (item) {
-    case 'CRACKER':
-      // Can always double score
-      return { isValid: true };
-      
-    case 'BANK':
-      if (player.totalScore <= 0) {
-        return {
-          isValid: false,
-          error: 'No points to bank'
-        };
-      }
-      break;
-      
-    case 'ELF':
-      if (player.hasElf) {
-        return {
-          isValid: false,
-          error: 'Player already has elf protection'
-        };
-      }
-      break;
-      
-    case 'BAUBLE':
-      if (player.hasBauble) {
-        return {
-          isValid: false,
-          error: 'Player already has bauble reflection'
-        };
-      }
-      break;
-      
-    default:
-      if (typeof item === 'number' && item > 0) {
-        return { isValid: true };
-      }
-      break;
+export function validateAttack(
+  gameState: GameState,
+  playerId: string,
+  attackerShipId: string,
+  targetShipId: string
+): ValidationResult {
+  // Check if game is active
+  if (gameState.gameStatus !== 'active') {
+    return {
+      isValid: false,
+      error: ERROR_MESSAGES.GAME_NOT_ACTIVE
+    };
+  }
+  
+  // Check if it's player's turn
+  const currentPlayer = gameState.players[gameState.currentPlayerIndex];
+  if (currentPlayer.publicKey !== playerId) {
+    return {
+      isValid: false,
+      error: ERROR_MESSAGES.NOT_YOUR_TURN
+    };
+  }
+  
+  // Find attacker ship
+  const attackerShip = currentPlayer.ships.find(s => s.id === attackerShipId);
+  if (!attackerShip || attackerShip.health <= 0) {
+    return {
+      isValid: false,
+      error: 'Attacker ship not found or destroyed'
+    };
+  }
+  
+  // Find target ship
+  let targetShip: Ship | undefined;
+  for (const player of gameState.players) {
+    if (player.publicKey !== playerId) {
+      targetShip = player.ships.find(s => s.id === targetShipId);
+      if (targetShip) break;
+    }
+  }
+  
+  if (!targetShip || targetShip.health <= 0) {
+    return {
+      isValid: false,
+      error: 'Target ship not found or already destroyed'
+    };
+  }
+  
+  // Check range
+  const distance = PirateGameEngine.calculateDistance(attackerShip.position, targetShip.position);
+  if (distance > 1.5) {
+    return {
+      isValid: false,
+      error: 'Target out of attack range'
+    };
   }
   
   return { isValid: true };

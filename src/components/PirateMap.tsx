@@ -1,14 +1,16 @@
 'use client';
 
-import { useState } from 'react';
-import { GameMap, TerritoryCell, Ship, Coordinate } from '../types/game';
+import { useState, useRef } from 'react';
+import { GameMap, TerritoryCell, Ship, TerritoryCellType } from '../types/game';
 import { TERRITORY_EMOJIS, SHIP_EMOJIS } from '../utils/constants';
 import { PirateGameEngine } from '../lib/gameLogic';
+import TerritoryTooltip, { TERRITORY_INFO } from './TerritoryTooltip';
 
 interface PirateMapProps {
   gameMap: GameMap;
   ships: Ship[];
   onCellSelect: (coordinate: string) => void;
+  onShipClick?: (ship: Ship) => void;
   isMyTurn: boolean;
   selectedShipId?: string;
   currentPlayerPK?: string;
@@ -19,12 +21,15 @@ export default function PirateMap({
   gameMap, 
   ships, 
   onCellSelect, 
+  onShipClick,
   isMyTurn,
   selectedShipId,
   currentPlayerPK,
   scannedCoordinates = []
 }: PirateMapProps) {
   const [hoveredCoordinate, setHoveredCoordinate] = useState<string | null>(null);
+  const [tooltipPosition, setTooltipPosition] = useState({ x: 0, y: 0 });
+  const mapRef = useRef<HTMLDivElement>(null);
 
   const isCoordinateScanned = (coordinate: string): boolean => {
     return scannedCoordinates.includes(coordinate);
@@ -32,7 +37,26 @@ export default function PirateMap({
 
   const handleCellClick = (coordinate: string) => {
     if (!isMyTurn) return;
+    
+    // Check if clicking on a ship
+    const ship = getShipAtPosition(coordinate);
+    if (ship && isMyShip(ship) && onShipClick) {
+      onShipClick(ship);
+      return;
+    }
+    
     onCellSelect(coordinate);
+  };
+
+  const handleMouseMove = (e: React.MouseEvent, coordinate: string) => {
+    if (mapRef.current) {
+      const rect = mapRef.current.getBoundingClientRect();
+      setTooltipPosition({
+        x: e.clientX - rect.left,
+        y: e.clientY - rect.top
+      });
+    }
+    setHoveredCoordinate(coordinate);
   };
 
   const getShipAtPosition = (coordinate: string): Ship | undefined => {
@@ -196,9 +220,8 @@ export default function PirateMap({
             key={coordinate}
             className={getCellClassName(coordinate)}
             onClick={() => handleCellClick(coordinate)}
-            onMouseEnter={() => setHoveredCoordinate(coordinate)}
+            onMouseMove={(e) => handleMouseMove(e, coordinate)}
             onMouseLeave={() => setHoveredCoordinate(null)}
-            title={`Territory: ${getCellAtCoordinate(coordinate)?.type || 'unknown'} | Position: ${coordinate}`}
           >
             {renderCellContent(coordinate)}
           </div>
@@ -209,8 +232,10 @@ export default function PirateMap({
     return cells;
   };
 
+  const hoveredCell = hoveredCoordinate ? getCellAtCoordinate(hoveredCoordinate) : null;
+
   return (
-    <div className="pirate-map-container">
+    <div className="pirate-map-container relative" ref={mapRef}>
       <div className="map-header mb-4 text-center">
         <h3 className="text-xl font-bold font-tech text-neon-cyan">
           🗺️ BATTLE MAP
@@ -227,7 +252,7 @@ export default function PirateMap({
       </div>
       
       <div 
-        className="game-map-grid"
+        className="game-map-grid relative"
         style={{
           display: 'grid',
           gridTemplateColumns: `repeat(${gameMap.size}, 1fr)`,
@@ -239,6 +264,15 @@ export default function PirateMap({
         }}
       >
         {renderMapGrid()}
+        
+        {/* Territory Tooltip */}
+        {hoveredCell && isCoordinateScanned(hoveredCoordinate!) && (
+          <TerritoryTooltip
+            type={hoveredCell.type}
+            position={tooltipPosition}
+            isVisible={true}
+          />
+        )}
       </div>
       
       {/* Selection info */}
