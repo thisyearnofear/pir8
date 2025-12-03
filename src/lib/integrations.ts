@@ -314,24 +314,162 @@ export function setupGameIntegrations(gameId: string) {
 }
 
 // Zcash Bridge (memo-based private entry)
+// Usage: Players send shielded Zcash memo to enter PIR8 tournaments privately
+// Memo format: {"v":1,"gameId":"<game_id>","action":"join","solanaPubkey":"<pubkey>"}
 export class ZcashMemoBridge {
-  constructor(private onEntry: (payload: { gameId: string; solanaPubkey: string; amountZEC: number }) => void) {}
+  private static readonly MEMO_MAX_SIZE = 512; // Zcash memo limit in bytes
 
-  parseMemo(memo: string) {
+  constructor(private onEntry: (payload: MemoPayload) => void) {}
+
+  /**
+   * Parse Zcash shielded memo containing tournament entry data
+   * Memo must be valid JSON matching MEMO_SCHEMA_VERSION
+   */
+  parseMemo(memo: string): MemoPayload | null {
     try {
+      // Validate memo size
+      if (memo.length > ZcashMemoBridge.MEMO_MAX_SIZE) {
+        console.warn('Memo exceeds Zcash size limit');
+        return null;
+      }
+
       const data = JSON.parse(memo);
-      if (data.v !== ZCASH_CONFIG.MEMO_SCHEMA_VERSION) return null;
-      if (!data.gameId || !data.solanaPubkey || typeof data.amountZEC !== 'number') return null;
-      return { gameId: data.gameId, solanaPubkey: data.solanaPubkey, amountZEC: data.amountZEC };
-    } catch {
+
+      // Validate schema version
+      if (data.v !== ZCASH_CONFIG.MEMO_SCHEMA_VERSION) {
+        console.warn('Invalid memo schema version');
+        return null;
+      }
+
+      // Validate required fields
+      if (!data.gameId || !data.action || !data.solanaPubkey) {
+        console.warn('Missing required memo fields');
+        return null;
+      }
+
+      // Validate action type
+      if (!['join', 'create'].includes(data.action)) {
+        console.warn('Invalid memo action');
+        return null;
+      }
+
+      // Validate Solana pubkey format (base58, 44 chars)
+      if (data.solanaPubkey.length !== 44) {
+        console.warn('Invalid Solana pubkey format');
+        return null;
+      }
+
+      return {
+        version: data.v,
+        gameId: data.gameId,
+        action: data.action as 'join' | 'create',
+        solanaPubkey: data.solanaPubkey,
+        timestamp: data.timestamp || Date.now(),
+        metadata: data.metadata || {},
+      };
+    } catch (error) {
+      console.error('Failed to parse memo:', error);
       return null;
     }
   }
 
-  async handleIncomingShieldedMemo(memo: string) {
+  /**
+   * Handle incoming shielded memo from Zcash transaction
+   * Triggers tournament entry on Solana side
+   */
+  async handleIncomingShieldedMemo(
+    memo: string,
+    zcashTxHash: string,
+    blockHeight: number
+  ): Promise<boolean> {
     const parsed = this.parseMemo(memo);
-    if (parsed) this.onEntry(parsed);
+    if (!parsed) {
+      console.warn('Invalid memo, skipping entry');
+      return false;
+    }
+
+    // Verify memo timestamp is recent (within 5 minutes)
+    const timeSinceCreation = Date.now() - parsed.timestamp;
+    if (timeSinceCreation > 5 * 60 * 1000) {
+      console.warn('Memo is stale (>5 minutes old)');
+      return false;
+    }
+
+    // Pass to Solana transaction handler
+    this.onEntry({
+      ...parsed,
+      zcashTxHash,
+      blockHeight,
+    });
+
+    return true;
   }
+
+  /**
+   * Create a valid memo for tournament entry
+   * Used by CLI or frontend to construct memo before Zcash transaction
+   */
+  static createMemo(payload: {
+    gameId: string;
+    action: 'join' | 'create';
+    solanaPubkey: string;
+    metadata?: Record<string, any>;
+  }): string {
+    const memo = {
+      v: ZCASH_CONFIG.MEMO_SCHEMA_VERSION,
+      gameId: payload.gameId,
+      action: payload.action,
+      solanaPubkey: payload.solanaPubkey,
+      timestamp: Date.now(),
+      metadata: payload.metadata || {},
+    };
+
+    const memoStr = JSON.stringify(memo);
+    if (memoStr.length > 512) {
+      throw new Error(
+        `Memo too large (${memoStr.length} > 512 bytes). Reduce metadata.`
+      );
+    }
+
+    return memoStr;
+  }
+
+  /**
+   * Get instructions for player to join tournament privately via Zcash
+   */
+  static getPrivateEntryInstructions(gameId: string, playerPubkey: string): string {
+    const memo = this.createMemo({
+      gameId,
+      action: 'join',
+      solanaPubkey: playerPubkey,
+    });
+
+    return `
+To join this tournament privately via Zcash:
+
+1. Send Zcash to our shielded address:
+   ${ZCASH_CONFIG.SHIELDED_ADDRESS}
+
+2. In the memo field, include this JSON:
+   ${memo}
+
+3. Wait for confirmation on Solana
+4. Your tournament entry will be private!
+
+🔒 Privacy guarantee: Your Zcash transaction identity never appears on Solana.
+    `;
+  }
+}
+
+export interface MemoPayload {
+  version: number;
+  gameId: string;
+  action: 'join' | 'create';
+  solanaPubkey: string;
+  timestamp: number;
+  metadata: Record<string, any>;
+  zcashTxHash?: string;
+  blockHeight?: number;
 }
 
 export async function createWinnerToken(winner: { name: string; score: number }) {

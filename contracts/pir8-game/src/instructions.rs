@@ -312,4 +312,153 @@ pub mod pir8_game {
 
         Ok(())
     }
+
+    /// Collect resources from a controlled territory
+    pub fn collect_resources(
+        ctx: Context<MakeMove>,
+        territory_x: u8,
+        territory_y: u8,
+    ) -> Result<()> {
+        let game = &mut ctx.accounts.game;
+        
+        require!(
+            territory_x < MAP_SIZE as u8 && territory_y < MAP_SIZE as u8,
+            GameError::InvalidCoordinate
+        );
+
+        // Get resource yield from this territory FIRST (before mutable player access)
+        let resources = get_territory_resources(territory_x, territory_y, &game.territory_map);
+        let game_id = game.game_id;
+
+        // Check if player controls this territory
+        let player = game.get_player_mut(&ctx.accounts.player.key())
+            .ok_or(GameError::NotPlayerTurn)?;
+
+        let territory_coord = format!("{},{}", territory_x, territory_y);
+        require!(
+            player.controlled_territories.contains(&territory_coord),
+            GameError::TerritoryNotControlled
+        );
+
+        // Add resources to player
+        player.resources.gold = player.resources.gold.checked_add(resources.gold)
+            .ok_or(GameError::Unauthorized)?;
+        player.resources.crew = player.resources.crew.checked_add(resources.crew)
+            .ok_or(GameError::Unauthorized)?;
+        player.resources.supplies = player.resources.supplies.checked_add(resources.supplies)
+            .ok_or(GameError::Unauthorized)?;
+        player.resources.cannons = player.resources.cannons.checked_add(resources.cannons)
+            .ok_or(GameError::Unauthorized)?;
+
+        emit!(ResourcesCollected {
+            game_id,
+            player: ctx.accounts.player.key(),
+            gold_collected: resources.gold,
+            crew_collected: resources.crew,
+            supplies_collected: resources.supplies,
+        });
+
+        Ok(())
+    }
+
+    /// Build a new ship at a controlled port
+    pub fn build_ship(
+        ctx: Context<MakeMove>,
+        ship_type: ShipType,
+        port_x: u8,
+        port_y: u8,
+    ) -> Result<()> {
+        let game = &mut ctx.accounts.game;
+        
+        require!(
+            port_x < MAP_SIZE as u8 && port_y < MAP_SIZE as u8,
+            GameError::InvalidCoordinate
+        );
+
+        // Check if this is a port FIRST (before mutable player access)
+        {
+            let territory = &game.territory_map[port_x as usize][port_y as usize];
+            require!(
+                territory.cell_type == TerritoryCellType::Port,
+                GameError::InvalidCoordinate
+            );
+        }
+
+        // Capture game state early to avoid borrow conflicts
+        let turn_number = game.turn_number;
+        let game_id = game.game_id;
+        let player_key = ctx.accounts.player.key();
+
+        // Check if player controls this port
+        let player = game.get_player_mut(&player_key)
+            .ok_or(GameError::NotPlayerTurn)?;
+
+        let port_coord = format!("{},{}", port_x, port_y);
+        require!(
+            player.controlled_territories.contains(&port_coord),
+            GameError::TerritoryNotControlled
+        );
+
+        // Check fleet size limit
+        require!(
+            player.ships.len() < MAX_SHIPS_PER_PLAYER,
+            GameError::FleetSizeLimit
+        );
+
+        // Get ship costs
+        let costs = get_ship_costs(&ship_type);
+
+        // Check if player has sufficient resources
+        require!(
+            player.resources.gold >= costs.gold,
+            GameError::InsufficientResources
+        );
+        require!(
+            player.resources.crew >= costs.crew,
+            GameError::InsufficientResources
+        );
+        require!(
+            player.resources.cannons >= costs.cannons,
+            GameError::InsufficientResources
+        );
+        require!(
+            player.resources.supplies >= costs.supplies,
+            GameError::InsufficientResources
+        );
+
+        // Deduct costs
+        player.resources.gold -= costs.gold;
+        player.resources.crew -= costs.crew;
+        player.resources.cannons -= costs.cannons;
+        player.resources.supplies -= costs.supplies;
+
+        // Get ship stats for this type
+        let (health, attack, defense, speed) = get_ship_stats(&ship_type);
+
+        // Create new ship
+        let ship_id = format!("{}_{}", player_key, turn_number);
+        let new_ship = ShipData {
+            id: ship_id.clone(),
+            ship_type: ship_type.clone(),
+            health,
+            max_health: health,
+            attack,
+            defense,
+            speed,
+            position_x: port_x,
+            position_y: port_y,
+            last_action_turn: turn_number,
+        };
+
+        player.ships.push(new_ship);
+        emit!(ShipBuilt {
+            game_id,
+            player: ctx.accounts.player.key(),
+            ship_type,
+            position_x: port_x,
+            position_y: port_y,
+        });
+
+        Ok(())
+    }
 }
