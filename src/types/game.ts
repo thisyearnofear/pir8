@@ -67,6 +67,16 @@ export interface Player {
   controlledTerritories: string[]; // coordinate strings
   totalScore: number;
   isActive: boolean;
+  
+  // ===== SKILL MECHANICS =====
+  // Scanning system
+  scanCharges: number;
+  scannedCoordinates: string[];  // Coordinates revealed via scans
+  
+  // Timing bonuses
+  speedBonusAccumulated: number;
+  averageDecisionTimeMs: number;
+  totalMoves: number;
 }
 
 export interface GameState {
@@ -87,7 +97,7 @@ export interface GameState {
 // Game events for history/replay
 export interface GameEvent {
   id: string;
-  type: 'ship_moved' | 'ship_attacked' | 'territory_claimed' | 'resources_collected' | 'ship_built' | 'weather_change';
+  type: 'ship_moved' | 'ship_attacked' | 'territory_claimed' | 'resources_collected' | 'ship_built' | 'weather_change' | 'coordinate_scanned' | 'move_executed';
   playerId: string;
   turnNumber: number;
   timestamp: number;
@@ -99,10 +109,11 @@ export interface GameAction {
   id: string;
   gameId: string;
   player: string;
-  type: 'move_ship' | 'attack' | 'collect_resources' | 'build_ship' | 'claim_territory';
+  type: 'move_ship' | 'attack' | 'collect_resources' | 'build_ship' | 'claim_territory' | 'scan_coordinate';
   data: ActionData;
   timestamp: number;
   signature?: string;
+  decisionTimeMs?: number;  // For timing bonuses
 }
 
 export interface ActionData {
@@ -112,6 +123,7 @@ export interface ActionData {
   targetShipId?: string;
   shipType?: ShipType;
   resourceAmount?: Partial<Resources>;
+  coordinate?: string;  // For scanning
 }
 
 export interface GameConfig {

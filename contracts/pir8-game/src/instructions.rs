@@ -44,6 +44,11 @@ pub mod pir8_game {
             controlled_territories: Vec::new(),
             total_score: 0,
             is_active: true,
+            scan_charges: 3,
+            scanned_coordinates: Vec::new(),
+            speed_bonus_accumulated: 0,
+            average_decision_time_ms: 0,
+            total_moves: 0,
         };
 
         // Initialize remaining player slots as empty
@@ -83,6 +88,11 @@ pub mod pir8_game {
             controlled_territories: Vec::new(),
             total_score: 0,
             is_active: true,
+            scan_charges: 3,
+            scanned_coordinates: Vec::new(),
+            speed_bonus_accumulated: 0,
+            average_decision_time_ms: 0,
+            total_moves: 0,
         };
 
         game.player_count += 1;
@@ -458,6 +468,159 @@ pub mod pir8_game {
             position_x: port_x,
             position_y: port_y,
         });
+
+        Ok(())
+    }
+
+    /// Scan a coordinate to reveal territory type (skill mechanic)
+    pub fn scan_coordinate(
+        ctx: Context<ScanCoordinate>,
+        coordinate_x: u8,
+        coordinate_y: u8,
+    ) -> Result<()> {
+        let game = &mut ctx.accounts.game;
+        let game_id = game.game_id;
+        let player_key = ctx.accounts.player.key();
+        
+        // Verify it's the player's turn
+        let current_player = game.get_current_player().ok_or(GameError::NotPlayerTurn)?;
+        require!(
+            current_player.pubkey == player_key,
+            GameError::NotPlayerTurn
+        );
+
+        // Validate coordinates
+        require!(
+            coordinate_x < MAP_SIZE as u8 && coordinate_y < MAP_SIZE as u8,
+            GameError::InvalidCoordinate
+        );
+
+        // Get tile type FIRST (before mutable borrow)
+        let tile_type = {
+            let territory = &game.territory_map[coordinate_x as usize][coordinate_y as usize];
+            match territory.cell_type {
+                TerritoryCellType::Water => "Water",
+                TerritoryCellType::Island => "Island",
+                TerritoryCellType::Port => "Port",
+                TerritoryCellType::Treasure => "Treasure",
+                TerritoryCellType::Storm => "Storm",
+                TerritoryCellType::Reef => "Reef",
+                TerritoryCellType::Whirlpool => "Whirlpool",
+            }.to_string()
+        };
+
+        // Get mutable player reference
+        let player = game.get_player_mut(&player_key)
+            .ok_or(GameError::NotPlayerTurn)?;
+
+        // Check if player has scan charges remaining
+        require!(
+            player.scan_charges > 0,
+            GameError::NoScansRemaining
+        );
+
+        // Check if coordinate already scanned
+        require!(
+            !is_coordinate_scanned(&player.scanned_coordinates, coordinate_x, coordinate_y),
+            GameError::CoordinateAlreadyScanned
+        );
+
+        // Mark coordinate as scanned
+        mark_coordinate_scanned(&mut player.scanned_coordinates, coordinate_x, coordinate_y)?;
+
+        // Deduct a scan charge
+        player.scan_charges = player.scan_charges.saturating_sub(1);
+        let scan_charges_remaining = player.scan_charges;
+
+        emit!(CoordinateScanned {
+            game_id,
+            player: player_key,
+            coordinate_x,
+            coordinate_y,
+            tile_type,
+            scan_charges_remaining,
+        });
+
+        // Advance turn
+        game.advance_turn();
+
+        Ok(())
+    }
+
+    /// Execute a move with timing bonus (skill mechanic)
+    pub fn make_move_timed(
+        ctx: Context<MakeMove>,
+        ship_id: String,
+        to_x: u8,
+        to_y: u8,
+        decision_time_ms: u64,
+    ) -> Result<()> {
+        let game = &mut ctx.accounts.game;
+        let game_id = game.game_id;
+        let turn_number = game.turn_number;
+        let player_key = ctx.accounts.player.key();
+        
+        // Verify it's the player's turn
+        let current_player = game.get_current_player().ok_or(GameError::NotPlayerTurn)?;
+        require!(
+            current_player.pubkey == player_key,
+            GameError::NotPlayerTurn
+        );
+
+        // Validate coordinates
+        require!(
+            to_x < MAP_SIZE as u8 && to_y < MAP_SIZE as u8,
+            GameError::InvalidCoordinate
+        );
+
+        // Find ship and check movement (borrow within scope)
+        {
+            let player = game.get_player_mut(&player_key)
+                .ok_or(GameError::NotPlayerTurn)?;
+            
+            let ship = player.ships.iter_mut()
+                .find(|s| s.id == ship_id && s.health > 0)
+                .ok_or(GameError::ShipNotFound)?;
+
+            // Check movement range
+            let distance = ((ship.position_x as i32 - to_x as i32).pow(2) + 
+                           (ship.position_y as i32 - to_y as i32).pow(2)) as f32;
+            let distance = distance.sqrt();
+            
+            require!(
+                distance <= ship.speed as f32,
+                GameError::ShipsNotInRange
+            );
+
+            // Move ship
+            ship.position_x = to_x;
+            ship.position_y = to_y;
+            ship.last_action_turn = turn_number;
+        }
+
+        // Calculate speed bonus
+        let speed_bonus = calculate_speed_bonus(decision_time_ms);
+
+        // Update player stats with timing data
+        let player = game.get_player_mut(&player_key)
+            .ok_or(GameError::NotPlayerTurn)?;
+        
+        player.speed_bonus_accumulated = player.speed_bonus_accumulated.saturating_add(speed_bonus);
+        update_average_decision_time(player, decision_time_ms);
+        player.total_score = player.total_score.saturating_add(speed_bonus as u32);
+
+        let new_total_score = player.total_score as u64;
+
+        emit!(MoveExecuted {
+            game_id,
+            player: player_key,
+            decision_time_ms,
+            speed_bonus_awarded: speed_bonus,
+            new_total_score,
+        });
+
+        // Advance turn
+        game.advance_turn();
 
         Ok(())
     }

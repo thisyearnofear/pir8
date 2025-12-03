@@ -93,6 +93,16 @@ pub struct PlayerData {
     pub controlled_territories: Vec<String>, // coordinate strings like "5,7"
     pub total_score: u32,
     pub is_active: bool,
+    
+    // ===== SKILL MECHANICS =====
+    // Scanning system
+    pub scan_charges: u8,              // Remaining scans (starts with 3)
+    pub scanned_coordinates: Vec<u8>,  // Bit-packed indices of 10x10 grid (max 13 bytes)
+    
+    // Timing bonuses
+    pub speed_bonus_accumulated: u64,  // Total timing bonus points
+    pub average_decision_time_ms: u64, // Running average decision time
+    pub total_moves: u8,               // Move counter for average calculation
 }
 
 impl Default for PlayerData {
@@ -104,6 +114,11 @@ impl Default for PlayerData {
             controlled_territories: Vec::new(),
             total_score: 0,
             is_active: false,
+            scan_charges: 3,                    // Start with 3 scans
+            scanned_coordinates: Vec::new(),    // No scanned tiles initially
+            speed_bonus_accumulated: 0,         // No bonuses yet
+            average_decision_time_ms: 0,        // No moves yet
+            total_moves: 0,                     // No moves yet
         }
     }
 }
@@ -293,6 +308,25 @@ pub struct GameCompleted {
     pub victory_type: String,
 }
 
+#[event]
+pub struct CoordinateScanned {
+    pub game_id: u64,
+    pub player: Pubkey,
+    pub coordinate_x: u8,
+    pub coordinate_y: u8,
+    pub tile_type: String,          // Don't reveal exact item
+    pub scan_charges_remaining: u8,
+}
+
+#[event]
+pub struct MoveExecuted {
+    pub game_id: u64,
+    pub player: Pubkey,
+    pub decision_time_ms: u64,
+    pub speed_bonus_awarded: u64,
+    pub new_total_score: u64,
+}
+
 // ============================================================================
 // ERROR CODES
 // ============================================================================
@@ -331,6 +365,10 @@ pub enum GameError {
     ShipsNotInRange,
     #[msg("Unauthorized")]
     Unauthorized,
+    #[msg("No scan charges remaining")]
+    NoScansRemaining,
+    #[msg("Coordinate already scanned")]
+    CoordinateAlreadyScanned,
 }
 
 // ============================================================================
@@ -368,6 +406,17 @@ pub struct JoinGame<'info> {
 
 #[derive(Accounts)]
 pub struct MakeMove<'info> {
+    #[account(
+        mut,
+        constraint = game.status == GameStatus::Active @ GameError::GameNotActive
+    )]
+    pub game: Account<'info, PirateGame>,
+    
+    pub player: Signer<'info>,
+}
+
+#[derive(Accounts)]
+pub struct ScanCoordinate<'info> {
     #[account(
         mut,
         constraint = game.status == GameStatus::Active @ GameError::GameNotActive
@@ -535,4 +584,69 @@ pub fn deploy_starting_fleets(game: &mut PirateGame) -> Result<()> {
     }
     
     Ok(())
+}
+
+// ============================================================================
+// SKILL MECHANICS HELPERS
+// ============================================================================
+
+/// Calculate speed bonus based on decision time in milliseconds
+pub fn calculate_speed_bonus(decision_time_ms: u64) -> u64 {
+    match decision_time_ms {
+        0..=5000 => 100,      // <5s: +100 points
+        5001..=10000 => 50,   // <10s: +50 points
+        10001..=15000 => 25,  // <15s: +25 points
+        _ => 0,               // >15s: no bonus
+    }
+}
+
+/// Check if a coordinate is already scanned using bit-packing
+pub fn is_coordinate_scanned(scanned: &[u8], x: u8, y: u8) -> bool {
+    if x >= MAP_SIZE as u8 || y >= MAP_SIZE as u8 {
+        return false;
+    }
+    
+    let index = (x as usize * MAP_SIZE) + y as usize;
+    let byte_idx = index / 8;
+    let bit_idx = index % 8;
+    
+    if byte_idx >= scanned.len() {
+        return false;
+    }
+    
+    (scanned[byte_idx] & (1 << bit_idx)) != 0
+}
+
+/// Mark a coordinate as scanned using bit-packing
+pub fn mark_coordinate_scanned(scanned: &mut Vec<u8>, x: u8, y: u8) -> Result<()> {
+    if x >= MAP_SIZE as u8 || y >= MAP_SIZE as u8 {
+        return Err(GameError::InvalidCoordinate.into());
+    }
+    
+    let index = (x as usize * MAP_SIZE) + y as usize;
+    let byte_idx = index / 8;
+    let bit_idx = index % 8;
+    
+    // Expand vector if needed (max 13 bytes for 10x10 grid = 100 tiles)
+    while scanned.len() <= byte_idx {
+        scanned.push(0);
+    }
+    
+    scanned[byte_idx] |= 1 << bit_idx;
+    Ok(())
+}
+
+/// Update player's running average decision time
+pub fn update_average_decision_time(
+    player: &mut PlayerData,
+    new_decision_time_ms: u64,
+) {
+    if player.total_moves == 0 {
+        player.average_decision_time_ms = new_decision_time_ms;
+    } else {
+        let total_time = player.average_decision_time_ms.wrapping_mul(player.total_moves as u64);
+        player.average_decision_time_ms = 
+            total_time.wrapping_add(new_decision_time_ms) / (player.total_moves as u64 + 1);
+    }
+    player.total_moves = player.total_moves.saturating_add(1);
 }
