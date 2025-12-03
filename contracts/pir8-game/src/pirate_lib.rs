@@ -23,7 +23,7 @@ pub const FLAGSHIP_COST: (u32, u32, u32, u32) = (5000, 100, 60, 150);
 // DATA STRUCTURES
 // ============================================================================
 
-#[derive(AnchorSerialize, AnchorDeserialize, Clone, Debug, PartialEq)]
+#[derive(AnchorSerialize, AnchorDeserialize, Clone, Copy, Debug, PartialEq)]
 pub enum TerritoryCellType {
     Water,
     Island,
@@ -79,7 +79,7 @@ pub struct ShipData {
     pub last_action_turn: u32,
 }
 
-#[derive(AnchorSerialize, AnchorDeserialize, Clone, Debug)]
+#[derive(AnchorSerialize, AnchorDeserialize, Clone, Copy, Debug)]
 pub struct TerritoryCell {
     pub cell_type: TerritoryCellType,
     pub owner: Option<Pubkey>,

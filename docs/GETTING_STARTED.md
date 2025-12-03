@@ -1,11 +1,22 @@
 # Getting Started with PIR8
 
-## Quick Start (5 Minutes)
+## ⚠️ CURRENT STATUS: NOT YET DEPLOYABLE
+
+Contracts have compilation errors that prevent deployment. See [ARCHITECTURE.md](./ARCHITECTURE.md) for critical issues.
+
+**If you want to help fix this**: See "Contributing to Phase 1 Fixes" section below.
+
+---
+
+## Development Environment Setup
 
 ### Prerequisites
 - Node.js 18+ installed
-- Solana wallet (Phantom, Solflare, or Backpack)
-- ~0.5 SOL on Devnet for testing
+- Rust 1.70+ (for Anchor contract development)
+- Solana CLI 1.18+ installed
+- Anchor CLI 0.29+ installed
+- Solana wallet (Phantom, Solflare, or Backpack) - for future testing
+- ~1 SOL on Devnet (for when contracts are fixed)
 
 ### Installation
 
@@ -19,13 +30,108 @@ npm install
 
 # Set up environment
 cp .env.local.example .env.local
-# Add your Helius RPC URL to .env.local
+# Add your Helius RPC URL to .env.local (required for frontend)
 
-# Run development server
-npm run dev
+# Install Rust (if not already installed)
+curl --proto '=https' --tlsv1.2 -sSf https://sh.rustup.rs | sh
+
+# Install Solana CLI
+sh -c "$(curl -sSfL https://release.solana.com/v1.18.0/install)"
+
+# Install Anchor
+cargo install --git https://github.com/coral-xyz/anchor avm --locked
+avm install 0.29.0
+avm use 0.29.0
 ```
 
-Open [http://localhost:3000](http://localhost:3000) and connect your wallet!
+### Current Limitations
+
+**Frontend Only (Contracts Broken)**:
+```bash
+# You CAN run the frontend (without contract interaction)
+npm run dev
+# Opens http://localhost:3000 with wallet connection UI
+```
+
+**You CANNOT**:
+- Build contracts: `anchor build` fails due to struct field mismatches
+- Deploy contracts: No deployable binary
+- Test gameplay: Contract is not on devnet
+- Use Zcash privacy features: Bridge not connected to contracts
+
+---
+
+## Contributing to Phase 1 Fixes
+
+### Critical Issues to Fix
+
+See [ARCHITECTURE.md - Critical Issues](./ARCHITECTURE.md#critical-issues---blocks-deployment) for detailed problem descriptions.
+
+### How to Help
+
+#### Issue 1: Fix Smart Contract Structs (Days 1-2)
+
+```bash
+# Try to build - see the errors
+cd contracts/pir8-game
+anchor build
+
+# You'll see compilation errors about missing fields:
+# - error: no field `chosen_coordinates` on type `Game`
+# - error: no field `grid` on type `Game`
+# - etc.
+```
+
+**Steps to fix**:
+1. Open `contracts/pir8-game/src/lib.rs`
+2. Find the `Game` struct definition (around line 236)
+3. Add missing fields:
+   ```rust
+   pub struct Game {
+     // ... existing fields
+     pub chosen_coordinates: Vec<String>,  // Add this
+     pub grid: Vec<GameItem>,              // Add this
+     pub final_scores: Vec<u64>,           // Add this
+     pub random_seed: u64,                 // Add this
+   }
+   ```
+4. Update the SPACE calculation in the `impl Game` block
+5. Run `anchor build` and fix remaining type errors
+6. Test: `anchor test`
+
+**Reference files**:
+- Game struct: `contracts/pir8-game/src/lib.rs:236-257`
+- PlayerState: `contracts/pir8-game/src/lib.rs:317-332`
+- PlayerData: `contracts/pir8-game/src/pirate_lib.rs:89-96`
+
+#### Issue 2: Wire Zcash Bridge (Days 2-3)
+
+```bash
+# Zcash bridge exists but isn't connected
+# Current code: src/lib/integrations.ts (lines 317-335)
+# CLI command: src/cli/index.ts (line 121)
+```
+
+**Steps to complete**:
+1. Implement Lightwalletd watcher connection (or mock for devnet)
+2. Wire memo parser to `join_game` instruction
+3. Test: `npm run cli -- memo --memo '{"v":"1","gameId":"test",...}'`
+
+**Reference**:
+- Bridge class: `src/lib/integrations.ts:317-335`
+- CLI handler: `src/cli/commands/game.ts:81-105`
+
+### Testing Your Changes
+
+```bash
+# After fixing compilation errors:
+cd contracts/pir8-game
+anchor build
+anchor test
+
+# If tests pass, you're ready for deployment!
+anchor deploy --provider.cluster devnet
+```
 
 ---
 

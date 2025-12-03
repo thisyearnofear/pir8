@@ -23,14 +23,60 @@ PIR8 is a full-stack Web3 gaming platform built on Solana with privacy features 
 - **Helius WebSocket**: Real-time game monitoring
 - **Zcash Lightwalletd**: Shielded memo watching
 
+## 🔴 CRITICAL ISSUES - BLOCKS DEPLOYMENT
+
+### Smart Contract Compilation Errors
+
+The contract has structural inconsistencies that prevent compilation. **Must be fixed before any deployment.**
+
+#### Issue 1: Struct Field Mismatches
+**Problem**: `Game` struct is defined with fixed array `PlayerData[4]` but code references `PlayerState` methods and fields that don't exist.
+
+```rust
+// DEFINED (lib.rs line 240)
+pub players: [PlayerData; 4],  // Fixed array
+
+// USED (lib.rs line 263)
+self.players.iter().any(|p| p.player_key == *player)  // PlayerState fields
+```
+
+**Missing Fields in Game struct**:
+- `chosen_coordinates: Vec<String>` - Referenced in lines 287, 291, 295, 577, 653
+- `grid: Vec<GameItem>` - Referenced in lines 576, 636, 653
+- `final_scores: Vec<u64>` - Referenced in lines 569, 714, 853, 864
+- `random_seed: u64` - Referenced in lines 570, 814, 839
+
+#### Issue 2: PlayerData vs PlayerState Conflict
+`Game` struct declares `players: [PlayerData; 4]` but instructions expect `Vec<PlayerState>`:
+- `join_game()` calls `game.players.push(new_player)` but array can't be pushed
+- Methods like `get_current_player()` call `.get()` on fixed array but expect dynamic Vec
+
+#### Issue 3: Contract References Non-Existent Fields
+Multiple functions access undefined struct members:
+- `make_move()` line 636: `game.grid[coordinate_index]`
+- `create_game()` line 576: `game.grid = generate_game_grid()`
+- `complete_game()` line 853: `game.final_scores = game.calculate_final_scores()`
+
+### How to Fix
+1. Choose ONE player storage approach:
+   - Option A: Use `Vec<PlayerState>` with dynamic sizing
+   - Option B: Use fixed `[PlayerState; 4]` and rewrite join logic
+   
+2. Add all missing fields to `Game` struct
+3. Reconcile `PlayerData` (from pirate_lib.rs) with `PlayerState` (from lib.rs)
+4. Run `anchor build` to verify compilation
+
+---
+
 ## Smart Contract Architecture
 
 ### Core Contracts
 
 #### 1. Game Contract (`pir8_game`)
 **Location**: `/contracts/pir8-game/src/lib.rs`
-**Size**: 927 lines
+**Size**: 1,017 lines (lib.rs) + 302 lines (instructions.rs) + 537 lines (pirate_lib.rs) = 1,856 total
 **Program ID**: `5etQW394NUCprU1ikrbDysFeCGGRYY9usChGpaox9oiK`
+**Status**: ⚠️ **NOT COMPILING** - Struct field mismatches prevent build
 
 **Key Instructions**:
 ```rust
@@ -242,9 +288,11 @@ class HeliusMonitor {
 
 ## Privacy Layer
 
-### Zcash Integration
+### Zcash Integration - 🟡 PARTIAL IMPLEMENTATION
 
-**Shielded Memo Schema**:
+**Status**: Memo parser exists but **NOT WIRED TO CONTRACTS**. Bridge is incomplete.
+
+**Shielded Memo Schema** (Defined):
 ```json
 {
   "v": "1",                    // Schema version
@@ -254,38 +302,60 @@ class HeliusMonitor {
 }
 ```
 
-**Entry Flow**:
+**What Exists** (`src/lib/integrations.ts`):
+- ✅ `ZcashMemoBridge` class with `parseMemo()` method (lines 317-335)
+- ✅ Memo JSON schema validation
+- ✅ TypeScript bridge structure
+
+**What's Missing** (Blocks Privacy Entry Feature):
+- ❌ **Lightwalletd Watcher**: No implementation to monitor Zcash transactions
+  - Not watching for incoming shielded transactions
+  - No connection to Zcash network
+  - Empty: `handleIncomingShieldedMemo()` exists but has no watcher logic
+  
+- ❌ **Contract Integration**: Bridge doesn't call Solana
+  - Parser validates memo but doesn't trigger `join_game` instruction
+  - No transaction construction from parsed memo
+  - Missing: `await joinGame(parsed.gameId, parsed.solanaPubkey)`
+  
+- ❌ **CLI Support**: Memo command stubbed but not connected
+  - `npm run cli -- memo --memo '{...}'` parses but doesn't submit to contract
+  - No Helius transaction monitoring after submission
+
+**Intended Entry Flow** (Currently Broken):
 ```
-1. Player sends shielded ZEC transaction with memo
-2. Lightwalletd watcher detects transaction
-3. Parse memo JSON
-4. Validate schema and amounts
-5. Call join_game on Solana with player's pubkey
-6. Player joins anonymously (ZEC address not revealed)
+1. Player sends shielded ZEC to zcash_address with JSON memo  [USER DOES]
+2. Lightwalletd monitors and detects memo  [NOT IMPLEMENTED]
+3. Memo bridge parses JSON  [EXISTS]
+4. Validates: gameId, solanaPubkey, amountZEC  [EXISTS]
+5. Call join_game on Solana with player's pubkey  [NOT CONNECTED]
+6. Player joins game anonymously  [NOT WORKING]
 ```
 
-**Implementation**:
+**Current Code** (Incomplete):
 ```typescript
-class ZcashMemoBridge {
-  parseMemo(memo: string) {
+export class ZcashMemoBridge {
+  parseMemo(memo: string) {  // ✅ WORKS
     const data = JSON.parse(memo);
-    if (data.v !== '1') return null;
-    return {
-      gameId: data.gameId,
-      solanaPubkey: data.solanaPubkey,
-      amountZEC: data.amountZEC
-    };
+    if (data.v !== ZCASH_CONFIG.MEMO_SCHEMA_VERSION) return null;
+    if (!data.gameId || !data.solanaPubkey || typeof data.amountZEC !== 'number') return null;
+    return { gameId: data.gameId, solanaPubkey: data.solanaPubkey, amountZEC: data.amountZEC };
   }
-  
-  async handleIncomingMemo(memo: string) {
+
+  async handleIncomingShieldedMemo(memo: string) {  // ❌ NO WATCHER
     const parsed = this.parseMemo(memo);
-    if (!parsed) return;
-    
-    // Join game on Solana
-    await joinGame(parsed.gameId, parsed.solanaPubkey);
+    if (parsed) this.onEntry(parsed);  // Callback exists but never called
+    // Missing: Actually watch for Zcash transactions
   }
 }
 ```
+
+**To Complete This Feature**:
+1. Implement Lightwalletd watcher connection
+2. Add memo parsing on incoming shielded transactions
+3. Call Solana `join_game` instruction from bridge
+4. Test: Zcash memo → Solana transaction → Player joins game
+5. Document privacy flow for users
 
 ## Skill Mechanics (Phase 2)
 

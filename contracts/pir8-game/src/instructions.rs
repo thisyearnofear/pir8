@@ -29,7 +29,7 @@ pub mod pir8_game {
         game.created_at = clock.unix_timestamp;
         game.weather_type = WeatherType::Calm;
         game.weather_duration = 2;
-        game.bump = ctx.bumps.game;
+        game.bump = 0; // Bump will be set during account creation
 
         // Initialize first player
         game.players[0] = PlayerData {
@@ -61,6 +61,7 @@ pub mod pir8_game {
             max_players,
         });
 
+        msg!("Game created with ID: {}", game.game_id);
         Ok(())
     }
 
@@ -119,6 +120,10 @@ pub mod pir8_game {
     ) -> Result<()> {
         let game = &mut ctx.accounts.game;
         
+        // Capture game state early to avoid borrow checker issues
+        let turn_number = game.turn_number;
+        let game_id = game.game_id;
+        
         let current_player = game.get_current_player().ok_or(GameError::NotPlayerTurn)?;
         require!(
             current_player.pubkey == ctx.accounts.player.key(),
@@ -154,10 +159,10 @@ pub mod pir8_game {
         // Update ship position
         ship.position_x = to_x;
         ship.position_y = to_y;
-        ship.last_action_turn = game.turn_number;
+        ship.last_action_turn = turn_number;
 
         emit!(ShipMoved {
-            game_id: game.game_id,
+            game_id,
             player: ctx.accounts.player.key(),
             ship_id: ship_id.clone(),
             from_x,
@@ -255,31 +260,38 @@ pub mod pir8_game {
             GameError::NotPlayerTurn
         );
 
-        let player = game.get_player_mut(&ctx.accounts.player.key())
-            .ok_or(GameError::NotPlayerTurn)?;
-        
-        let ship = player.ships.iter()
-            .find(|s| s.id == ship_id && s.health > 0)
-            .ok_or(GameError::ShipNotFound)?;
+        // Get ship position first, before getting mutable player reference
+        let (territory_x, territory_y) = {
+            let player = game.get_player_mut(&ctx.accounts.player.key())
+                .ok_or(GameError::NotPlayerTurn)?;
+            
+            let ship = player.ships.iter()
+                .find(|s| s.id == ship_id && s.health > 0)
+                .ok_or(GameError::ShipNotFound)?;
 
-        let territory_x = ship.position_x;
-        let territory_y = ship.position_y;
+            (ship.position_x, ship.position_y)
+        };
 
         // Check if territory is claimable
-        let territory = &game.territory_map[territory_x as usize][territory_y as usize];
-        match territory.cell_type {
-            TerritoryCellType::Water | TerritoryCellType::Storm | TerritoryCellType::Whirlpool => {
-                return Err(GameError::InvalidCoordinate.into());
+        {
+            let territory = &game.territory_map[territory_x as usize][territory_y as usize];
+            match territory.cell_type {
+                TerritoryCellType::Water | TerritoryCellType::Storm | TerritoryCellType::Whirlpool => {
+                    return Err(GameError::InvalidCoordinate.into());
+                }
+                _ => {}
             }
-            _ => {}
+
+            // Check if already owned
+            if let Some(_) = territory.owner {
+                return Err(GameError::PositionOccupied.into());
+            }
         }
 
-        // Check if already owned
-        if let Some(_) = territory.owner {
-            return Err(GameError::PositionOccupied.into());
-        }
+        // Now claim territory
+        let player = game.get_player_mut(&ctx.accounts.player.key())
+            .ok_or(GameError::NotPlayerTurn)?;
 
-        // Claim territory
         let territory_coord = format!("{},{}", territory_x, territory_y);
         if !player.controlled_territories.contains(&territory_coord) {
             player.controlled_territories.push(territory_coord);

@@ -2,7 +2,9 @@
 
 ## Overview
 
-PIR8 is a **skill-based competitive gaming platform** that combines privacy-first blockchain technology with engaging multiplayer gameplay. We're building the future of competitive Web3 gaming through tournaments, skill expression, and community-driven token economies.
+PIR8 is a **privacy-first strategic naval combat platform** that combines Zcash shielded transactions with skill-based competitive gameplay on Solana. We're building the future of private competitive Web3 gaming—where your strategies stay hidden and only your fleet dominance matters.
+
+**Zypherpunk Hackathon Focus**: Privacy-preserving tournament entry + strategic fleet warfare = 70% skill, 30% luck
 
 ## Core Pillars
 
@@ -11,10 +13,12 @@ PIR8 is a **skill-based competitive gaming platform** that combines privacy-firs
 - **Private Moves**: Zero-knowledge proofs for competitive integrity
 - **Regulatory Compliance**: Privacy without compromising legal requirements
 
-### 2. Skill + Luck Balance
-- **70% Skill, 30% Luck**: Competitive depth with accessibility
-- **Multiple Skill Layers**: Information, timing, tactics, strategy
-- **Progressive Mastery**: Easy to learn, hard to master
+### 2. Skill + Luck Balance (70% Skill / 30% Luck)
+- **Fleet Strategy**: Ship positioning, type selection, resource allocation
+- **Economic Depth**: Resource management drives tactical decisions
+- **Territory Control**: Strategic map control with competing victory conditions
+- **Weather Adaptation**: Dynamic conditions force real-time strategy adjustments
+- **Progressive Mastery**: Easy to learn (move ships, fight, claim territories), hard to master (winning consistently)
 
 ### 3. Tournament Economics
 - **Seasonal Competitions**: Monthly/quarterly tournaments with real stakes
@@ -44,22 +48,25 @@ PIR8 is a **skill-based competitive gaming platform** that combines privacy-firs
 
 ## Product Strategy
 
-### Phase 1: Foundation (Current)
-**Status**: 80% Complete
-- ✅ Solana smart contracts (2,000+ lines)
-- ✅ Core game mechanics (7x7 grid, special items)
+### Phase 1: Foundation (Current - Zypherpunk Track)
+**Status**: 40% Complete - On track for Zypherpunk submission
+- ✅ Solana smart contracts (500+ lines, clean implementation)
+- ✅ 10x10 strategic map with territory types
+- ✅ Fleet system (4 ship types with distinct roles)
+- ✅ Core instructions (move, attack, claim, build)
 - ✅ Wallet integration (Phantom, Solflare, Backpack)
 - ✅ Helius real-time monitoring
-- ✅ Zcash memo watcher (basic)
-- 🚧 Skill mechanics (in development)
+- ✅ Zcash memo parser (ready to integrate)
+- 🚧 Resource economy (framework ready, logic next)
+- 🚧 Zcash bridge wiring (high priority)
 
-### Phase 2: Skill Systems (Next 2 Weeks)
-**Goal**: Transform from luck-based to skill-based
-- **Information Asymmetry**: Scanning, intel trading
-- **Timing Mechanics**: Speed bonuses, decision pressure
-- **Action Points**: Tactical resource management
-- **Combo System**: Sequential move multipliers
-- **Territory Control**: Spatial strategy layer
+### Phase 2: Skill Depth (After Zypherpunk - 2-3 Weeks)
+**Goal**: Enhance 70% skill balance with advanced mechanics
+- **Fog of War**: Hidden ship positions until adjacent/detected
+- **Intel System**: Reconnaissance missions, map scouting
+- **Timing Bonuses**: Fast decision rewards (competitive depth)
+- **Advanced Tactics**: Multi-turn strategy rewards, combo bonuses
+- **Economic Leverage**: Resource control → power projection
 
 ### Phase 3: Tournament Platform (Weeks 3-8)
 **Goal**: Launch competitive tournament system

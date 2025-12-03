@@ -1,8 +1,8 @@
 # 🏴‍☠️ PIR8
 
-> **Skill-based competitive gaming meets privacy-first blockchain technology**
+> **Strategic fleet warfare meets privacy-first blockchain technology**
 
-A multiplayer pirate treasure hunt game built on Solana with Zcash privacy integration. Compete in tournaments, master strategic gameplay, and earn real rewards.
+A multiplayer pirate naval combat game built on Solana with Zcash shielded transactions. Command your fleet, dominate territories, and earn real rewards through skill-based competitive play.
 
 [![Solana](https://img.shields.io/badge/Solana-Devnet-9945FF)](https://solana.com)
 [![Next.js](https://img.shields.io/badge/Next.js-14-black)](https://nextjs.org)
@@ -13,13 +13,13 @@ A multiplayer pirate treasure hunt game built on Solana with Zcash privacy integ
 
 ## 🎮 What is PIR8?
 
-PIR8 is a **skill-based competitive game** where players navigate a 7x7 treasure map, collecting points and using special items to outmaneuver opponents. Unlike traditional Web3 games, PIR8 emphasizes **strategic depth** over luck, with multiple skill layers including:
+PIR8 is a **skill-based strategic naval warfare game** where players command pirate fleets across a 10x10 battle map to claim territories, control resources, and eliminate enemy ships. Unlike traditional Web3 games, PIR8 emphasizes **70% strategic skill, 30% tactical luck**, with multiple layers of depth:
 
-- **Information Management**: Scan squares to reveal items before committing
-- **Timing Mechanics**: Fast decisions earn bonus points
-- **Tactical Resource Management**: Spend action points wisely
-- **Territory Control**: Dominate rows and columns for passive income
-- **Combo Systems**: Chain moves for multipliers
+- **Fleet Management**: Build and position ships strategically (Sloop, Frigate, Galleon, Flagship)
+- **Territorial Control**: Claim ports, islands, and treasure sites for passive resource generation
+- **Resource Economics**: Gold, crew, supplies, and cannons drive strategic decision-making
+- **Combat Tactics**: Attack range, damage calculations, and defensive positioning matter
+- **Weather Systems**: Dynamic weather affects movement speed, visibility, and combat effectiveness
 
 ### Tournament Model
 
@@ -53,20 +53,24 @@ Open [http://localhost:3000](http://localhost:3000) and connect your Solana wall
 
 ## ✨ Key Features
 
-### Current (Phase 1 - 80% Complete)
-- ✅ **Solana Smart Contracts** - 2,000+ lines of production Rust
-- ✅ **Turn-Based Gameplay** - 7x7 grid with 12 special items
-- ✅ **Real-Time Updates** - Helius WebSocket monitoring
-- ✅ **Multi-Wallet Support** - Phantom, Solflare, Backpack
-- ✅ **Privacy Entry** - Zcash shielded memo integration
-- ✅ **Responsive UI** - Mobile-optimized Next.js frontend
+### Current (Phase 1 - Foundation - 40% Complete)
+- ✅ **10x10 Strategic Map** - Territory generation with island/port/treasure placement
+- ✅ **Fleet System** - 4 ship types with distinct stats (speed, attack, defense, health)
+- ✅ **Core Instructions** - Create game, join game, move ship, attack, claim territory
+- ✅ **Real-Time Updates** - Helius WebSocket monitoring integration
+- ✅ **Multi-Wallet Support** - Phantom, Solflare, Backpack via Wallet Adapter
+- 🏗️ **Zcash Privacy Bridge** - Shielded memo integration for private tournament entry (design ready)
 
-### Coming Soon (Phase 2-3)
-- 🚧 **Skill Mechanics** - Scanning, timing, combos (2 weeks)
-- 🚧 **Tournament System** - Brackets, seeding, rewards (6 weeks)
-- 🚧 **Token Distribution** - Performance-based allocation
-- 🚧 **Reputation System** - ELO ratings, achievements
-- 🚧 **Spectator Mode** - Watch live tournament matches
+### In Progress (Phase 1 - Critical Path)
+- 🔧 **Contract Compilation** - Resolve module conflicts between instructions.rs and pirate_lib.rs
+- 🔧 **Devnet Deployment** - Deploy working contracts and test full gameplay
+- 🔧 **Resource System** - Resource generation from controlled territories, ship building costs
+- 🏗️ **Weather Mechanics** - Dynamic weather effects on movement and combat
+
+### Blocked Until Fixed
+- ❌ Devnet deployment (module declaration conflict)
+- ❌ End-to-end gameplay testing (deployment blocking)
+- ❌ Zcash bridge integration (deployment prerequisite)
 
 ---
 
@@ -74,14 +78,14 @@ Open [http://localhost:3000](http://localhost:3000) and connect your Solana wall
 
 ### Core Gameplay
 
-**Objective**: Command your pirate fleet to dominate the seven seas through strategic warfare
+**Objective**: Command your pirate fleet to control 60%+ of valuable territories or achieve fleet dominance
 
-**Turn Flow**:
-1. Move ships across the 10x10 battlefield
-2. Attack enemy vessels or claim territories  
-3. Collect resources from controlled territories
-4. Build new ships to expand your fleet
-5. Adapt strategy to changing weather conditions
+**Turn Structure**:
+1. **Movement Phase**: Move ships within their speed range
+2. **Action Phase**: Attack enemy ships, claim territories, or build new vessels
+3. **Resource Phase**: Collect gold/supplies from controlled territories
+4. **Weather Phase**: Adapt to changing conditions affecting your fleet
+5. **End Turn**: Pass to next player
 
 **Strategic Elements**:
 - ⚓ **Ports**: Generate 5 gold + 2 crew per turn
@@ -154,10 +158,10 @@ Token Distribution:
 ## 🛠️ Tech Stack
 
 ### Blockchain
-- **Solana**: Sub-second finality, low fees
-- **Anchor Framework**: Type-safe smart contracts
-- **Helius**: Enhanced RPC, real-time monitoring
-- **Zcash**: Privacy-preserving entry
+- **Solana**: Sub-second finality, low fees, 65k TPS capacity
+- **Anchor Framework**: Type-safe smart contracts in Rust
+- **Helius**: Enhanced RPC, real-time WebSocket monitoring
+- **Zcash**: Shielded transactions for private tournament entry (Zypherpunk focus)
 
 ### Frontend
 - **Next.js 14**: React framework with App Router
@@ -231,25 +235,69 @@ npm run test
 
 ## 🎯 Current Status
 
-### Phase 1: Foundation (80% Complete)
-- [x] Solana smart contracts deployed
-- [x] Core game mechanics working
-- [x] Wallet integration complete
-- [x] Real-time monitoring active
-- [ ] Skill mechanics (in progress)
+### Phase 1: Foundation (40% Complete - Zypherpunk Ready Track)
 
-### Phase 2: Skill Systems (Next 2 Weeks)
-- [ ] Scanning system
-- [ ] Timing mechanics
-- [ ] Action points
-- [ ] Combo system
-- [ ] Territory control
+**✅ Completed:**
+- 10x10 strategic map generation with territory types
+- Fleet system with 4 ship types and distinct stats
+- Core instructions: create_game, join_game, move_ship, attack_ship, claim_territory
+- Weather system framework
+- Wallet integration (Phantom, Solflare, Backpack)
+- Helius WebSocket monitoring integration
+- Zcash memo bridge structure (parsing ready)
 
-### Phase 3: Tournaments (Weeks 3-8)
-- [ ] Tournament smart contracts
-- [ ] Bracket management
-- [ ] Token distribution
-- [ ] Reputation system
+**🔴 Blocking Issues - Must Fix for Zypherpunk Submission:**
+- **Module Conflict**: Both instructions.rs and lib.rs (deleted) declared `#[program] pub mod pir8_game`
+  - Status: lib.rs deleted, need to verify instructions.rs + pirate_lib.rs compile cleanly
+  - Action: Run `anchor build` to confirm zero errors
+
+- **Devnet Deployment**: Contract not yet deployed
+  - Required for playable demo
+  - Timeline: 1 day after compilation fix
+
+- **Zcash Integration**: Memo parser exists but not wired to contract
+  - Players should enter tournaments via Zcash shielded memos
+  - Creates privacy-first narrative for Zypherpunk
+  - Timeline: 2 days after deployment
+
+**🟡 Partial/Not Yet Implemented:**
+- Resource generation system (framework exists, logic incomplete)
+- Ship building/purchasing mechanics
+- Territory resource collection
+- Weather effects on combat/movement
+- Game completion conditions and winner determination
+
+### Immediate Next Steps (Zypherpunk Timeline)
+**Days 1-2**: Fix & Deploy
+1. Verify `anchor build` compiles cleanly
+2. Deploy to Devnet
+3. Test create_game → join_game → move_ship flow
+
+**Days 3-4**: MVP Playability
+1. Implement resource generation from territories
+2. Complete ship building system
+3. Test full game loop (multiple turns, resource management)
+
+**Days 5-6**: Privacy Integration
+1. Wire Zcash shielded memo to tournament entry
+2. Implement private move tracking (shielded on-chain)
+3. Demo: "Enter tournaments privately via Zcash"
+
+**Days 7+**: Polish & Documentation
+1. Frontend UI for fleet warfare
+2. Tournament brackets
+3. Zypherpunk submission documentation
+
+### Phase 2: Skill Depth (After Zypherpunk - Weeks 2-3)
+- [ ] Advanced fog of war mechanics
+- [ ] Intel/reconnaissance system
+- [ ] Timing-based bonuses for fast decisions
+- [ ] Combo reward system for multi-turn strategies
+
+### Phase 3: Tournaments (After Phase 1 & 2)
+- [ ] Tournament smart contracts with bracket management
+- [ ] Token distribution (Pump.fun integration)
+- [ ] Reputation/ELO system
 - [ ] Spectator mode
 
 **See [ROADMAP.md](./docs/ROADMAP.md) for detailed timeline**

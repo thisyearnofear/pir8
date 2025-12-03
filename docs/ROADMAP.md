@@ -1,24 +1,137 @@
 # Development Roadmap
 
-## Current Status: Phase 1 (Foundation) - 80% Complete
+## ⚠️ CURRENT STATUS: Phase 1 (Foundation) - 40% Complete
+
+**ZYPHERPUNK HACKATHON FOCUS** - Privacy-first fleet warfare built on Solana + Zcash
 
 ### ✅ Completed
-- Solana smart contracts (2,000+ lines of production Rust)
-- Core game mechanics (7x7 grid, 12 special items, turn-based play)
+- 10x10 strategic map generation with biome distribution
+- Fleet system with 4 ship types (Sloop, Frigate, Galleon, Flagship)
+- Core game instructions: create_game, join_game, move_ship, attack_ship, claim_territory
+- Weather system framework (Calm, TradeWinds, Storm, Fog)
 - Wallet integration (Phantom, Solflare, Backpack)
-- Helius real-time transaction monitoring
-- Zcash memo watcher (basic implementation)
-- Next.js frontend with responsive UI
-- CLI tools for game management
+- Helius WebSocket transaction monitoring
+- Zcash memo parser (ready to integrate)
 
-### 🚧 In Progress
-- Skill-based mechanics (scanning, timing, combos)
-- Tournament smart contracts (design phase)
-- Enhanced privacy features
+### 🔴 CRITICAL BLOCKERS - MUST FIX FIRST
+1. **Smart Contract Compilation**
+   - Deleted conflicting lib.rs
+   - Need to verify instructions.rs + pirate_lib.rs compile cleanly
+   - Status: Ready to test `anchor build`
+   
+2. **Devnet Deployment**
+   - Contracts not yet deployed
+   - Blocks all gameplay testing
+   - Timeline: 1 day after compilation verified
+   
+3. **Zcash Bridge Integration**
+   - Memo parser exists but not connected to join_game instruction
+   - Goal: Players enter tournaments via Zcash shielded memos
+   - Timeline: 2 days after deployment
+
+### 🚧 In Progress (Priority Order for Zypherpunk)
+- Test smart contract compilation
+- Deploy to Devnet
+- Implement resource generation system
+- Wire Zcash memo to tournament entry
 
 ---
 
-## Phase 2: Skill Systems (Weeks 1-2)
+## 🔧 ZYPHERPUNK SUBMISSION PLAN (7 Days)
+
+### Days 1-2: Compilation & Deployment
+
+**Task 1.1: Verify Contract Compilation**
+- [ ] Run `anchor build` in contracts/pir8-game
+- [ ] Verify no module conflicts (lib.rs deleted, instructions.rs + pirate_lib.rs only)
+- [ ] Confirm binary generated at target/deploy/pir8_game.so
+
+**Task 1.2: Deploy to Devnet**
+- [ ] Configure Anchor.toml for devnet RPC (Helius)
+- [ ] Run `anchor deploy --provider.cluster devnet`
+- [ ] Record program ID
+- [ ] Update frontend with new program ID
+
+**Task 1.3: Test Core Flow**
+- [ ] Test create_game instruction
+- [ ] Test join_game instruction
+- [ ] Test move_ship instruction
+- [ ] Verify events emit correctly
+
+**Success Criteria**:
+```bash
+$ anchor build
+# ✅ Compiled successfully
+$ anchor deploy --provider.cluster devnet
+# ✅ Deployed to devnet
+```
+
+### Days 3-4: MVP Playability
+
+**Task 2.1: Resource Generation**
+- [ ] Implement resource collection from controlled territories
+- [ ] Add ship building instruction with resource costs
+- [ ] Test resource economy (gold/crew/supplies/cannons)
+
+**Task 2.2: Game Loop**
+- [ ] Implement game completion conditions
+- [ ] Add winner determination logic
+- [ ] Test full 2-4 player game flow
+
+**Task 2.3: Frontend Updates**
+- [ ] Display fleet status UI
+- [ ] Show controlled territories
+- [ ] Implement move/attack/claim UI buttons
+
+**Success Criteria**:
+- Complete 2-player game from start to finish
+- Resources generate and deplete correctly
+- UI shows game state accurately
+
+### Days 5-6: Privacy Integration (Zypherpunk Core)
+
+**Task 3.1: Zcash Bridge Completion**
+- [ ] Wire memo parser to join_game instruction
+- [ ] Implement tournament entry via shielded memo
+- [ ] Create Zcash → Solana payment flow
+
+**Task 3.2: Private Move Tracking** 
+- [ ] Implement encrypted move storage (optional, Phase 2)
+- [ ] Add shielded memo field to game events
+- [ ] Document privacy guarantees
+
+**Task 3.3: Demo Preparation**
+- [ ] Create walkthrough: "Enter tournament privately via Zcash"
+- [ ] Record demo video
+- [ ] Document integration
+
+**Success Criteria**:
+- Players can enter tournament via Zcash shielded memo
+- Move history shielded from public blockchain
+- Clear privacy narrative for judges
+
+### Days 7+: Polish & Documentation
+
+**Task 4.1: Documentation**
+- [ ] Update GETTING_STARTED.md with actual steps
+- [ ] Write Zcash integration guide
+- [ ] Create architecture doc explaining privacy approach
+- [ ] Add demo instructions
+
+**Task 4.2: Zypherpunk Submission**
+- [ ] Prepare submission narrative (70% skill, privacy-first)
+- [ ] Create architecture diagram
+- [ ] Record final demo video
+- [ ] Submit before deadline
+
+**Success Criteria**:
+- Clear, compelling submission story
+- Working product demo
+- Privacy + skill narrative aligned with Zypherpunk values
+
+---
+
+## Phase 2: Skill Systems (After Phase 1 Fixed - Weeks 1-2)
 
 ### Goal
 Transform gameplay from 70% luck / 30% skill → 30% luck / 70% skill
@@ -481,26 +594,28 @@ pub struct PlayerProfile {
 
 ---
 
-## Next Immediate Steps (This Week)
+## Hackathon Implications (ZYPHERPUNK)
 
-### Day 1-2 (Now)
-1. ✅ Consolidate documentation
-2. ✅ Define skill mechanics
-3. [ ] Begin scanning system implementation
+**Current State**: ⚠️ **NOT READY** - Contracts don't compile, can't be deployed
 
-### Day 3-4
-4. [ ] Complete scanning smart contract
-5. [ ] Build scanning UI
-6. [ ] Write tests
+**What's Needed for Submission**:
+1. ✅ Zcash integration (conceptually strong, partially implemented)
+2. ✅ Privacy-first narrative (matches hackathon theme perfectly)
+3. ❌ **Working contracts (BLOCKER)**
+4. ❌ **Deployed product (BLOCKER)**
 
-### Day 5-7
-7. [ ] Implement timing mechanics
-8. [ ] Integration testing
-9. [ ] Deploy to devnet
-10. [ ] User testing with skill mechanics
+**Recommendation**: Fix Phase 1 blockers (Days 1-2) first, then:
+- Deploy contracts to devnet
+- Show working game + Zcash privacy flow
+- Submit with "foundation deployed, skill systems coming" narrative
 
-**Goal**: Have skill-enhanced gameplay working by end of week
+**Timeline**: 
+- Day 1-2: Fix compilation + deploy
+- Day 3: Polish demo + documentation
+- Day 4+: Can start Phase 2 (skill mechanics) if time permits
+
+Without fixing the compilation errors, the project cannot be deployed and will not be a viable hackathon submission.
 
 ---
 
-**Roadmap is aggressive but achievable. Focus on core mechanics, ship iteratively, gather feedback.**
+**Prioritized Roadmap**: Fix compilation → Deploy → Demo → Polish (in that order)
