@@ -1,368 +1,501 @@
-# Immediate Next Steps Summary
+# Getting Started with PIR8
 
-## What You Now Have
+## Quick Start (5 Minutes)
 
-✅ **Complete Research**
+### Prerequisites
+- Node.js 18+ installed
+- Solana wallet (Phantom, Solflare, or Backpack)
+- ~0.5 SOL on Devnet for testing
 
-- Full Helius API documentation & examples
-- Pump Fun API specs + breaking changes
-- Integration test files ready to run
-
-✅ **Ready-to-Run Test Files**
-
-1. `tests/helius-transaction-monitor.ts` - Monitor deposits in real-time
-2. `tests/pump-token-creator.ts` - Create winner tokens instantly
-
-✅ **Complete Documentation**
-
-- `docs/GETTING_STARTED.md` - Start here
-- `docs/DEPLOYMENT.md` - Devnet deployment details
-- `docs/QUICK_REFERENCE.md` - Helius + Pump Fun cheat sheet
-- `docs/FEASIBILITY.md` - Feasibility and hackathon strategy
-
----
-
-## Immediate Action Plan (Next 48 Hours)
-
-### Phase 1: Setup (30 minutes)
-
-**Goal:** Get both test files running
+### Installation
 
 ```bash
-# 1. Create Helius account (free tier)
-   Go to: https://dashboard.helius.dev
-   Copy your API key
+# Clone repository
+git clone https://github.com/thisyearnofear/pir8.git
+cd pir8
 
-# 2. Request Pump.fun API key
-   Join: https://t.me/PumpPortalAPI
-   Message: /start
-   Get: API key
+# Install dependencies
+npm install
 
-# 3. Setup project
-   cd /Users/udingethe/Dev/pirate-game
-   npm install ws axios @solana/web3.js bs58 form-data dotenv
+# Set up environment
+cp .env.local.example .env.local
+# Add your Helius RPC URL to .env.local
 
-# 4. Create .env file
-   cat > .env << EOF
-   HELIUS_API_KEY=your_helius_api_key
-   PUMP_API_KEY=your_pump_portal_key
-   GAME_TREASURY=YOUR_ADDRESS_HERE
-   EOF
-
-# 5. Setup TypeScript
-   npm install -D typescript ts-node @types/node
-   cat > tsconfig.json << 'EOF'
-   {
-     "compilerOptions": {
-       "target": "ES2020",
-       "module": "commonjs",
-       "lib": ["ES2020"],
-       "strict": true,
-       "esModuleInterop": true,
-       "skipLibCheck": true
-     }
-   }
-   EOF
+# Run development server
+npm run dev
 ```
 
-**Expected Duration:** 30 minutes
+Open [http://localhost:3000](http://localhost:3000) and connect your wallet!
 
 ---
 
-### Phase 2: Validate Helius (45 minutes)
+## Development Workflow
 
-**Goal:** Prove real-time transaction monitoring works
+### Smart Contract Development
 
+#### Build Contracts
 ```bash
-# 1. Run the monitor
-npx ts-node tests/helius-transaction-monitor.ts
+# Build Anchor program
+anchor build
 
-# 2. Open another terminal, send a test transaction to your address:
-   # Use Phantom wallet → Send SOL to GAME_TREASURY address
-   # OR use CLI:
-   solana transfer <GAME_TREASURY> 0.1 -um
+# Generate TypeScript types
+anchor build --idl
 
-# 3. Watch it appear in real-time in the monitor output
-
-# 4. Stop monitor (Ctrl+C after 120 seconds)
-
-# Checklist:
-- [ ] WebSocket connects successfully
-- [ ] Subscription confirmed
-- [ ] Real transaction appears in output
-- [ ] Can see instruction details
-- [ ] Know how to parse token transfers
-- [ ] Know how to parse SOL transfers
+# View program ID
+solana address -k target/deploy/pir8_game-keypair.json
 ```
 
-**Critical Learning:**
-
-- Helius provides **raw parsed transaction data**
-- You can filter by address, extract amounts, detect event types
-- This is how deposits will be detected in production
-
----
-
-### Phase 3: Validate Pump Fun (45 minutes)
-
-**Goal:** Create your first winner token
-
+#### Test Contracts
 ```bash
-# 1. Fund a Devnet wallet
-   Go to: https://faucet.solana.com
-   Get: Free SOL for testing
+# Run Anchor tests
+anchor test
 
-# 2. Run the token creator
-   npx ts-node tests/pump-token-creator.ts
-
-# 3. Wait for creation to complete (~10-20 seconds)
-
-# 4. Click the Solscan link to see your token
-
-# 5. View on Pump.fun
-   https://pump.fun/TOKEN_MINT_ADDRESS
-
-# Checklist:
-- [ ] Token created successfully
-- [ ] Mint address generated
-- [ ] Metadata uploaded to IPFS
-- [ ] Token visible on Solscan
-- [ ] Token visible on Pump.fun
-- [ ] Can see price/market cap
-- [ ] Understand graduation mechanic ($69k)
+# Run specific test
+anchor test --skip-deploy -- --test test_create_game
 ```
 
-**Critical Learning:**
+#### Deploy to Devnet
+```bash
+# Configure Solana CLI for devnet
+solana config set --url devnet
 
-- Token creation takes 2-3 seconds
-- Metadata is stored on IPFS (decentralized)
-- Token appears on bonding curve immediately
-- Anyone can buy/sell using Pump.fun interface
+# Airdrop SOL for deployment
+solana airdrop 2
+
+# Deploy program
+anchor deploy --provider.cluster devnet
+
+# Verify deployment
+solana program show <PROGRAM_ID>
+```
+
+### Frontend Development
+
+#### Run Development Server
+```bash
+# Start Next.js dev server
+npm run dev
+
+# Build production bundle
+npm run build
+
+# Start production server
+npm start
+```
+
+#### Code Quality
+```bash
+# Type checking
+npm run type-check
+
+# Linting
+npm run lint
+
+# Format code
+npm run format
+```
+
+### CLI Tools
+
+#### Initialize Platform
+```bash
+# Initialize game configuration (one-time)
+npm run cli -- init
+
+# View configuration
+solana account <CONFIG_PDA>
+```
+
+#### Create & Join Games
+```bash
+# Create new game
+npm run cli -- create
+
+# Join existing game
+npm run cli -- join 0
+
+# Start game (when enough players)
+npm run cli -- start 0
+```
+
+#### Monitor Transactions
+```bash
+# Watch for game events
+npm run cli -- monitor
+
+# Create winner token (when game completes)
+npm run cli -- token 0
+```
+
+#### Zcash Integration
+```bash
+# Handle shielded memo
+npm run cli -- memo --memo '{"v":"1","gameId":"game_0","solanaPubkey":"YOUR_KEY","amountZEC":0.1}'
+```
 
 ---
 
-### Phase 4: Document Findings (30 minutes)
+## Project Structure
 
-Log results in your issue tracker or a single section in `docs/FEASIBILITY.md` under "Integration Status".
+```
+pir8/
+├── contracts/              # Solana smart contracts
+│   └── pir8-game/
+│       ├── src/
+│       │   └── lib.rs     # Main program (927 lines)
+│       ├── Cargo.toml
+│       └── Xargo.toml
+│
+├── app/                    # Next.js app directory
+│   ├── page.tsx           # Main game interface
+│   ├── layout.tsx         # Root layout
+│   └── globals.css        # Styling
+│
+├── src/
+│   ├── components/        # React components
+│   │   ├── GameCockpit/  # Main game UI
+│   │   ├── GameControls.tsx
+│   │   ├── GameGrid.tsx
+│   │   └── PlayerStats.tsx
+│   │
+│   ├── hooks/            # Custom React hooks
+│   │   ├── useGameState.ts
+│   │   ├── useHeliusMonitor.ts
+│   │   └── useErrorHandler.ts
+│   │
+│   ├── lib/              # Core libraries
+│   │   ├── anchor.ts     # Anchor program client
+│   │   ├── gameLogic.ts  # Game rules engine
+│   │   └── integrations.ts # Helius/Pump/Zcash
+│   │
+│   ├── cli/              # CLI commands
+│   │   └── commands/
+│   │       ├── game.ts
+│   │       ├── monitor.ts
+│   │       └── token.ts
+│   │
+│   └── types/            # TypeScript types
+│       └── game.ts
+│
+├── docs/                 # Documentation
+│   ├── VISION.md        # Strategy & vision
+│   ├── ARCHITECTURE.md  # Technical details
+│   ├── ROADMAP.md       # Development plan
+│   └── GETTING_STARTED.md # This file
+│
+├── tests/               # Integration tests
+│   ├── game.test.ts
+│   └── tournament.test.ts
+│
+├── Anchor.toml          # Anchor configuration
+├── package.json         # Node dependencies
+└── README.md           # Project overview
+```
 
 ---
 
-## What Happens Next (After Phase 4)
+## Key Concepts
 
-### Integration into Next.js (Days 3-5)
+### Game Flow
 
-You'll create:
+1. **Create Game**
+   - Creator sets entry fee and max players
+   - Game enters "Waiting" status
+   - Grid is generated with random seed
 
-1. **Backend API** (`pages/api/deposits.ts`)
+2. **Join Game**
+   - Players pay entry fee
+   - Entry fee split: 95% to pot, 5% to platform
+   - Game starts when min players (2) join
 
-   - Listens to Helius WebSocket
-   - Credits players when deposits detected
-   - Stores transaction log
+3. **Gameplay**
+   - Turn-based coordinate selection (A1-G7)
+   - Items revealed when picked
+   - Special items trigger actions
+   - Game ends when all 49 squares picked
 
-2. **Winner API** (`pages/api/claim-token.ts`)
+4. **Completion**
+   - Winner determined by highest score (points + banked)
+   - Winner claims prize from pot
+   - Game account closed, rent returned
 
-   - Called when player claims prize
-   - Creates token via PumpPortal
-   - Records in database
+### Special Items
 
-3. **Frontend Components**
-   - Deposit status page
-   - Token claim button
-   - Token leaderboard
-   - Prize history
+| Item | Effect | Strategy |
+|------|--------|----------|
+| **Points** | +200/1000/3000/5000 | Core scoring |
+| **GRINCH** | Steal opponent's points | Offensive |
+| **PUDDING** | Reset opponent to 0 | Aggressive |
+| **PRESENT** | Gift 1000 points | Cooperative |
+| **MISTLETOE** | Swap scores | Tactical |
+| **TREE** | Choose next coordinate | Control |
+| **ELF** | Block one attack | Defensive |
+| **BAUBLE** | Reflect one attack | Counter |
+| **TURKEY** | Reset self to 0 | Risk |
+| **CRACKER** | Double current score | Multiplier |
+| **BANK** | Protect points | Safety |
 
-### Example: 5-Minute Integration
+### Skill Mechanics (Phase 2)
 
+**Scanning**:
+- Reveal items without claiming
+- Limited charges (3 per game)
+- Strategic information advantage
+
+**Timing**:
+- Fast decisions earn bonus points
+- <5s = +100 points
+- >30s = -50 points penalty
+
+**Action Points**:
+- 3 AP per turn
+- Pick (2 AP), Scan (1 AP), Bank (1 AP)
+- Tactical resource management
+
+**Combos**:
+- Consecutive point picks = 1.5x multiplier
+- Special item chains = bonus points
+- Territory control = passive income
+
+---
+
+## Common Tasks
+
+### Add New Game Item
+
+1. **Update Smart Contract**:
+```rust
+// contracts/pir8-game/src/lib.rs
+pub enum GameItem {
+    // ... existing items
+    NewItem,  // Add new variant
+}
+
+// Add handling in make_move
+GameItem::NewItem => {
+    // Define effect
+}
+```
+
+2. **Update Frontend Types**:
 ```typescript
-// Backend: Detect deposits
-import { HeliusTransactionMonitor } from "@/lib/helius";
+// src/types/game.ts
+export type GameItem = 
+  | 'GRINCH' 
+  | 'NEW_ITEM'  // Add here
+  | ...;
+```
 
-const monitor = new HeliusTransactionMonitor();
-monitor.on("deposit", async (tx) => {
-  await db.player.update({
-    where: { address: tx.from },
-    data: { balance: { increment: tx.amount } },
-  });
-});
+3. **Add to Distribution**:
+```rust
+// Update ITEM_DISTRIBUTION constant
+pub const ITEM_DISTRIBUTION: &[(u8, u16)] = &[
+    // ... existing
+    (1, 0), // NewItem (special)
+];
+```
 
-// Backend: Create token for winner
-import { PumpTokenCreator } from "@/lib/pump";
+### Add New Instruction
 
-const creator = new PumpTokenCreator(process.env.PUMP_API_KEY);
-const token = await creator.createTokenLightning(
-  { name: "Pirate Bounty", symbol: "$PB", uri: "..." },
-  Keypair.generate(),
-  0.5
-);
+1. **Define Context**:
+```rust
+#[derive(Accounts)]
+pub struct NewInstruction<'info> {
+    #[account(mut)]
+    pub game: Account<'info, Game>,
+    pub player: Signer<'info>,
+}
+```
 
-// Frontend: Show result
-<div>
-  ✨ You created: <a href={`https://pump.fun/${token.mint}`}>View Token</a>
-</div>;
+2. **Implement Handler**:
+```rust
+pub fn new_instruction(ctx: Context<NewInstruction>) -> Result<()> {
+    let game = &mut ctx.accounts.game;
+    // Logic here
+    Ok(())
+}
+```
+
+3. **Add to Program**:
+```rust
+#[program]
+pub mod pir8_game {
+    pub fn new_instruction(ctx: Context<NewInstruction>) -> Result<()> {
+        // Call handler
+    }
+}
+```
+
+4. **Update Frontend Client**:
+```typescript
+// src/lib/anchor.ts
+async newInstruction() {
+  return await this.program.methods
+    .newInstruction()
+    .accounts({ /* ... */ })
+    .rpc();
+}
+```
+
+### Debug Transaction Failures
+
+```bash
+# Get transaction logs
+solana confirm -v <SIGNATURE>
+
+# View program logs
+solana logs <PROGRAM_ID>
+
+# Check account data
+solana account <ACCOUNT_ADDRESS>
+
+# Decode base64 error
+echo "<ERROR_DATA>" | base64 -d
+```
+
+### Test Locally
+
+```bash
+# Start local validator
+solana-test-validator
+
+# Deploy to local
+anchor deploy --provider.cluster localnet
+
+# Run tests against local
+anchor test --skip-local-validator
 ```
 
 ---
 
-## Risk Analysis: What Could Go Wrong?
+## Environment Variables
 
-| Risk                     | Probability | Impact | Mitigation               |
-| ------------------------ | ----------- | ------ | ------------------------ |
-| Helius API rate limit    | Low         | Medium | Request higher tier      |
-| Pump.fun API key revoked | Very Low    | High   | Have backup key ready    |
-| Token creation fails     | Low         | Medium | Retry logic + backup API |
-| Network congestion       | Medium      | Low    | Higher priority fees     |
-| IPFS upload fails        | Very Low    | Medium | Retry upload             |
+### Required
+```bash
+# Helius RPC URL (get from helius.dev)
+NEXT_PUBLIC_HELIUS_RPC=https://devnet.helius-rpc.com/?api-key=YOUR_KEY
 
-**Overall:** Both are battle-tested, production-grade services. Risk is minimal.
+# Program ID (from deployment)
+NEXT_PUBLIC_PROGRAM_ID=5etQW394NUCprU1ikrbDysFeCGGRYY9usChGpaox9oiK
 
----
-
-## Success Criteria: How to Know It's Working
-
-### ✅ Helius Integration Success
-
-```
-npx ts-node tests/helius-transaction-monitor.ts
-→ Shows real transactions in real-time
-→ Correctly parses transfers
-→ Detects both SOL and token transfers
+# Solana network
+NEXT_PUBLIC_SOLANA_NETWORK=devnet
 ```
 
-### ✅ Pump Fun Integration Success
+### Optional
+```bash
+# Zcash configuration
+ZCASH_LIGHTWALLETD_URL=https://zcash.example.com
 
-```
-npx ts-node tests/pump-token-creator.ts
-→ Creates token in <20 seconds
-→ Token appears on Solscan
-→ Token visible on pump.fun
-→ Can trade immediately
-```
+# Pump Fun API
+PUMPPORTAL_API_KEY=your_key_here
 
-### ✅ Both Ready for Game
-
-- Can start game integration immediately
-- No additional research needed
-- Focus shifts to Next.js architecture
-
----
-
-## Time Breakdown
-
-```
-Phase 1 (Setup):       30 min ✅
-Phase 2 (Helius):      45 min ✅
-Phase 3 (Pump Fun):    45 min ✅
-Phase 4 (Document):    30 min ✅
-━━━━━━━━━━━━━━━━━━━━━━━━━━━
-Total:                2.5 hours
-
-Next phase (Integration): 1-2 weeks
+# Analytics
+NEXT_PUBLIC_LOG_LEVEL=info
 ```
 
 ---
 
-## Files to Review
+## Troubleshooting
 
-In order of importance:
+### "Insufficient funds" Error
+```bash
+# Airdrop SOL on devnet
+solana airdrop 2
 
-1. **docs/GETTING_STARTED.md** ← Start here (15 min read)
-2. **tests/helius-transaction-monitor.ts** (Run Test 1)
-3. **tests/pump-token-creator.ts** (Run Test 2)
-4. **docs/QUICK_REFERENCE.md** (Reference)
-5. **docs/FEASIBILITY.md** (Reference)
-6. **docs/DEPLOYMENT.md** (Reference)
-
----
-
-## Key Decisions
-
-✅ **Use PumpPortal API (not direct Pump.fun contracts)**
-
-- Simpler integration
-- Faster token creation
-- No signing required from game backend
-- Battle-tested and reliable
-
-✅ **Use Helius Enhanced WebSockets (not Webhooks)**
-
-- Lower latency
-- More control over filtering
-- Perfect for real-time gaming
-- Standard for high-frequency apps
-
-✅ **Keep MVP simple (no Zcash, no Mayhem mode)**
-
-- Realistic timeline (4-6 weeks)
-- Focus on core gameplay
-- Add privacy/advanced features post-launch
-
----
-
-## Hardware/Software Requirements
-
+# Check balance
+solana balance
 ```
-Required:
-- Node.js 16+ (already have)
-- npm (already have)
-- Solana CLI (optional but helpful)
 
-Optional but recommended:
-- Phantom Wallet (for manual testing)
-- Solscan account (for viewing tokens)
-- Telegram account (for Pump.fun support)
+### "Program not found" Error
+```bash
+# Verify program is deployed
+solana program show <PROGRAM_ID>
+
+# Redeploy if needed
+anchor deploy --provider.cluster devnet
+```
+
+### Wallet Connection Issues
+- Clear browser cache
+- Try different wallet (Phantom vs Solflare)
+- Check network setting (should be Devnet)
+- Disable browser extensions that might interfere
+
+### Transaction Timeout
+- Increase Solana CLI timeout: `solana config set --commitment confirmed`
+- Use Helius RPC for better reliability
+- Check Solana network status: https://status.solana.com
+
+### Build Failures
+```bash
+# Clear build cache
+anchor clean
+rm -rf target/
+
+# Rebuild
+anchor build
+
+# Update dependencies
+cargo update
 ```
 
 ---
 
-## Final Checklist Before Day 1
+## Testing Checklist
 
-- [ ] Read SETUP_GUIDE.md (15 min)
-- [ ] Create .env file with both API keys
-- [ ] npm install everything
-- [ ] Run test 1: Helius monitor (5 min)
-- [ ] Run test 2: Pump token creator (5 min)
-- [ ] Both tests pass ✅
-- [ ] Document results in INTEGRATION_STATUS.md
-- [ ] Ready for Next.js integration
+### Smart Contract Tests
+- [ ] Initialize config
+- [ ] Create game
+- [ ] Join game (multiple players)
+- [ ] Start game
+- [ ] Make moves
+- [ ] Use special items
+- [ ] Complete game
+- [ ] Claim winnings
 
-**Estimated Total Time: 2.5 hours**
+### Frontend Tests
+- [ ] Wallet connection
+- [ ] Create game UI
+- [ ] Join game UI
+- [ ] Coordinate selection
+- [ ] Real-time updates
+- [ ] Error handling
+- [ ] Mobile responsiveness
 
----
-
-## Questions?
-
-Refer back to:
-
-- **How does Helius work?** → `docs/QUICK_REFERENCE.md`
-- **How does Pump.fun work?** → `docs/QUICK_REFERENCE.md`
-- **Is this feasible?** → `docs/FEASIBILITY.md`
-- **Deployment details** → `docs/DEPLOYMENT.md`
-- **How do I run tests?** → Read test file comments
-
----
-
-## Success Look
-
-After completing all phases:
-
-```
-✅ Real-time deposit monitoring working
-✅ One-click token creation working
-✅ Both integrated into game flow
-✅ Ready for user testing
-✅ Hackathon submission ready
-
-Your game is now:
-🏴‍☠️ Pirate-themed ✓
-⚡ Solana-powered ✓
-💰 Token-rewarded ✓
-🔒 Privacy-first (Zcash MVP: shielded memo entry)
-```
+### Integration Tests
+- [ ] Helius monitoring
+- [ ] Zcash memo parsing
+- [ ] Token creation
+- [ ] End-to-end game flow
 
 ---
 
-**You're now ready to build! 🚀**
+## Resources
 
-Start with Phase 1 (Setup) immediately. Each phase takes ~1 hour.
+### Documentation
+- [Solana Docs](https://docs.solana.com)
+- [Anchor Book](https://book.anchor-lang.com)
+- [Helius Docs](https://docs.helius.dev)
+- [Next.js Docs](https://nextjs.org/docs)
 
-Good luck, and let me know if you hit any blockers!
+### Tools
+- [Solana Explorer](https://explorer.solana.com/?cluster=devnet)
+- [Anchor Playground](https://beta.solpg.io)
+- [Helius Dashboard](https://dashboard.helius.dev)
+
+### Community
+- [Discord](https://discord.gg/pir8) (coming soon)
+- [Twitter](https://twitter.com/pir8_game)
+- [GitHub Issues](https://github.com/thisyearnofear/pir8/issues)
+
+---
+
+## Next Steps
+
+1. **Run the game locally** - Follow Quick Start above
+2. **Read the architecture** - See [ARCHITECTURE.md](./ARCHITECTURE.md)
+3. **Review the roadmap** - See [ROADMAP.md](./ROADMAP.md)
+4. **Start contributing** - Pick an issue or feature to implement
+
+**Welcome aboard, pirate! 🏴‍☠️**

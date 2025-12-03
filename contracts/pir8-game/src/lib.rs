@@ -1,6 +1,12 @@
 use anchor_lang::prelude::*;
 use anchor_lang::system_program;
 
+pub mod pirate_lib;
+pub mod instructions;
+
+use pirate_lib::*;
+pub use instructions::*;
+
 declare_id!("5etQW394NUCprU1ikrbDysFeCGGRYY9usChGpaox9oiK");
 
 // ============================================================================
@@ -121,6 +127,15 @@ pub struct TurnAdvanced {
     pub timestamp: i64,
 }
 
+#[event]
+pub struct CoordinateScanned {
+    pub game_id: u64,
+    pub player: Pubkey,
+    pub coordinate: String,
+    pub item_type_hint: u8,  // 0=points, 1=special
+    pub timestamp: i64,
+}
+
 // ============================================================================
 // ERROR CODES
 // ============================================================================
@@ -189,6 +204,10 @@ pub enum PIR8Error {
     InvalidTreasury,
     #[msg("Token transfer failed")]
     TokenTransferFailed,
+    #[msg("No scan charges remaining")]
+    NoScansRemaining,
+    #[msg("Coordinate has already been scanned")]
+    CoordinateAlreadyScanned,
 }
 
 // ============================================================================
@@ -216,24 +235,25 @@ impl GameConfig {
 #[account]
 pub struct Game {
     pub game_id: u64,
-    pub creator: Pubkey,
+    pub authority: Pubkey,
     pub status: GameStatus,
-    pub players: Vec<PlayerState>,
+    pub players: [PlayerData; 4], // Fixed array for efficient storage
+    pub player_count: u8,
     pub current_player_index: u8,
-    pub grid: Vec<GameItem>,
-    pub chosen_coordinates: Vec<String>,
+    pub territory_map: [[TerritoryCell; 10]; 10], // 10x10 strategic map
     pub entry_fee: u64,
     pub total_pot: u64,
     pub max_players: u8,
+    pub turn_number: u32,
     pub turn_timeout: i64,
     pub created_at: i64,
     pub started_at: Option<i64>,
     pub completed_at: Option<i64>,
     pub winner: Option<Pubkey>,
-    pub final_scores: Vec<u64>,
-    pub random_seed: u64,
-    pub metadata: GameMetadata,
-    pub reserved: [u8; 64],
+    pub weather_type: WeatherType,
+    pub weather_duration: u8,
+    pub event_log: Vec<String>, // Last 10 game events
+    pub reserved: [u8; 32],
 }
 
 impl Game {
@@ -303,6 +323,12 @@ pub struct PlayerState {
     pub is_active: bool,
     pub joined_at: i64,
     pub last_move_at: i64,
+    // Skill mechanics
+    pub scan_charges: u8,
+    pub scanned_coordinates: Vec<u8>,
+    pub speed_bonus_accumulated: u64,
+    pub average_decision_time_ms: u64,
+    pub total_moves: u8,
 }
 
 impl PlayerState {
@@ -316,6 +342,11 @@ impl PlayerState {
             is_active: true,
             joined_at: timestamp,
             last_move_at: timestamp,
+            scan_charges: 3,
+            scanned_coordinates: Vec::new(),
+            speed_bonus_accumulated: 0,
+            average_decision_time_ms: 0,
+            total_moves: 0,
         }
     }
 
@@ -480,6 +511,17 @@ pub struct SetGameStatus<'info> {
     #[account(mut, seeds = [CONFIG_SEED], bump, constraint = config.authority == authority.key() @ PIR8Error::Unauthorized)]
     pub config: Account<'info, GameConfig>,
     pub authority: Signer<'info>,
+}
+
+#[derive(Accounts)]
+pub struct ScanCoordinate<'info> {
+    #[account(
+        mut,
+        constraint = game.status == GameStatus::Active @ PIR8Error::GameNotActive,
+        constraint = game.get_current_player().unwrap().player_key == player.key() @ PIR8Error::NotYourTurn
+    )]
+    pub game: Account<'info, Game>,
+    pub player: Signer<'info>,
 }
 
 // ============================================================================
@@ -843,6 +885,55 @@ pub mod pir8_game {
 
         msg!("Game status: paused = {}", is_paused);
         Ok(())
+    }
+
+    pub fn scan_coordinate(ctx: Context<ScanCoordinate>, coordinate: String) -> Result<u8> {
+        let game = &mut ctx.accounts.game;
+        let player = &ctx.accounts.player;
+        let clock = Clock::get()?;
+
+        // Validate coordinate format
+        require!(is_valid_coordinate(&coordinate), PIR8Error::InvalidCoordinate);
+
+        // Convert coordinate to grid index
+        let coordinate_index = coordinate_to_grid_index(&coordinate)?;
+
+        // Get current player and check scan charges
+        let current_player = game.get_current_player_mut()?;
+        require!(current_player.scan_charges > 0, PIR8Error::NoScansRemaining);
+
+        // Check if already scanned
+        require!(
+            !current_player.scanned_coordinates.contains(&(coordinate_index as u8)),
+            PIR8Error::CoordinateAlreadyScanned
+        );
+
+        // Deduct scan charge
+        current_player.scan_charges -= 1;
+
+        // Add to scanned coordinates
+        current_player.scanned_coordinates.push(coordinate_index as u8);
+
+        // Get item at coordinate
+        let item = &game.grid[coordinate_index];
+
+        // Determine item type hint (0 = points, 1 = special)
+        let item_type_hint = match item {
+            GameItem::Points(_) => 0,
+            _ => 1,
+        };
+
+        // Emit scan event
+        emit!(CoordinateScanned {
+            game_id: game.game_id,
+            player: player.key(),
+            coordinate: coordinate.clone(),
+            item_type_hint,
+            timestamp: clock.unix_timestamp,
+        });
+
+        msg!("Coordinate {} scanned by player", coordinate);
+        Ok(item_type_hint)
     }
 }
 

@@ -1,135 +1,230 @@
-import { GameItem, GameGrid, Player, GAME_ITEMS, COORDINATE_LETTERS, LETTERS_TO_INDEX } from '../types/game';
+import { 
+  Player, 
+  GameState, 
+  GameMap, 
+  TerritoryCell, 
+  Ship, 
+  ShipType, 
+  TerritoryCellType, 
+  Resources, 
+  Coordinate, 
+  GameAction, 
+  ActionData,
+  SHIP_CONFIGS,
+  TERRITORY_RESOURCE_GENERATION,
+  COORDINATE_LETTERS, 
+  LETTERS_TO_INDEX 
+} from '../types/game';
 
 export class PirateGameEngine {
   
   /**
-   * Creates a new 7x7 game grid with randomized items
+   * Creates a new game map with strategic territory layout
    */
-  static createGrid(): GameItem[][] {
-    const grid: GameItem[][] = Array(7).fill(null).map(() => Array(7).fill(null));
-    const availableItems = [...GAME_ITEMS];
+  static createGameMap(size: number = 10): GameMap {
+    const cells: TerritoryCell[][] = Array(size).fill(null).map(() => Array(size).fill(null));
     
-    for (let row = 0; row < 7; row++) {
-      for (let col = 0; col < 7; col++) {
-        const randomIndex = Math.floor(Math.random() * availableItems.length);
-        grid[row][col] = availableItems[randomIndex];
-        availableItems.splice(randomIndex, 1);
+    for (let x = 0; x < size; x++) {
+      for (let y = 0; y < size; y++) {
+        const coordinate = this.coordinateToString({ x, y });
+        const cellType = this.generateTerritoryType(x, y, size);
+        
+        cells[x][y] = {
+          coordinate,
+          type: cellType,
+          owner: null,
+          resources: TERRITORY_RESOURCE_GENERATION[cellType] || {},
+          isContested: false,
+        };
       }
     }
     
-    return grid;
+    return { cells, size };
   }
 
   /**
-   * Converts coordinate string (e.g., "A1") to grid indices [row, col]
+   * Generate territory type based on position and strategy
    */
-  static coordinateToIndices(coordinate: string): [number, number] {
-    if (coordinate.length !== 2) {
-      throw new Error('Invalid coordinate format. Expected format: A1-G7');
-    }
+  static generateTerritoryType(x: number, y: number, size: number): TerritoryCellType {
+    const centerX = Math.floor(size / 2);
+    const centerY = Math.floor(size / 2);
+    const distanceFromCenter = Math.sqrt((x - centerX) ** 2 + (y - centerY) ** 2);
+    const maxDistance = Math.sqrt(centerX ** 2 + centerY ** 2);
+    const normalizedDistance = distanceFromCenter / maxDistance;
     
-    const letter = coordinate[0].toUpperCase();
-    const number = coordinate[1];
-    
-    const col = LETTERS_TO_INDEX[letter];
-    const row = parseInt(number) - 1;
-    
-    if (col === undefined || row < 0 || row > 6) {
-      throw new Error('Invalid coordinate. Must be A1-G7');
-    }
-    
-    return [row, col];
-  }
-
-  /**
-   * Converts grid indices to coordinate string
-   */
-  static indicesToCoordinate(row: number, col: number): string {
-    return `${COORDINATE_LETTERS[col]}${row + 1}`;
-  }
-
-  /**
-   * Gets the item at a specific coordinate
-   */
-  static getItemAtCoordinate(grid: GameItem[][], coordinate: string): GameItem {
-    const [row, col] = this.coordinateToIndices(coordinate);
-    return grid[row][col];
-  }
-
-  /**
-   * Applies the effect of an item to a player's state
-   */
-  static applyItemEffect(item: GameItem, player: Player, targetPlayer?: Player): {
-    updatedPlayer: Player;
-    updatedTargetPlayer?: Player;
-    message: string;
-    requiresInput?: boolean;
-  } {
-    const updatedPlayer = { ...player };
-    let updatedTargetPlayer = targetPlayer ? { ...targetPlayer } : undefined;
-    let message = '';
-    let requiresInput = false;
-
-    if (typeof item === 'number') {
-      updatedPlayer.points += item;
-      message = `Gained ${item} points!`;
+    // Strategic placement based on distance from center
+    if (normalizedDistance < 0.2) {
+      // Center area - contested valuable territories
+      return Math.random() < 0.7 ? 'treasure' : 'port';
+    } else if (normalizedDistance < 0.5) {
+      // Mid area - islands and ports
+      const rand = Math.random();
+      if (rand < 0.4) return 'island';
+      if (rand < 0.6) return 'port';
+      return 'water';
+    } else if (normalizedDistance < 0.8) {
+      // Outer area - mostly water with some hazards
+      const rand = Math.random();
+      if (rand < 0.1) return 'storm';
+      if (rand < 0.15) return 'reef';
+      return 'water';
     } else {
-      switch (item) {
-        case 'GRINCH':
-          message = 'You can ROB someone\'s points!';
-          requiresInput = true;
-          break;
-        case 'PUDDING':
-          message = 'You can KILL someone (reset their points to 0)!';
-          requiresInput = true;
-          break;
-        case 'PRESENT':
-          message = 'You can GIFT someone 1000 points!';
-          requiresInput = true;
-          break;
-        case 'SNOWBALL':
-          message = 'Wipe out a row\'s scores (multiplayer feature)!';
-          break;
-        case 'MISTLETOE':
-          message = 'You can SWAP scores with someone!';
-          requiresInput = true;
-          break;
-        case 'TREE':
-          message = 'You can CHOOSE the next square!';
-          requiresInput = true;
-          break;
-        case 'ELF':
-          updatedPlayer.hasElf = true;
-          message = 'You can now BLOCK an attack!';
-          break;
-        case 'BAUBLE':
-          updatedPlayer.hasBauble = true;
-          message = 'You can now REFLECT an attack!';
-          break;
-        case 'TURKEY':
-          updatedPlayer.points = 0;
-          message = 'Oh no! Your points are reset to 0!';
-          break;
-        case 'CRACKER':
-          updatedPlayer.points *= 2;
-          message = `Your score is doubled! Now at ${updatedPlayer.points} points!`;
-          break;
-        case 'BANK':
-          updatedPlayer.bankedPoints = updatedPlayer.points;
-          updatedPlayer.points = 0;
-          message = `Banked ${updatedPlayer.bankedPoints} points! They're now safe!`;
-          break;
-        default:
-          message = 'Unknown item effect';
+      // Edge area - hazardous waters
+      const rand = Math.random();
+      if (rand < 0.2) return 'whirlpool';
+      if (rand < 0.3) return 'storm';
+      return 'water';
+    }
+  }
+
+  /**
+   * Convert coordinate object to string representation
+   */
+  static coordinateToString(coordinate: Coordinate): string {
+    return `${coordinate.x},${coordinate.y}`;
+  }
+
+  /**
+   * Convert string coordinate to coordinate object
+   */
+  static stringToCoordinate(coordinateStr: string): Coordinate {
+    const [x, y] = coordinateStr.split(',').map(Number);
+    if (isNaN(x) || isNaN(y)) {
+      throw new Error('Invalid coordinate format. Expected format: "x,y"');
+    }
+    return { x, y };
+  }
+
+  /**
+   * Calculate distance between two coordinates
+   */
+  static calculateDistance(coord1: Coordinate, coord2: Coordinate): number {
+    return Math.sqrt((coord1.x - coord2.x) ** 2 + (coord1.y - coord2.y) ** 2);
+  }
+
+  /**
+   * Check if coordinates are adjacent (within 1 cell)
+   */
+  static areAdjacent(coord1: Coordinate, coord2: Coordinate): boolean {
+    const distance = this.calculateDistance(coord1, coord2);
+    return distance <= 1.5; // Allows diagonal movement
+  }
+
+  /**
+   * Process a ship movement action
+   */
+  static processShipMovement(
+    ship: Ship,
+    toPosition: Coordinate,
+    gameMap: GameMap
+  ): { success: boolean; message: string; updatedShip?: Ship } {
+    const distance = this.calculateDistance(ship.position, toPosition);
+    
+    if (distance > ship.speed) {
+      return { 
+        success: false, 
+        message: `Ship can only move ${ship.speed} cells per turn. Distance: ${Math.ceil(distance)}` 
+      };
+    }
+    
+    const targetCell = gameMap.cells[toPosition.x]?.[toPosition.y];
+    if (!targetCell) {
+      return { success: false, message: 'Invalid destination' };
+    }
+    
+    // Check for hazards
+    if (targetCell.type === 'reef' || targetCell.type === 'whirlpool') {
+      const damage = targetCell.type === 'whirlpool' ? 50 : 25;
+      const updatedShip = { 
+        ...ship, 
+        position: toPosition,
+        health: Math.max(0, ship.health - damage)
+      };
+      return { 
+        success: true, 
+        message: `Ship moved but took ${damage} damage from ${targetCell.type}!`,
+        updatedShip 
+      };
+    }
+    
+    const updatedShip = { ...ship, position: toPosition };
+    return { success: true, message: 'Ship moved successfully', updatedShip };
+  }
+
+  /**
+   * Create a new ship for a player
+   */
+  static createShip(
+    shipType: ShipType, 
+    playerId: string, 
+    position: Coordinate
+  ): Ship {
+    const config = SHIP_CONFIGS[shipType];
+    const shipId = `${playerId}_${shipType}_${Date.now()}`;
+    
+    return {
+      id: shipId,
+      ...config,
+      position,
+      resources: { gold: 0, crew: 0, cannons: 0, supplies: 0 },
+    };
+  }
+
+  /**
+   * Create initial starting fleet for a player
+   */
+  static createStartingFleet(playerId: string, startingPositions: Coordinate[]): Ship[] {
+    const fleet: Ship[] = [];
+    
+    // Each player starts with a sloop and frigate
+    if (startingPositions.length >= 2) {
+      fleet.push(this.createShip('sloop', playerId, startingPositions[0]));
+      fleet.push(this.createShip('frigate', playerId, startingPositions[1]));
+    }
+    
+    return fleet;
+  }
+
+  /**
+   * Generate starting resources for a new player
+   */
+  static generateStartingResources(): Resources {
+    return {
+      gold: 1000,
+      crew: 50,
+      cannons: 20,
+      supplies: 100,
+    };
+  }
+
+  /**
+   * Calculate territory control score for a player
+   */
+  static calculateTerritoryScore(player: Player, gameMap: GameMap): number {
+    let score = 0;
+    
+    for (const territoryCoord of player.controlledTerritories) {
+      const coord = this.stringToCoordinate(territoryCoord);
+      const cell = gameMap.cells[coord.x]?.[coord.y];
+      
+      if (cell?.owner === player.publicKey) {
+        switch (cell.type) {
+          case 'treasure':
+            score += 100;
+            break;
+          case 'port':
+            score += 50;
+            break;
+          case 'island':
+            score += 25;
+            break;
+          default:
+            score += 10;
+        }
       }
     }
-
-    return {
-      updatedPlayer,
-      updatedTargetPlayer,
-      message,
-      requiresInput
-    };
+    
+    return score;
   }
 
   /**
@@ -210,21 +305,77 @@ export class PirateGameEngine {
   }
 
   /**
-   * Determines if the game is over (all coordinates chosen or specific win condition met)
+   * Check if game is over based on pirate victory conditions
    */
-  static isGameOver(chosenCoordinates: string[]): boolean {
-    return chosenCoordinates.length >= 49; // All squares chosen
+  static isGameOver(players: Player[], gameMap: GameMap): boolean {
+    // Game ends if only one player has ships remaining
+    const playersWithShips = players.filter(player => 
+      player.ships.some(ship => ship.health > 0)
+    );
+    
+    if (playersWithShips.length <= 1) return true;
+    
+    // Game ends if one player controls majority of valuable territories
+    const valuableTerritories = gameMap.cells.flat().filter(cell => 
+      cell.type === 'treasure' || cell.type === 'port'
+    );
+    const majority = Math.ceil(valuableTerritories.length / 2);
+    
+    for (const player of players) {
+      const controlledValuable = player.controlledTerritories.filter(coord => {
+        const cell = valuableTerritories.find(t => t.coordinate === coord);
+        return cell?.owner === player.publicKey;
+      });
+      
+      if (controlledValuable.length >= majority) return true;
+    }
+    
+    return false;
   }
 
   /**
-   * Calculates the winner based on total points (including banked points)
+   * Determine winner based on pirate strategy metrics
    */
-  static determineWinner(players: Player[]): Player {
-    return players.reduce((winner, current) => {
-      const winnerTotal = winner.points + winner.bankedPoints;
-      const currentTotal = current.points + current.bankedPoints;
-      return currentTotal > winnerTotal ? current : winner;
+  static determineWinner(players: Player[], gameMap: GameMap): Player | null {
+    const activePlayers = players.filter(player => 
+      player.ships.some(ship => ship.health > 0) && player.isActive
+    );
+    
+    if (activePlayers.length === 0) return null;
+    if (activePlayers.length === 1) return activePlayers[0];
+    
+    // Calculate comprehensive score for each player
+    return activePlayers.reduce((winner, current) => {
+      const winnerScore = this.calculatePlayerScore(winner, gameMap);
+      const currentScore = this.calculatePlayerScore(current, gameMap);
+      return currentScore > winnerScore ? current : winner;
     });
+  }
+
+  /**
+   * Calculate comprehensive player score
+   */
+  static calculatePlayerScore(player: Player, gameMap: GameMap): number {
+    let score = 0;
+    
+    // Resource value
+    score += player.resources.gold;
+    score += player.resources.crew * 2;
+    score += player.resources.cannons * 5;
+    score += player.resources.supplies;
+    
+    // Fleet value
+    for (const ship of player.ships) {
+      if (ship.health > 0) {
+        score += ship.maxHealth;
+        score += ship.attack * 5;
+      }
+    }
+    
+    // Territory control value
+    score += this.calculateTerritoryScore(player, gameMap);
+    
+    return score;
   }
 
   /**

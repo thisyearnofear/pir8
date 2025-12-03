@@ -1,180 +1,276 @@
 "use client";
 
 import { useWallet } from "@solana/wallet-adapter-react";
-import { useGameState } from "@/hooks/useGameState";
-import { useGameJoin } from "@/hooks/useGameJoin";
-import { useHeliusMonitor, GameEvent } from "@/hooks/useHeliusMonitor";
+import { usePirateGameState } from "@/hooks/usePirateGameState";
 import { useErrorHandler } from "@/hooks/useErrorHandler";
 import { ErrorBoundary } from "@/components/ErrorBoundary";
 import { ErrorToast, SuccessToast } from "@/components/Toast";
-import GameGrid from "@/components/GameGrid";
-import GameControls from "@/components/GameControls";
+import PirateMap from "@/components/PirateMap";
+import PirateControls from "@/components/PirateControls";
 import PlayerStats from "@/components/PlayerStats";
-import dynamic from "next/dynamic";
-const GameCockpit = dynamic(() => import("@/components/GameCockpit"), {
-  ssr: false,
-});
+import BattleInfoPanel from "@/components/BattleInfoPanel";
 import { useState } from "react";
-import { useAnchorProgram } from "@/lib/anchor";
 import { createPlayerFromWallet, createAIPlayer } from "@/lib/playerHelper";
 
 export default function Home() {
   const { publicKey } = useWallet();
   const {
     gameState,
+    isLoading,
+    error,
+    showMessage,
+    selectedShipId,
     createGame,
     joinGame,
-    makeMove,
-    handlePlayerAction,
-    error,
-    clearError,
-    showMessage,
+    moveShip,
+    attackWithShip,
+    claimTerritory,
+    collectResources,
+    buildShip,
+    selectShip,
+    endTurn,
     setMessage,
+    clearError,
     isMyTurn,
-  } = useGameState();
+    getMyShips,
+    getAllShips
+  } = usePirateGameState();
 
   const [isCreatingGame, setIsCreatingGame] = useState(false);
+  const [isJoining, setIsJoining] = useState(false);
+  const [joinError, setJoinError] = useState<string | null>(null);
   const { handleGameError } = useErrorHandler();
-  const anchorProgram = useAnchorProgram();
-  const { isJoining, error: joinError, joinGame: joinGameStore, clearError: clearJoinError } = useGameJoin();
 
-  useHeliusMonitor({
-    gameId: gameState?.gameId,
-    onGameEvent: (event: GameEvent) => {
-      switch (event.type) {
-        case "playerJoined":
-          setMessage("🏴☠️ A new pirate has joined!");
-          break;
-        case "gameStarted":
-          setMessage("⚔️ Battle has begun!");
-          break;
-        case "moveMade":
-          setMessage("⚡ Move made...");
-          break;
-        case "gameCompleted":
-          setMessage("🏆 Battle over!");
-          break;
-      }
-    },
-  });
+  // Simplified game event handling
+  const handleGameEvent = (message: string) => {
+    setMessage(message);
+    setTimeout(() => setMessage(null), 3000);
+  };
 
   const handleCreateGame = async () => {
-    console.log("[handleCreateGame] Starting game creation...");
-    console.log("[handleCreateGame] publicKey:", publicKey?.toString());
-    console.log("[handleCreateGame] anchorProgram:", anchorProgram);
-    
     if (!publicKey) {
-      console.error("[handleCreateGame] No public key available");
+      setJoinError("Please connect your wallet first");
       return;
     }
 
     setIsCreatingGame(true);
+    setJoinError(null);
+    
     try {
       const player = createPlayerFromWallet(publicKey);
-      console.log("[handleCreateGame] Created player:", player);
+      const success = await createGame([player], 0.1);
       
-      // max_players is the capacity of the game (4), not current player count (1)
-      const success = await createGame([player], 0.1, anchorProgram, 4);
-      console.log("[handleCreateGame] createGame returned:", success);
-      
-      if (!success) {
-        console.error("[handleCreateGame] Game creation failed");
-        // Error is already in gameState.error from the hook
-        return;
+      if (success) {
+        handleGameEvent("🏴‍☠️ Battle arena created! Awaiting pirates...");
       }
-      
-      console.log("[handleCreateGame] Game created successfully");
-      setMessage("🏴‍☠️ Arena created!");
     } catch (error) {
-      console.error("[handleCreateGame] Unexpected error creating game:", error);
+      console.error("Failed to create game:", error);
       handleGameError(error, "create game");
     } finally {
-      console.log("[handleCreateGame] Setting isCreatingGame to false");
       setIsCreatingGame(false);
     }
   };
 
   const handleQuickStart = async () => {
-    if (!gameState || !anchorProgram?.program) return;
+    if (!gameState || !publicKey) return;
 
     try {
       setIsCreatingGame(true);
       const ai = createAIPlayer(gameState.gameId);
-      // Add AI player locally
-      joinGame(gameState.gameId, ai);
-      setMessage("🧭 AI joined!");
-
-      // Call start_game on-chain
-      const { PIR8Instructions } = await import("@/lib/anchor");
-      const instructions = new PIR8Instructions(
-        anchorProgram.program,
-        anchorProgram.provider
-      );
-      const gameId = parseInt(gameState.gameId.split("_")[1]);
-      const signature = await instructions.startGame(gameId);
-      await anchorProgram.provider.connection.confirmTransaction(signature);
-      setMessage("⚔️ Battle started on-chain!");
+      const success = joinGame(gameState.gameId, ai);
+      
+      if (success) {
+        handleGameEvent("🧭 AI pirate joined the battle!");
+      }
     } catch (error) {
-      handleGameError(error, "start game");
+      handleGameError(error, "add AI player");
     } finally {
       setIsCreatingGame(false);
     }
   };
 
   const handleJoinGame = async (gameIdInput: string): Promise<boolean> => {
-    console.log("[handleJoinGame] Starting with gameId:", gameIdInput);
-    
     if (!publicKey) {
-      console.error("[handleJoinGame] No public key");
+      setJoinError("Please connect your wallet first");
       return false;
     }
 
+    setIsJoining(true);
+    setJoinError(null);
+    
     try {
       const player = createPlayerFromWallet(publicKey);
-      console.log("[handleJoinGame] Created player:", player);
-      
-      const success = await joinGameStore(gameIdInput, player);
-      console.log("[handleJoinGame] joinGameStore returned:", success);
+      const success = joinGame(gameIdInput, player);
       
       if (success) {
-        setMessage(`🏴‍☠️ Joined game ${gameIdInput}!`);
+        handleGameEvent(`🏴‍☠️ Joined battle ${gameIdInput}!`);
       } else {
-        console.error("[handleJoinGame] Join failed");
+        setJoinError("Failed to join battle - invalid game ID or game full");
       }
+      
       return success;
     } catch (error) {
-      console.error("[handleJoinGame] Error:", error);
-      handleGameError(error, "join game");
+      console.error("Failed to join game:", error);
+      setJoinError(error instanceof Error ? error.message : "Failed to join battle");
       return false;
+    } finally {
+      setIsJoining(false);
     }
   };
 
-  const handleCoordinateSelect = async (coordinate: string) => {
-    try {
-      await makeMove(coordinate);
-    } catch (error) {
-      handleGameError(error, "make move");
+  const handleCellSelect = async (coordinate: string) => {
+    if (!publicKey || !gameState || !isMyTurn(publicKey.toString())) return;
+    
+    if (selectedShipId) {
+      // Move selected ship to coordinate
+      const success = await moveShip(selectedShipId, coordinate);
+      if (success) {
+        handleGameEvent('Ship moved successfully!');
+      }
+    } else {
+      // Try to select a ship at this coordinate
+      const myShips = getAllShips().filter(ship => 
+        ship.id.startsWith(publicKey.toString()) &&
+        ship.position.x + ',' + ship.position.y === coordinate
+      );
+      
+      if (myShips.length > 0) {
+        selectShip(myShips[0].id);
+        handleGameEvent(`${myShips[0].type} selected`);
+      }
     }
   };
+
+  const handleShipAction = async (shipId: string, action: 'move' | 'attack' | 'claim' | 'collect' | 'build') => {
+    if (!publicKey || !gameState || !isMyTurn(publicKey.toString())) return;
+    
+    switch (action) {
+      case 'move':
+        handleGameEvent('Select a destination for your ship on the map');
+        break;
+      case 'attack':
+        // Find nearby enemy ships and attack
+        const myShips = getAllShips().filter(s => s.id.startsWith(publicKey.toString()));
+        const selectedShip = myShips.find(s => s.id === shipId);
+        if (selectedShip) {
+          const nearbyEnemies = getAllShips().filter(ship => 
+            !ship.id.startsWith(publicKey.toString()) &&
+            ship.health > 0 &&
+            Math.sqrt(
+              Math.pow(ship.position.x - selectedShip.position.x, 2) +
+              Math.pow(ship.position.y - selectedShip.position.y, 2)
+            ) <= 1.5
+          );
+          
+          if (nearbyEnemies.length > 0) {
+            const success = await attackWithShip(shipId, nearbyEnemies[0].id);
+            if (success) {
+              handleGameEvent('⚔️ Attack launched!');
+            }
+          } else {
+            handleGameEvent('No enemy ships in range. Move closer to attack.');
+          }
+        }
+        break;
+      case 'claim':
+        const ship = getAllShips().find(s => s.id === shipId);
+        if (ship) {
+          const coordinate = `${ship.position.x},${ship.position.y}`;
+          const success = await claimTerritory(shipId, coordinate);
+          if (success) {
+            handleGameEvent('🏴‍☠️ Territory claimed!');
+          }
+        }
+        break;
+      case 'collect':
+        const success = await collectResources(shipId);
+        if (success) {
+          handleGameEvent('💎 Resources collected!');
+        }
+        break;
+      case 'build':
+        // For now, show build options (in a real implementation, this would open a ship selection modal)
+        handleGameEvent('🛠️ Ship building: Select water near controlled port');
+        // Example: await buildShip('sloop', '5,5');
+        break;
+    }
+  };
+
+  const clearJoinError = () => setJoinError(null);
 
   return (
     <ErrorBoundary>
       <ErrorToast error={error} onClose={clearError} />
       <SuccessToast message={showMessage} onClose={() => setMessage(null)} />
 
-      <GameCockpit
-        gameState={gameState}
-        onCreateGame={handleCreateGame}
-        onQuickStart={handleQuickStart}
-        onJoinGame={handleJoinGame}
-        isCreating={isCreatingGame}
-        isJoining={isJoining}
-        joinError={joinError}
-        onClearJoinError={clearJoinError}
-        onCoordinateSelect={handleCoordinateSelect}
-        isMyTurn={isMyTurn(publicKey?.toString())}
-        onPlayerAction={handlePlayerAction}
-      />
+      <div className="min-h-screen bg-gradient-to-b from-slate-900 to-slate-800 text-white">
+        <div className="container mx-auto px-4 py-6">
+          <header className="text-center mb-8">
+            <h1 className="text-4xl font-bold text-neon-cyan mb-2">
+              🏴‍☠️ PIR8 BATTLE ARENA
+            </h1>
+            <p className="text-gray-300">
+              Strategic naval warfare on the blockchain
+            </p>
+          </header>
+
+          <div className="grid grid-cols-1 lg:grid-cols-4 gap-6 h-screen max-h-[800px]">
+            {/* Left Panel: Player Stats & Battle Info */}
+            <div className="lg:col-span-1 space-y-4">
+              <PlayerStats 
+                players={gameState?.players || []}
+                currentPlayerIndex={gameState?.currentPlayerIndex || 0}
+                gameStatus={gameState?.gameStatus || 'waiting'}
+              />
+              <BattleInfoPanel gameState={gameState} />
+            </div>
+
+            {/* Main Game Area */}
+            <div className="lg:col-span-2 flex flex-col">
+              {gameState?.gameStatus === 'active' && gameState.gameMap ? (
+                <PirateMap
+                  gameMap={gameState.gameMap}
+                  ships={getAllShips()}
+                  onCellSelect={handleCellSelect}
+                  isMyTurn={isMyTurn(publicKey?.toString())}
+                  selectedShipId={selectedShipId}
+                  currentPlayerPK={publicKey?.toString()}
+                />
+              ) : (
+                <div className="flex-1 flex items-center justify-center bg-slate-800 rounded-lg border border-neon-cyan border-opacity-30">
+                  <div className="text-center p-8">
+                    <div className="text-6xl mb-4">🗺️</div>
+                    <h3 className="text-xl text-neon-cyan mb-2">
+                      Battle Map Loading...
+                    </h3>
+                    <p className="text-gray-400">
+                      {!gameState ? 'Create or join a game to begin' : 'Preparing battle arena...'}
+                    </p>
+                  </div>
+                </div>
+              )}
+            </div>
+
+            {/* Controls Panel */}
+            <div className="lg:col-span-1">
+              <PirateControls
+                gameState={gameState}
+                onCreateGame={handleCreateGame}
+                onQuickStart={handleQuickStart}
+                onJoinGame={handleJoinGame}
+                onShipAction={handleShipAction}
+                onEndTurn={endTurn}
+                isCreating={isCreatingGame}
+                isJoining={isJoining}
+                joinError={joinError}
+                onClearJoinError={clearJoinError}
+                selectedShipId={selectedShipId}
+                onShipSelect={selectShip}
+              />
+            </div>
+          </div>
+        </div>
+      </div>
     </ErrorBoundary>
   );
 }

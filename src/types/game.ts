@@ -1,40 +1,117 @@
-// Game Types for Solana Pirates
-export type GameItem = number | 'GRINCH' | 'PUDDING' | 'PRESENT' | 'SNOWBALL' | 'MISTLETOE' | 'TREE' | 'ELF' | 'BAUBLE' | 'TURKEY' | 'CRACKER' | 'BANK';
+// Core Pirate Strategy Game Types
+export type TerritoryCellType = 'water' | 'island' | 'port' | 'treasure' | 'storm' | 'reef' | 'whirlpool';
+export type ShipType = 'sloop' | 'frigate' | 'galleon' | 'flagship';
+export type ResourceType = 'gold' | 'crew' | 'cannons' | 'supplies';
 
-export interface GameGrid {
-  grid: GameItem[][];
-  chosenCoordinates: string[];
-  currentCombination: string;
+// Ship represents a player's fleet unit
+export interface Ship {
+  id: string;
+  type: ShipType;
+  health: number;
+  maxHealth: number;
+  attack: number;
+  defense: number;
+  speed: number;
+  position: Coordinate;
+  resources: Resources;
 }
 
+// Territory cell on the game map
+export interface TerritoryCell {
+  coordinate: string;
+  type: TerritoryCellType;
+  owner: string | null;
+  resources: Partial<Resources>;
+  isContested: boolean;
+  weatherEffect?: WeatherEffect;
+}
+
+// Weather effects that can affect territories
+export interface WeatherEffect {
+  type: 'storm' | 'fog' | 'calm' | 'trade_winds';
+  duration: number; // turns remaining
+  effect: {
+    movementModifier?: number;
+    damageModifier?: number;
+    resourceModifier?: number;
+    visibilityReduced?: boolean;
+  };
+}
+
+// Game map represents the battle arena
+export interface GameMap {
+  cells: TerritoryCell[][];
+  size: number;
+}
+
+// Resources that players collect and manage
+export interface Resources {
+  gold: number;
+  crew: number;
+  cannons: number;
+  supplies: number;
+}
+
+// Coordinate system for the game map
+export interface Coordinate {
+  x: number;
+  y: number;
+}
+
+// Player in the pirate strategy game
 export interface Player {
   publicKey: string;
-  points: number;
-  bankedPoints: number;
-  hasElf: boolean;
-  hasBauble: boolean;
   username?: string;
+  resources: Resources;
+  ships: Ship[];
+  controlledTerritories: string[]; // coordinate strings
+  totalScore: number;
+  isActive: boolean;
 }
 
 export interface GameState {
   gameId: string;
   players: Player[];
   currentPlayerIndex: number;
-  grid: GameItem[][];
-  chosenCoordinates: string[];
+  gameMap: GameMap;
   gameStatus: 'waiting' | 'active' | 'completed';
   winner?: string;
-  currentCombination?: string;
+  currentPhase: 'deployment' | 'movement' | 'combat' | 'resource_collection';
+  turnNumber: number;
   turnTimeRemaining?: number;
-  pendingActionType?: string;
+  pendingActions: GameAction[];
+  globalWeather?: WeatherEffect;
+  eventLog: GameEvent[];
 }
 
-export interface GameMove {
+// Game events for history/replay
+export interface GameEvent {
+  id: string;
+  type: 'ship_moved' | 'ship_attacked' | 'territory_claimed' | 'resources_collected' | 'ship_built' | 'weather_change';
+  playerId: string;
+  turnNumber: number;
+  timestamp: number;
+  description: string;
+  data: any;
+}
+
+export interface GameAction {
+  id: string;
   gameId: string;
   player: string;
-  coordinate: string;
+  type: 'move_ship' | 'attack' | 'collect_resources' | 'build_ship' | 'claim_territory';
+  data: ActionData;
   timestamp: number;
   signature?: string;
+}
+
+export interface ActionData {
+  shipId?: string;
+  fromCoordinate?: string;
+  toCoordinate?: string;
+  targetShipId?: string;
+  shipType?: ShipType;
+  resourceAmount?: Partial<Resources>;
 }
 
 export interface GameConfig {
@@ -45,11 +122,52 @@ export interface GameConfig {
   gridSize: number;
 }
 
-export const GAME_ITEMS: GameItem[] = [
-  200, 200, 200, 200, 200, 200, 200, 200, 200, 200, 200, 200, 200, 200, 200, 200, 200, 200, 200, 200, 200,
-  200, 200, 200, 200, 1000, 1000, 1000, 1000, 1000, 1000, 1000, 1000, 1000, 1000, 3000, 3000, 5000,
-  'GRINCH', 'PUDDING', 'PRESENT', 'SNOWBALL', 'MISTLETOE', 'TREE', 'ELF', 'BAUBLE', 'TURKEY', 'CRACKER', 'BANK'
-];
+// Ship configurations for different types
+export const SHIP_CONFIGS: Record<ShipType, Omit<Ship, 'id' | 'position' | 'resources'>> = {
+  sloop: {
+    type: 'sloop',
+    maxHealth: 100,
+    health: 100,
+    attack: 20,
+    defense: 10,
+    speed: 3,
+  },
+  frigate: {
+    type: 'frigate',
+    maxHealth: 200,
+    health: 200,
+    attack: 40,
+    defense: 25,
+    speed: 2,
+  },
+  galleon: {
+    type: 'galleon',
+    maxHealth: 350,
+    health: 350,
+    attack: 60,
+    defense: 40,
+    speed: 1,
+  },
+  flagship: {
+    type: 'flagship',
+    maxHealth: 500,
+    health: 500,
+    attack: 80,
+    defense: 60,
+    speed: 1,
+  },
+};
+
+// Territory cell resource generation rates
+export const TERRITORY_RESOURCE_GENERATION: Record<TerritoryCellType, Partial<Resources>> = {
+  water: {},
+  island: { supplies: 2 },
+  port: { gold: 3, crew: 1 },
+  treasure: { gold: 5 },
+  storm: {},
+  reef: {},
+  whirlpool: {},
+};
 
 export const COORDINATE_LETTERS = ['A', 'B', 'C', 'D', 'E', 'F', 'G'];
 export const COORDINATE_NUMBERS = ['1', '2', '3', '4', '5', '6', '7'];

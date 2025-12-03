@@ -1,11 +1,14 @@
-// Game Constants
+// Pirate Game Constants
 export const GAME_CONFIG = {
-  GRID_SIZE: 7,
+  MAP_SIZE: 10,
   MAX_PLAYERS: 4,
   MIN_PLAYERS: 2,
-  TURN_TIMEOUT: 30000, // 30 seconds
+  TURN_TIMEOUT: 45000, // 45 seconds for strategic decisions
   ENTRY_FEE: 0.1, // SOL
   PLATFORM_FEE: 0.05, // 5%
+  STARTING_SHIPS: 2, // Each player starts with 2 ships
+  MAX_SHIPS_PER_PLAYER: 6,
+  VICTORY_TERRITORY_THRESHOLD: 5, // Number of valuable territories to win
 } as const;
 
 // Solana Configuration
@@ -32,52 +35,68 @@ export const ZCASH_CONFIG = {
   MEMO_SCHEMA_VERSION: '1',
 } as const;
 
-// Game Item Mappings
-export const ITEM_EMOJIS = {
-  'GRINCH': '👹',
-  'PUDDING': '🍮', 
-  'PRESENT': '🎁',
-  'SNOWBALL': '❄️',
-  'MISTLETOE': '🌿',
-  'TREE': '🎄',
-  'ELF': '🧝',
-  'BAUBLE': '🔮',
-  'TURKEY': '🦃',
-  'CRACKER': '🎊',
-  'BANK': '🏦',
+// Pirate Territory & Ship Mappings
+export const TERRITORY_EMOJIS = {
+  'water': '🌊',
+  'island': '🏝️',
+  'port': '⚓',
+  'treasure': '💰',
+  'storm': '⛈️',
+  'reef': '🪨',
+  'whirlpool': '🌀',
 } as const;
 
-export const ITEM_DESCRIPTIONS = {
-  'GRINCH': 'Steal points from another player',
-  'PUDDING': 'Reset another player to 0 points', 
-  'PRESENT': 'Gift 1000 points to another player',
-  'SNOWBALL': 'Wipe out a row of scores',
-  'MISTLETOE': 'Swap scores with another player',
-  'TREE': 'Choose the next coordinate',
-  'ELF': 'Block the next attack against you',
-  'BAUBLE': 'Reflect the next attack back',
-  'TURKEY': 'Your score is reset to 0',
-  'CRACKER': 'Double your current score',
-  'BANK': 'Move points to protected bank',
+export const SHIP_EMOJIS = {
+  'sloop': '⛵',
+  'frigate': '🚢',
+  'galleon': '🛳️',
+  'flagship': '🚤',
+} as const;
+
+export const TERRITORY_DESCRIPTIONS = {
+  'water': 'Safe passage for ships',
+  'island': 'Generates supplies for your fleet',
+  'port': 'Generates gold and crew',
+  'treasure': 'High-value territory with gold',
+  'storm': 'Dangerous area that damages ships',
+  'reef': 'Hidden hazard that can damage ships',
+  'whirlpool': 'Deadly trap that heavily damages ships',
+} as const;
+
+export const SHIP_DESCRIPTIONS = {
+  'sloop': 'Fast, light ship - good for scouting',
+  'frigate': 'Balanced ship with decent firepower',
+  'galleon': 'Heavy warship with strong defenses',
+  'flagship': 'Ultimate warship - slow but devastating',
 } as const;
 
 // Error Messages
 export const ERROR_MESSAGES = {
   WALLET_NOT_CONNECTED: 'Please connect your wallet first',
-  INVALID_COORDINATE: 'Invalid coordinate format (use A1-G7)',
-  COORDINATE_TAKEN: 'Coordinate already chosen',
-  NOT_YOUR_TURN: 'Wait for your turn',
-  GAME_NOT_ACTIVE: 'Game is not currently active',
-  INSUFFICIENT_FUNDS: 'Insufficient SOL balance',
+  INVALID_COORDINATE: 'Invalid coordinate format',
+  TERRITORY_OCCUPIED: 'Territory already controlled by another player',
+  NOT_YOUR_TURN: 'Wait for your turn, captain',
+  GAME_NOT_ACTIVE: 'Battle arena is not currently active',
+  INSUFFICIENT_FUNDS: 'Insufficient SOL for entry fee',
+  INSUFFICIENT_RESOURCES: 'Not enough resources for this action',
+  SHIP_OUT_OF_RANGE: 'Ship cannot reach that distance',
+  SHIP_DESTROYED: 'Ship has been destroyed and cannot act',
+  INVALID_TARGET: 'Invalid target for this action',
   TRANSACTION_FAILED: 'Transaction failed, please try again',
   NETWORK_ERROR: 'Network error, check your connection',
+  NO_SHIPS_AVAILABLE: 'No ships available for combat',
+  TERRITORY_NOT_CLAIMABLE: 'This territory cannot be claimed',
 } as const;
 
 // Success Messages  
 export const SUCCESS_MESSAGES = {
-  WALLET_CONNECTED: 'Wallet connected successfully',
-  GAME_CREATED: 'Game created! Waiting for players...',
-  MOVE_MADE: 'Move made successfully',
-  GAME_WON: 'Congratulations! You won!',
-  TOKEN_CREATED: 'Victory token created successfully',
+  WALLET_CONNECTED: 'Wallet connected - ready to set sail!',
+  GAME_CREATED: 'Battle arena created! Awaiting pirates...',
+  SHIP_MOVED: 'Ship successfully navigated to new position',
+  SHIP_BUILT: 'New ship added to your fleet',
+  TERRITORY_CLAIMED: 'Territory claimed for your fleet!',
+  COMBAT_VICTORY: 'Enemy ship defeated!',
+  RESOURCES_COLLECTED: 'Resources gathered from territory',
+  GAME_WON: 'Victory! You rule the seven seas!',
+  TOKEN_CREATED: 'Victory token minted successfully',
 } as const;
