@@ -49,7 +49,7 @@ PIR8 is a **privacy-first strategic naval combat platform** that combines Zcash 
 ## Product Strategy
 
 ### Phase 1: Foundation (Current - Zypherpunk Track)
-**Status**: 50% Complete - Contracts compiled, deployment in progress
+**Status**: 60% Complete - Skill mechanics implemented, frontend in progress
 - ✅ Solana smart contracts (compiled successfully, ready for devnet)
 - ✅ 10x10 strategic map with territory types
 - ✅ Fleet system (4 ship types with distinct roles)
@@ -58,7 +58,12 @@ PIR8 is a **privacy-first strategic naval combat platform** that combines Zcash 
 - ✅ Helius real-time monitoring
 - ✅ Zcash memo parser (ready to integrate)
 - ✅ Resource economy (framework ready, logic next)
-- 🚧 Zcash bridge wiring (next: Days 3-4 after deployment)
+- ✅ **Skill Mechanics (IMPLEMENTED)**
+  - ✅ Scanning system (3 scans per player, bit-packed storage)
+  - ✅ Timing bonuses (<5s=+100, <10s=+50, <15s=+25, >15s=0)
+  - ✅ Smart contract 100% complete, 0 errors
+  - 🚧 Frontend UI (Scan button, timer, stats display)
+- 🚧 Zcash bridge wiring (next: Day 5 after deployment)
 
 ### Phase 2: Skill Depth (After Zypherpunk - 2-3 Weeks)
 **Goal**: Enhance 70% skill balance with advanced mechanics

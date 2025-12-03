@@ -69,6 +69,59 @@ anchor deploy --provider.cluster devnet
 
 ---
 
+## Skill Mechanics (Phase 1 & 2 - Smart Contract Complete)
+
+### Scanning System
+
+**How It Works**:
+- Each player starts with 3 scan charges
+- Players can scan a coordinate to reveal its territory type
+- Scanned tiles remain revealed for the entire game
+- Limited scans force strategic decisions
+
+**Usage**:
+```bash
+# Smart contract instruction
+pub fn scan_coordinate(coordinate_x: u8, coordinate_y: u8) -> Result<()>
+
+# Frontend (coming soon)
+const tx = await anchor.scanCoordinate(gameId, 5, 7);
+// Event: CoordinateScanned { coordinate: (5,7), tile_type: "Port", charges_remaining: 2 }
+```
+
+**Benefits**: 
+- Transforms blind guessing into information gathering strategy
+- Skilled players use scans to plan optimal routes
+- Creates "reading the game" as a skill dimension
+
+### Timing Bonuses
+
+**How It Works**:
+- Faster moves earn point bonuses
+- <5 seconds: +100 points
+- <10 seconds: +50 points
+- <15 seconds: +25 points
+- >15 seconds: 0 bonus
+
+**Usage**:
+```bash
+# Smart contract instruction
+pub fn make_move_timed(ship_id: String, to_x: u8, to_y: u8, decision_time_ms: u64) -> Result<()>
+
+# Frontend (coming soon)
+const decisionTime = Date.now() - turnStartTime;
+const tx = await anchor.makeMoveTimed(gameId, shipId, x, y, decisionTime);
+// Event: MoveExecuted { decision_time_ms: 4200, speed_bonus_awarded: 100 }
+```
+
+**Benefits**:
+- Rewards confident, knowledgeable decision-making
+- Over 20 turns: skilled player gains 300-500 bonus points
+- Fast timing + smart scanning = competitive advantage
+- Makes the game watchable (spectators see strategy, not RNG)
+
+---
+
 ## Smart Contract Instructions (Completed)
 
 ### Available Instructions

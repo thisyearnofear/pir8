@@ -28,9 +28,13 @@
 
 ### 🚧 In Progress (Priority Order for Zypherpunk)
 - **Deploy to Devnet** (Day 1-2) ← START HERE
-- **Wire Zcash memo to tournament entry** (Day 3-4)
-- Implement resource generation system
-- Polish documentation and demo
+- **Frontend: Skill Mechanics UI** (Days 3-4)
+  - Anchor client methods (scanCoordinate, makeMoveTimed)
+  - useGameState hook for turn timing
+  - GameControls: Scan button + Timer display
+  - PlayerStats: Skill mechanics stats display
+- **Wire Zcash memo to tournament entry** (Day 5)
+- Polish documentation and demo (Day 6-7)
 
 ---
 
@@ -63,27 +67,44 @@ $ anchor deploy --provider.cluster devnet
 # ✅ Deployed to devnet
 ```
 
-### Days 3-4: MVP Playability
+### Days 3-4: Skill Mechanics UI (Frontend Implementation)
 
-**Task 2.1: Resource Generation**
-- [ ] Implement resource collection from controlled territories
-- [ ] Add ship building instruction with resource costs
-- [ ] Test resource economy (gold/crew/supplies/cannons)
+**Task 2.1: Anchor Client Methods** 
+- [ ] Add `scanCoordinate(gameId, x, y)` method
+- [ ] Add `makeMoveTimed(gameId, shipId, x, y, decisionTimeMs)` method
+- [ ] Test instruction calls with devnet
 
-**Task 2.2: Game Loop**
-- [ ] Implement game completion conditions
-- [ ] Add winner determination logic
-- [ ] Test full 2-4 player game flow
+**Task 2.2: Game State & Timing**
+- [ ] Enhance useGameState hook with `turnStartTime` tracking
+- [ ] Add `decisionTime` calculation and display
+- [ ] Debounce timer updates (100ms intervals)
+- [ ] Auto-reset on turn advance
 
-**Task 2.3: Frontend Updates**
-- [ ] Display fleet status UI
-- [ ] Show controlled territories
-- [ ] Implement move/attack/claim UI buttons
+**Task 2.3: GameControls Component**
+- [ ] Add "Scan" button (disabled if no charges or not your turn)
+- [ ] Display scan charges remaining (3/3, 2/3, etc.)
+- [ ] Add turn timer display (HH:MM:SS format)
+- [ ] Color-code timer: green (<10s), yellow (<20s), red (>20s)
+- [ ] Show speed bonus notifications (+100, +50, +25)
+
+**Task 2.4: PlayerStats Component**
+- [ ] Display `scanCharges` with visual indicators
+- [ ] Show `speedBonusAccumulated` total
+- [ ] Display `averageDecisionTimeMs`
+- [ ] List scanned coordinates
+
+**Task 2.5: GameGrid Enhancement**
+- [ ] Show scanned tiles with different styling
+- [ ] Hide unscanned tiles (show "?")
+- [ ] Highlight selected coordinate
+- [ ] Show territory type on scanned tiles
 
 **Success Criteria**:
-- Complete 2-player game from start to finish
-- Resources generate and deplete correctly
-- UI shows game state accurately
+- Players can scan with working button
+- Timer increments correctly during player's turn
+- Speed bonuses appear on moves
+- Scanned tiles display correctly on grid
+- All player stats update in real-time
 
 ### Days 5-6: Privacy Integration (Zypherpunk Core)
 
