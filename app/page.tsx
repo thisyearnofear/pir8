@@ -9,7 +9,7 @@ import PirateMap from "@/components/PirateMap";
 import PirateControls from "@/components/PirateControls";
 import PlayerStats from "@/components/PlayerStats";
 import BattleInfoPanel from "@/components/BattleInfoPanel";
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { createPlayerFromWallet, createAIPlayer } from "@/lib/playerHelper";
 
 export default function Home() {
@@ -20,6 +20,10 @@ export default function Home() {
     error,
     showMessage,
     selectedShipId,
+    decisionTime,
+    scanChargesRemaining,
+    speedBonusAccumulated,
+    averageDecisionTimeMs,
     createGame,
     joinGame,
     moveShip,
@@ -33,13 +37,24 @@ export default function Home() {
     clearError,
     isMyTurn,
     getMyShips,
-    getAllShips
+    getAllShips,
+    startTurn,
+    stopTurnTimer,
+    scanCoordinate,
+    getScannedCoordinates
   } = usePirateGameState();
 
   const [isCreatingGame, setIsCreatingGame] = useState(false);
   const [isJoining, setIsJoining] = useState(false);
-  const [joinError, setJoinError] = useState<string | null>(null);
+  const [joinError, setJoinError] = useState<string | undefined>();
   const { handleGameError } = useErrorHandler();
+
+  // Start turn timer when it becomes player's turn
+  useEffect(() => {
+    if (isMyTurn(publicKey?.toString()) && gameState?.gameStatus === 'active') {
+      startTurn();
+    }
+  }, [isMyTurn(publicKey?.toString()), gameState?.currentPlayerIndex, gameState?.gameStatus]);
 
   // Simplified game event handling
   const handleGameEvent = (message: string) => {
@@ -54,7 +69,7 @@ export default function Home() {
     }
 
     setIsCreatingGame(true);
-    setJoinError(null);
+    setJoinError(undefined);
     
     try {
       const player = createPlayerFromWallet(publicKey);
@@ -96,7 +111,7 @@ export default function Home() {
     }
 
     setIsJoining(true);
-    setJoinError(null);
+    setJoinError(undefined);
     
     try {
       const player = createPlayerFromWallet(publicKey);
@@ -138,6 +153,17 @@ export default function Home() {
         selectShip(myShips[0].id);
         handleGameEvent(`${myShips[0].type} selected`);
       }
+    }
+  };
+
+  const handleScanCoordinate = async (x: number, y: number) => {
+    if (!publicKey || !gameState || !isMyTurn(publicKey.toString())) return;
+    
+    try {
+      await scanCoordinate(x, y);
+    } catch (error) {
+      console.error('Scan failed:', error);
+      handleGameError(error, 'scan coordinate');
     }
   };
 
@@ -196,7 +222,7 @@ export default function Home() {
     }
   };
 
-  const clearJoinError = () => setJoinError(null);
+  const clearJoinError = () => setJoinError(undefined);
 
   return (
     <ErrorBoundary>
@@ -221,6 +247,11 @@ export default function Home() {
                 players={gameState?.players || []}
                 currentPlayerIndex={gameState?.currentPlayerIndex || 0}
                 gameStatus={gameState?.gameStatus || 'waiting'}
+                decisionTimeMs={decisionTime}
+                scanChargesRemaining={scanChargesRemaining}
+                speedBonusAccumulated={speedBonusAccumulated}
+                averageDecisionTimeMs={averageDecisionTimeMs}
+                scannedCoordinates={getScannedCoordinates()}
               />
               <BattleInfoPanel gameState={gameState} />
             </div>
@@ -233,8 +264,9 @@ export default function Home() {
                   ships={getAllShips()}
                   onCellSelect={handleCellSelect}
                   isMyTurn={isMyTurn(publicKey?.toString())}
-                  selectedShipId={selectedShipId}
+                  selectedShipId={selectedShipId || undefined}
                   currentPlayerPK={publicKey?.toString()}
+                  scannedCoordinates={getScannedCoordinates()}
                 />
               ) : (
                 <div className="flex-1 flex items-center justify-center bg-slate-800 rounded-lg border border-neon-cyan border-opacity-30">
@@ -264,8 +296,11 @@ export default function Home() {
                 isJoining={isJoining}
                 joinError={joinError}
                 onClearJoinError={clearJoinError}
-                selectedShipId={selectedShipId}
+                selectedShipId={selectedShipId || undefined}
                 onShipSelect={selectShip}
+                onScanCoordinate={handleScanCoordinate}
+                decisionTimeMs={decisionTime}
+                scanChargesRemaining={scanChargesRemaining}
               />
             </div>
           </div>

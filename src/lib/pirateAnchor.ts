@@ -1,6 +1,6 @@
-import { AnchorProvider, Program, BN, Idl } from '@coral-xyz/anchor';
+import { AnchorProvider, Program, BN, Idl } from '@project-serum/anchor';
 import { PublicKey, Keypair, SystemProgram, Connection } from '@solana/web3.js';
-import { GameState, Player, Ship, Resources } from '../types/game';
+import { GameState, Player, Ship, Resources, GameEvent } from '../types/game';
 
 // Pirate game account interfaces matching the Rust structs
 export interface PirateGameAccount {
@@ -202,6 +202,12 @@ export class PirateGameConverter {
       controlledTerritories: playerData.controlledTerritories,
       totalScore: playerData.totalScore,
       isActive: playerData.isActive,
+      // Skill mechanics initialization
+      scanCharges: 3,
+      scannedCoordinates: [],
+      speedBonusAccumulated: 0,
+      averageDecisionTimeMs: 0,
+      totalMoves: 0,
     };
   }
 

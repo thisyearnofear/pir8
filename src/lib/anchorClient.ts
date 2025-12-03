@@ -95,3 +95,94 @@ export async function joinGameOnChain(program: any, provider: AnchorProvider, ga
     })
     .rpc();
 }
+
+export async function scanCoordinateOnChain(
+  program: any,
+  provider: AnchorProvider,
+  gameId: number,
+  coordinateX: number,
+  coordinateY: number
+) {
+  const [gamePDA] = getGamePDA(gameId);
+  await program.methods
+    .scanCoordinate(coordinateX, coordinateY)
+    .accounts({
+      game: gamePDA,
+      player: provider.wallet.publicKey,
+      systemProgram: SystemProgram.programId,
+    })
+    .rpc();
+}
+
+export async function makeMoveTimed(
+  program: any,
+  provider: AnchorProvider,
+  gameId: number,
+  shipId: number,
+  targetX: number,
+  targetY: number,
+  decisionTimeMs: number
+) {
+  const [gamePDA] = getGamePDA(gameId);
+  const decisionTimeSecs = Math.floor(decisionTimeMs / 1000);
+  
+  await program.methods
+    .makeMoveTimed(shipId, targetX, targetY, decisionTimeSecs)
+    .accounts({
+      game: gamePDA,
+      player: provider.wallet.publicKey,
+      systemProgram: SystemProgram.programId,
+    })
+    .rpc();
+}
+
+/**
+ * Handle private tournament entry via Zcash memo
+ * Wired from LightwalletdWatcher → ZcashMemoBridge → this function
+ * DRY: Single source of truth for memo-triggered join_game transaction
+ */
+export async function joinGamePrivateViaZcash(
+  program: any,
+  provider: AnchorProvider,
+  memoPayload: {
+    gameId: string;
+    solanaPubkey: string;
+    zcashTxHash?: string;
+    blockHeight?: number;
+  }
+) {
+  try {
+    // Convert gameId string to number
+    const gameIdNum = parseInt(memoPayload.gameId, 10);
+    if (isNaN(gameIdNum)) {
+      throw new Error(`Invalid game ID from memo: ${memoPayload.gameId}`);
+    }
+
+    // Construct accounts using PDAs
+    const [gamePDA] = getGamePDA(gameIdNum);
+    const [configPDA] = getConfigPDA();
+    const configAccount = await program.account.gameConfig.fetch(configPDA);
+
+    // Execute join_game instruction with player derived from memo
+    const playerPubkey = new PublicKey(memoPayload.solanaPubkey);
+    
+    const tx = await program.methods
+      .joinGame()
+      .accounts({
+        game: gamePDA,
+        config: configPDA,
+        player: playerPubkey,
+        treasury: configAccount.treasury,
+        systemProgram: SystemProgram.programId,
+      })
+      .rpc();
+
+    console.log(`[Zcash Bridge] Player ${memoPayload.solanaPubkey} joined game ${gameIdNum} via Zcash memo`);
+    console.log(`[Zcash Bridge] Zcash TX: ${memoPayload.zcashTxHash}, Solana TX: ${tx}`);
+
+    return tx;
+  } catch (error) {
+    console.error('[Zcash Bridge] Failed to process private entry:', error);
+    throw error;
+  }
+}

@@ -77,7 +77,7 @@ export function validatePlayerAction(
           error: 'Valid amount required for steal'
         };
       }
-      if (amount > targetPlayer.points) {
+      if (amount > targetPlayer.totalScore) {
         return {
           isValid: false,
           error: 'Cannot steal more points than target has'
@@ -101,7 +101,7 @@ export function validatePlayerAction(
           error: 'Target player required for gift'
         };
       }
-      if (sourcePlayer.points < 1000) {
+      if (sourcePlayer.totalScore < 1000) {
         return {
           isValid: false,
           error: 'Insufficient points to gift'
@@ -217,7 +217,7 @@ export function validateItemEffect(item: GameItem, player: Player): ValidationRe
       return { isValid: true };
       
     case 'BANK':
-      if (player.points <= 0) {
+      if (player.totalScore <= 0) {
         return {
           isValid: false,
           error: 'No points to bank'

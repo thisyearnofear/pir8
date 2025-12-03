@@ -1,4 +1,5 @@
 import { create } from 'zustand';
+import { useEffect } from 'react';
 import { GameState, Player, GameAction, Ship, Coordinate } from '../types/game';
 import { PirateGameEngine } from '../lib/gameLogic';
 import { PirateGameManager } from '../lib/pirateGameEngine';
@@ -13,6 +14,18 @@ interface PirateGameStore {
   error: string | null;
   showMessage: string | null;
   selectedShipId: string | null;
+  
+  // Skill Mechanics - Timing
+  turnStartTime: number | null;
+  decisionTime: number;
+  timerInterval: NodeJS.Timeout | null;
+  speedBonusAccumulated: number;
+  averageDecisionTimeMs: number;
+  totalMovesCount: number;
+  
+  // Skill Mechanics - Scanning
+  scannedCoordinates: Set<string>;
+  scanChargesRemaining: number;
   
   // Actions
   createGame: (players: Player[], entryFee: number) => Promise<boolean>;
@@ -29,6 +42,14 @@ interface PirateGameStore {
   setError: (error: string | null) => void;
   clearError: () => void;
   
+  // Skill Mechanics
+  startTurn: () => void;
+  stopTurnTimer: () => void;
+  scanCoordinate: (coordinateX: number, coordinateY: number) => Promise<boolean>;
+  moveShipTimed: (shipId: string, toCoordinate: string) => Promise<boolean>;
+  getScannedCoordinates: () => string[];
+  isCoordinateScanned: (coordinate: string) => boolean;
+  
   // Getters
   getCurrentPlayer: () => Player | null;
   getMyShips: (playerPK: string) => Ship[];
@@ -43,6 +64,18 @@ export const usePirateGameState = create<PirateGameStore>((set, get) => ({
   error: null,
   showMessage: null,
   selectedShipId: null,
+  
+  // Skill Mechanics - Timing
+  turnStartTime: null,
+  decisionTime: 0,
+  timerInterval: null,
+  speedBonusAccumulated: 0,
+  averageDecisionTimeMs: 0,
+  totalMovesCount: 0,
+  
+  // Skill Mechanics - Scanning
+  scannedCoordinates: new Set(),
+  scanChargesRemaining: 3,
 
   // Create a new pirate game
   createGame: async (players: Player[], entryFee: number): Promise<boolean> => {
@@ -268,13 +301,14 @@ export const usePirateGameState = create<PirateGameStore>((set, get) => ({
     if (!gameState) return false;
 
     const currentPlayer = gameState.players[gameState.currentPlayerIndex];
+    const validShipType = shipType as 'sloop' | 'frigate' | 'galleon' | 'flagship';
     const action: GameAction = {
       id: `action_${Date.now()}`,
       gameId: gameState.gameId,
       player: currentPlayer.publicKey,
       type: 'build_ship',
       data: {
-        shipType,
+        shipType: validShipType,
         toCoordinate: coordinate
       },
       timestamp: Date.now()
@@ -365,6 +399,141 @@ export const usePirateGameState = create<PirateGameStore>((set, get) => ({
 
   clearError: () => {
     set({ error: null });
+  },
+
+  // Skill Mechanics: Start turn timer with auto-update (debounced 100ms)
+  startTurn: () => {
+    const { timerInterval } = get();
+    // Clear any existing interval
+    if (timerInterval) clearInterval(timerInterval);
+    
+    const startTime = Date.now();
+    set({ turnStartTime: startTime, decisionTime: 0 });
+    
+    // Update decision time every 100ms (debounced for performance)
+    const interval = setInterval(() => {
+      const { turnStartTime: ts } = get();
+      if (ts) {
+        const elapsed = Date.now() - ts;
+        set({ decisionTime: elapsed });
+      }
+    }, 100);
+    
+    set({ timerInterval: interval });
+  },
+
+  // Skill Mechanics: Stop turn timer and cleanup
+  stopTurnTimer: () => {
+    const { timerInterval } = get();
+    if (timerInterval) {
+      clearInterval(timerInterval);
+    }
+    set({ timerInterval: null, turnStartTime: null, decisionTime: 0 });
+  },
+
+  // Skill Mechanics: Scan coordinate
+  scanCoordinate: async (coordinateX: number, coordinateY: number): Promise<boolean> => {
+    const { gameState, turnStartTime, scanChargesRemaining, scannedCoordinates } = get();
+    if (!gameState || !turnStartTime || scanChargesRemaining <= 0) return false;
+
+    const currentPlayer = gameState.players[gameState.currentPlayerIndex];
+    const decisionTimeMs = Date.now() - turnStartTime;
+    const coordinate = `${coordinateX},${coordinateY}`;
+    
+    const action: GameAction = {
+      id: `action_${Date.now()}`,
+      gameId: gameState.gameId,
+      player: currentPlayer.publicKey,
+      type: 'scan_coordinate',
+      data: {
+        coordinate
+      },
+      timestamp: Date.now(),
+      decisionTimeMs
+    };
+
+    const result = await get().processAction(action);
+    if (result) {
+      // Update scanned coordinates and reduce charges
+      const updated = new Set(scannedCoordinates);
+      updated.add(coordinate);
+      set({ 
+        scannedCoordinates: updated,
+        scanChargesRemaining: scanChargesRemaining - 1,
+        showMessage: `🔍 Scanned ${coordinate}! (${scanChargesRemaining - 1} scans remaining)`
+      });
+      setTimeout(() => set({ showMessage: null }), 2000);
+    }
+    return result;
+  },
+
+  // Skill Mechanics: Move ship with timing bonus
+  moveShipTimed: async (shipId: string, toCoordinate: string): Promise<boolean> => {
+    const { gameState, turnStartTime, speedBonusAccumulated, averageDecisionTimeMs, totalMovesCount } = get();
+    if (!gameState || !turnStartTime) return false;
+
+    const currentPlayer = gameState.players[gameState.currentPlayerIndex];
+    const decisionTimeMs = Date.now() - turnStartTime;
+    
+    // Calculate speed bonus based on decision time thresholds
+    const getSpeedBonus = (ms: number) => {
+      if (ms < 5000) return 100;
+      if (ms < 10000) return 50;
+      if (ms < 15000) return 25;
+      return 0;
+    };
+    
+    const bonus = getSpeedBonus(decisionTimeMs);
+    
+    // Update average decision time
+    const newTotalMoves = totalMovesCount + 1;
+    const newAverageDecisionTime = 
+      (averageDecisionTimeMs * totalMovesCount + decisionTimeMs) / newTotalMoves;
+    
+    if (bonus > 0) {
+      set({ 
+        showMessage: `⚡ Speed bonus: +${bonus} points!`,
+        speedBonusAccumulated: speedBonusAccumulated + bonus,
+        averageDecisionTimeMs: newAverageDecisionTime,
+        totalMovesCount: newTotalMoves
+      });
+      setTimeout(() => set({ showMessage: null }), 2000);
+    } else {
+      set({
+        averageDecisionTimeMs: newAverageDecisionTime,
+        totalMovesCount: newTotalMoves
+      });
+    }
+    
+    const action: GameAction = {
+      id: `action_${Date.now()}`,
+      gameId: gameState.gameId,
+      player: currentPlayer.publicKey,
+      type: 'move_ship',
+      data: {
+        shipId,
+        toCoordinate
+      },
+      timestamp: Date.now(),
+      decisionTimeMs
+    };
+
+    const result = await get().processAction(action);
+    if (result) {
+      get().stopTurnTimer();
+    }
+    return result;
+  },
+
+  // Getters for scanned coordinates
+  getScannedCoordinates: () => {
+    const { scannedCoordinates } = get();
+    return Array.from(scannedCoordinates);
+  },
+
+  isCoordinateScanned: (coordinate: string) => {
+    const { scannedCoordinates } = get();
+    return scannedCoordinates.has(coordinate);
   },
 
   // Getters

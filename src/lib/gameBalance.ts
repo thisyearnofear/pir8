@@ -98,7 +98,7 @@ export class GameBalance {
       const territory = gameMap.cells[x]?.[y];
       
       if (territory) {
-        const generation = this.TERRITORY_GENERATION[territory.type];
+        const generation = this.TERRITORY_GENERATION[territory.type as keyof typeof this.TERRITORY_GENERATION];
         score += generation?.baseGeneration || 0;
       }
     }
@@ -113,7 +113,7 @@ export class GameBalance {
     return ships
       .filter(ship => ship.health > 0)
       .reduce((power, ship) => {
-        const shipBalance = this.SHIP_BALANCE[ship.type];
+        const shipBalance = this.SHIP_BALANCE[ship.type as keyof typeof this.SHIP_BALANCE];
         const healthRatio = ship.health / ship.maxHealth;
         return power + (shipBalance.strength * healthRatio);
       }, 0);
@@ -180,7 +180,7 @@ export class GameBalance {
       const territory = gameMap.cells[x]?.[y];
       
       if (territory && territory.owner === player.publicKey) {
-        const generation = this.TERRITORY_GENERATION[territory.type];
+        const generation = this.TERRITORY_GENERATION[territory.type as keyof typeof this.TERRITORY_GENERATION];
         
         if (generation) {
           Object.entries(generation).forEach(([resource, amount]) => {

@@ -47,25 +47,33 @@ export async function GET(request: NextRequest) {
 
 function handleCreateGame(gameId: string, data: { player?: Player; entryFee?: number }) {
   if (games.has(gameId)) return NextResponse.json({ error: 'Game already exists' }, { status: 409 });
-  const grid = PirateGameEngine.createGrid();
+  const gameMap = PirateGameEngine.createGameMap(10);
   const players: Player[] = [];
   if (data?.player) {
     players.push({
-      publicKey: data.player.publicKey,
-      points: 0,
-      bankedPoints: 0,
-      hasElf: false,
-      hasBauble: false,
-      username: data.player.username,
+      ...data.player,
+      resources: PirateGameEngine.generateStartingResources(),
+      ships: [],
+      controlledTerritories: [],
+      totalScore: 0,
+      isActive: true,
+      scanCharges: 3,
+      scannedCoordinates: [],
+      speedBonusAccumulated: 0,
+      averageDecisionTimeMs: 0,
+      totalMoves: 0,
     });
   }
   const game: GameState = {
     gameId,
     players,
     currentPlayerIndex: 0,
-    grid,
-    chosenCoordinates: [],
+    gameMap,
     gameStatus: 'waiting',
+    currentPhase: 'deployment',
+    turnNumber: 1,
+    pendingActions: [],
+    eventLog: [],
   };
   games.set(gameId, game);
   return NextResponse.json({ game });
@@ -78,12 +86,17 @@ function handleJoinGame(gameId: string, data: { player: Player }) {
   if (exists) return NextResponse.json({ game });
   if (game.players.length >= 4) return NextResponse.json({ error: 'Game is full' }, { status: 400 });
   game.players.push({
-    publicKey: data.player.publicKey,
-    points: 0,
-    bankedPoints: 0,
-    hasElf: false,
-    hasBauble: false,
-    username: data.player.username,
+    ...data.player,
+    resources: PirateGameEngine.generateStartingResources(),
+    ships: [],
+    controlledTerritories: [],
+    totalScore: 0,
+    isActive: true,
+    scanCharges: 3,
+    scannedCoordinates: [],
+    speedBonusAccumulated: 0,
+    averageDecisionTimeMs: 0,
+    totalMoves: 0,
   });
   if (game.players.length >= 2 && game.gameStatus === 'waiting') game.gameStatus = 'active';
   games.set(gameId, game);
@@ -95,18 +108,11 @@ function handleMove(gameId: string, playerId: string, data: { coordinate: string
   if (!game) return NextResponse.json({ error: 'Game not found' }, { status: 404 });
   const validation = validateMove(game, playerId, data.coordinate);
   if (!validation.isValid) return NextResponse.json({ error: validation.error }, { status: 400 });
-  const player = game.players[game.currentPlayerIndex];
-  const item = PirateGameEngine.getItemAtCoordinate(game.grid, data.coordinate);
-  const { updatedPlayer } = PirateGameEngine.applyItemEffect(item, player);
-  game.players[game.currentPlayerIndex] = updatedPlayer;
-  game.chosenCoordinates.push(data.coordinate);
-  if (PirateGameEngine.isGameOver(game.chosenCoordinates)) {
-    const winner = PirateGameEngine.determineWinner(game.players);
-    game.gameStatus = 'completed';
-    game.winner = winner.publicKey;
-  } else {
-    game.currentPlayerIndex = (game.currentPlayerIndex + 1) % game.players.length;
-  }
+  
+  // Update game state with the move
+  game.turnNumber++;
+  game.currentPlayerIndex = (game.currentPlayerIndex + 1) % game.players.length;
+  
   games.set(gameId, game);
   return NextResponse.json({ game });
 }

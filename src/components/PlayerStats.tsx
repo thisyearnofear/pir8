@@ -9,18 +9,34 @@ interface PlayerStatsProps {
   currentPlayerIndex: number;
   gameStatus: 'waiting' | 'active' | 'completed';
   winner?: string;
+  decisionTimeMs?: number;
+  scanChargesRemaining?: number;
+  speedBonusAccumulated?: number;
+  averageDecisionTimeMs?: number;
+  scannedCoordinates?: string[];
 }
 
 export default function PlayerStats({ 
   players, 
   currentPlayerIndex, 
   gameStatus, 
-  winner 
+  winner,
+  decisionTimeMs = 0,
+  scanChargesRemaining = 3,
+  speedBonusAccumulated = 0,
+  averageDecisionTimeMs = 0,
+  scannedCoordinates = []
 }: PlayerStatsProps) {
   const { publicKey } = useWallet();
 
   const getTotalScore = (player: Player): number => {
     return player.totalScore;
+  };
+
+  const formatDecisionTime = (ms: number) => {
+    const seconds = Math.floor(ms / 1000);
+    const milliseconds = ms % 1000;
+    return `${seconds}.${String(Math.floor(milliseconds / 10)).padStart(2, '0')}s`;
   };
 
   const getActiveShipCount = (player: Player): number => {
@@ -78,9 +94,33 @@ export default function PlayerStats({
           ⚓ CAPTAIN.STATUS
         </h3>
         {gameStatus === 'active' && (
-          <p className="text-sm text-neon-cyan font-mono mt-2 animate-glow-pulse">
-            &gt; ACTIVE CAPTAIN: {getPlayerDisplayName(players[currentPlayerIndex])}
-          </p>
+          <>
+            <p className="text-sm text-neon-cyan font-mono mt-2 animate-glow-pulse">
+              &gt; ACTIVE CAPTAIN: {getPlayerDisplayName(players[currentPlayerIndex])}
+            </p>
+            
+            {/* Skill Metrics Display */}
+            <div className="mt-3 p-3 bg-gray-800 bg-opacity-50 rounded border border-neon-magenta border-opacity-30 space-y-2">
+              <div className="flex items-center justify-between text-xs">
+                <span className="text-neon-cyan font-mono">DECISION TIME:</span>
+                <span className="text-neon-gold font-bold">{formatDecisionTime(decisionTimeMs)}</span>
+              </div>
+              <div className="flex items-center justify-between text-xs">
+                <span className="text-neon-cyan font-mono">SCAN CHARGES:</span>
+                <span className={`font-bold ${scanChargesRemaining > 0 ? 'text-neon-magenta' : 'text-red-500'}`}>
+                  {scanChargesRemaining} / 3
+                </span>
+              </div>
+              <div className="flex items-center justify-between text-xs border-t border-neon-magenta border-opacity-20 pt-2">
+                <span className="text-neon-cyan font-mono">SPEED BONUS:</span>
+                <span className="text-neon-green font-bold">+{speedBonusAccumulated}</span>
+              </div>
+              <div className="flex items-center justify-between text-xs">
+                <span className="text-neon-cyan font-mono">AVG DECISION:</span>
+                <span className="text-neon-gold font-bold">{formatDecisionTime(averageDecisionTimeMs)}</span>
+              </div>
+            </div>
+          </>
         )}
         <div className="scanner-line mt-2"></div>
       </div>

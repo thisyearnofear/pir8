@@ -15,10 +15,13 @@ interface PirateControlsProps {
   onEndTurn: () => void;
   isCreating: boolean;
   isJoining: boolean;
-  joinError: string | null;
+  joinError?: string;
   onClearJoinError: () => void;
   selectedShipId?: string;
   onShipSelect: (shipId: string | null) => void;
+  onScanCoordinate?: (x: number, y: number) => Promise<void>;
+  decisionTimeMs?: number;
+  scanChargesRemaining?: number;
 }
 
 export default function PirateControls({
@@ -33,11 +36,16 @@ export default function PirateControls({
   joinError,
   onClearJoinError,
   selectedShipId,
-  onShipSelect
+  onShipSelect,
+  onScanCoordinate,
+  decisionTimeMs = 0,
+  scanChargesRemaining = 3
 }: PirateControlsProps) {
   const { publicKey } = useWallet();
   const [gameIdInput, setGameIdInput] = useState('');
   const [showJoinForm, setShowJoinForm] = useState(false);
+  const [selectedCoordinate, setSelectedCoordinate] = useState<{ x: number; y: number } | null>(null);
+  const [isScanning, setIsScanning] = useState(false);
 
   const getCurrentPlayer = (): Player | null => {
     if (!gameState || !publicKey) return null;
@@ -64,6 +72,40 @@ export default function PirateControls({
       setGameIdInput('');
       setShowJoinForm(false);
     }
+  };
+
+  const handleScan = async () => {
+    if (!selectedCoordinate || scanChargesRemaining <= 0 || !onScanCoordinate) return;
+
+    setIsScanning(true);
+    try {
+      await onScanCoordinate(selectedCoordinate.x, selectedCoordinate.y);
+      setSelectedCoordinate(null);
+    } catch (error) {
+      console.error('Scan failed:', error);
+    } finally {
+      setIsScanning(false);
+    }
+  };
+
+  const formatTime = (ms: number) => {
+    const seconds = Math.floor(ms / 1000);
+    const milliseconds = ms % 1000;
+    return `${seconds}.${String(Math.floor(milliseconds / 10)).padStart(2, '0')}s`;
+  };
+
+  const getTimerColor = (ms: number) => {
+    // Green: <10s, Yellow: <20s, Red: >20s
+    if (ms < 10000) return 'text-neon-green';
+    if (ms < 20000) return 'text-neon-gold';
+    return 'text-red-500';
+  };
+
+  const getSpeedBonusLabel = (ms: number) => {
+    if (ms < 5000) return '+100 points!';
+    if (ms < 10000) return '+50 points!';
+    if (ms < 15000) return '+25 points!';
+    return 'No bonus';
   };
 
   const renderPreGameControls = () => (
@@ -282,7 +324,103 @@ export default function PirateControls({
       </div>
 
       {isMyTurn() && (
-        <>
+         <>
+           {/* Skill Metrics Display with Timer */}
+           <div className="skill-metrics bg-gradient-to-r from-gray-800 to-gray-900 border border-neon-magenta border-opacity-50 rounded-lg p-4 space-y-3">
+             <div className="flex items-center justify-between">
+               <span className="text-neon-cyan font-mono text-sm">⏱️ DECISION TIME:</span>
+               <span className={`${getTimerColor(decisionTimeMs)} font-bold font-mono text-lg`}>
+                 {formatTime(decisionTimeMs)}
+               </span>
+             </div>
+             
+             <div className="bg-gray-700 rounded h-2 overflow-hidden">
+               <div 
+                 className={`h-full transition-all ${
+                   decisionTimeMs < 5000 ? 'bg-neon-green' :
+                   decisionTimeMs < 10000 ? 'bg-neon-magenta' :
+                   decisionTimeMs < 15000 ? 'bg-neon-gold' :
+                   'bg-red-500'
+                }`}
+                 style={{ width: `${Math.min(100, (decisionTimeMs / 30000) * 100)}%` }}
+               ></div>
+             </div>
+
+             <div className="text-center text-xs text-neon-cyan font-mono">
+               Speed Bonus: {getSpeedBonusLabel(decisionTimeMs)}
+             </div>
+             
+             <div className="flex items-center justify-between text-xs border-t border-gray-700 pt-2">
+               <span className="text-neon-cyan font-mono">SCAN CHARGES:</span>
+               <div className="flex items-center gap-1">
+                 {Array.from({ length: 3 }).map((_, i) => (
+                   <div
+                     key={i}
+                     className={`w-2 h-2 rounded-full ${
+                       i < scanChargesRemaining ? 'bg-neon-magenta' : 'bg-gray-600'
+                     }`}
+                   ></div>
+                 ))}
+                 <span className={`font-bold ml-2 ${scanChargesRemaining > 0 ? 'text-neon-magenta' : 'text-red-500'}`}>
+                   {scanChargesRemaining} / 3
+                 </span>
+               </div>
+             </div>
+           </div>
+
+          {/* Scan Section */}
+          {scanChargesRemaining > 0 && (
+            <div className="scan-section bg-gradient-to-r from-gray-800 to-gray-900 border border-neon-magenta border-opacity-50 rounded-lg p-4 space-y-3">
+              <div className="flex items-center justify-between">
+                <h4 className="text-sm font-bold text-neon-magenta">🔍 SCAN COORDINATE</h4>
+                <span className="text-xs text-neon-cyan">{scanChargesRemaining} scans remaining</span>
+              </div>
+              
+              <p className="text-xs text-gray-300">
+                Select a coordinate to reveal its territory type without claiming it:
+              </p>
+
+              <div
+                className="grid gap-2 p-3 bg-black bg-opacity-30 rounded"
+                style={{
+                  gridTemplateColumns: `repeat(${gameState?.gameMap.size || 7}, minmax(2rem, 1fr))`,
+                }}
+              >
+                {gameState?.gameMap && Array.from({ length: gameState.gameMap.size }).map((_, x) =>
+                  Array.from({ length: gameState.gameMap.size }).map((_, y) => (
+                    <button
+                      key={`${x}-${y}`}
+                      onClick={() => setSelectedCoordinate({ x, y })}
+                      disabled={scanChargesRemaining <= 0 || !isMyTurn()}
+                      title={`Scan coordinate (${x}, ${y})`}
+                      className={`p-2 rounded text-xs font-bold transition-all duration-200 ${
+                        selectedCoordinate?.x === x && selectedCoordinate?.y === y
+                          ? 'bg-neon-magenta text-black ring-2 ring-neon-cyan shadow-lg'
+                          : 'bg-gray-700 text-gray-300 hover:bg-gray-600 hover:text-neon-cyan'
+                      } ${scanChargesRemaining <= 0 ? 'opacity-50 cursor-not-allowed' : ''}`}
+                    >
+                      {x},{y}
+                    </button>
+                  ))
+                )}
+              </div>
+
+              {selectedCoordinate && (
+                <div className="text-center text-xs text-neon-cyan font-mono">
+                  Selected: ({selectedCoordinate.x}, {selectedCoordinate.y})
+                </div>
+              )}
+
+              <button
+                onClick={handleScan}
+                disabled={!selectedCoordinate || scanChargesRemaining <= 0 || isScanning}
+                className="w-full bg-gradient-to-r from-neon-magenta to-purple-600 text-white font-bold py-3 px-3 rounded-lg hover:shadow-neon-magenta transition-all duration-300 disabled:opacity-50 disabled:cursor-not-allowed"
+              >
+                {isScanning ? '🔍 Scanning...' : `🔍 Execute Scan (${scanChargesRemaining})`}
+              </button>
+            </div>
+          )}
+
           {renderShipSelection()}
           {renderActionControls()}
           

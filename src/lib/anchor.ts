@@ -7,7 +7,6 @@ import { Program, AnchorProvider, BN } from '@project-serum/anchor';
 import { Connection, PublicKey, SystemProgram } from '@solana/web3.js';
 import { useAnchorWallet, useConnection } from '@solana/wallet-adapter-react';
 import { useMemo } from 'react';
-import { GameItem } from '../types/game';
 import pir8Idl from '../../contracts/pir8-game/target/idl/pir8_game.json';
 
 // Program ID - Update this when you deploy
@@ -26,7 +25,7 @@ export interface GameAccount {
   status: GameStatus;
   players: PlayerState[];
   currentPlayerIndex: number;
-  grid: GameItem[];
+  grid: any[]; // GameItem enum from Anchor IDL
   chosenCoordinates: string[];
   entryFee: BN;
   totalPot: BN;
@@ -50,6 +49,12 @@ export interface PlayerState {
   isActive: boolean;
   joinedAt: BN;
   lastMoveAt: BN;
+  // Skill mechanics
+  scanCharges: number;
+  scannedCoordinates: number[];
+  speedBonusAccumulated: BN;
+  averageDecisionTimeMs: BN;
+  totalMoves: number;
 }
 
 export enum GameStatus {
@@ -190,6 +195,79 @@ export class PIR8Instructions {
         player: this.provider.wallet.publicKey,
       })
       .rpc();
+  }
+
+  // SKILL MECHANICS: Scan coordinate to reveal territory type
+  async scanCoordinate(gameId: number, coordinateX: number, coordinateY: number) {
+    const [gamePDA] = getGamePDA(gameId);
+
+    return this.program.methods
+      .scanCoordinate(coordinateX, coordinateY)
+      .accounts({
+        game: gamePDA,
+        player: this.provider.wallet.publicKey,
+      })
+      .rpc();
+  }
+
+  // SKILL MECHANICS: Make move with timing bonus tracking
+  async makeMoveTimed(
+    gameId: number,
+    shipId: string,
+    toX: number,
+    toY: number,
+    decisionTimeMs: number
+  ) {
+    const [gamePDA] = getGamePDA(gameId);
+
+    return this.program.methods
+      .makeMoveTimed(shipId, toX, toY, new BN(decisionTimeMs))
+      .accounts({
+        game: gamePDA,
+        player: this.provider.wallet.publicKey,
+      })
+      .rpc();
+  }
+
+  // SKILL MECHANICS: Get player scan charges and speed bonus data
+  async getPlayerSkillMetrics(gameId: number): Promise<{
+    scanCharges: number;
+    speedBonusAccumulated: number;
+    averageDecisionTimeMs: number;
+    scannedCoordinates: string[];
+  } | null> {
+    const [gamePDA] = getGamePDA(gameId);
+    const gameAccount = await this.getGame(gameId);
+    
+    if (!gameAccount) return null;
+
+    const playerAddress = this.provider.wallet.publicKey;
+    const playerState = gameAccount.players.find(
+      (p) => p.playerKey.toString() === playerAddress.toString()
+    );
+
+    if (!playerState) return null;
+
+    return {
+      scanCharges: playerState.scanCharges,
+      speedBonusAccumulated: bnToNumber(playerState.speedBonusAccumulated),
+      averageDecisionTimeMs: bnToNumber(playerState.averageDecisionTimeMs),
+      scannedCoordinates: playerState.scannedCoordinates.map((idx) =>
+        this.decodeCoordinate(idx)
+      ),
+    };
+  }
+
+  // Helper: Encode coordinate to index
+  private encodeCoordinate(x: number, y: number): number {
+    return x * 10 + y; // Assuming max 10x10 grid
+  }
+
+  // Helper: Decode index to coordinate
+  private decodeCoordinate(index: number): string {
+    const x = Math.floor(index / 10);
+    const y = index % 10;
+    return `${x},${y}`;
   }
 
   async executeItemEffect(

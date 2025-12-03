@@ -1,5 +1,4 @@
 "use client";
-import GameControls from "@/components/GameControls";
 import { useState } from "react";
 
 type GameState =
@@ -230,11 +229,10 @@ export default function InfoPanel({
           )}
           {state === "active" && gameId && (
             <div style={{ marginTop: "0.5rem" }}>
-              <GameControls
-                gameId={gameId as string}
-                isMyTurn={isMyTurn}
-                disabled={false}
-              />
+              <div className="data-panel-title">GAME CONTROLS</div>
+              <div className="text-xs text-gray-300">
+                Game ID: {gameId}
+              </div>
             </div>
           )}
         </>

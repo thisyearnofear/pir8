@@ -316,8 +316,20 @@ export function setupGameIntegrations(gameId: string) {
 // Zcash Bridge (memo-based private entry)
 // Usage: Players send shielded Zcash memo to enter PIR8 tournaments privately
 // Memo format: {"v":1,"gameId":"<game_id>","action":"join","solanaPubkey":"<pubkey>"}
+export interface MemoPayload {
+  version: number;
+  gameId: string;
+  action: 'join' | 'create';
+  solanaPubkey: string;
+  timestamp: number;
+  metadata: Record<string, any>;
+  zcashTxHash?: string;
+  blockHeight?: number;
+}
+
 export class ZcashMemoBridge {
   private static readonly MEMO_MAX_SIZE = 512; // Zcash memo limit in bytes
+  private static readonly MEMO_STALE_THRESHOLD = 5 * 60 * 1000; // 5 minutes
 
   constructor(private onEntry: (payload: MemoPayload) => void) {}
 
@@ -374,6 +386,18 @@ export class ZcashMemoBridge {
   }
 
   /**
+   * Validate parsed memo freshness and authenticity
+   */
+  private validateMemoFreshness(payload: MemoPayload): boolean {
+    const timeSinceCreation = Date.now() - payload.timestamp;
+    if (timeSinceCreation > ZcashMemoBridge.MEMO_STALE_THRESHOLD) {
+      console.warn('Memo is stale (>5 minutes old)');
+      return false;
+    }
+    return true;
+  }
+
+  /**
    * Handle incoming shielded memo from Zcash transaction
    * Triggers tournament entry on Solana side
    */
@@ -388,14 +412,12 @@ export class ZcashMemoBridge {
       return false;
     }
 
-    // Verify memo timestamp is recent (within 5 minutes)
-    const timeSinceCreation = Date.now() - parsed.timestamp;
-    if (timeSinceCreation > 5 * 60 * 1000) {
-      console.warn('Memo is stale (>5 minutes old)');
+    // Verify memo timestamp is recent
+    if (!this.validateMemoFreshness(parsed)) {
       return false;
     }
 
-    // Pass to Solana transaction handler
+    // Pass to Solana transaction handler (wired in LightwalletdWatcher)
     this.onEntry({
       ...parsed,
       zcashTxHash,
@@ -461,15 +483,212 @@ To join this tournament privately via Zcash:
   }
 }
 
-export interface MemoPayload {
-  version: number;
-  gameId: string;
-  action: 'join' | 'create';
-  solanaPubkey: string;
-  timestamp: number;
-  metadata: Record<string, any>;
-  zcashTxHash?: string;
-  blockHeight?: number;
+/**
+ * Lightwalletd Watcher - monitors Zcash shielded transactions for memo entries
+ * Connects Zcash privacy layer to Solana game contracts
+ * DRY: Single point of entry for all memo-triggered Solana transactions
+ */
+export class LightwalletdWatcher {
+  private ws: WebSocket | null = null;
+  private reconnectAttempts = 0;
+  private maxReconnectAttempts = 5;
+  private pingInterval: any = null;
+  private memoBridge: ZcashMemoBridge;
+  private logLevel: 'silent' | 'error' | 'warn' | 'info' | 'debug' = 
+    (process.env.NEXT_PUBLIC_LOG_LEVEL as any) || 'error';
+
+  constructor(
+    private onMemoEntry: (payload: MemoPayload) => Promise<void>,
+    private zcashAddress: string
+  ) {
+    // Initialize bridge with callback to Solana transaction handler
+    this.memoBridge = new ZcashMemoBridge((payload) => {
+      this.onMemoEntry(payload).catch(err => 
+        this.log('error', `Failed to process memo entry: ${err.message}`)
+      );
+    });
+  }
+
+  /**
+   * Connect to Lightwalletd server and monitor shielded transactions
+   */
+  connect(lightwalletdUrl: string = ZCASH_CONFIG.LIGHTWALLETD_URL) {
+    if (this.ws && (this.ws.readyState === WebSocket.CONNECTING || this.ws.readyState === WebSocket.OPEN)) {
+      this.log('warn', 'Lightwalletd already connected');
+      return;
+    }
+
+    if (!lightwalletdUrl) {
+      throw new Error('Lightwalletd URL not configured');
+    }
+
+    // Convert HTTP to WebSocket protocol
+    const wsUrl = lightwalletdUrl
+      .replace('https://', 'wss://')
+      .replace('http://', 'ws://');
+
+    this.ws = new WebSocket(wsUrl);
+
+    this.ws.onopen = () => {
+      this.log('info', 'Lightwalletd connected');
+      this.reconnectAttempts = 0;
+      this.setupPingInterval();
+      this.subscribeToShieldedTransactions();
+    };
+
+    this.ws.onmessage = (event) => {
+      try {
+        const data = JSON.parse(event.data);
+        this.processZcashTransaction(data);
+      } catch (error) {
+        this.log('error', 'Failed to parse Lightwalletd message');
+      }
+    };
+
+    this.ws.onclose = () => {
+      this.cleanup();
+      this.handleReconnect();
+    };
+
+    this.ws.onerror = () => {
+      this.log('error', 'Lightwalletd WebSocket error');
+    };
+  }
+
+  /**
+   * Subscribe to incoming shielded transactions for our address
+   */
+  private subscribeToShieldedTransactions() {
+    if (!this.ws || this.ws.readyState !== WebSocket.OPEN) return;
+
+    const subscription = {
+      jsonrpc: '2.0',
+      id: 1,
+      method: 'subscribe',
+      params: {
+        target: this.zcashAddress,
+        minConfirmations: 1,
+      }
+    };
+
+    try {
+      this.ws.send(JSON.stringify(subscription));
+      this.log('debug', `Subscribed to Lightwalletd for address ${this.zcashAddress}`);
+    } catch (error) {
+      this.log('error', 'Failed to subscribe to shielded transactions');
+    }
+  }
+
+  /**
+   * Process incoming Zcash transaction and extract memo
+   */
+  private async processZcashTransaction(data: any) {
+    try {
+      // Lightwalletd returns transaction with memo in outputs
+      const tx = data.result?.transaction;
+      if (!tx) return;
+
+      const txHash = data.result?.hash;
+      const blockHeight = data.result?.height;
+
+      // Extract shielded outputs with memos
+      const outputs = tx.vShieldedOutput || [];
+      
+      for (const output of outputs) {
+        if (output.memo) {
+          // Decode memo (typically hex-encoded)
+          const memoText = this.decodeMemo(output.memo);
+          await this.memoBridge.handleIncomingShieldedMemo(
+            memoText,
+            txHash,
+            blockHeight
+          );
+        }
+      }
+    } catch (error) {
+      this.log('error', `Failed to process Zcash transaction: ${error}`);
+    }
+  }
+
+  /**
+   * Decode hex or base64 memo to JSON string
+   * Supports both binary and text encoding
+   */
+  private decodeMemo(memo: string | Buffer): string {
+    try {
+      // Try hex decoding first (common in Zcash)
+      if (typeof memo === 'string') {
+        const buffer = Buffer.from(memo, 'hex');
+        return buffer.toString('utf-8').trim();
+      }
+      return memo.toString('utf-8').trim();
+    } catch {
+      this.log('warn', 'Failed to decode memo');
+      return '';
+    }
+  }
+
+  /**
+   * Setup keepalive ping to prevent connection timeout
+   */
+  private setupPingInterval() {
+    if (this.pingInterval) clearInterval(this.pingInterval);
+    
+    this.pingInterval = setInterval(() => {
+      if (this.ws && this.ws.readyState === WebSocket.OPEN) {
+        try {
+          this.ws.send(JSON.stringify({ jsonrpc: '2.0', id: Date.now(), method: 'ping' }));
+        } catch {}
+      }
+    }, 60000); // Ping every 60 seconds
+  }
+
+  /**
+   * Reconnect with exponential backoff
+   */
+  private handleReconnect() {
+    if (this.reconnectAttempts < this.maxReconnectAttempts) {
+      this.reconnectAttempts++;
+      const delay = Math.pow(2, this.reconnectAttempts) * 1000;
+      this.log('warn', `Reconnecting to Lightwalletd in ${delay}ms (${this.reconnectAttempts}/${this.maxReconnectAttempts})`);
+      setTimeout(() => this.connect(), delay);
+    } else {
+      this.log('error', 'Max reconnect attempts reached for Lightwalletd');
+    }
+  }
+
+  /**
+   * Cleanup resources
+   */
+  private cleanup() {
+    if (this.pingInterval) {
+      clearInterval(this.pingInterval);
+      this.pingInterval = null;
+    }
+    if (this.ws) {
+      this.ws.close();
+      this.ws = null;
+    }
+  }
+
+  /**
+   * Disconnect and cleanup
+   */
+  disconnect() {
+    this.cleanup();
+    this.log('info', 'Lightwalletd watcher disconnected');
+  }
+
+  private log(level: 'error' | 'warn' | 'info' | 'debug' | 'silent', message: string) {
+    const order = { silent: 0, error: 1, warn: 2, info: 3, debug: 4 } as const;
+    const current = order[this.logLevel];
+    const target = order[level];
+    if (target <= current && level !== 'silent') {
+      if (level === 'error') console.error(`[Lightwalletd] ${message}`);
+      else if (level === 'warn') console.warn(`[Lightwalletd] ${message}`);
+      else console.log(`[Lightwalletd] ${message}`);
+    }
+  }
 }
 
 export async function createWinnerToken(winner: { name: string; score: number }) {

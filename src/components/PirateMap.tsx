@@ -12,6 +12,7 @@ interface PirateMapProps {
   isMyTurn: boolean;
   selectedShipId?: string;
   currentPlayerPK?: string;
+  scannedCoordinates?: string[];
 }
 
 export default function PirateMap({ 
@@ -20,9 +21,14 @@ export default function PirateMap({
   onCellSelect, 
   isMyTurn,
   selectedShipId,
-  currentPlayerPK
+  currentPlayerPK,
+  scannedCoordinates = []
 }: PirateMapProps) {
   const [hoveredCoordinate, setHoveredCoordinate] = useState<string | null>(null);
+
+  const isCoordinateScanned = (coordinate: string): boolean => {
+    return scannedCoordinates.includes(coordinate);
+  };
 
   const handleCellClick = (coordinate: string) => {
     if (!isMyTurn) return;
@@ -60,32 +66,43 @@ export default function PirateMap({
   const getCellClassName = (coordinate: string): string => {
     const cell = getCellAtCoordinate(coordinate);
     const ship = getShipAtPosition(coordinate);
+    const isScanned = isCoordinateScanned(coordinate);
     let className = 'territory-cell ';
     
-    // Base cell styling based on territory type
-    if (cell) {
-      switch (cell.type) {
-        case 'water':
-          className += 'bg-blue-600 bg-opacity-50 hover:bg-blue-500 ';
-          break;
-        case 'island':
-          className += 'bg-green-600 bg-opacity-50 hover:bg-green-500 pirate-glow ';
-          break;
-        case 'port':
-          className += 'bg-yellow-600 bg-opacity-50 hover:bg-yellow-500 pirate-glow ';
-          break;
-        case 'treasure':
-          className += 'bg-amber-500 bg-opacity-50 hover:bg-amber-400 pirate-glow animate-pulse ';
-          break;
-        case 'storm':
-          className += 'bg-purple-600 bg-opacity-50 animate-pulse battle-pulse ';
-          break;
-        case 'reef':
-          className += 'bg-gray-600 bg-opacity-50 hover:bg-gray-500 ';
-          break;
-        case 'whirlpool':
-          className += 'bg-indigo-700 bg-opacity-50 hover:bg-indigo-600 animate-spin ';
-          break;
+    // Unscanned tile - show as "?"
+    if (!isScanned && cell) {
+      className += 'bg-gray-700 bg-opacity-50 hover:bg-gray-600 border border-gray-600 ';
+    } else {
+      // Scanned tile highlighting with brighter colors
+      if (isScanned) {
+        className += 'ring-2 ring-neon-magenta ring-opacity-80 shadow-lg ';
+      }
+      
+      // Base cell styling based on territory type
+      if (cell) {
+        switch (cell.type) {
+          case 'water':
+            className += 'bg-blue-600 bg-opacity-70 hover:bg-blue-500 ';
+            break;
+          case 'island':
+            className += 'bg-green-600 bg-opacity-70 hover:bg-green-500 pirate-glow ';
+            break;
+          case 'port':
+            className += 'bg-yellow-600 bg-opacity-70 hover:bg-yellow-500 pirate-glow ';
+            break;
+          case 'treasure':
+            className += 'bg-amber-500 bg-opacity-70 hover:bg-amber-400 pirate-glow animate-pulse ';
+            break;
+          case 'storm':
+            className += 'bg-purple-600 bg-opacity-70 animate-pulse battle-pulse ';
+            break;
+          case 'reef':
+            className += 'bg-gray-600 bg-opacity-70 hover:bg-gray-500 ';
+            break;
+          case 'whirlpool':
+            className += 'bg-indigo-700 bg-opacity-70 hover:bg-indigo-600 animate-spin ';
+            break;
+        }
       }
     }
 
@@ -129,11 +146,19 @@ export default function PirateMap({
   const renderCellContent = (coordinate: string): JSX.Element => {
     const cell = getCellAtCoordinate(coordinate);
     const ship = getShipAtPosition(coordinate);
+    const isScanned = isCoordinateScanned(coordinate);
     
     return (
-      <div className="cell-content h-full w-full flex flex-col items-center justify-center text-lg">
-        {/* Territory emoji */}
-        {cell && (
+      <div className="cell-content h-full w-full flex flex-col items-center justify-center text-lg relative">
+        {/* Unscanned territory - show question mark */}
+        {!isScanned && cell && (
+          <div className="territory-icon text-gray-400 text-xl font-bold">
+            ?
+          </div>
+        )}
+        
+        {/* Territory emoji - only for scanned tiles */}
+        {isScanned && cell && (
           <div className="territory-icon">
             {TERRITORY_EMOJIS[cell.type]}
           </div>

@@ -242,9 +242,9 @@ export class PirateGameEngine {
 
     switch (action) {
       case 'steal':
-        if (amount && amount <= targetPlayer.points) {
-          updatedPlayer.points += amount;
-          updatedTargetPlayer.points -= amount;
+        if (amount && amount <= targetPlayer.totalScore) {
+          updatedPlayer.totalScore += amount;
+          updatedTargetPlayer.totalScore -= amount;
           message = `Stole ${amount} points from opponent!`;
         } else {
           message = 'Invalid steal amount!';
@@ -252,16 +252,16 @@ export class PirateGameEngine {
         break;
       
       case 'swap':
-        const tempPoints = updatedPlayer.points;
-        updatedPlayer.points = updatedTargetPlayer.points;
-        updatedTargetPlayer.points = tempPoints;
+        const tempPoints = updatedPlayer.totalScore;
+        updatedPlayer.totalScore = updatedTargetPlayer.totalScore;
+        updatedTargetPlayer.totalScore = tempPoints;
         message = 'Scores swapped!';
         break;
       
       case 'gift':
-        if (updatedPlayer.points >= 1000) {
-          updatedPlayer.points -= 1000;
-          updatedTargetPlayer.points += 1000;
+        if (updatedPlayer.totalScore >= 1000) {
+          updatedPlayer.totalScore -= 1000;
+          updatedTargetPlayer.totalScore += 1000;
           message = 'Gifted 1000 points!';
         } else {
           message = 'Not enough points to gift!';
@@ -269,7 +269,7 @@ export class PirateGameEngine {
         break;
       
       case 'kill':
-        updatedTargetPlayer.points = 0;
+        updatedTargetPlayer.totalScore = 0;
         message = 'Opponent\'s points reset to 0!';
         break;
       

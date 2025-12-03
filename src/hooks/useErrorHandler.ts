@@ -1,5 +1,5 @@
 import { useCallback } from 'react';
-import { useGameState } from './useGameState';
+import { usePirateGameState } from './usePirateGameState';
 
 interface ErrorContext {
   action: string;
@@ -8,7 +8,7 @@ interface ErrorContext {
 }
 
 export const useErrorHandler = () => {
-  const { setError } = useGameState();
+  const { setError } = usePirateGameState();
 
   const handleError = useCallback((error: unknown, context?: ErrorContext) => {
     console.error('PIR8 Error:', error, context);

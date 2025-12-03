@@ -1,6 +1,6 @@
 "use client";
 import { useState } from "react";
-import GameGrid from "@/components/GameGrid";
+// import GameGrid from "@/components/GameGrid"; // Removed - using PirateMap instead
 type GameState =
   | "disconnected"
   | "connected"
@@ -302,6 +302,8 @@ export default function GameStatePanel({
               {collapsed ? "EXPAND" : "COLLAPSE"}
             </button>
           )}
+          {/* GameGrid removed - using PirateMap in main layout instead */}
+          {/*
           {!collapsed && grid && onCoordinateSelect && (
             <div style={{ marginTop: "0.5rem" }}>
               <GameGrid
@@ -313,6 +315,7 @@ export default function GameStatePanel({
               />
             </div>
           )}
+          */}
         </>
       );
 

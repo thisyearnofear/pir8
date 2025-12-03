@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { useGameState } from './useGameState';
+import { usePirateGameState } from './usePirateGameState';
 import { Player } from '@/types/game';
 
 interface UseGameJoinReturn {
@@ -10,7 +10,7 @@ interface UseGameJoinReturn {
 }
 
 export const useGameJoin = (): UseGameJoinReturn => {
-  const { joinGame: joinGameStore } = useGameState();
+  const { joinGame: joinGameStore } = usePirateGameState();
   const [isJoining, setIsJoining] = useState(false);
   const [error, setError] = useState<string | null>(null);
 

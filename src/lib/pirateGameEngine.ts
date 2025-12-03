@@ -6,8 +6,9 @@ import {
   Coordinate,
   GameAction,
   Resources,
-  GAME_CONFIG 
+  GameEvent
 } from '../types/game';
+import { GAME_CONFIG } from '../utils/constants';
 import { PirateGameEngine } from './gameLogic';
 
 /**

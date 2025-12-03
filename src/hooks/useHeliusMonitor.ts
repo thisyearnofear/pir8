@@ -6,7 +6,7 @@
 import { useEffect, useRef, useCallback } from 'react';
 import { useConnection } from '@solana/wallet-adapter-react';
 import { HeliusMonitor } from '../lib/integrations';
-import { useGameState } from './useGameState';
+import { usePirateGameState } from './usePirateGameState';
 
 interface UseHeliusMonitorProps {
   gameId?: string;
@@ -22,7 +22,7 @@ export interface GameEvent {
 
 export const useHeliusMonitor = ({ gameId, onGameEvent }: UseHeliusMonitorProps = {}) => {
   const { connection } = useConnection();
-  const { setMessage, clearError } = useGameState();
+  const { setMessage, clearError } = usePirateGameState();
   const monitorRef = useRef<HeliusMonitor | null>(null);
   const isConnectedRef = useRef(false);
   const LOG_LEVEL = (process.env.NEXT_PUBLIC_LOG_LEVEL as any) || 'error';
