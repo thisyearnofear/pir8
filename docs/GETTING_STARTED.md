@@ -1,10 +1,10 @@
 # Getting Started with PIR8
 
-## ⚠️ CURRENT STATUS: NOT YET DEPLOYABLE
+## ✅ CURRENT STATUS: Ready for Devnet Deployment
 
-Contracts have compilation errors that prevent deployment. See [ARCHITECTURE.md](./ARCHITECTURE.md) for critical issues.
+Smart contracts compile successfully. Ready to deploy and test gameplay.
 
-**If you want to help fix this**: See "Contributing to Phase 1 Fixes" section below.
+**Next milestone**: Deploy to Devnet and test basic game flow (create → join → move → claim).
 
 ---
 
@@ -44,93 +44,170 @@ avm install 0.29.0
 avm use 0.29.0
 ```
 
-### Current Limitations
+### Build & Test Contracts
 
-**Frontend Only (Contracts Broken)**:
+**Build the Anchor program**:
 ```bash
-# You CAN run the frontend (without contract interaction)
+cd contracts/pir8-game
+cargo build --release
+# ✅ Should complete with only cfg warnings (safe to ignore)
+```
+
+**Run the frontend** (without devnet):
+```bash
 npm run dev
 # Opens http://localhost:3000 with wallet connection UI
 ```
 
-**You CANNOT**:
-- Build contracts: `anchor build` fails due to struct field mismatches
-- Deploy contracts: No deployable binary
-- Test gameplay: Contract is not on devnet
-- Use Zcash privacy features: Bridge not connected to contracts
+**Deploy to Devnet** (when ready):
+```bash
+solana config set --url devnet
+solana airdrop 2
+anchor deploy --provider.cluster devnet
+# Updates PROGRAM_ID in Anchor.toml
+```
 
 ---
 
-## Contributing to Phase 1 Fixes
+## Smart Contract Instructions (Completed)
 
-### Critical Issues to Fix
+### Available Instructions
 
-See [ARCHITECTURE.md - Critical Issues](./ARCHITECTURE.md#critical-issues---blocks-deployment) for detailed problem descriptions.
+#### Game Management
+- **create_game**: Create new 10x10 game with entry fee
+- **join_game**: Add player and manage entry fee distribution
+- **start_game**: Transition from Waiting → Active when min players met
 
-### How to Help
+#### Fleet Warfare
+- **move_ship**: Move ship within speed range
+- **attack_ship**: Deal damage to enemy vessel in range
+- **claim_territory**: Claim port/island/treasure at ship location
+- **collect_resources**: Harvest resources from controlled territory
+- **build_ship**: Build new ship at controlled port (costs resources)
 
-#### Issue 1: Fix Smart Contract Structs (Days 1-2)
+#### Game Completion
+- **complete_game**: Finalize game and determine winner
 
-```bash
-# Try to build - see the errors
-cd contracts/pir8-game
-anchor build
+### Resource Economy
 
-# You'll see compilation errors about missing fields:
-# - error: no field `chosen_coordinates` on type `Game`
-# - error: no field `grid` on type `Game`
-# - etc.
+Ships cost resources to build (at controlled ports):
+
+| Ship Type | Gold | Crew | Cannons | Supplies | Stats |
+|-----------|------|------|---------|----------|-------|
+| **Sloop** | 500 | 10 | 5 | 20 | 100HP, 20ATK, 10DEF, 3SPD |
+| **Frigate** | 1200 | 25 | 15 | 40 | 200HP, 40ATK, 25DEF, 2SPD |
+| **Galleon** | 2500 | 50 | 30 | 80 | 350HP, 60ATK, 40DEF, 1SPD |
+| **Flagship** | 5000 | 100 | 60 | 150 | 500HP, 80ATK, 60DEF, 1SPD |
+
+Territory yields per turn:
+
+| Territory | Gold | Crew | Supplies |
+|-----------|------|------|----------|
+| Port | 5 | 2 | 0 |
+| Island | 0 | 0 | 3 |
+| Treasure | 10 | 0 | 0 |
+
+## Zcash Privacy Integration
+
+### Overview
+
+PIR8 uses Zcash shielded transactions for **private tournament entry**:
+
+1. Player creates memo with game entry data
+2. Sends ZEC to PIR8 shielded address with memo
+3. Memo gets parsed on Solana side
+4. `join_game` instruction executes automatically
+5. **Privacy preserved**: Zcash tx identity never appears on Solana
+
+### Creating a Tournament Entry Memo
+
+```typescript
+import { ZcashMemoBridge } from '@/lib/integrations';
+
+const gameId = 'game_0';
+const playerPubkey = 'your_solana_pubkey';
+
+// Create memo for Zcash transaction
+const memo = ZcashMemoBridge.createMemo({
+  gameId,
+  action: 'join',
+  solanaPubkey: playerPubkey,
+});
+
+console.log(memo);
+// Output:
+// {"v":1,"gameId":"game_0","action":"join","solanaPubkey":"...","timestamp":1234567890,"metadata":{}}
 ```
 
-**Steps to fix**:
-1. Open `contracts/pir8-game/src/lib.rs`
-2. Find the `Game` struct definition (around line 236)
-3. Add missing fields:
-   ```rust
-   pub struct Game {
-     // ... existing fields
-     pub chosen_coordinates: Vec<String>,  // Add this
-     pub grid: Vec<GameItem>,              // Add this
-     pub final_scores: Vec<u64>,           // Add this
-     pub random_seed: u64,                 // Add this
-   }
-   ```
-4. Update the SPACE calculation in the `impl Game` block
-5. Run `anchor build` and fix remaining type errors
-6. Test: `anchor test`
+### Memo Specification
 
-**Reference files**:
-- Game struct: `contracts/pir8-game/src/lib.rs:236-257`
-- PlayerState: `contracts/pir8-game/src/lib.rs:317-332`
-- PlayerData: `contracts/pir8-game/src/pirate_lib.rs:89-96`
-
-#### Issue 2: Wire Zcash Bridge (Days 2-3)
-
-```bash
-# Zcash bridge exists but isn't connected
-# Current code: src/lib/integrations.ts (lines 317-335)
-# CLI command: src/cli/index.ts (line 121)
+```json
+{
+  "v": 1,
+  "gameId": "<game_id>",
+  "action": "join|create",
+  "solanaPubkey": "<base58_encoded_pubkey>",
+  "timestamp": 1234567890,
+  "metadata": {}
+}
 ```
 
-**Steps to complete**:
-1. Implement Lightwalletd watcher connection (or mock for devnet)
-2. Wire memo parser to `join_game` instruction
-3. Test: `npm run cli -- memo --memo '{"v":"1","gameId":"test",...}'`
+**Constraints**:
+- Max size: 512 bytes (Zcash memo limit)
+- Version: Must be 1
+- Action: Either "join" (existing game) or "create" (new tournament)
+- Timestamp: Must be within 5 minutes of memo processing
+- Pubkey: 44 character base58 string
 
-**Reference**:
-- Bridge class: `src/lib/integrations.ts:317-335`
-- CLI handler: `src/cli/commands/game.ts:81-105`
+### Memo Validation
 
-### Testing Your Changes
+```typescript
+const bridge = new ZcashMemoBridge((payload) => {
+  // This callback triggers when valid memo received
+  console.log('Player joined:', payload.solanaPubkey);
+});
+
+// Parse and validate
+const parsed = bridge.parseMemo(memoJson);
+if (parsed) {
+  console.log('Valid memo:', parsed);
+  // {
+  //   version: 1,
+  //   gameId: 'game_0',
+  //   action: 'join',
+  //   solanaPubkey: '...',
+  //   timestamp: 1234567890,
+  //   metadata: {}
+  // }
+}
+```
+
+### Manual Tournament Entry (via Zcash)
 
 ```bash
-# After fixing compilation errors:
-cd contracts/pir8-game
-anchor build
-anchor test
+# 1. Generate memo for your wallet
+npm run cli -- memo --game game_0 --action join
 
-# If tests pass, you're ready for deployment!
-anchor deploy --provider.cluster devnet
+# 2. Send ZEC to PIR8 shielded address:
+#    z1m2n3o4p5... (address in ZCASH_CONFIG)
+#
+# 3. Include the memo from step 1 in the transaction
+#
+# 4. Monitor entry:
+#    npm run cli -- monitor
+#    # Watches for your join_game transaction
+```
+
+### Getting Entry Instructions
+
+```typescript
+const instructions = ZcashMemoBridge.getPrivateEntryInstructions(
+  'game_0',
+  playerPubkey
+);
+
+console.log(instructions);
+// Prints step-by-step guide for player
 ```
 
 ---
@@ -305,63 +382,75 @@ pir8/
 ### Game Flow
 
 1. **Create Game**
-   - Creator sets entry fee and max players
+   - Creator sets entry fee and max players (2-4)
    - Game enters "Waiting" status
-   - Grid is generated with random seed
+   - 10x10 strategic map generated with biomes
+   - Starting fleets deployed at player corners
 
 2. **Join Game**
    - Players pay entry fee
    - Entry fee split: 95% to pot, 5% to platform
-   - Game starts when min players (2) join
+   - Starting resources: 1000 gold, 50 crew, 20 cannons, 100 supplies
+   - Each player gets 2 starting ships (Sloop + Frigate)
+   - Game auto-starts when min players (2) join
 
-3. **Gameplay**
-   - Turn-based coordinate selection (A1-G7)
-   - Items revealed when picked
-   - Special items trigger actions
-   - Game ends when all 49 squares picked
+3. **Gameplay** (Turn-based, 10x10 map)
+   - Players move ships within speed range
+   - Attack enemy ships within adjacent range
+   - Claim territories (ports, islands, treasures)
+   - Collect resources from controlled territories
+   - Build new ships at controlled ports (costs resources)
+   - Dynamic weather affects movement and combat
+   - Turns cycle through all players
 
-4. **Completion**
-   - Winner determined by highest score (points + banked)
-   - Winner claims prize from pot
+4. **Victory Conditions** (First to achieve wins)
+   - **Fleet Dominance**: Control 80% of naval power
+   - **Territory Control**: Own 60% of valuable territories
+   - **Economic Victory**: Accumulate 15,000+ resource value
+
+5. **Completion**
+   - Winner determined by victory condition achieved first
+   - Winner claims prize from pot (85% of total)
    - Game account closed, rent returned
 
-### Special Items
+### Territory Types
 
-| Item | Effect | Strategy |
-|------|--------|----------|
-| **Points** | +200/1000/3000/5000 | Core scoring |
-| **GRINCH** | Steal opponent's points | Offensive |
-| **PUDDING** | Reset opponent to 0 | Aggressive |
-| **PRESENT** | Gift 1000 points | Cooperative |
-| **MISTLETOE** | Swap scores | Tactical |
-| **TREE** | Choose next coordinate | Control |
-| **ELF** | Block one attack | Defensive |
-| **BAUBLE** | Reflect one attack | Counter |
-| **TURKEY** | Reset self to 0 | Risk |
-| **CRACKER** | Double current score | Multiplier |
-| **BANK** | Protect points | Safety |
+| Territory | Resources | Strategic Value |
+|-----------|-----------|-----------------|
+| **Port** | 5 gold/2 crew | Ship building hub |
+| **Island** | 3 supplies | Supply line |
+| **Treasure** | 10 gold | Wealth generator |
+| **Water** | None | Safe passage |
+| **Storm** | Damage | Hazard (-50% movement) |
+| **Reef** | Damage | Hidden hazard |
+| **Whirlpool** | Deadly | Extreme danger |
 
-### Skill Mechanics (Phase 2)
+### Skill Mechanics (70% Skill / 30% Luck)
 
-**Scanning**:
-- Reveal items without claiming
-- Limited charges (3 per game)
-- Strategic information advantage
+**Fleet Management** (Strategic):
+- Choose ship types based on role (scout, fighter, heavy)
+- Balance speed vs. durability
+- Position for optimal attack/defense
 
-**Timing**:
-- Fast decisions earn bonus points
-- <5s = +100 points
-- >30s = -50 points penalty
+**Economic Depth** (Strategic):
+- Resource allocation for ship building
+- Territory control for passive income
+- Supply chain management
 
-**Action Points**:
-- 3 AP per turn
-- Pick (2 AP), Scan (1 AP), Bank (1 AP)
-- Tactical resource management
+**Tactical Combat** (Strategic):
+- Range management (adjacent only)
+- Damage calculation (attack - defense)
+- Weather advantage timing
 
-**Combos**:
-- Consecutive point picks = 1.5x multiplier
-- Special item chains = bonus points
-- Territory control = passive income
+**Fog of War** (Phase 2 - Competitive):
+- Ship positions hidden until adjacent/detected
+- Intel gathering missions
+- Reconnaissance advantage
+
+**Timing Bonuses** (Phase 2 - Skill):
+- Fast decisions earn experience
+- Combo rewards for multi-turn strategies
+- Territory bonus accumulation
 
 ---
 
