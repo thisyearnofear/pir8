@@ -83,13 +83,13 @@ export default function PlayerStats({
   };
 
   return (
-    <div className="player-stats-scanner">
+    <div className="player-stats-scanner flex flex-col items-center">
       <div className="corner-tl"></div>
       <div className="corner-tr"></div>
       <div className="corner-bl"></div>
       <div className="corner-br"></div>
       
-      <div className="mb-6 text-center border-b border-neon-cyan border-opacity-30 pb-4">
+      <div className="mb-6 text-center border-b border-neon-cyan border-opacity-30 pb-4 w-full">
         <h3 className="text-xl font-bold font-tech holographic-text">
           ⚓ CAPTAIN.STATUS
         </h3>
@@ -125,7 +125,7 @@ export default function PlayerStats({
         <div className="scanner-line mt-2"></div>
       </div>
 
-      <div className="space-y-3">
+      <div className="space-y-3 w-full">
         {players.map((player, index) => (
           <div
             key={player.publicKey}
@@ -232,12 +232,12 @@ export default function PlayerStats({
       {/* Game status indicator */}
       <div className="mt-6 pt-4 border-t border-neon-cyan border-opacity-30">
         <div className="text-xs text-neon-cyan font-mono font-bold mb-2 uppercase">BATTLE STATUS</div>
-        <div className={`p-3 rounded-lg text-center font-mono border-2 ${
-          gameStatus === 'waiting' ? 'border-neon-orange bg-neon-orange bg-opacity-10 text-neon-orange' :
-          gameStatus === 'active' ? 'border-neon-cyan bg-neon-cyan bg-opacity-10 text-neon-cyan' :
-          'border-neon-magenta bg-neon-magenta bg-opacity-10 text-neon-magenta'
+        <div className={`p-3 rounded-lg text-center font-mono border-2 font-bold ${
+          gameStatus === 'waiting' ? 'border-neon-gold bg-gradient-to-r from-neon-orange via-neon-gold to-neon-orange text-black' :
+          gameStatus === 'active' ? 'border-neon-cyan bg-gradient-to-r from-neon-cyan to-neon-blue text-black' :
+          'border-neon-magenta bg-gradient-to-r from-neon-magenta to-purple-600 text-white'
         }`}>
-          <div className="text-sm font-bold">
+          <div className="text-sm font-black drop-shadow-lg">
             {gameStatus === 'waiting' && '⚓ ASSEMBLING CREW'}
             {gameStatus === 'active' && '⚔️ BATTLE IN PROGRESS'}
             {gameStatus === 'completed' && '🏴‍☠️ PIRATE KING CROWNED'}

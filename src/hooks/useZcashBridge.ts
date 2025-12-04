@@ -10,8 +10,7 @@
 
 import { useEffect, useRef, useCallback } from 'react';
 import { LightwalletdWatcher, MemoPayload } from '@/lib/integrations';
-import { getAnchorClient } from '@/lib/anchorClient';
-import { joinGamePrivateViaZcash } from '@/lib/anchorClient';
+import { joinGamePrivateViaZcash } from '@/lib/server/anchorActions';
 import { ZCASH_CONFIG } from '@/utils/constants';
 import { usePirateGameState } from './usePirateGameState';
 
@@ -39,11 +38,8 @@ export function useZcashBridge(options: UseZcashBridgeOptions = {}) {
           zcashTx: payload.zcashTxHash,
         });
 
-        // Get Anchor client for transaction
-        const { program, provider } = await getAnchorClient();
-
-        // Execute private join_game instruction
-        const solanaTx = await joinGamePrivateViaZcash(program, provider, {
+        // Execute private join_game instruction via server action
+        const solanaTx = await joinGamePrivateViaZcash({
           gameId: payload.gameId,
           solanaPubkey: payload.solanaPubkey,
           zcashTxHash: payload.zcashTxHash,

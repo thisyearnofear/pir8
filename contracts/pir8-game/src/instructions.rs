@@ -74,8 +74,14 @@ pub mod pir8_game {
     pub fn join_game(ctx: Context<JoinGame>) -> Result<()> {
         let game = &mut ctx.accounts.game;
 
-        // Add player to game
+        // Validate player slot availability
         let player_index = game.player_count as usize;
+        require!(
+            player_index < MAX_PLAYERS as usize,
+            GameError::GameFull
+        );
+
+        // Add player to game
         game.players[player_index] = PlayerData {
             pubkey: ctx.accounts.player.key(),
             resources: Resources {
@@ -96,7 +102,11 @@ pub mod pir8_game {
         };
 
         game.player_count += 1;
-        game.total_pot += game.entry_fee;
+        
+        // Add entry fee to pot with overflow protection
+        game.total_pot = game.total_pot
+            .checked_add(game.entry_fee)
+            .ok_or(GameError::Unauthorized)?;
 
         // Start game if enough players
         if game.player_count >= 2 {

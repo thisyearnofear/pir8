@@ -2,7 +2,6 @@
 
 import { useState } from 'react';
 import { useWallet } from '@solana/wallet-adapter-react';
-import { WalletMultiButton } from '@solana/wallet-adapter-react-ui';
 import { Ship, GameState, Player } from '../types/game';
 import { SHIP_EMOJIS, SHIP_DESCRIPTIONS } from '../utils/constants';
 
@@ -109,17 +108,12 @@ export default function PirateControls({
   };
 
   const renderPreGameControls = () => (
-    <div className="pre-game-controls space-y-4">
+    <div className="pre-game-controls space-y-4 w-full max-w-sm">
       <h3 className="text-lg font-bold text-neon-cyan text-center">
         🏴‍☠️ PREPARE FOR BATTLE
       </h3>
       
-      {!publicKey ? (
-        <div className="wallet-connection text-center">
-          <p className="text-sm text-gray-300 mb-4">Connect your wallet to join the pirate crew</p>
-          <WalletMultiButton />
-        </div>
-      ) : (
+      {publicKey && (
         <div className="game-actions space-y-3">
           <button
             onClick={onCreateGame}
@@ -178,29 +172,124 @@ export default function PirateControls({
     </div>
   );
 
-  const renderWaitingControls = () => (
-    <div className="waiting-controls space-y-4 text-center">
-      <h3 className="text-lg font-bold text-neon-orange">
-        ⚓ ASSEMBLING CREW
-      </h3>
-      <p className="text-sm text-gray-300">
-        Waiting for more pirates to join...
-      </p>
-      <p className="text-xs text-neon-cyan">
-        Game ID: {gameState?.gameId}
-      </p>
-      
-      {gameState && gameState.players.length >= 2 && (
-        <button
-          onClick={onQuickStart}
-          disabled={isCreating}
-          className="bg-gradient-to-r from-neon-gold to-neon-orange text-black font-bold py-2 px-6 rounded-lg hover:shadow-neon-gold transition-all duration-300 disabled:opacity-50"
-        >
-          {isCreating ? 'Starting...' : '⚡ Start Battle Now'}
-        </button>
-      )}
-    </div>
-  );
+  const renderWaitingControls = () => {
+    const playerCount = gameState?.players.length || 0;
+    const maxPlayers = 4; // MAX_PLAYERS from GAME_CONFIG
+    const crewPercentage = Math.round((playerCount / maxPlayers) * 100);
+    
+    const waitingMessages = [
+      '🏴‍☠️ Hoisting the colors...',
+      '⚓ Rallying the crew...',
+      '🌊 Charting the course...',
+      '💀 Preparing for battle...',
+      '🗺️ Plotting coordinates...',
+      '⚔️ Sharpening cutlasses...'
+    ];
+    const messageIndex = Math.floor(Date.now() / 2000) % waitingMessages.length;
+    const currentMessage = waitingMessages[messageIndex];
+
+    return (
+      <div className="waiting-controls space-y-5 w-full max-w-sm mx-auto">
+        {/* Header - High Contrast */}
+        <div className="bg-gradient-to-r from-neon-orange via-neon-gold to-neon-orange rounded-lg p-4 border-2 border-neon-gold shadow-lg">
+          <h3 className="text-2xl font-black text-black drop-shadow">
+            ⚓ CREW ASSEMBLY IN PROGRESS
+          </h3>
+          <p className="text-sm text-black font-bold mt-1">
+            {currentMessage}
+          </p>
+        </div>
+
+        {/* Player Count Progress */}
+        <div className="bg-gray-900 rounded-lg p-4 border border-neon-cyan border-opacity-40">
+          <div className="flex items-center justify-between mb-2">
+            <span className="text-neon-cyan font-bold">BATTLE ROSTER:</span>
+            <span className="text-neon-gold font-mono text-lg">{playerCount}/{maxPlayers}</span>
+          </div>
+          
+          {/* Progress Bar */}
+          <div className="w-full bg-gray-800 rounded-full h-4 overflow-hidden border border-neon-cyan border-opacity-20">
+            <div 
+              className={`h-full transition-all duration-500 ${
+                playerCount >= 2 ? 'bg-gradient-to-r from-neon-green to-neon-cyan' : 
+                'bg-gradient-to-r from-neon-orange to-neon-gold'
+              }`}
+              style={{ width: `${crewPercentage}%` }}
+            />
+          </div>
+          
+          <div className="text-xs text-gray-300 mt-2 text-center">
+            {playerCount === 1 && 'Awaiting crew members...'}
+            {playerCount === 2 && '⚡ Battle ready! 2 pirates detected'}
+            {playerCount === 3 && '💪 Forming alliance...'}
+            {playerCount >= 4 && '🔥 Full crew assembled! All positions filled'}
+          </div>
+        </div>
+
+        {/* Game ID Display */}
+        <div className="bg-gray-800 rounded-lg p-3 border border-gray-700">
+          <div className="text-xs text-gray-400 mb-1">Share this Game ID:</div>
+          <div className="font-mono text-sm text-neon-cyan break-all bg-black bg-opacity-50 p-2 rounded border border-neon-cyan border-opacity-30">
+            {gameState?.gameId}
+          </div>
+          <button
+            onClick={() => gameState?.gameId && navigator.clipboard.writeText(gameState.gameId)}
+            className="w-full mt-2 text-xs bg-neon-cyan bg-opacity-60 hover:bg-opacity-80 text-black font-bold py-2 px-2 rounded transition-all duration-300 border border-neon-cyan"
+          >
+            📋 Copy Game ID
+          </button>
+        </div>
+
+        {/* Pirates Joining */}
+        <div className="bg-gray-800 rounded-lg p-3 border border-gray-700">
+          <h4 className="text-xs font-bold text-neon-magenta mb-2">⚔️ JOINING BATTLE</h4>
+          <div className="space-y-1">
+            {gameState?.players.map((player, index) => (
+              <div key={index} className="flex items-center gap-2 text-xs">
+                <span className={`w-2 h-2 rounded-full ${player.isActive ? 'bg-neon-green' : 'bg-gray-600'}`} />
+                <span className="text-gray-300 truncate">{player.username || 'Captain'}</span>
+                <span className="text-neon-gold ml-auto font-mono">{player.ships.length} ⛵</span>
+              </div>
+            ))}
+          </div>
+        </div>
+
+        {/* Start Button */}
+        {gameState && gameState.players.length >= 2 && (
+          <button
+            onClick={onQuickStart}
+            disabled={isCreating}
+            className="w-full bg-gradient-to-r from-neon-green via-neon-cyan to-neon-blue text-black font-black py-3 px-6 rounded-lg hover:shadow-lg hover:scale-105 transition-all duration-300 disabled:opacity-50 text-lg drop-shadow"
+          >
+            {isCreating ? '⚡ LAUNCHING...' : '⚡ HOIST THE COLORS!'}
+          </button>
+        )}
+
+        {gameState && gameState.players.length < 2 && (
+          <div className="bg-gray-800 rounded-lg p-3 border border-gray-700 text-center">
+            <p className="text-xs text-gray-400">Waiting for {2 - gameState.players.length} more pirate{2 - gameState.players.length > 1 ? 's' : ''}...</p>
+          </div>
+        )}
+
+        {/* Environment Snapshot - shown during waiting */}
+        {gameState && (
+          <div className="bg-gray-800 rounded-lg p-3 border border-gray-700 space-y-2">
+            <h4 className="text-xs font-bold text-neon-cyan">🌍 BATTLE CONDITIONS</h4>
+            <div className="grid grid-cols-2 gap-2 text-xs">
+              <div>
+                <span className="text-gray-400">Fleets:</span>
+                <span className="text-white ml-1 font-mono font-bold">{gameState.players.reduce((t, p) => t + p.ships.filter(s => s.health > 0).length, 0)} 🚢</span>
+              </div>
+              <div>
+                <span className="text-gray-400">Territories:</span>
+                <span className="text-white ml-1 font-mono font-bold">{gameState.players.reduce((t, p) => t + p.controlledTerritories.length, 0)}</span>
+              </div>
+            </div>
+          </div>
+        )}
+      </div>
+    );
+  };
 
   const renderShipSelection = () => {
     const myShips = getMyShips();
@@ -312,8 +401,20 @@ export default function PirateControls({
     );
   };
 
-  const renderGameControls = () => (
-    <div className="game-controls space-y-4">
+  const renderGameControls = () => {
+    const getWeatherEmoji = (): string => {
+      if (!gameState?.globalWeather) return '☀️';
+      switch (gameState.globalWeather.type) {
+        case 'calm': return '🌊';
+        case 'trade_winds': return '💨';
+        case 'storm': return '⛈️';
+        case 'fog': return '🌫️';
+        default: return '☀️';
+      }
+    };
+
+    return (
+    <div className="game-controls space-y-4 w-full max-w-sm">
       <div className="turn-info text-center p-3 bg-black bg-opacity-50 rounded-lg border border-neon-cyan">
         <div className="text-sm text-neon-cyan">
           {isMyTurn() ? '🏴‍☠️ YOUR TURN' : '⏳ WAITING...'}
@@ -322,6 +423,37 @@ export default function PirateControls({
           Phase: {gameState?.currentPhase?.toUpperCase()}
         </div>
       </div>
+
+      {/* Weather & Conditions - Right side balance */}
+      {gameState?.globalWeather && (
+        <div className="weather-preview bg-gray-800 rounded-lg p-3 border border-gray-700">
+          <h4 className="text-xs font-bold text-neon-orange mb-2">🌊 WEATHER</h4>
+          <div className="flex items-center gap-2 mb-2">
+            <span className="text-lg">{getWeatherEmoji()}</span>
+            <div>
+              <div className="text-xs font-bold text-white capitalize">{gameState.globalWeather.type.replace('_', ' ')}</div>
+              <div className="text-xs text-neon-cyan">{gameState.globalWeather.duration} turns</div>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Battle Snapshot - Right side balance */}
+      {gameState && (
+        <div className="battle-snapshot bg-gray-800 rounded-lg p-3 border border-gray-700">
+          <h4 className="text-xs font-bold text-neon-green mb-2">📊 BATTLEFIELD</h4>
+          <div className="grid grid-cols-2 gap-2 text-xs">
+            <div>
+              <span className="text-gray-400">Total Fleets:</span>
+              <span className="text-white font-mono ml-1">{gameState.players.reduce((t, p) => t + p.ships.filter(s => s.health > 0).length, 0)}</span>
+            </div>
+            <div>
+              <span className="text-gray-400">Claimed:</span>
+              <span className="text-white font-mono ml-1">{gameState.players.reduce((t, p) => t + p.controlledTerritories.length, 0)}</span>
+            </div>
+          </div>
+        </div>
+      )}
 
       {isMyTurn() && (
          <>
@@ -458,16 +590,19 @@ export default function PirateControls({
         </>
       )}
     </div>
-  );
+    );
+  };
 
   return (
-    <div className="pirate-controls-panel bg-gradient-to-b from-slate-800 to-slate-900 border border-neon-cyan border-opacity-50 rounded-lg p-6 min-h-[400px]">
-      {!gameState && renderPreGameControls()}
-      {gameState?.gameStatus === 'waiting' && renderWaitingControls()}
-      {gameState?.gameStatus === 'active' && renderGameControls()}
+    <div className="pirate-controls-panel bg-gradient-to-b from-slate-800 to-slate-900 border border-neon-cyan border-opacity-50 rounded-lg p-6 min-h-[400px] flex flex-col">
+      <div className="flex flex-col items-center justify-center w-full h-full">
+        {!gameState && renderPreGameControls()}
+        {gameState?.gameStatus === 'waiting' && renderWaitingControls()}
+        {gameState?.gameStatus === 'active' && renderGameControls()}
+      </div>
       
       {gameState?.gameStatus === 'completed' && (
-        <div className="game-complete text-center space-y-4">
+        <div className="game-complete text-center space-y-4 w-full max-w-sm">
           <h3 className="text-xl font-bold text-neon-gold">
             🏴‍☠️ BATTLE COMPLETE!
           </h3>

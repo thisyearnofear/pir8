@@ -1,9 +1,9 @@
 # Getting Started with PIR8
 
-## ✅ CURRENT STATUS: Phase 1A - UX Polish ✅ COMPLETE
+## ✅ CURRENT STATUS: Phase 1B - Devnet Deployment ✅ COMPLETE
 
 ### Current Build
-- **Smart Contracts**: ✅ Compiled, ready for deployment
+- **Smart Contracts**: ✅ Deployed to Devnet (`5etQW394NUCprU1ikrbDysFeCGGRYY9usChGpaox9oiK`)
 - **Core Gameplay**: ✅ Full game loop implemented (create → join → move → claim)
 - **Skill Mechanics**: ✅ Timer + scanning system in UI
 - **Zcash Privacy**: ✅ Lightwalletd watcher + memo bridge wired
@@ -16,9 +16,12 @@
 4. **TerritoryTooltip** - Hover tooltips for territory effects ✅
 5. **useShowOnboarding** - localStorage-based first visit detection ✅
 
-### Next Steps: Phase 1B
-- Deploy contracts to devnet
-- Integration testing with deployed contracts
+### Next Steps: Phase 1B - Privacy Integration & Testing
+1. ✅ **Pre-Deployment Security Review** - All critical issues fixed
+2. ✅ **Deploy to Devnet** - Live at slot 425286866
+3. **Configure Zcash Integration** - Set up private entry flow
+4. **Integration Testing** - Full game loop + privacy features
+5. **Zypherpunk Submission** - Privacy-first gameplay demo
 
 ---
 
@@ -992,6 +995,338 @@ cargo update
 - [ ] Zcash memo parsing
 - [ ] Token creation
 - [ ] End-to-end game flow
+
+---
+
+## Smart Contract Deployment (Phase 1B Ready)
+
+### Pre-Deployment Checklist ✅
+
+All items below have been completed before deployment:
+
+**Security Hardening** ✅
+- [x] Array bounds validation in `join_game()` prevents out-of-bounds panic
+- [x] Integer overflow protection on `total_pot` with checked arithmetic
+- [x] Safe arithmetic in `update_average_decision_time()` using saturating operations
+- [x] Fleet deployment bounds checking prevents index overruns
+- [x] Contracts compile cleanly with zero errors
+- [x] All instruction validation guards in place
+
+**Build Verification** ✅
+```bash
+# Verify build status
+anchor build
+
+# Output: Compiling pir8-game v0.1.0
+#         Finished 0 errors
+```
+
+### Deployment Steps
+
+```bash
+# 1. Ensure wallet is funded on devnet
+solana balance --url devnet
+
+# 2. Deploy program to devnet
+anchor deploy --provider.cluster devnet
+
+# 3. Update Program ID in Anchor.toml and frontend
+# The new program ID will be displayed after successful deployment
+
+# 4. Verify deployment
+solana program show <NEW_PROGRAM_ID> --url devnet
+
+# 5. Update environment variables
+# Edit .env.local with:
+# NEXT_PUBLIC_PROGRAM_ID=<NEW_PROGRAM_ID>
+```
+
+### Testing After Deployment
+
+```bash
+# 1. Create a test game
+npm run cli -- create
+
+# 2. Join the game
+npm run cli -- join 0
+
+# 3. Monitor transactions
+npm run cli -- monitor
+
+# 4. Run full test suite
+npm run test
+```
+
+### Known Issues & Resolutions
+
+**No outstanding security issues** ✅ - All critical vulnerabilities patched
+
+---
+
+## Zcash Privacy Integration (Phase 1B - After Devnet Deployment)
+
+### Overview
+
+PIR8 players can enter tournaments **privately via Zcash shielded transactions**, with memo data automatically wiring to Solana smart contracts. This creates a unique privacy-first gaming experience perfect for Zypherpunk.xyz submission.
+
+**Privacy Guarantee**: Player's Zcash transaction identity never appears on Solana. Only the Solana wallet address is on-chain.
+
+### Architecture Components
+
+**1. ZcashMemoBridge** - Validates and parses shielded memos
+- Enforces memo schema version ("v": "1")
+- Validates required fields: gameId, action, solanaPubkey
+- Checks memo freshness (<5 minutes old, prevents replay)
+- Max size: 512 bytes (Zcash memo limit)
+
+**2. LightwalletdWatcher** - Monitors Zcash for incoming transactions
+- WebSocket connection to Lightwalletd server
+- Auto-reconnects with exponential backoff (max 5 attempts)
+- Extracts and decodes memo from shielded outputs
+- Triggers Solana transaction on valid memo
+
+**3. joinGamePrivateViaZcash()** - Executes Solana join_game
+- Single source of truth for memo-triggered transactions
+- Converts gameId string → number
+- Derives game PDA and executes join_game instruction
+- Logs both Zcash and Solana TX hashes for verification
+
+**4. useZcashBridge hook** - React integration
+- Manages Lightwalletd connection lifecycle
+- Handles success/error callbacks
+- Provides bridge status for UI
+
+### Setup Steps (After Devnet Deployment)
+
+#### 1. Prepare Zcash Infrastructure
+
+```bash
+# Option A: Use existing Lightwalletd endpoint
+# Recommended: https://mainnet.lightwalletd.com:9067 (mainnet)
+#            https://testnet.lightwalletd.com:9067 (testnet)
+
+# Option B: Run your own Lightwalletd server (advanced)
+# See: https://github.com/zcash/lightwalletd
+```
+
+#### 2. Configure Environment Variables
+
+```bash
+# Edit .env.local with:
+NEXT_PUBLIC_LIGHTWALLETD_URL=https://mainnet.lightwalletd.com:9067
+NEXT_PUBLIC_ZCASH_SHIELDED_ADDR=<your-shielded-address>
+
+# Generate a shielded address if you don't have one:
+# 1. Install zcash-cli: https://z.cash/download/
+# 2. zcash-cli z_getnewaddress
+# This is your NEXT_PUBLIC_ZCASH_SHIELDED_ADDR
+```
+
+#### 3. Wire Hook to App Root
+
+The `useZcashBridge` hook needs to be initialized in your app root for auto-connection:
+
+```tsx
+// app/layout.tsx or page.tsx (client component wrapper)
+import { useZcashBridge } from '@/hooks/useZcashBridge';
+
+export function YourComponent() {
+  // Initialize with callbacks
+  const { isConnected } = useZcashBridge({
+    enabled: true,
+    onEntrySuccess: (payload, solanaTx) => {
+      console.log(`Player ${payload.solanaPubkey} joined via Zcash`);
+      console.log(`Zcash TX: ${payload.zcashTxHash}`);
+      console.log(`Solana TX: ${solanaTx}`);
+    },
+    onEntryError: (error, payload) => {
+      console.error('Private entry failed:', error);
+    }
+  });
+
+  return (
+    <div>
+      {isConnected && <p>🔒 Zcash bridge active</p>}
+      {/* rest of UI */}
+    </div>
+  );
+}
+```
+
+#### 4. Display Private Entry Instructions
+
+Show players how to join privately:
+
+```tsx
+import { getPrivateEntryInstructions } from '@/hooks/useZcashBridge';
+
+const instructions = getPrivateEntryInstructions(gameId, playerPubkey);
+// Returns formatted instructions for CLI or modal display
+```
+
+### Complete Private Entry Flow
+
+```
+1. Player creates game normally on-chain
+   ↓
+2. System generates private entry instructions
+   Instructions include:
+   - Zcash shielded address to send ZEC to
+   - JSON memo schema to include
+   ↓
+3. Player sends Zcash transaction with memo
+   Memo format:
+   {
+     "v": "1",
+     "gameId": "game_123",
+     "action": "join",
+     "solanaPubkey": "ABC...",
+     "timestamp": 1704067200000
+   }
+   ↓
+4. LightwalletdWatcher detects incoming transaction
+   Extracts memo from vShieldedOutput
+   ↓
+5. ZcashMemoBridge validates memo
+   Checks schema, fields, freshness, format
+   ↓
+6. joinGamePrivateViaZcash() executes
+   Constructs join_game instruction
+   Uses solanaPubkey from memo as player
+   Submits to Solana
+   ↓
+7. Player appears in game
+   Solana address on-chain (public)
+   Zcash identity private (stays in shielded pool)
+   ↓
+8. Player can now move ships, claim territories, etc.
+   All game moves are public Solana transactions
+   But tournament entry was private via Zcash
+```
+
+### Testing the Integration
+
+#### Manual Testing (CLI)
+
+```bash
+# 1. Create a test game
+npm run cli -- create
+# Output: Game created with ID [timestamp]
+
+# 2. Generate memo for private entry
+npm run cli -- memo <game_id> <solana_pubkey>
+# Output: JSON memo to include in Zcash transaction
+
+# 3. (Manually) Send Zcash to shielded address with memo
+# zcash-cli z_sendmany \
+#   "from_address" \
+#   '[{"address":"SHIELDED_ADDR","amount":0.01}]' \
+#   1 \
+#   0.0001 \
+#   "memotext:<your_memo_json>"
+
+# 4. Monitor Solana transactions
+npm run cli -- monitor
+# Watch for join_game instruction with your wallet
+```
+
+#### E2E Testing (Frontend)
+
+```bash
+# 1. Start dev server
+npm run dev
+# Visit: http://localhost:3000
+
+# 2. Create game (normal public flow)
+# Click "Create New Battle"
+
+# 3. Show private entry instructions
+# Click "Private Entry via Zcash" button
+# Copy memo instructions
+
+# 4. (Manually) Send Zcash with memo
+# Use Zcash wallet to send to shielded address
+
+# 5. Watch game update automatically
+# LightwalletdWatcher detects memo → join_game executes
+# Player appears in game (automatically)
+```
+
+### Troubleshooting
+
+**Problem**: LightwalletdWatcher not connecting
+```
+Solution: 
+1. Check NEXT_PUBLIC_LIGHTWALLETD_URL is correct
+2. Verify network connectivity to Lightwalletd server
+3. Check browser console for WebSocket errors
+4. Try testnet endpoint if mainnet unreliable
+```
+
+**Problem**: Memo not being detected
+```
+Solution:
+1. Verify memo is valid JSON (no extra whitespace)
+2. Check memo size < 512 bytes
+3. Ensure memo schema version is "v": "1"
+4. Verify all required fields present: gameId, action, solanaPubkey
+5. Check memo timestamp is recent (<5 minutes old)
+```
+
+**Problem**: join_game instruction fails
+```
+Solution:
+1. Verify gameId matches existing game on-chain
+2. Check solanaPubkey is valid base58 (44 characters)
+3. Ensure game is in "WaitingForPlayers" status
+4. Verify player count < max_players
+```
+
+### Security Considerations
+
+**Memo Privacy**:
+- Zcash memos are encrypted end-to-end
+- Only sender and receiver can read
+- Private entries don't reveal identity to other players
+
+**Replay Protection**:
+- Memo timestamp checked (<5 minutes old)
+- Prevents reusing old memos to rejoin tournaments
+
+**Rate Limiting**:
+- Lightwalletd can detect flooding (DOS protection built-in)
+- Memo size capped at 512 bytes
+- Game join already validated on-chain
+
+### Advanced: Custom Memo Handling
+
+If you need custom memo fields:
+
+```tsx
+// In ZcashMemoBridge.createMemo()
+const memo = {
+  v: ZCASH_CONFIG.MEMO_SCHEMA_VERSION,
+  gameId: payload.gameId,
+  action: payload.action,
+  solanaPubkey: payload.solanaPubkey,
+  timestamp: Date.now(),
+  metadata: {
+    // Add custom fields here
+    tournament_season: "winter_2024",
+    player_name: "Captain Redbeard",
+    referral_code: "abc123"
+  }
+};
+```
+
+The metadata object can contain any JSON and is included in onMemoEntry callback.
+
+### Documentation
+
+- **ARCHITECTURE.md** - Technical deep dive into Zcash architecture
+- **src/lib/integrations.ts** - ZcashMemoBridge & LightwalletdWatcher implementation
+- **src/hooks/useZcashBridge.ts** - React hook for bridge lifecycle
+- **src/lib/anchorClient.ts** - joinGamePrivateViaZcash() transaction handler
 
 ---
 

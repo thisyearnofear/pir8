@@ -1,5 +1,5 @@
 import { AnchorProvider, Program } from '@project-serum/anchor';
-import { ensureConfig, createGameOnChain, joinGameOnChain } from '../../lib/anchorClient';
+import { ensureConfig, createGameOnChain, joinGameOnChain } from '../../lib/server/anchorActions';
 import { GAME_CONFIG } from '../../utils/constants';
 
 export interface GameCommandResult {

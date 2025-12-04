@@ -5,7 +5,7 @@ import path from 'path';
 
 dotenv.config({ path: path.join(process.cwd(), '.env.local') });
 
-import { getAnchorClient } from '../lib/anchorClient';
+import { getAnchorClient } from '../lib/server/anchorActions';
 import { initConfig, createGame, joinGame, handleShieldedMemo, GameCommandResult } from './commands/game';
 import { monitorHelius, HeliusMonitorResult } from './commands/monitoring';
 import { createWinnerToken, TokenCreateResult } from './commands/token';

@@ -13,6 +13,7 @@ import BattleInfoPanel from "@/components/BattleInfoPanel";
 import TurnBanner from "@/components/TurnBanner";
 import OnboardingModal from "@/components/OnboardingModal";
 import ShipActionModal from "@/components/ShipActionModal";
+import { WalletMultiButton } from "@solana/wallet-adapter-react-ui";
 import { useState, useEffect } from "react";
 import { createPlayerFromWallet, createAIPlayer } from "@/lib/playerHelper";
 import { Ship } from "@/types/game";
@@ -267,13 +268,21 @@ export default function Home() {
 
       <div className="min-h-screen bg-gradient-to-b from-slate-900 to-slate-800 text-white">
         <div className="container mx-auto px-4 py-6">
-          <header className="text-center mb-4">
-            <h1 className="text-4xl font-bold text-neon-cyan mb-2">
-              🏴‍☠️ PIR8 BATTLE ARENA
-            </h1>
-            <p className="text-gray-300">
-              Strategic naval warfare on the blockchain
-            </p>
+          <header className="mb-4">
+            <div className="flex items-center justify-between mb-4">
+              <div className="flex-1" />
+              <div className="text-center flex-1">
+                <h1 className="text-4xl font-bold text-neon-cyan mb-2">
+                  🏴‍☠️ PIR8 BATTLE ARENA
+                </h1>
+                <p className="text-gray-300">
+                  Strategic naval warfare on the blockchain
+                </p>
+              </div>
+              <div className="flex-1 flex justify-end">
+                <WalletMultiButton />
+              </div>
+            </div>
           </header>
 
           {/* Turn Banner - shown when game is active */}

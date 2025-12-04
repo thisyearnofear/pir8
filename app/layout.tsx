@@ -4,6 +4,7 @@ import './globals.css'
 import '@/styles/MusicPlayer.css'
 import '@solana/wallet-adapter-react-ui/styles.css'
 import { WalletContextProvider } from '@/components/WalletProvider'
+import { ZcashBridgeInitializer } from '@/components/ZcashBridgeInitializer'
 
 const inter = Inter({ subsets: ['latin'], display: 'swap' })
 
@@ -38,6 +39,7 @@ export default function RootLayout({
       </head>
       <body className={`${inter.className} bg-gradient-to-br from-ocean-blue via-blue-900 to-slate-900 min-h-screen safe-area-inset`}>
         <WalletContextProvider>
+          <ZcashBridgeInitializer />
           <div className="min-h-screen bg-gradient-to-br from-ocean-blue via-blue-900 to-slate-900 text-white">
             {children}
           </div>

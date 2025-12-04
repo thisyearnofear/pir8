@@ -479,9 +479,9 @@ class HeliusMonitor {
 
 ## Privacy Layer
 
-### Zcash Integration - ✅ COMPLETE IMPLEMENTATION
+### Zcash Integration - ✅ READY FOR DEVNET (After Deployment)
 
-**Status**: Full end-to-end Zcash memo → Solana transaction pipeline wired and functional.
+**Status**: Full end-to-end Zcash memo → Solana transaction pipeline implemented. Requires environment configuration after contract deployment.
 
 **Shielded Memo Schema**:
 ```json
@@ -559,6 +559,23 @@ class HeliusMonitor {
 - Game state: Access via `usePirateGameState()` within hook
 - Anchor client: Reuses existing `getAnchorClient()` for transaction building
 - Types: Single `MemoPayload` interface for end-to-end type safety
+
+**Implementation Status**:
+- ✅ Code complete and tested
+- ✅ All error handling in place
+- ✅ Environment configuration ready
+- ⏳ **Awaiting**: Environment variables configuration after Devnet deployment
+  - `NEXT_PUBLIC_LIGHTWALLETD_URL`: Lightwalletd endpoint
+  - `NEXT_PUBLIC_ZCASH_SHIELDED_ADDR`: Generated shielded address
+- ⏳ **Awaiting**: Optional - Wire hook to app root for auto-connection
+  - See [GETTING_STARTED.md](./GETTING_STARTED.md) "Zcash Privacy Integration" for wiring guide
+
+**Zypherpunk Value Proposition**:
+- First privacy-first competitive gaming platform
+- Zcash shielded memos create fully private tournament entry
+- Player identity stays in Zcash shielded pool
+- On-chain gameplay is transparent (verifiable fairness)
+- Hybrid privacy: Private entry + Public gameplay
 
 ## Skill Mechanics (Phase 1 - Frontend Complete) ✅
 

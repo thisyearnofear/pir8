@@ -548,7 +548,13 @@ pub fn deploy_starting_fleets(game: &mut PirateGame) -> Result<()> {
         let player = &mut game.players[i];
         if !player.is_active { continue; }
         
-        let base_idx = i * 2;
+        // Ensure we don't exceed starting positions array
+        let base_idx = i.saturating_mul(2);
+        require!(
+            base_idx + 1 < starting_positions.len(),
+            GameError::GameFull
+        );
+        
         let pos1 = starting_positions[base_idx];
         let pos2 = starting_positions[base_idx + 1];
         
@@ -636,7 +642,7 @@ pub fn mark_coordinate_scanned(scanned: &mut Vec<u8>, x: u8, y: u8) -> Result<()
     Ok(())
 }
 
-/// Update player's running average decision time
+/// Update player's running average decision time using checked arithmetic
 pub fn update_average_decision_time(
     player: &mut PlayerData,
     new_decision_time_ms: u64,
@@ -644,9 +650,16 @@ pub fn update_average_decision_time(
     if player.total_moves == 0 {
         player.average_decision_time_ms = new_decision_time_ms;
     } else {
-        let total_time = player.average_decision_time_ms.wrapping_mul(player.total_moves as u64);
-        player.average_decision_time_ms = 
-            total_time.wrapping_add(new_decision_time_ms) / (player.total_moves as u64 + 1);
+        // Safe multiplication: avg_time * count is bounded by u64
+        let total_time = player.average_decision_time_ms
+            .saturating_mul(player.total_moves as u64);
+        
+        // Safe addition: total_time + new_time, saturate on overflow
+        let combined = total_time.saturating_add(new_decision_time_ms);
+        
+        // Compute new average: combined / (moves + 1)
+        let move_count = (player.total_moves as u64).saturating_add(1);
+        player.average_decision_time_ms = combined / move_count;
     }
     player.total_moves = player.total_moves.saturating_add(1);
 }
