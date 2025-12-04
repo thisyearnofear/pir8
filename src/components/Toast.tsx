@@ -52,20 +52,20 @@ export function Toast({ message, type = 'info', duration = 5000, onClose }: Toas
 
   const getToastStyles = () => {
     const baseStyles = `
-      fixed top-6 left-1/2 transform -translate-x-1/2 z-50 
+      fixed top-6 left-1/2 transform -translate-x-1/2 z-[9999]
       max-w-md w-full mx-4 p-4 rounded-lg backdrop-filter backdrop-blur-lg
-      transition-all duration-300 ease-in-out font-mono
+      transition-all duration-300 ease-in-out font-mono border-2
       ${isLeaving ? 'opacity-0 translate-y-[-20px]' : 'opacity-100 translate-y-0'}
     `;
 
     const typeStyles = {
-      success: 'bg-neon-cyan bg-opacity-10 border-neon-cyan text-neon-cyan',
-      error: 'bg-neon-orange bg-opacity-10 border-neon-orange text-neon-orange',
-      info: 'bg-neon-magenta bg-opacity-10 border-neon-magenta text-neon-magenta',
-      loading: 'bg-neon-cyan bg-opacity-10 border-neon-cyan text-neon-cyan'
+      success: 'bg-neon-cyan bg-opacity-30 border-neon-cyan text-white font-bold shadow-lg shadow-neon-cyan/50',
+      error: 'bg-neon-orange bg-opacity-30 border-neon-orange text-white font-bold shadow-lg shadow-neon-orange/50',
+      info: 'bg-neon-magenta bg-opacity-30 border-neon-magenta text-white font-bold shadow-lg shadow-neon-magenta/50',
+      loading: 'bg-neon-cyan bg-opacity-30 border-neon-cyan text-white font-bold shadow-lg shadow-neon-cyan/50'
     };
 
-    return `${baseStyles} border-2 shadow-lg shadow-neon-cyan shadow-opacity-20 ${typeStyles[type]}`;
+    return `${baseStyles} ${typeStyles[type]}`;
   };
 
   const getIcon = () => {

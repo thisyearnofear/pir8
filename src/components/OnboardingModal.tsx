@@ -73,37 +73,37 @@ export default function OnboardingModal({ isOpen, onDismiss }: OnboardingModalPr
   };
 
   return (
-    <div className="fixed inset-0 bg-black/70 backdrop-blur-sm flex items-center justify-center z-50">
-      <div className="bg-gradient-to-b from-slate-800 to-slate-900 border-2 border-neon-cyan 
-                      rounded-xl p-6 w-full max-w-md mx-4 shadow-2xl shadow-neon-cyan/20">
+    <div className="fixed inset-0 bg-black/80 backdrop-blur-md flex items-center justify-center z-[9999]">
+      <div className="bg-gradient-to-b from-slate-800 via-slate-850 to-slate-900 border-3 border-neon-cyan 
+                      rounded-2xl p-8 w-full max-w-lg mx-4 shadow-2xl shadow-neon-cyan/40">
         {/* Skip button */}
         <button 
           onClick={onDismiss}
-          className="absolute top-4 right-4 text-gray-400 hover:text-white text-sm"
+          className="absolute top-6 right-6 text-gray-500 hover:text-neon-gold transition-colors text-sm font-bold"
         >
-          Skip →
+          ✕ Skip
         </button>
 
         {/* Slide content */}
-        <div className="text-center mb-6">
-          <div className="text-5xl mb-4">{slide.emoji}</div>
-          <h2 className="text-2xl font-bold text-neon-cyan mb-2">{slide.title}</h2>
-          <p className="text-gray-300">{slide.content}</p>
+        <div className="text-center mb-8 pt-4">
+          <div className="text-7xl mb-6 animate-pulse">{slide.emoji}</div>
+          <h2 className="text-3xl font-black text-neon-cyan mb-3">{slide.title}</h2>
+          <p className="text-lg text-gray-300">{slide.content}</p>
         </div>
 
         {/* Details */}
-        <div className="space-y-2 mb-6">
+        <div className="space-y-3 mb-8">
           {slide.details.map((detail, i) => (
-            <div key={i} className="flex items-center gap-3 bg-slate-700/50 rounded-lg px-4 py-2">
+            <div key={i} className="flex items-center gap-4 bg-slate-700/60 hover:bg-slate-700/80 rounded-xl px-5 py-3 transition-all border border-slate-600/50">
               {'time' in detail ? (
                 <>
-                  <span className="font-mono text-gray-400 w-16">{detail.time}</span>
-                  <span className={`font-bold ${detail.color}`}>{detail.bonus}</span>
+                  <span className="font-mono text-gray-400 w-20 text-lg font-bold">{detail.time}</span>
+                  <span className={`font-black text-lg ${detail.color}`}>{detail.bonus}</span>
                 </>
               ) : (
                 <>
-                  <span className="text-xl">{detail.icon}</span>
-                  <span className="text-gray-300">{detail.text}</span>
+                  <span className="text-2xl">{detail.icon}</span>
+                  <span className="text-gray-300 text-base">{detail.text}</span>
                 </>
               )}
             </div>
@@ -111,11 +111,11 @@ export default function OnboardingModal({ isOpen, onDismiss }: OnboardingModalPr
         </div>
 
         {/* Navigation */}
-        <div className="flex items-center justify-between">
+        <div className="flex items-center justify-between gap-4 pt-4 border-t border-slate-700">
           <button
             onClick={handlePrev}
             disabled={currentSlide === 0}
-            className="px-4 py-2 text-gray-400 hover:text-white disabled:opacity-30 disabled:cursor-not-allowed"
+            className="px-5 py-2 text-gray-400 hover:text-neon-cyan hover:bg-slate-700/50 disabled:opacity-30 disabled:cursor-not-allowed rounded-lg transition-all font-semibold"
           >
             ← Back
           </button>
@@ -126,8 +126,8 @@ export default function OnboardingModal({ isOpen, onDismiss }: OnboardingModalPr
               <button
                 key={i}
                 onClick={() => setCurrentSlide(i)}
-                className={`w-2 h-2 rounded-full transition-all ${
-                  i === currentSlide ? 'bg-neon-cyan w-4' : 'bg-gray-600 hover:bg-gray-500'
+                className={`rounded-full transition-all ${
+                  i === currentSlide ? 'bg-neon-cyan w-3 h-3' : 'bg-gray-600 hover:bg-gray-500 w-2 h-2'
                 }`}
               />
             ))}
@@ -135,9 +135,9 @@ export default function OnboardingModal({ isOpen, onDismiss }: OnboardingModalPr
 
           <button
             onClick={handleNext}
-            className="px-4 py-2 bg-neon-cyan text-black font-bold rounded-lg hover:bg-neon-cyan/80 transition-all"
+            className="px-6 py-2 bg-gradient-to-r from-neon-cyan to-neon-blue text-black font-bold rounded-lg hover:shadow-lg hover:shadow-neon-cyan/50 transition-all"
           >
-            {isLastSlide ? 'Start Playing' : 'Next →'}
+            {isLastSlide ? '🚀 Start Playing' : 'Next →'}
           </button>
         </div>
       </div>

@@ -1,4 +1,4 @@
-import type { Metadata } from 'next'
+import type { Metadata, Viewport } from 'next'
 import { Inter } from 'next/font/google'
 import './globals.css'
 import '@/styles/MusicPlayer.css'
@@ -8,11 +8,18 @@ import { ZcashBridgeInitializer } from '@/components/ZcashBridgeInitializer'
 
 const inter = Inter({ subsets: ['latin'], display: 'swap' })
 
+export const viewport: Viewport = {
+  width: 'device-width',
+  initialScale: 1,
+  viewportFit: 'cover',
+  maximumScale: 5,
+  userScalable: true,
+}
+
 export const metadata: Metadata = {
   title: 'PIR8 - Privacy-First Gaming',
   description: 'Fast battles, private moves, viral wins on Solana blockchain',
   keywords: ['pir8', 'solana', 'gaming', 'pirates', 'blockchain', 'privacy', 'web3'],
-  viewport: 'width=device-width, initial-scale=1, viewport-fit=cover, maximum-scale=5, user-scalable=yes',
   icons: {
     icon: 'data:image/svg+xml,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100"><text y="75" font-size="75">🏴‍☠️</text></svg>',
   },

@@ -4,6 +4,7 @@ import { GameState, Player, GameAction, Ship, Coordinate } from '../types/game';
 import { PirateGameEngine } from '../lib/gameLogic';
 import { PirateGameManager } from '../lib/pirateGameEngine';
 import { GameBalance } from '../lib/gameBalance';
+import { createNewGameFlow, joinGameFlow } from '../lib/server/anchorActions';
 
 interface PirateGameStore {
   // Game State
@@ -29,7 +30,7 @@ interface PirateGameStore {
   
   // Actions
   createGame: (players: Player[], entryFee: number) => Promise<boolean>;
-  joinGame: (gameId: string, player: Player) => boolean;
+  joinGame: (gameId: string, player: Player) => Promise<boolean>;
   processAction: (action: GameAction) => Promise<boolean>;
   selectShip: (shipId: string | null) => void;
   moveShip: (shipId: string, toCoordinate: string) => Promise<boolean>;
@@ -77,15 +78,18 @@ export const usePirateGameState = create<PirateGameStore>((set, get) => ({
   scannedCoordinates: new Set(),
   scanChargesRemaining: 3,
 
-  // Create a new pirate game
+  // Create a new pirate game on-chain
   createGame: async (players: Player[], entryFee: number): Promise<boolean> => {
     try {
       set({ isLoading: true, error: null });
       
-      // Generate unique game ID
-      const gameId = `pirate_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
+      // Create game on-chain via server action
+      console.log('🚀 Creating game on Solana blockchain...');
+      const gameIdNumber = await createNewGameFlow();
+      console.log('✅ Game created on-chain with ID:', gameIdNumber);
       
-      // Create new pirate game
+      // Create corresponding local game state with on-chain game ID
+      const gameId = `pirate_${gameIdNumber}`;
       const gameState = PirateGameManager.createNewGame(players, gameId);
       
       set({ 
@@ -105,9 +109,27 @@ export const usePirateGameState = create<PirateGameStore>((set, get) => ({
     }
   },
 
-  // Join an existing pirate game
-  joinGame: (gameId: string, player: Player): boolean => {
+  // Join an existing pirate game on-chain
+  joinGame: async (gameId: string, player: Player): Promise<boolean> => {
     try {
+      // Parse game ID - expects format like "pirate_123" or just "123"
+      let gameIdNumber: number;
+      if (gameId.startsWith('pirate_')) {
+        gameIdNumber = parseInt(gameId.split('_')[1], 10);
+      } else {
+        gameIdNumber = parseInt(gameId, 10);
+      }
+      
+      if (isNaN(gameIdNumber)) {
+        throw new Error(`Invalid game ID format: ${gameId}`);
+      }
+      
+      // Join game on-chain via server action
+      console.log('🚀 Joining game on Solana blockchain...', gameIdNumber);
+      await joinGameFlow(gameIdNumber);
+      console.log('✅ Successfully joined game on-chain');
+      
+      // Update local game state
       const { gameState } = get();
       
       if (gameState && gameState.gameId === gameId) {

@@ -97,6 +97,18 @@ export async function joinGameOnChain(program: any, provider: AnchorProvider, ga
     .rpc();
 }
 
+export async function createNewGameFlow(): Promise<number> {
+  const { program, provider } = await getAnchorClient();
+  await ensureConfig(program, provider);
+  const gameId = await createGameOnChain(program, provider);
+  return gameId;
+}
+
+export async function joinGameFlow(gameId: number): Promise<void> {
+  const { program, provider } = await getAnchorClient();
+  await joinGameOnChain(program, provider, gameId);
+}
+
 export async function joinGamePrivateViaZcash(memoPayload: {
   gameId: string;
   solanaPubkey: string;

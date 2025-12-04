@@ -13,10 +13,17 @@ import BattleInfoPanel from "@/components/BattleInfoPanel";
 import TurnBanner from "@/components/TurnBanner";
 import OnboardingModal from "@/components/OnboardingModal";
 import ShipActionModal from "@/components/ShipActionModal";
-import { WalletMultiButton } from "@solana/wallet-adapter-react-ui";
 import { useState, useEffect } from "react";
+import dynamic from "next/dynamic";
 import { createPlayerFromWallet, createAIPlayer } from "@/lib/playerHelper";
 import { Ship } from "@/types/game";
+
+const WalletButtonWrapper = dynamic(
+  () => import("@solana/wallet-adapter-react-ui").then(mod => ({
+    default: () => <mod.WalletMultiButton />
+  })),
+  { ssr: false, loading: () => <div className="px-4 py-2 text-gray-400">Loading...</div> }
+);
 
 export default function Home() {
   const { publicKey } = useWallet();
@@ -107,7 +114,7 @@ export default function Home() {
     try {
       setIsCreatingGame(true);
       const ai = createAIPlayer(gameState.gameId);
-      const success = joinGame(gameState.gameId, ai);
+      const success = await joinGame(gameState.gameId, ai);
       
       if (success) {
         handleGameEvent("🧭 AI pirate joined the battle!");
@@ -130,7 +137,7 @@ export default function Home() {
     
     try {
       const player = createPlayerFromWallet(publicKey);
-      const success = joinGame(gameIdInput, player);
+      const success = await joinGame(gameIdInput, player);
       
       if (success) {
         handleGameEvent(`🏴‍☠️ Joined battle ${gameIdInput}!`);
@@ -250,13 +257,8 @@ export default function Home() {
 
   return (
     <ErrorBoundary>
-      <ErrorToast error={error} onClose={clearError} />
-      <SuccessToast message={showMessage} onClose={() => setMessage(null)} />
-      
-      {/* Onboarding Modal */}
+      {/* Modals - rendered outside main content for proper overlay */}
       <OnboardingModal isOpen={showOnboarding} onDismiss={dismissOnboarding} />
-      
-      {/* Ship Action Modal */}
       {shipActionModalShip && (
         <ShipActionModal
           ship={shipActionModalShip}
@@ -265,6 +267,9 @@ export default function Home() {
           onAction={(action) => handleShipAction(shipActionModalShip.id, action)}
         />
       )}
+
+      <ErrorToast error={error} onClose={clearError} />
+      <SuccessToast message={showMessage} onClose={() => setMessage(null)} />
 
       <div className="min-h-screen bg-gradient-to-b from-slate-900 to-slate-800 text-white">
         <div className="container mx-auto px-4 py-6">
@@ -280,7 +285,7 @@ export default function Home() {
                 </p>
               </div>
               <div className="flex-1 flex justify-end">
-                <WalletMultiButton />
+                <WalletButtonWrapper />
               </div>
             </div>
           </header>
