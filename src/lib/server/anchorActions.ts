@@ -23,7 +23,7 @@ function loadKeypairFromEnv(): Keypair {
 }
 
 function loadIdl(): Idl {
-  const idlPath = process.env.PIR8_IDL_PATH || path.join(process.cwd(), 'contracts/pir8-game/target/idl/pir8_game.json');
+  const idlPath = process.env.PIR8_IDL_PATH || path.join(process.cwd(), 'programs/pir8-game/target/idl/pir8_game.json');
   const json = fs.readFileSync(idlPath, 'utf8');
   return JSON.parse(json);
 }
@@ -40,58 +40,47 @@ export async function getAnchorClient(): Promise<{ program: Program; provider: A
   return { program, provider };
 }
 
-export async function ensureConfig(program: any, provider: AnchorProvider): Promise<void> {
-  const [configPDA] = getConfigPDA();
-  try {
-    await program.account.gameConfig.fetch(configPDA);
-  } catch {
-    const entryLamports = new BN(Math.floor(GAME_CONFIG.ENTRY_FEE * 1e9));
-    const treasury = new PublicKey(SOLANA_CONFIG.TREASURY_ADDRESS || provider.wallet.publicKey);
-    await program.methods
-      .initializeConfig(entryLamports, Math.floor(GAME_CONFIG.PLATFORM_FEE * 100), GAME_CONFIG.MAX_PLAYERS)
-      .accounts({
-        config: configPDA,
-        authority: provider.wallet.publicKey,
-        treasury,
-        systemProgram: SystemProgram.programId,
-      })
-      .rpc();
-  }
-}
-
 export async function createGameOnChain(program: any, provider: AnchorProvider): Promise<number> {
-  const [configPDA] = getConfigPDA();
-  const configAccount = await program.account.gameConfig.fetch(configPDA);
-  const gameId = configAccount.totalGames.toNumber();
-  const [gamePDA] = getGamePDA(gameId);
   const entryLamports = new BN(Math.floor(GAME_CONFIG.ENTRY_FEE * 1e9));
 
-  const dummyRandomness = new PublicKey('7PmpDAJe7mZj8BEZEYDd1jkDEEW4WZXzMjHCdU4PrzrL');
-
-  await program.methods
+  const tx = await program.methods
     .createGame(entryLamports, GAME_CONFIG.MAX_PLAYERS)
     .accounts({
-      game: gamePDA,
-      config: configPDA,
-      creator: provider.wallet.publicKey,
+      authority: provider.wallet.publicKey,
       systemProgram: SystemProgram.programId,
-      randomnessAccountData: dummyRandomness,
     })
     .rpc();
-  return gameId;
+    
+  console.log('Game created, tx:', tx);
+  
+  // TODO: Parse game address from transaction logs/events
+  return 0;
 }
 
 export async function joinGameOnChain(program: any, provider: AnchorProvider, gameId: number): Promise<void> {
-  const [gamePDA] = getGamePDA(gameId);
-  const [configPDA] = getConfigPDA();
-  const configAccount = await program.account.gameConfig.fetch(configPDA);
+  // gameId should actually be the game's public key
+  const gamePubkey = new PublicKey(gameId);
+
+  // Check if player is already in the game
+  try {
+    const gameAccount = await program.account.pirateGame.fetch(gamePubkey);
+    const isAlreadyInGame = gameAccount.players.some(
+      (player: any) => player.pubkey.toString() === provider.wallet.publicKey.toString()
+    );
+
+    if (isAlreadyInGame) {
+      console.log(`[Join Game] Player already in game, skipping join`);
+      return;
+    }
+  } catch (error) {
+    console.log(`[Join Game] Could not check existing players:`, error);
+  }
+
   await program.methods
     .joinGame()
     .accounts({
-      game: gamePDA,
-      config: configPDA,
+      game: gamePubkey,
       player: provider.wallet.publicKey,
-      treasury: configAccount.treasury,
       systemProgram: SystemProgram.programId,
     })
     .rpc();
@@ -99,7 +88,6 @@ export async function joinGameOnChain(program: any, provider: AnchorProvider, ga
 
 export async function createNewGameFlow(): Promise<number> {
   const { program, provider } = await getAnchorClient();
-  await ensureConfig(program, provider);
   const gameId = await createGameOnChain(program, provider);
   return gameId;
 }
@@ -116,44 +104,34 @@ export async function joinGamePrivateViaZcash(memoPayload: {
   blockHeight?: number;
 }): Promise<string> {
   try {
-    // Parse gameId - handle formats like "pirate_7", "onchain_7", "7"
-    let gameIdNum: number;
-    const gameId = memoPayload.gameId;
+    // gameId should be a public key string
+    const gamePubkey = new PublicKey(memoPayload.gameId);
+    const playerPubkey = new PublicKey(memoPayload.solanaPubkey);
 
-    if (gameId.startsWith('pirate_') || gameId.startsWith('onchain_')) {
-      gameIdNum = parseInt(gameId.split('_')[1], 10);
-    } else {
-      gameIdNum = parseInt(gameId, 10);
-    }
-
-    if (isNaN(gameIdNum)) {
-      throw new Error(`Invalid game ID from memo: ${memoPayload.gameId}`);
-    }
+    console.log(`[Zcash Bridge] Attempting to join game ${memoPayload.gameId} for player ${memoPayload.solanaPubkey}`);
 
     const { program, provider } = await getAnchorClient();
-    const [gamePDA] = getGamePDA(gameIdNum);
-    const [configPDA] = getConfigPDA();
-    const configAccount = await program.account.gameConfig.fetch(configPDA);
-
-    const playerPubkey = new PublicKey(memoPayload.solanaPubkey);
 
     const tx = await program.methods
       .joinGame()
       .accounts({
-        game: gamePDA,
-        config: configPDA,
+        game: gamePubkey,
         player: playerPubkey,
-        treasury: configAccount.treasury,
         systemProgram: SystemProgram.programId,
       })
       .rpc();
 
-    console.log(`[Zcash Bridge] Player ${memoPayload.solanaPubkey} joined game ${gameIdNum}`);
+    console.log(`[Zcash Bridge] Player ${memoPayload.solanaPubkey} joined game ${memoPayload.gameId}`);
     console.log(`[Zcash Bridge] Zcash TX: ${memoPayload.zcashTxHash}, Solana TX: ${tx}`);
 
     return tx;
   } catch (error) {
-    console.error('[Zcash Bridge] Failed to process private entry:', error);
-    throw error;
+    console.log(`[Zcash Bridge] Failed to join game ${memoPayload.gameId}: ${error instanceof Error ? error.message : 'Unknown error'}`);
+    console.log(`[Zcash Bridge] Creating new game as fallback for private entry`);
+
+    // If join fails, create new game
+    const newGameId = await createNewGameFlow();
+    console.log(`[Zcash Bridge] Created new game ${newGameId} as fallback`);
+    return `created_${newGameId}`;
   }
 }

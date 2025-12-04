@@ -62,6 +62,12 @@ export function useZcashBridge(options: UseZcashBridgeOptions = {}) {
    * Monitors Zcash for incoming shielded transactions to our address
    */
   useEffect(() => {
+    // Disable Zcash bridge in development to prevent connection spam
+    if (process.env.NODE_ENV === 'development') {
+      console.log('[Zcash Bridge] Disabled in development mode');
+      return;
+    }
+
     if (!enabled || !ZCASH_CONFIG.SHIELDED_ADDRESS) {
       console.log('[Zcash Bridge] Disabled or shielded address not configured');
       return;
@@ -85,7 +91,7 @@ export function useZcashBridge(options: UseZcashBridgeOptions = {}) {
         console.log('[Zcash Bridge] Graceful fallback - bridge unavailable');
         // Don't throw error to prevent app disruption
       }
-    }, 2000); // Wait 2 seconds after app startup
+    }, 5000); // Wait 5 seconds after app startup
 
     // Cleanup on unmount
     return () => {

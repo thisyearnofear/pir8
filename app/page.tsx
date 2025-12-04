@@ -14,6 +14,9 @@ import BattleInfoPanel from "@/components/BattleInfoPanel";
 import TurnBanner from "@/components/TurnBanner";
 import OnboardingModal from "@/components/OnboardingModal";
 import ShipActionModal from "@/components/ShipActionModal";
+import { ManualSyncButton } from "@/components/ManualSyncButton";
+import { SyncTestPanel } from "@/components/SyncTestPanel";
+import { GameSyncStatus } from "@/components/GameSyncRecovery";
 import { useState, useEffect } from "react";
 import dynamic from "next/dynamic";
 import { createPlayerFromWallet, createAIPlayer } from "@/lib/playerHelper";
@@ -274,6 +277,17 @@ export default function Home() {
 
       <ErrorToast error={error} onClose={clearError} />
       <SuccessToast message={showMessage} onClose={() => setMessage(null)} />
+
+      {/* Manual sync button for testing blockchain synchronization */}
+      <ManualSyncButton />
+      
+      {/* Additional debug components in development mode */}
+      {process.env.NODE_ENV !== 'production' && (
+        <>
+          <SyncTestPanel />
+          <GameSyncStatus />
+        </>
+      )}
 
       <div className="min-h-screen bg-gradient-to-b from-slate-900 to-slate-800 text-white">
         <div className="container mx-auto px-4 py-6">

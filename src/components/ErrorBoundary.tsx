@@ -23,13 +23,11 @@ export class ErrorBoundary extends React.Component<ErrorBoundaryProps, ErrorBoun
   }
 
   componentDidCatch(error: Error, errorInfo: React.ErrorInfo) {
-    // Handle stack overflow specially
+    // Handle stack overflow specially - immediate recovery
     if (error.message.includes('Maximum call stack size exceeded')) {
-      console.warn('PIR8 Stack Overflow detected - attempting recovery');
-      // Force a page refresh after a short delay
-      setTimeout(() => {
-        window.location.reload();
-      }, 2000);
+      console.warn('PIR8 Stack Overflow detected - reloading page immediately');
+      // Force immediate reload without delay
+      window.location.reload();
       return;
     }
     

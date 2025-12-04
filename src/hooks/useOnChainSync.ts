@@ -68,9 +68,9 @@ export const useOnChainSync = (gameId?: string) => {
         }
     }, []);
 
-    // Sync local state with on-chain data
-    const syncWithOnChain = useCallback(async () => {
-        // Prevent concurrent sync operations
+    // Sync local state with on-chain data - defensive version to prevent stack overflow
+    const syncWithOnChain = useCallback(() => {
+        // Prevent concurrent sync operations and stack overflow
         if (isSyncingRef.current) {
             console.log('Sync already in progress, skipping');
             return;
@@ -78,70 +78,86 @@ export const useOnChainSync = (gameId?: string) => {
 
         if (!gameId) return;
 
-        try {
-            isSyncingRef.current = true;
-            const gameIdNumber = parseGameId(gameId);
-            if (!gameIdNumber) return;
+        // Use setTimeout to break recursion and prevent stack overflow
+        setTimeout(async () => {
+            try {
+                isSyncingRef.current = true;
+                const gameIdNumber = parseGameId(gameId);
+                if (!gameIdNumber) return;
 
-            const onChainData = await fetchOnChainGameState(gameIdNumber);
-            if (!onChainData) return;
+                const onChainData = await fetchOnChainGameState(gameIdNumber);
+                if (!onChainData) return;
 
-            // Get current game state safely
-            const currentState = gameState;
-            if (!currentState) return;
-
-            // Compare player counts to detect changes
-            const localPlayerCount = currentState.players.length;
-            const onChainPlayerCount = onChainData.players.length;
-
-            // Only update if there are changes or it's been a while
-            const now = Date.now();
-            const shouldSync = onChainPlayerCount !== localPlayerCount ||
-                (now - lastSyncRef.current) > 30000; // Sync every 30 seconds
-
-            if (shouldSync) {
-                console.log(`🔄 Syncing game ${gameId}: ${localPlayerCount} -> ${onChainPlayerCount} players`);
-
-                // Update local game state directly
-                const updatedGameState: GameState = {
-                    ...currentState,
-                    players: onChainData.players,
-                    gameStatus: onChainData.gameStatus as any,
-                    currentPlayerIndex: onChainData.currentPlayerIndex,
-                    turnNumber: currentState.turnNumber || 1,
-                    currentPhase: currentState.currentPhase || 'deployment',
-                    gameMap: currentState.gameMap,
-                    pendingActions: currentState.pendingActions || [],
-                    eventLog: currentState.eventLog || [],
-                };
-
-                // Update state safely and trigger React re-render
-                setGameState(updatedGameState);
-                lastSyncRef.current = now;
-
-                // Force a small delay to ensure state update is processed
-                setTimeout(() => {
-                    console.log('✅ Sync completed:', {
-                        gameId,
-                        playerCount: updatedGameState.players.length,
-                        status: updatedGameState.gameStatus
-                    });
-                }, 100);
-
-                // Show sync message if players were added
-                if (onChainPlayerCount > localPlayerCount) {
-                    const newPlayers = onChainData.players.slice(localPlayerCount);
-                    setMessage(`👥 ${newPlayers.length} new player(s) joined via blockchain!`);
-                    setTimeout(() => setMessage(null), 4000);
+                // Get current game state safely with try-catch
+                let currentState;
+                try {
+                    currentState = usePirateGameState.getState().gameState;
+                    if (!currentState) return;
+                } catch (error) {
+                    console.log('Could not get current game state:', error);
+                    return;
                 }
+
+                // Compare player counts to detect changes
+                const localPlayerCount = currentState.players.length;
+                const onChainPlayerCount = onChainData.players.length;
+
+                // Only update if there are changes or it's been a while
+                const now = Date.now();
+                const shouldSync = onChainPlayerCount !== localPlayerCount ||
+                    (now - lastSyncRef.current) > 30000; // Sync every 30 seconds
+
+                if (shouldSync) {
+                    console.log(`🔄 Syncing game ${gameId}: ${localPlayerCount} -> ${onChainPlayerCount} players`);
+
+                    // Create updated state safely
+                    try {
+                        const updatedGameState: GameState = {
+                            ...currentState,
+                            players: onChainData.players,
+                            gameStatus: onChainData.gameStatus as any,
+                            currentPlayerIndex: onChainData.currentPlayerIndex,
+                            turnNumber: currentState.turnNumber || 1,
+                            currentPhase: currentState.currentPhase || 'deployment',
+                            gameMap: currentState.gameMap,
+                            pendingActions: currentState.pendingActions || [],
+                            eventLog: currentState.eventLog || [],
+                        };
+
+                        // Update state in next tick to prevent recursion
+                        setTimeout(() => {
+                            try {
+                                usePirateGameState.getState().setGameState(updatedGameState);
+                                lastSyncRef.current = now;
+
+                                console.log('✅ Sync completed:', {
+                                    gameId,
+                                    playerCount: updatedGameState.players.length,
+                                    status: updatedGameState.gameStatus
+                                });
+                            } catch (error) {
+                                console.error('Failed to update game state:', error);
+                            }
+                        }, 10);
+
+                        // Show sync message if players were added
+                        if (onChainPlayerCount > localPlayerCount) {
+                            const newPlayers = onChainData.players.slice(localPlayerCount);
+                            setMessage(`👥 ${newPlayers.length} new player(s) joined via blockchain!`);
+                            setTimeout(() => setMessage(null), 4000);
+                        }
+                    } catch (error) {
+                        console.error('Failed to create updated game state:', error);
+                    }
+                }
+            } catch (error) {
+                console.error('Sync error:', error);
+                setError(error instanceof Error ? error.message : 'Sync failed');
+            } finally {
+                isSyncingRef.current = false;
             }
-        } catch (error) {
-            console.error('Sync error:', error);
-            setError(error instanceof Error ? error.message : 'Sync failed');
-        } finally {
-            isSyncingRef.current = false;
-        }
-    }, [gameId, gameState, parseGameId, fetchOnChainGameState, setMessage, setError, setGameState]);
+        }, 100); // Delay to break potential recursion
+    }, [gameId, parseGameId, fetchOnChainGameState, setMessage, setError]);
 
     // Handle real-time game events from Helius
     const handleGameEvent = useCallback((event: GameEvent) => {
@@ -181,13 +197,12 @@ export const useOnChainSync = (gameId?: string) => {
     // Set up periodic sync as backup
     useEffect(() => {
         if (gameId) {
-            // Sync immediately
-            const doInitialSync = () => {
+            // Use setTimeout to break potential circular dependencies
+            const initialSyncTimeout = setTimeout(() => {
                 if (!isSyncingRef.current) {
                     syncWithOnChain();
                 }
-            };
-            doInitialSync();
+            }, 1000);
 
             // Set up periodic sync every 30 seconds
             syncIntervalRef.current = setInterval(() => {
@@ -197,6 +212,7 @@ export const useOnChainSync = (gameId?: string) => {
             }, 30000);
 
             return () => {
+                clearTimeout(initialSyncTimeout);
                 if (syncIntervalRef.current) {
                     clearInterval(syncIntervalRef.current);
                     syncIntervalRef.current = null;

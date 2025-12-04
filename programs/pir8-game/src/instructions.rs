@@ -17,6 +17,21 @@ pub mod pir8_game {
         require!(max_players >= MIN_PLAYERS, GameError::NotEnoughPlayers);
         require!(max_players <= MAX_PLAYERS, GameError::GameFull);
 
+        // Transfer entry fee from creator to game account
+        let transfer_ix = anchor_lang::solana_program::system_instruction::transfer(
+            &ctx.accounts.authority.key(),
+            &game.key(),
+            entry_fee,
+        );
+        anchor_lang::solana_program::program::invoke(
+            &transfer_ix,
+            &[
+                ctx.accounts.authority.to_account_info(),
+                game.to_account_info(),
+                ctx.accounts.system_program.to_account_info(),
+            ],
+        )?;
+
         game.game_id = clock.unix_timestamp as u64;
         game.authority = ctx.accounts.authority.key();
         game.status = GameStatus::WaitingForPlayers;
@@ -80,6 +95,21 @@ pub mod pir8_game {
             player_index < MAX_PLAYERS as usize,
             GameError::GameFull
         );
+
+        // Transfer entry fee from player to game account
+        let transfer_ix = anchor_lang::solana_program::system_instruction::transfer(
+            &ctx.accounts.player.key(),
+            &game.key(),
+            game.entry_fee,
+        );
+        anchor_lang::solana_program::program::invoke(
+            &transfer_ix,
+            &[
+                ctx.accounts.player.to_account_info(),
+                game.to_account_info(),
+                ctx.accounts.system_program.to_account_info(),
+            ],
+        )?;
 
         // Add player to game
         game.players[player_index] = PlayerData {

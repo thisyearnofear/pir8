@@ -9,7 +9,7 @@ import { BN } from '@project-serum/anchor';
 import { PublicKey } from '@solana/web3.js';
 
 // Program ID - Update this when you deploy
-export const PROGRAM_ID = new PublicKey(process.env.NEXT_PUBLIC_PROGRAM_ID || '5etQW394NUCprU1ikrbDysFeCGGRYY9usChGpaox9oiK');
+export const PROGRAM_ID = new PublicKey(process.env.NEXT_PUBLIC_PROGRAM_ID || 'DXEKVy2KgSzAaadLYwMstxx5rto3sczC7Yg1znmYgxr4');
 
 // Program IDL type definitions
 export interface PIR8Program {

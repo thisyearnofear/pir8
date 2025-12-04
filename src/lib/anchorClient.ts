@@ -21,7 +21,7 @@ function loadKeypairFromEnv(): Keypair {
 }
 
 function loadIdl(): Idl {
-  const idlPath = process.env.PIR8_IDL_PATH || path.join(process.cwd(), 'contracts/pir8-game/target/idl/pir8_game.json');
+  const idlPath = process.env.PIR8_IDL_PATH || path.join(process.cwd(), 'programs/pir8-game/target/idl/pir8_game.json');
   const json = fs.readFileSync(idlPath, 'utf8');
   return JSON.parse(json);
 }
@@ -38,59 +38,40 @@ export async function getAnchorClient(): Promise<{ program: Program, provider: A
   return { program, provider };
 }
 
-export async function ensureConfig(program: any, provider: AnchorProvider) {
-  const [configPDA] = getConfigPDA();
-  try {
-    await program.account.gameConfig.fetch(configPDA);
-  } catch {
-    const entryLamports = new BN(Math.floor(GAME_CONFIG.ENTRY_FEE * 1e9));
-    const treasury = new PublicKey(SOLANA_CONFIG.TREASURY_ADDRESS || provider.wallet.publicKey);
-    await program.methods
-      .initializeConfig(entryLamports, Math.floor(GAME_CONFIG.PLATFORM_FEE * 100), GAME_CONFIG.MAX_PLAYERS)
-      .accounts({
-        config: configPDA,
-        authority: provider.wallet.publicKey,
-        treasury,
-        systemProgram: SystemProgram.programId,
-      })
-      .rpc();
-  }
-}
-
 export async function createGameOnChain(program: any, provider: AnchorProvider) {
-  const [configPDA] = getConfigPDA();
-  const configAccount = await program.account.gameConfig.fetch(configPDA);
-  const gameId = configAccount.totalGames.toNumber();
-  const [gamePDA] = getGamePDA(gameId);
   const entryLamports = new BN(Math.floor(GAME_CONFIG.ENTRY_FEE * 1e9));
   
-  // Use a dummy randomness account (program will use timestamp-based seed as fallback)
-  const dummyRandomness = new PublicKey('7PmpDAJe7mZj8BEZEYDd1jkDEEW4WZXzMjHCdU4PrzrL');
+  // Game PDA is derived from authority + timestamp in the program
+  // We don't need to calculate it here, Anchor will handle it
   
-  await program.methods
+  const tx = await program.methods
     .createGame(entryLamports, GAME_CONFIG.MAX_PLAYERS)
     .accounts({
-      game: gamePDA,
-      config: configPDA,
-      creator: provider.wallet.publicKey,
+      authority: provider.wallet.publicKey,
       systemProgram: SystemProgram.programId,
-      randomnessAccountData: dummyRandomness,
     })
     .rpc();
-  return gameId;
+    
+  console.log('Game created, tx:', tx);
+  
+  // Parse game address from transaction logs
+  // For now, return a placeholder - you'll need to fetch the game account
+  return 0; // TODO: Parse game_id from event logs
 }
 
 export async function joinGameOnChain(program: any, provider: AnchorProvider, gameId: number) {
-  const [gamePDA] = getGamePDA(gameId);
-  const [configPDA] = getConfigPDA();
-  const configAccount = await program.account.gameConfig.fetch(configPDA);
+  // Need to find the game PDA - this requires knowing how it was created
+  // The program uses: seeds = [GAME_SEED, authority.key(), timestamp]
+  // This is problematic - we need the game's public key directly
+  
+  // For now, assume gameId is actually the game's public key as a string
+  const gamePubkey = new PublicKey(gameId);
+  
   await program.methods
     .joinGame()
     .accounts({
-      game: gamePDA,
-      config: configPDA,
+      game: gamePubkey,
       player: provider.wallet.publicKey,
-      treasury: configAccount.treasury,
       systemProgram: SystemProgram.programId,
     })
     .rpc();

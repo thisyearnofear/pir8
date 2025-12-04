@@ -376,13 +376,12 @@ pub enum GameError {
 // ============================================================================
 
 #[derive(Accounts)]
+#[instruction(entry_fee: u64, max_players: u8)]
 pub struct CreateGame<'info> {
     #[account(
         init,
         payer = authority,
         space = PirateGame::SPACE,
-        seeds = [GAME_SEED, authority.key().as_ref(), &Clock::get()?.unix_timestamp.to_le_bytes()],
-        bump
     )]
     pub game: Account<'info, PirateGame>,
     
@@ -401,7 +400,10 @@ pub struct JoinGame<'info> {
     )]
     pub game: Account<'info, PirateGame>,
     
+    #[account(mut)]
     pub player: Signer<'info>,
+    
+    pub system_program: Program<'info, System>,
 }
 
 #[derive(Accounts)]

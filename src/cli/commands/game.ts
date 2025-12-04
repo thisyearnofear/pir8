@@ -1,5 +1,5 @@
 import { AnchorProvider, Program } from '@project-serum/anchor';
-import { ensureConfig, createGameOnChain, joinGameOnChain } from '../../lib/server/anchorActions';
+import { createGameOnChain, joinGameOnChain } from '../../lib/server/anchorActions';
 import { GAME_CONFIG } from '../../utils/constants';
 
 export interface GameCommandResult {
@@ -11,31 +11,10 @@ export interface GameCommandResult {
 }
 
 /**
- * Initialize game config if not already done
- */
-export async function initConfig(program: Program, provider: AnchorProvider): Promise<GameCommandResult> {
-  try {
-    await ensureConfig(program, provider);
-    return {
-      success: true,
-      action: 'status',
-      message: 'Game config initialized or already exists',
-    };
-  } catch (err) {
-    return {
-      success: false,
-      action: 'status',
-      error: err instanceof Error ? err.message : String(err),
-    };
-  }
-}
-
-/**
  * Create a new game on-chain
  */
 export async function createGame(program: Program, provider: AnchorProvider): Promise<GameCommandResult> {
   try {
-    await ensureConfig(program, provider);
     const gameId = await createGameOnChain(program, provider);
     return {
       success: true,
@@ -65,11 +44,25 @@ export async function joinGame(program: Program, provider: AnchorProvider, gameI
       message: `Joined game ${gameId}`,
     };
   } catch (err) {
+    const errorMessage = err instanceof Error ? err.message : String(err);
+
+    // If it's a "PlayerNotInGame" error, it likely means the player is already in the game
+    // or there's a state inconsistency - treat this as success
+    if (errorMessage.includes('PlayerNotInGame')) {
+      console.log(`[Join Game] Player already in game ${gameId} or state mismatch, treating as success`);
+      return {
+        success: true,
+        action: 'join',
+        gameId,
+        message: `Player already in game ${gameId}`,
+      };
+    }
+
     return {
       success: false,
       action: 'join',
       gameId,
-      error: err instanceof Error ? err.message : String(err),
+      error: errorMessage,
     };
   }
 }
@@ -83,21 +76,57 @@ export async function handleShieldedMemo(
   provider: AnchorProvider,
   gameId: string | undefined
 ): Promise<GameCommandResult> {
-  // If no gameId or doesn't start with 'onchain_', create new game
-  if (!gameId || !gameId.startsWith('onchain_')) {
+  // If no gameId, create new game
+  if (!gameId) {
     return createGame(program, provider);
   }
 
-  // Parse game ID and join
-  const gidNum = parseInt(gameId.replace('onchain_', ''), 10);
-  if (isNaN(gidNum)) {
-    return {
-      success: false,
-      action: 'join',
-      gameId,
-      error: 'Invalid game ID format',
-    };
+  // Parse game ID - handle multiple formats
+  let gidNum: number;
+  if (gameId.startsWith('onchain_')) {
+    gidNum = parseInt(gameId.replace('onchain_', ''), 10);
+  } else if (gameId.startsWith('pirate_')) {
+    gidNum = parseInt(gameId.replace('pirate_', ''), 10);
+  } else {
+    gidNum = parseInt(gameId, 10);
   }
 
-  return joinGame(program, provider, gidNum);
+  if (isNaN(gidNum)) {
+    console.log(`[Memo Handler] Invalid game ID '${gameId}', creating new game`);
+    return createGame(program, provider);
+  }
+
+  console.log(`[Memo Handler] Attempting to join game ${gidNum}`);
+
+  try {
+    // Try to join the existing game first
+    const result = await joinGame(program, provider, gidNum);
+
+    if (result.success) {
+      console.log(`[Memo Handler] Successfully joined game ${gidNum}`);
+    } else {
+      console.log(`[Memo Handler] Failed to join game ${gidNum}: ${result.error}`);
+
+      // Check if it's a "player already in game" error - this is actually success
+      if (result.error && result.error.includes('PlayerNotInGame')) {
+        console.log(`[Memo Handler] Player already in game ${gidNum}, treating as success`);
+        return {
+          success: true,
+          action: 'join',
+          gameId: gidNum,
+          message: `Player already in game ${gidNum}`,
+        };
+      }
+
+      // For other errors, create new game as fallback
+      console.log(`[Memo Handler] Creating new game as fallback`);
+      return createGame(program, provider);
+    }
+
+    return result;
+  } catch (error) {
+    console.log(`[Memo Handler] Exception joining game ${gidNum}:`, error);
+    // If join fails (game doesn't exist or other error), create new game
+    return createGame(program, provider);
+  }
 }

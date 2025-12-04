@@ -6,4 +6,4 @@ pub mod instructions;
 pub use pirate_lib::*;
 pub use instructions::*;
 
-declare_id!("5etQW394NUCprU1ikrbDysFeCGGRYY9usChGpaox9oiK");
+declare_id!("DXEKVy2KgSzAaadLYwMstxx5rto3sczC7Yg1znmYgxr4");

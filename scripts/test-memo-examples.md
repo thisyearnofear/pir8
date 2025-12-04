@@ -17,12 +17,12 @@ npx tsx tests/zcash-memo-watcher.ts --memo '{"v":"1","gameId":"pirate_7","action
 
 ### Correct way (using single quotes to avoid shell escaping issues):
 ```bash
-npm run cli -- memo --memo '{"v":"1","gameId":"pirate_7","action":"join","solanaPubkey":"4FzyJeDxqRn2SKwVLdh2gi9MCvrSvgkCvHDZnNyBpd5v","timestamp":1764855013000}'
+npm run cli -- memo --memo '{"v":"1","gameId":"pirate_15","action":"join","solanaPubkey":"BpHqwwKRqhNRzyZHT5U4un9vfyivcbvcgrmFRfboGJsK","timestamp":1764855013000}'
 ```
 
 ### With dynamic timestamp:
 ```bash
-npm run cli -- memo --memo "{\"v\":\"1\",\"gameId\":\"pirate_7\",\"action\":\"join\",\"solanaPubkey\":\"4FzyJeDxqRn2SKwVLdh2gi9MCvrSvgkCvHDZnNyBpd5v\",\"timestamp\":$(date +%s)000}"
+npm run cli -- memo --memo "{\"v\":\"1\",\"gameId\":\"pirate_16\",\"action\":\"join\",\"solanaPubkey\":\"4FzyJeDxqRn2SKwVLdh2gi9MCvrSvgkCvHDZnNyBpd5v\",\"timestamp\":$(date +%s)000}"
 ```
 
 ## What Was Fixed
