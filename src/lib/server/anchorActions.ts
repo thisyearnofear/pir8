@@ -8,7 +8,7 @@ import { GAME_CONFIG, SOLANA_CONFIG } from '@/utils/constants';
 import { PROGRAM_ID, getConfigPDA, getGamePDA } from '../anchor';
 
 class NodeWallet {
-  constructor(readonly payer: Keypair) {}
+  constructor(readonly payer: Keypair) { }
   get publicKey() { return this.payer.publicKey; }
   async signTransaction(tx: any) { tx.sign(this.payer); return tx; }
   async signAllTransactions(txs: any[]) { txs.forEach(t => t.sign(this.payer)); return txs; }
@@ -65,9 +65,9 @@ export async function createGameOnChain(program: any, provider: AnchorProvider):
   const gameId = configAccount.totalGames.toNumber();
   const [gamePDA] = getGamePDA(gameId);
   const entryLamports = new BN(Math.floor(GAME_CONFIG.ENTRY_FEE * 1e9));
-  
+
   const dummyRandomness = new PublicKey('7PmpDAJe7mZj8BEZEYDd1jkDEEW4WZXzMjHCdU4PrzrL');
-  
+
   await program.methods
     .createGame(entryLamports, GAME_CONFIG.MAX_PLAYERS)
     .accounts({
@@ -116,7 +116,16 @@ export async function joinGamePrivateViaZcash(memoPayload: {
   blockHeight?: number;
 }): Promise<string> {
   try {
-    const gameIdNum = parseInt(memoPayload.gameId, 10);
+    // Parse gameId - handle formats like "pirate_7", "onchain_7", "7"
+    let gameIdNum: number;
+    const gameId = memoPayload.gameId;
+
+    if (gameId.startsWith('pirate_') || gameId.startsWith('onchain_')) {
+      gameIdNum = parseInt(gameId.split('_')[1], 10);
+    } else {
+      gameIdNum = parseInt(gameId, 10);
+    }
+
     if (isNaN(gameIdNum)) {
       throw new Error(`Invalid game ID from memo: ${memoPayload.gameId}`);
     }
@@ -127,7 +136,7 @@ export async function joinGamePrivateViaZcash(memoPayload: {
     const configAccount = await program.account.gameConfig.fetch(configPDA);
 
     const playerPubkey = new PublicKey(memoPayload.solanaPubkey);
-    
+
     const tx = await program.methods
       .joinGame()
       .accounts({

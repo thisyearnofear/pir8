@@ -4,6 +4,7 @@ import { useWallet } from "@solana/wallet-adapter-react";
 import { usePirateGameState } from "@/hooks/usePirateGameState";
 import { useErrorHandler } from "@/hooks/useErrorHandler";
 import { useShowOnboarding } from "@/hooks/useShowOnboarding";
+import { useOnChainSync } from "@/hooks/useOnChainSync";
 import { ErrorBoundary } from "@/components/ErrorBoundary";
 import { ErrorToast, SuccessToast } from "@/components/Toast";
 import PirateMap from "@/components/PirateMap";
@@ -63,6 +64,9 @@ export default function Home() {
   const [shipActionModalShip, setShipActionModalShip] = useState<Ship | null>(null);
   const { handleGameError } = useErrorHandler();
   const { shown: showOnboarding, dismiss: dismissOnboarding } = useShowOnboarding();
+
+  // Set up on-chain synchronization for real-time updates
+  const { heliusConnected, lastSync } = useOnChainSync(gameState?.gameId);
 
   // Get current player name for TurnBanner
   const getCurrentPlayerName = () => {

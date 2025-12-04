@@ -63,37 +63,39 @@ export function useZcashBridge(options: UseZcashBridgeOptions = {}) {
    */
   useEffect(() => {
     if (!enabled || !ZCASH_CONFIG.SHIELDED_ADDRESS) {
-      console.warn('[Zcash Bridge] Disabled or shielded address not configured');
+      console.log('[Zcash Bridge] Disabled or shielded address not configured');
       return;
     }
 
-    try {
-      // Create watcher if not exists
-      if (!watcherRef.current) {
-        watcherRef.current = new LightwalletdWatcher(
-          handleMemoEntry,
-          ZCASH_CONFIG.SHIELDED_ADDRESS
-        );
-      }
-
-      // Connect to Lightwalletd
-      watcherRef.current.connect();
-      console.log('[Zcash Bridge] Connected to Lightwalletd');
-
-      // Cleanup on unmount
-      return () => {
-        if (watcherRef.current) {
-          watcherRef.current.disconnect();
-          watcherRef.current = null;
-          console.log('[Zcash Bridge] Disconnected');
+    // Defer connection to avoid blocking app startup
+    const connectTimeout = setTimeout(() => {
+      try {
+        // Create watcher if not exists
+        if (!watcherRef.current) {
+          watcherRef.current = new LightwalletdWatcher(
+            handleMemoEntry,
+            ZCASH_CONFIG.SHIELDED_ADDRESS
+          );
         }
-      };
-    } catch (error) {
-      console.error('[Zcash Bridge] Initialization failed:', error);
-      onEntryError?.(
-        error instanceof Error ? error : new Error('Bridge init failed')
-      );
-    }
+
+        // Use graceful connection method
+        watcherRef.current.connectWithFallback();
+        console.log('[Zcash Bridge] Connection attempt initiated');
+      } catch (error) {
+        console.log('[Zcash Bridge] Graceful fallback - bridge unavailable');
+        // Don't throw error to prevent app disruption
+      }
+    }, 2000); // Wait 2 seconds after app startup
+
+    // Cleanup on unmount
+    return () => {
+      clearTimeout(connectTimeout);
+      if (watcherRef.current) {
+        watcherRef.current.disconnect();
+        watcherRef.current = null;
+        console.log('[Zcash Bridge] Disconnected');
+      }
+    };
   }, [enabled, handleMemoEntry, onEntryError]);
 
   /**

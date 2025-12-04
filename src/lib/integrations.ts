@@ -45,7 +45,7 @@ export class HeliusMonitor {
               this.ws.send(
                 JSON.stringify({ jsonrpc: '2.0', id: Math.random(), method: 'ping' })
               );
-            } catch {}
+            } catch { }
           }
         }, 60000);
       }
@@ -55,7 +55,7 @@ export class HeliusMonitor {
     this.ws.onmessage = (event) => {
       try {
         const data = JSON.parse(event.data);
-        
+
         // Filter and process PIR8 game events
         if (this.isPir8GameTransaction(data)) {
           this.processGameTransaction(data);
@@ -113,7 +113,7 @@ export class HeliusMonitor {
 
     try {
       this.ws.send(JSON.stringify(subscribeMessage));
-    } catch {}
+    } catch { }
     this.log('debug', 'Subscribed to PIR8 game transactions');
   }
 
@@ -126,8 +126,8 @@ export class HeliusMonitor {
       const accountKeys = transaction?.message?.accountKeys;
       if (!accountKeys) return false;
 
-      return accountKeys.some((key: any) => 
-        key?.pubkey === SOLANA_CONFIG.PROGRAM_ID || 
+      return accountKeys.some((key: any) =>
+        key?.pubkey === SOLANA_CONFIG.PROGRAM_ID ||
         key === SOLANA_CONFIG.PROGRAM_ID
       );
     } catch {
@@ -139,7 +139,7 @@ export class HeliusMonitor {
     try {
       const transaction = data.result?.value;
       const logs = transaction?.meta?.logMessages || [];
-      
+
       // Parse PIR8 game events from logs
       for (const log of logs) {
         if (log.includes('GameCreated')) {
@@ -264,7 +264,7 @@ export class PumpFunCreator {
     try {
       // Implementation based on your test file
       const response = await fetch(`${this.PUMPPORTAL_API}/token/${mintAddress}`);
-      
+
       if (!response.ok) {
         throw new Error(`Token info fetch failed: ${response.statusText}`);
       }
@@ -283,7 +283,7 @@ export class PumpFunCreator {
       'https://via.placeholder.com/400x400/8B4513/FFD700?text=⚔️',
       'https://via.placeholder.com/400x400/DC143C/FFFFFF?text=💰',
     ];
-    
+
     const hash = symbol.split('').reduce((acc, char) => acc + char.charCodeAt(0), 0);
     return pirateImages[hash % pirateImages.length];
   }
@@ -291,7 +291,7 @@ export class PumpFunCreator {
   static generateWinnerTokenMetadata(playerName: string, score: number) {
     const symbols = ['CAPT', 'PLND', 'TRSR', 'SKULL', 'SHIP'];
     const randomSymbol = symbols[Math.floor(Math.random() * symbols.length)];
-    
+
     return {
       name: `Captain ${playerName}`,
       symbol: `${randomSymbol}${Date.now().toString().slice(-3)}`,
@@ -303,7 +303,7 @@ export class PumpFunCreator {
 
 // Game Integration Helpers
 export function setupGameIntegrations(gameId: string) {
-  const heliusMonitor = new HeliusMonitor(() => {});
+  const heliusMonitor = new HeliusMonitor(() => { });
 
   heliusMonitor.connect();
 
@@ -331,7 +331,7 @@ export class ZcashMemoBridge {
   private static readonly MEMO_MAX_SIZE = 512; // Zcash memo limit in bytes
   private static readonly MEMO_STALE_THRESHOLD = 5 * 60 * 1000; // 5 minutes
 
-  constructor(private onEntry: (payload: MemoPayload) => void) {}
+  constructor(private onEntry: (payload: MemoPayload) => void) { }
 
   /**
    * Parse Zcash shielded memo containing tournament entry data
@@ -494,7 +494,7 @@ export class LightwalletdWatcher {
   private maxReconnectAttempts = 5;
   private pingInterval: any = null;
   private memoBridge: ZcashMemoBridge;
-  private logLevel: 'silent' | 'error' | 'warn' | 'info' | 'debug' = 
+  private logLevel: 'silent' | 'error' | 'warn' | 'info' | 'debug' =
     (process.env.NEXT_PUBLIC_LOG_LEVEL as any) || 'error';
 
   constructor(
@@ -503,10 +503,22 @@ export class LightwalletdWatcher {
   ) {
     // Initialize bridge with callback to Solana transaction handler
     this.memoBridge = new ZcashMemoBridge((payload) => {
-      this.onMemoEntry(payload).catch(err => 
+      this.onMemoEntry(payload).catch(err =>
         this.log('error', `Failed to process memo entry: ${err.message}`)
       );
     });
+  }
+
+  /**
+   * Graceful connection with fallback handling
+   */
+  connectWithFallback() {
+    try {
+      this.connect();
+    } catch (error) {
+      this.log('error', `Lightwalletd connection failed: ${error instanceof Error ? error.message : 'Unknown error'}`);
+      this.log('info', 'Zcash bridge will be unavailable - continuing without privacy features');
+    }
   }
 
   /**
@@ -593,7 +605,7 @@ export class LightwalletdWatcher {
 
       // Extract shielded outputs with memos
       const outputs = tx.vShieldedOutput || [];
-      
+
       for (const output of outputs) {
         if (output.memo) {
           // Decode memo (typically hex-encoded)
@@ -633,12 +645,12 @@ export class LightwalletdWatcher {
    */
   private setupPingInterval() {
     if (this.pingInterval) clearInterval(this.pingInterval);
-    
+
     this.pingInterval = setInterval(() => {
       if (this.ws && this.ws.readyState === WebSocket.OPEN) {
         try {
           this.ws.send(JSON.stringify({ jsonrpc: '2.0', id: Date.now(), method: 'ping' }));
-        } catch {}
+        } catch { }
       }
     }, 60000); // Ping every 60 seconds
   }
@@ -693,13 +705,13 @@ export class LightwalletdWatcher {
 
 export async function createWinnerToken(winner: { name: string; score: number }) {
   const tokenMetadata = PumpFunCreator.generateWinnerTokenMetadata(winner.name, winner.score);
-  
+
   try {
     const result = await PumpFunCreator.createToken({
       ...tokenMetadata,
       initialBuySOL: 0.01, // Small initial purchase
     });
-    
+
     return {
       success: true,
       tokenAddress: result.mint,

@@ -598,6 +598,8 @@ npm run build
 npm start
 ```
 
+**Real-Time Sync**: Frontend automatically syncs with on-chain game state via `useOnChainSync` hook. When players join via CLI, UI updates immediately - no manual refresh needed.
+
 #### Code Quality
 ```bash
 # Type checking

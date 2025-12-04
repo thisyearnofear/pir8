@@ -445,37 +445,41 @@ interface GameState {
 
 ### Real-Time Updates
 
-**Helius WebSocket Integration**:
+**Helius WebSocket Integration + On-Chain Sync**:
+
+PIR8 uses a dual approach for real-time synchronization:
+
+**1. Helius WebSocket Events** (`useHeliusMonitor.ts`):
 ```typescript
-class HeliusMonitor {
-  // Subscribe to program transactions
-  connect() {
-    const wsUrl = HELIUS_RPC.replace('https', 'wss');
-    this.ws = new WebSocket(wsUrl);
-    
-    // Filter for PIR8 program
-    this.ws.send({
-      method: 'transactionSubscribe',
-      params: [{
-        accountInclude: [PROGRAM_ID],
-        commitment: 'finalized'
-      }]
-    });
-  }
-  
-  // Parse game events from logs
-  processGameTransaction(data) {
-    const logs = data.meta?.logMessages || [];
-    
-    if (logs.includes('GameCreated')) {
-      this.handleGameCreated(log);
-    } else if (logs.includes('MoveMade')) {
-      this.handleMoveMade(log);
+// Real-time transaction monitoring
+const { isConnected } = useHeliusMonitor({
+  gameId: 'pirate_5',
+  onGameEvent: (event) => {
+    switch (event.type) {
+      case 'playerJoined': 
+        setMessage('⚡ Player joined via blockchain!');
+        break;
+      case 'gameStarted':
+        setMessage('🚀 Battle commenced!');
+        break;
     }
-    // ... other events
   }
-}
+});
 ```
+
+**2. On-Chain State Synchronization** (`useOnChainSync.ts`):
+```typescript
+// Automatic UI sync with blockchain state
+const { heliusConnected, lastSync } = useOnChainSync(gameState?.gameId);
+
+// Features:
+// ✅ Real-time player count updates when CLI joins games
+// ✅ 30-second polling backup for missed events  
+// ✅ Visual feedback for sync operations
+// ✅ Smart change detection (only updates when needed)
+```
+
+**Sync Flow**: CLI joins → On-chain update → Helius WebSocket → UI state sync → Player count updates
 
 ## Privacy Layer
 

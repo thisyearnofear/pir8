@@ -121,16 +121,27 @@ async function main() {
       case 'memo': {
         if (!args.memo) {
           console.error('Error: memo command requires --memo flag');
+          console.log('Example: pir8-cli memo --memo \'{"v":"1","gameId":"pirate_7","action":"join","solanaPubkey":"...","timestamp":1234567890000}\'');
           process.exit(1);
         }
         try {
-          const { program, provider } = await getAnchorClient();
+          console.log('Parsing memo data:', args.memo);
           const memoData = JSON.parse(args.memo);
+
+          // Validate required fields
+          if (!memoData.gameId || !memoData.solanaPubkey) {
+            console.error('Error: memo JSON must contain "gameId" and "solanaPubkey" fields');
+            process.exit(1);
+          }
+
+          const { program, provider } = await getAnchorClient();
           result = await handleShieldedMemo(program, provider, memoData.gameId);
           // Add Zcash-specific fields to result
           result = { ...result, ...memoData };
         } catch (e) {
           console.error('Error: invalid memo JSON');
+          console.error('Details:', e instanceof Error ? e.message : String(e));
+          console.log('Please ensure your JSON is properly escaped and formatted');
           process.exit(1);
         }
         break;
