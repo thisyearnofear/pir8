@@ -1,6 +1,6 @@
 // Pirate Game Constants
 export const GAME_CONFIG = {
-  MAP_SIZE: 10,
+  MAP_SIZE: 5, // Reduced from 10 to fit in Solana stack
   MAX_PLAYERS: 4,
   MIN_PLAYERS: 2,
   TURN_TIMEOUT: 45000, // 45 seconds for strategic decisions

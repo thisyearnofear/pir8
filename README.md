@@ -13,7 +13,7 @@ A multiplayer pirate naval combat game built on Solana with Zcash shielded trans
 
 ## 🎮 What is PIR8?
 
-PIR8 is a **skill-based strategic naval warfare game** where players command pirate fleets across a 10x10 battle map to claim territories, control resources, and eliminate enemy ships. Unlike traditional Web3 games, PIR8 emphasizes **70% strategic skill, 30% tactical luck**, with multiple layers of depth:
+PIR8 is a **skill-based strategic naval warfare game** where players command pirate fleets across a 5x5 battle map to claim territories, control resources, and eliminate enemy ships. Unlike traditional Web3 games, PIR8 emphasizes **70% strategic skill, 30% tactical luck**, with multiple layers of depth:
 
 - **Fleet Management**: Build and position ships strategically (Sloop, Frigate, Galleon, Flagship)
 - **Territorial Control**: Claim ports, islands, and treasure sites for passive resource generation
@@ -235,57 +235,54 @@ npm run test
 
 ## 🎯 Current Status
 
-### Phase 1: Foundation (45% Complete - Zypherpunk Ready Track)
+### Phase 1B: MVP Deployed & Working (December 2024)
 
-**✅ Completed - Smart Contracts:**
-- 10x10 strategic map generation with territory types
-- Fleet system with 4 ship types and distinct stats
-- Core instructions: create_game, join_game, move_ship, attack_ship, claim_territory
-- Weather system framework with deterministic generation
-- Wallet integration (Phantom, Solflare, Backpack)
-- Helius WebSocket monitoring integration
-- **Security Hardening** ✅:
-  - Array bounds validation in `join_game()` prevents panic on 4th player
-  - Integer overflow protection on `total_pot` with checked arithmetic
-  - Safe arithmetic in `update_average_decision_time()` using saturating operations
-  - Fleet deployment bounds checking in `deploy_starting_fleets()`
+**✅ Deployed to Solana Devnet:**
+- **Program ID**: `54S7Pw6cDQKWqW4JkdTGb3vEQqtnHsZ3SvB3LB1fST2V`
+- **Architecture**: Single global game (simplified for iterative testing)
+- **Working Instructions**: `initializeGame`, `joinGame`, `startGame`, `resetGame`
+- **Frontend**: Auto-initialization, join flow, error handling
+- **Account Size**: 10KB (optimized for Solana realloc limits)
 
-**✅ Completed - Privacy Infrastructure:**
-- ZcashMemoBridge: Memo parsing, validation, freshness checks ✅
-- LightwalletdWatcher: Shielded transaction monitoring ✅
-- joinGamePrivateViaZcash: Memo → Solana transaction execution ✅
-- useZcashBridge hook: React lifecycle management ✅
-- Complete memo schema validation and error handling ✅
+**✅ What Works Right Now:**
+- Connect wallet and join the global game
+- Auto-initialization on first use
+- Multiple players can join
+- Ready for gameplay implementation
 
-**✅ Ready for Deployment:**
-- Contracts compile cleanly with zero errors
-- All 6 security issues fixed and verified
-- Privacy infrastructure tested and ready for environment configuration
-- Ready for Solana Devnet deployment + Zypherpunk submission
+**🚧 In Progress (Next 7 Days):**
+1. **Core Game Instructions** (Days 1-3)
+   - Implement `move_ship`, `attack_ship`, `claim_territory`
+   - Test full gameplay loop with 2+ players
+   
+2. **State Synchronization** (Days 4-5)
+   - Fetch on-chain game state
+   - Display map, ships, and territories
+   - Real-time updates via Helius
 
-**🔴 Next Steps - After Deployment:**
-- **Devnet Deployment**: Deploy fixed contracts to Solana Devnet
-  - Timeline: Immediate (1 day)
+3. **Victory & Reset** (Days 6-7)
+   - Implement victory conditions
+   - Polish reset flow for testing
+   - Complete MVP game loop
 
-- **Zcash Integration**: Wire memo parser to contract
-  - Players enter tournaments via Zcash shielded memos
-  - Creates privacy-first narrative for Zypherpunk
-  - Timeline: 2 days after deployment
+**📋 Architecture Decisions:**
+- **Single Global Game**: Simplified from multi-game to single game for MVP
+  - Easier testing and iteration
+  - Can expand to multiple games later
+  - Reset capability for development
+  
+- **10KB Account Size**: Optimized for Solana's realloc limits
+  - Supports 4 players with ships and territories
+  - 5x5 map (25 cells)
+  - Can expand with account versioning if needed
 
-**🟡 Partial/Not Yet Implemented:**
-- Resource generation system (framework exists, logic incomplete)
-- Ship building/purchasing mechanics
-- Territory resource collection
-- Weather effects on combat/movement
-- Game completion conditions and winner determination
-
-**🔒 Privacy Features - Ready After Devnet:**
-- **Zcash Integration** - Architecture complete, requires environment setup:
-  - ZcashMemoBridge: ✅ Implemented (validates memos, handles schema)
-  - LightwalletdWatcher: ✅ Implemented (monitors shielded transactions)
-  - joinGamePrivateViaZcash: ✅ Implemented (memo → Solana transaction)
-  - useZcashBridge hook: ✅ Implemented (React lifecycle management)
-  - See [docs/GETTING_STARTED.md](./docs/GETTING_STARTED.md) "Zcash Privacy Integration" for setup after deployment
+**🔮 Future Enhancements (Post-MVP):**
+- Multiple concurrent games
+- Zcash privacy integration
+- Tournament system
+- Resource generation and ship building
+- Weather effects
+- Fog of war
 
 ### Immediate Next Steps (Zypherpunk Timeline)
 

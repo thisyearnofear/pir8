@@ -1,33 +1,52 @@
 # Development Roadmap
 
-## ✅ CURRENT STATUS: Phase 1 (Foundation) - 95% Complete
+## ✅ CURRENT STATUS: Phase 1B - MVP Deployed & Working
 
-**ZYPHERPUNK HACKATHON FOCUS** - Privacy-first fleet warfare built on Solana + Zcash
+**SIMPLIFIED ARCHITECTURE** - Single global game for iterative testing
 
-**Latest**: Smart contracts compiled. Skill mechanics UI complete. Zcash memo → Solana bridge fully wired and tested. Ready for devnet deployment and final hackathon submission.
+**Latest**: Successfully deployed to Solana Devnet! Program ID: `54S7Pw6cDQKWqW4JkdTGb3vEQqtnHsZ3SvB3LB1fST2V`
+- ✅ Global game architecture implemented
+- ✅ Auto-initialization on first use
+- ✅ Players can join successfully
+- ✅ Ready for gameplay implementation
 
-### ✅ Completed
-- 10x10 strategic map generation with biome distribution
-- Fleet system with 4 ship types (Sloop, Frigate, Galleon, Flagship)
-- Core game instructions: create_game, join_game, move_ship, attack_ship, claim_territory
-- Weather system framework (Calm, TradeWinds, Storm, Fog)
-- Wallet integration (Phantom, Solflare, Backpack)
-- Helius WebSocket transaction monitoring
-- **Skill Mechanics UI** (Scanner, timing system, speed bonuses, charge tracking)
-- **Real-time skill metrics** (decision timer, speed bonuses, scanned coordinates display)
-- **Zcash Privacy Bridge** (Lightwalletd watcher, memo parser, Solana integration)
-- **Private tournament entry** (Zcash memo → Solana join_game pipeline)
+### ✅ Completed (Phase 1B - December 2024)
 
-### 🔴 CURRENT BLOCKERS - MUST FIX FIRST
-1. **Devnet Deployment** ← NEXT PRIORITY
-   - Contracts compiled and ready
-   - Need to run: `anchor deploy --provider.cluster devnet`
-   - Timeline: 1 day (immediate)
-   
-2. **Zcash Bridge Integration**
-   - Memo parser exists but not connected to join_game instruction
-   - Goal: Players enter tournaments via Zcash shielded memos
-   - Timeline: 2 days after deployment
+**Smart Contract (Deployed to Devnet)**
+- ✅ Single global game architecture (PDA: `["global_game"]`)
+- ✅ Program ID: `54S7Pw6cDQKWqW4JkdTGb3vEQqtnHsZ3SvB3LB1fST2V`
+- ✅ Instructions: `initializeGame`, `joinGame`, `startGame`, `resetGame`
+- ✅ Account size optimized (10KB - Solana realloc limit)
+- ✅ Auto-initialization on first join
+- ✅ Anchor 0.29 compatibility
+
+**Frontend**
+- ✅ Wallet integration (Phantom, Solflare, Backpack)
+- ✅ Global game join flow working
+- ✅ Error handling with auto-retry
+- ✅ Skill Mechanics UI (Scanner, timing system, speed bonuses)
+- ✅ Real-time skill metrics display
+- ✅ Phase 1A UX components (TurnBanner, OnboardingModal, etc.)
+
+### 🎯 IMMEDIATE NEXT STEPS
+
+**Priority 1: Complete Core Game Loop (Days 1-3)**
+1. Implement `move_ship` instruction
+2. Implement `attack_ship` instruction  
+3. Implement `claim_territory` instruction
+4. Test full gameplay with 2+ players
+5. Verify `resetGame` for iterative testing
+
+**Priority 2: Game State Sync (Days 4-5)**
+6. Fetch on-chain game state
+7. Sync local state with blockchain
+8. Real-time updates via Helius
+9. Display game map and ships
+
+**Priority 3: Victory & Reset (Days 6-7)**
+10. Implement victory conditions
+11. Complete game flow
+12. Polish UX for testing
 
 ### 🚧 In Progress (Priority Order for Zypherpunk)
 

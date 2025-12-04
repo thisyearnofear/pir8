@@ -6,7 +6,7 @@ import path from 'path';
 dotenv.config({ path: path.join(process.cwd(), '.env.local') });
 
 import { getAnchorClient } from '../lib/server/anchorActions';
-import { initConfig, createGame, joinGame, handleShieldedMemo, GameCommandResult } from './commands/game';
+import { createGame, joinGame, handleShieldedMemo, GameCommandResult } from './commands/game';
 import { monitorHelius, HeliusMonitorResult } from './commands/monitoring';
 import { createWinnerToken, TokenCreateResult } from './commands/token';
 import { SOLANA_CONFIG } from '../utils/constants';
@@ -89,12 +89,6 @@ async function main() {
     let result: GameCommandResult | HeliusMonitorResult | TokenCreateResult;
 
     switch (args.command) {
-      case 'init': {
-        const { program, provider } = await getAnchorClient();
-        result = await initConfig(program, provider);
-        break;
-      }
-
       case 'create': {
         const { program, provider } = await getAnchorClient();
         result = await createGame(program, provider);
@@ -105,16 +99,15 @@ async function main() {
         const { program, provider } = await getAnchorClient();
         const gameId = args.gameId || args.positional[0];
         if (!gameId) {
-          console.error('Error: join requires a game ID');
-          console.log('Usage: pir8-cli join <gameId>');
+          console.error('Error: join requires a game ID (PublicKey address)');
+          console.log('Usage: pir8-cli join <gameAddress>');
           process.exit(1);
         }
-        const gidNum = parseInt(gameId.replace('onchain_', ''), 10);
-        if (isNaN(gidNum)) {
-          console.error('Error: invalid game ID format');
-          process.exit(1);
-        }
-        result = await joinGame(program, provider, gidNum);
+        // Handle onchain_ prefix or raw address
+        const gameAddress = gameId.startsWith('onchain_') 
+          ? gameId.replace('onchain_', '') 
+          : gameId;
+        result = await joinGame(program, provider, gameAddress);
         break;
       }
 

@@ -1,27 +1,27 @@
 # Getting Started with PIR8
 
-## ✅ CURRENT STATUS: Phase 1B - Devnet Deployment ✅ COMPLETE
+## ✅ CURRENT STATUS: Phase 1B - MVP Deployed & Working
 
-### Current Build
-- **Smart Contracts**: ✅ Deployed to Devnet (`5etQW394NUCprU1ikrbDysFeCGGRYY9usChGpaox9oiK`)
-- **Core Gameplay**: ✅ Full game loop implemented (create → join → move → claim)
-- **Skill Mechanics**: ✅ Timer + scanning system in UI
-- **Zcash Privacy**: ✅ Lightwalletd watcher + memo bridge wired
-- **UI/UX Rating**: 🟢 **9/10** - All Phase 1A components implemented
+### Current Build (December 2024)
+- **Smart Contracts**: ✅ Deployed to Devnet (`54S7Pw6cDQKWqW4JkdTGb3vEQqtnHsZ3SvB3LB1fST2V`)
+- **Architecture**: ✅ Single global game (simplified for testing)
+- **Core Instructions**: ✅ `initializeGame`, `joinGame`, `startGame`, `resetGame`
+- **Frontend**: ✅ Join flow working, auto-initialization
+- **Next**: Implement move/attack/claim instructions
 
-### ✅ Completed UI Components
-1. **TurnBanner** - "YOUR TURN ⏱️" indicator with timer + speed bonus ✅
-2. **OnboardingModal** - 4-slide tutorial for new players ✅
-3. **ShipActionModal** - Unified action menu (Move/Attack/Claim/Collect) ✅
-4. **TerritoryTooltip** - Hover tooltips for territory effects ✅
-5. **useShowOnboarding** - localStorage-based first visit detection ✅
+### ✅ What's Working Now
+1. **Global Game Join** - Players can join the single global game ✅
+2. **Auto-Initialization** - Game initializes automatically on first join ✅
+3. **Wallet Integration** - Phantom, Solflare, Backpack working ✅
+4. **UI Components** - TurnBanner, OnboardingModal, ShipActionModal ready ✅
+5. **Error Handling** - Graceful fallbacks and retry logic ✅
 
-### Next Steps: Phase 1B - Privacy Integration & Testing
-1. ✅ **Pre-Deployment Security Review** - All critical issues fixed
-2. ✅ **Deploy to Devnet** - Live at slot 425286866
-3. **Configure Zcash Integration** - Set up private entry flow
-4. **Integration Testing** - Full game loop + privacy features
-5. **Zypherpunk Submission** - Privacy-first gameplay demo
+### 🚧 What's Next (Priority Order)
+1. **Implement Game Instructions** - move_ship, attack_ship, claim_territory
+2. **State Synchronization** - Fetch and display on-chain game state
+3. **Start Game Flow** - Enable `startGame` when 2+ players joined
+4. **Reset for Testing** - Use `resetGame` for iterative development
+5. **Victory Conditions** - Complete the game loop
 
 ---
 
@@ -1360,3 +1360,71 @@ The metadata object can contain any JSON and is included in onMemoEntry callback
 4. **Start contributing** - Pick an issue or feature to implement
 
 **Welcome aboard, pirate! 🏴‍☠️**
+
+
+---
+
+## 🚀 Current Deployment Info (December 2024)
+
+### Live on Solana Devnet
+
+**Program ID**: `54S7Pw6cDQKWqW4JkdTGb3vEQqtnHsZ3SvB3LB1fST2V`
+
+**Global Game PDA**: Derived from `["global_game"]` seed
+
+**How to Use:**
+1. Connect your Solana wallet (Phantom, Solflare, or Backpack)
+2. Click "⚔️ Create New Battle" 
+3. Game auto-initializes on first use
+4. Additional players can join the same global game
+5. When 2+ players joined, call `startGame()`
+
+### Testing the Game
+
+**Join the Game:**
+```bash
+# The frontend handles this automatically
+# Just click "Create New Battle" in the UI
+```
+
+**Reset for Testing (Authority Only):**
+```typescript
+// Call from frontend or CLI
+await resetGlobalGame();
+```
+
+**Check Game State:**
+```typescript
+const gameState = await fetchGlobalGameState();
+console.log('Players:', gameState.playerCount);
+console.log('Status:', gameState.status);
+```
+
+### Development Workflow
+
+1. **Make changes** to Rust program
+2. **Rebuild**: `cargo build-sbf --manifest-path programs/pir8-game/Cargo.toml`
+3. **Redeploy**: `solana program deploy programs/pir8-game/target/deploy/pir8_game.so --program-id programs/pir8-game/target/deploy/pir8_game-keypair.json`
+4. **Test** in frontend
+5. **Reset** game state if needed
+
+### Next Implementation Steps
+
+**Week 1: Core Gameplay**
+- [ ] Implement `move_ship` instruction in Rust
+- [ ] Implement `attack_ship` instruction
+- [ ] Implement `claim_territory` instruction
+- [ ] Wire to frontend
+- [ ] Test with 2+ players
+
+**Week 2: State & Victory**
+- [ ] Fetch and display on-chain state
+- [ ] Implement victory conditions
+- [ ] Complete game loop
+- [ ] Polish UX
+
+---
+
+**Built with ⚡ Solana, 🦀 Rust, and ⚛️ React**
+
+*Single global game architecture for rapid iteration and testing.*

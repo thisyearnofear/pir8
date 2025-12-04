@@ -1,4 +1,4 @@
-import { AnchorProvider, Program } from '@project-serum/anchor';
+import { AnchorProvider, Program } from '@coral-xyz/anchor';
 import { createGameOnChain, joinGameOnChain } from '../../lib/server/anchorActions';
 import { GAME_CONFIG } from '../../utils/constants';
 
@@ -15,12 +15,12 @@ export interface GameCommandResult {
  */
 export async function createGame(program: Program, provider: AnchorProvider): Promise<GameCommandResult> {
   try {
-    const gameId = await createGameOnChain(program, provider);
+    const { gameId } = await createGameOnChain(program, provider);
     return {
       success: true,
       action: 'create',
       gameId,
-      message: `Game created with ID: ${gameId}`,
+      message: `Game created with address: ${gameId}`,
     };
   } catch (err) {
     return {
@@ -34,7 +34,7 @@ export async function createGame(program: Program, provider: AnchorProvider): Pr
 /**
  * Join an existing game on-chain
  */
-export async function joinGame(program: Program, provider: AnchorProvider, gameId: number): Promise<GameCommandResult> {
+export async function joinGame(program: Program, provider: AnchorProvider, gameId: string): Promise<GameCommandResult> {
   try {
     await joinGameOnChain(program, provider, gameId);
     return {
@@ -69,7 +69,7 @@ export async function joinGame(program: Program, provider: AnchorProvider, gameI
 
 /**
  * Handle Zcash memo: create new game or join existing
- * Returns onchain_<id> format for consistency with watcher
+ * Returns onchain_<address> format for consistency with watcher
  */
 export async function handleShieldedMemo(
   program: Program,
@@ -81,40 +81,35 @@ export async function handleShieldedMemo(
     return createGame(program, provider);
   }
 
-  // Parse game ID - handle multiple formats
-  let gidNum: number;
+  // Parse game address - handle multiple formats
+  let gameAddress: string;
   if (gameId.startsWith('onchain_')) {
-    gidNum = parseInt(gameId.replace('onchain_', ''), 10);
+    gameAddress = gameId.replace('onchain_', '');
   } else if (gameId.startsWith('pirate_')) {
-    gidNum = parseInt(gameId.replace('pirate_', ''), 10);
+    gameAddress = gameId.replace('pirate_', '');
   } else {
-    gidNum = parseInt(gameId, 10);
+    gameAddress = gameId;
   }
 
-  if (isNaN(gidNum)) {
-    console.log(`[Memo Handler] Invalid game ID '${gameId}', creating new game`);
-    return createGame(program, provider);
-  }
-
-  console.log(`[Memo Handler] Attempting to join game ${gidNum}`);
+  console.log(`[Memo Handler] Attempting to join game ${gameAddress}`);
 
   try {
     // Try to join the existing game first
-    const result = await joinGame(program, provider, gidNum);
+    const result = await joinGame(program, provider, gameAddress);
 
     if (result.success) {
-      console.log(`[Memo Handler] Successfully joined game ${gidNum}`);
+      console.log(`[Memo Handler] Successfully joined game ${gameAddress}`);
     } else {
-      console.log(`[Memo Handler] Failed to join game ${gidNum}: ${result.error}`);
+      console.log(`[Memo Handler] Failed to join game ${gameAddress}: ${result.error}`);
 
       // Check if it's a "player already in game" error - this is actually success
       if (result.error && result.error.includes('PlayerNotInGame')) {
-        console.log(`[Memo Handler] Player already in game ${gidNum}, treating as success`);
+        console.log(`[Memo Handler] Player already in game ${gameAddress}, treating as success`);
         return {
           success: true,
           action: 'join',
-          gameId: gidNum,
-          message: `Player already in game ${gidNum}`,
+          gameId: gameAddress,
+          message: `Player already in game ${gameAddress}`,
         };
       }
 
@@ -125,7 +120,7 @@ export async function handleShieldedMemo(
 
     return result;
   } catch (error) {
-    console.log(`[Memo Handler] Exception joining game ${gidNum}:`, error);
+    console.log(`[Memo Handler] Exception joining game ${gameAddress}:`, error);
     // If join fails (game doesn't exist or other error), create new game
     return createGame(program, provider);
   }

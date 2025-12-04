@@ -5,11 +5,11 @@
  * React hooks are in useAnchorProgram.ts
  */
 
-import { BN } from '@project-serum/anchor';
+import { BN } from '@coral-xyz/anchor';
 import { PublicKey } from '@solana/web3.js';
 
-// Program ID - Update this when you deploy
-export const PROGRAM_ID = new PublicKey(process.env.NEXT_PUBLIC_PROGRAM_ID || 'DXEKVy2KgSzAaadLYwMstxx5rto3sczC7Yg1znmYgxr4');
+// Program ID - Deployed to devnet
+export const PROGRAM_ID = new PublicKey(process.env.NEXT_PUBLIC_PROGRAM_ID || '9NkJAfgxRLBTe1fGwkNYsiDfnUvWfKJ9T1yWgjhkdypb');
 
 // Program IDL type definitions
 export interface PIR8Program {
@@ -58,7 +58,7 @@ export interface PlayerState {
 
 export enum GameStatus {
   Waiting = 'Waiting',
-  Active = 'Active', 
+  Active = 'Active',
   Completed = 'Completed',
   Cancelled = 'Cancelled',
 }
@@ -104,7 +104,7 @@ export const numberToBN = (num: number): BN => {
 export const parseGameEvents = (logs: string[]): any[] => {
   // Parse program events from transaction logs
   const events: any[] = [];
-  
+
   for (const log of logs) {
     if (log.includes('GameCreated')) {
       // Parse GameCreated event
@@ -116,6 +116,6 @@ export const parseGameEvents = (logs: string[]): any[] => {
       // Parse GameCompleted event
     }
   }
-  
+
   return events;
 };

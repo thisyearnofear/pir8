@@ -1,4 +1,4 @@
-import { AnchorProvider, Program, BN, Idl } from '@project-serum/anchor';
+import { AnchorProvider, Program, BN, Idl } from '@coral-xyz/anchor';
 import { PublicKey, Keypair, SystemProgram, Connection } from '@solana/web3.js';
 import { GameState, Player, Ship, Resources, GameEvent } from '../types/game';
 
@@ -63,13 +63,13 @@ export class PIR8PirateInstructions {
   constructor(
     private program: Program,
     private provider: AnchorProvider
-  ) {}
+  ) { }
 
   async createGame(entryFee: number, maxPlayers: number): Promise<{ tx: string; gameId: PublicKey }> {
     const timestamp = Math.floor(Date.now() / 1000);
     const timestampBytes = Buffer.allocUnsafe(8);
     timestampBytes.writeBigInt64LE(BigInt(timestamp), 0);
-    
+
     const [gameId] = PublicKey.findProgramAddressSync(
       [
         Buffer.from("pirate_game"),
@@ -78,7 +78,7 @@ export class PIR8PirateInstructions {
       ],
       this.program.programId
     );
-    
+
     const tx = await this.program.methods
       .createGame(new BN(entryFee), maxPlayers)
       .accounts({
@@ -87,7 +87,7 @@ export class PIR8PirateInstructions {
         systemProgram: SystemProgram.programId,
       })
       .rpc();
-      
+
     return { tx, gameId };
   }
 
@@ -99,14 +99,14 @@ export class PIR8PirateInstructions {
         player: this.provider.wallet.publicKey,
       })
       .rpc();
-      
+
     return tx;
   }
 
   async moveShip(
-    gameId: PublicKey, 
-    shipId: string, 
-    toX: number, 
+    gameId: PublicKey,
+    shipId: string,
+    toX: number,
     toY: number
   ): Promise<string> {
     const tx = await this.program.methods
@@ -116,13 +116,13 @@ export class PIR8PirateInstructions {
         player: this.provider.wallet.publicKey,
       })
       .rpc();
-      
+
     return tx;
   }
 
   async attackShip(
-    gameId: PublicKey, 
-    attackerShipId: string, 
+    gameId: PublicKey,
+    attackerShipId: string,
     targetShipId: string
   ): Promise<string> {
     const tx = await this.program.methods
@@ -132,12 +132,12 @@ export class PIR8PirateInstructions {
         player: this.provider.wallet.publicKey,
       })
       .rpc();
-      
+
     return tx;
   }
 
   async claimTerritory(
-    gameId: PublicKey, 
+    gameId: PublicKey,
     shipId: string
   ): Promise<string> {
     const tx = await this.program.methods
@@ -147,7 +147,7 @@ export class PIR8PirateInstructions {
         player: this.provider.wallet.publicKey,
       })
       .rpc();
-      
+
     return tx;
   }
 
@@ -165,7 +165,7 @@ export class PIR8PirateInstructions {
 // Utility functions for converting between blockchain and frontend types
 export class PirateGameConverter {
   static convertToFrontendGameState(
-    gameAccount: PirateGameAccount, 
+    gameAccount: PirateGameAccount,
     gameId: string
   ): GameState {
     return {
@@ -173,7 +173,7 @@ export class PirateGameConverter {
       players: gameAccount.players.map(this.convertToFrontendPlayer),
       currentPlayerIndex: gameAccount.currentPlayerIndex,
       gameMap: {
-        cells: gameAccount.territoryMap.map(row => 
+        cells: gameAccount.territoryMap.map(row =>
           row.map(cell => this.convertToFrontendCell(cell))
         ),
         size: 10
@@ -272,7 +272,7 @@ export class PirateGameConverter {
     duration: number
   ): any {
     let type: 'calm' | 'trade_winds' | 'storm' | 'fog';
-    
+
     if ('calm' in weatherType) type = 'calm';
     else if ('tradeWinds' in weatherType) type = 'trade_winds';
     else if ('storm' in weatherType) type = 'storm';

@@ -1,7 +1,5 @@
 use anchor_lang::prelude::*;
 
-declare_id!("5etQW394NUCprU1ikrbDysFeCGGRYY9usChGpaox9oiK");
-
 // ============================================================================
 // PIRATE GAME CONSTANTS
 // ============================================================================
@@ -9,7 +7,7 @@ declare_id!("5etQW394NUCprU1ikrbDysFeCGGRYY9usChGpaox9oiK");
 pub const GAME_SEED: &[u8] = b"pirate_game";
 pub const MAX_PLAYERS: u8 = 4;
 pub const MIN_PLAYERS: u8 = 2;
-pub const MAP_SIZE: usize = 10;
+pub const MAP_SIZE: usize = 5;
 pub const MAX_SHIPS_PER_PLAYER: usize = 6;
 pub const TURN_TIMEOUT_SECONDS: i64 = 45;
 
@@ -52,7 +50,7 @@ pub enum WeatherType {
 
 #[derive(AnchorSerialize, AnchorDeserialize, Clone, Debug, PartialEq)]
 pub enum GameStatus {
-    WaitingForPlayers,
+    Waiting,
     Active,
     Completed,
 }
@@ -129,16 +127,10 @@ impl Default for PlayerData {
 
 #[account]
 pub struct PirateGame {
-    pub game_id: u64,
     pub authority: Pubkey,
     pub status: GameStatus,
-    pub players: [PlayerData; 4],
     pub player_count: u8,
     pub current_player_index: u8,
-    pub territory_map: [[TerritoryCell; MAP_SIZE]; MAP_SIZE],
-    pub entry_fee: u64,
-    pub total_pot: u64,
-    pub max_players: u8,
     pub turn_number: u32,
     pub created_at: i64,
     pub started_at: Option<i64>,
@@ -147,85 +139,30 @@ pub struct PirateGame {
     pub weather_type: WeatherType,
     pub weather_duration: u8,
     pub bump: u8,
+    pub players: Vec<PlayerData>,
+    pub territory_map: Vec<TerritoryCell>, // Flattened 5x5 = 25 cells
 }
 
 impl PirateGame {
-    pub const SPACE: usize = 8 + // discriminator
-        8 + // game_id
-        32 + // authority
-        1 + // status enum
-        (32 + 16 + 4 + 4*32 + 4 + 1) * 4 + // players array (simplified calc)
-        1 + // player_count
-        1 + // current_player_index
-        (1 + 32) * MAP_SIZE * MAP_SIZE + // territory_map
-        8 + // entry_fee
-        8 + // total_pot
-        1 + // max_players
-        4 + // turn_number
-        8 + // created_at
-        9 + // started_at
-        9 + // completed_at
-        33 + // winner
-        1 + // weather_type
-        1 + // weather_duration
-        1 + // bump
-        256; // buffer for safety
-
-    pub fn get_current_player(&self) -> Option<&PlayerData> {
-        if self.current_player_index as usize >= self.player_count as usize {
-            return None;
-        }
-        Some(&self.players[self.current_player_index as usize])
-    }
-
-    pub fn get_player_mut(&mut self, player_key: &Pubkey) -> Option<&mut PlayerData> {
-        self.players.iter_mut().find(|p| p.pubkey == *player_key && p.is_active)
-    }
+    // Base space for fixed fields + buffer for dynamic Vecs
+    // Solana has a 10KB limit for account reallocation in inner instructions
+    pub const SPACE: usize = 10240; // 10KB - maximum allowed
 
     pub fn advance_turn(&mut self) {
-        let mut next_index = (self.current_player_index + 1) % self.player_count;
-        
-        // Skip inactive players
-        let mut attempts = 0;
-        while !self.players[next_index as usize].is_active && attempts < self.player_count {
-            next_index = (next_index + 1) % self.player_count;
-            attempts += 1;
-        }
-        
-        self.current_player_index = next_index;
-        
-        // If we've cycled back to player 0, increment turn and update weather
-        if next_index == 0 {
-            self.turn_number += 1;
-            self.update_weather();
+        if self.player_count > 0 {
+            self.current_player_index = (self.current_player_index + 1) % self.player_count;
+            if self.current_player_index == 0 {
+                self.turn_number += 1;
+            }
         }
     }
 
-    pub fn update_weather(&mut self) {
-        if self.weather_duration > 0 {
-            self.weather_duration -= 1;
-        }
-        
-        // Generate new weather if expired or random chance
-        if self.weather_duration == 0 {
-            self.weather_type = self.generate_random_weather();
-            self.weather_duration = match self.weather_type {
-                WeatherType::Calm => 2,
-                WeatherType::TradeWinds => 3,
-                WeatherType::Storm => 2,
-                WeatherType::Fog => 3,
-            };
-        }
+    pub fn get_current_player(&self) -> Option<&PlayerData> {
+        self.players.get(self.current_player_index as usize)
     }
 
-    fn generate_random_weather(&self) -> WeatherType {
-        let seed = (self.turn_number + Clock::get().unwrap().unix_timestamp as u32) % 4;
-        match seed {
-            0 => WeatherType::Calm,
-            1 => WeatherType::TradeWinds,
-            2 => WeatherType::Storm,
-            _ => WeatherType::Fog,
-        }
+    pub fn get_player_mut(&mut self, pubkey: &Pubkey) -> Option<&mut PlayerData> {
+        self.players.iter_mut().find(|p| p.pubkey == *pubkey && p.is_active)
     }
 }
 
@@ -234,23 +171,13 @@ impl PirateGame {
 // ============================================================================
 
 #[event]
-pub struct GameCreated {
-    pub game_id: u64,
-    pub authority: Pubkey,
-    pub entry_fee: u64,
-    pub max_players: u8,
-}
-
-#[event]
 pub struct PlayerJoined {
-    pub game_id: u64,
     pub player: Pubkey,
     pub player_count: u8,
 }
 
 #[event]
 pub struct GameStarted {
-    pub game_id: u64,
     pub player_count: u8,
 }
 
@@ -376,42 +303,72 @@ pub enum GameError {
 // ============================================================================
 
 #[derive(Accounts)]
-#[instruction(entry_fee: u64, max_players: u8)]
-pub struct CreateGame<'info> {
+pub struct InitializeGame<'info> {
     #[account(
         init,
         payer = authority,
         space = PirateGame::SPACE,
+        seeds = [b"global_game"],
+        bump
     )]
     pub game: Account<'info, PirateGame>,
-    
+
     #[account(mut)]
     pub authority: Signer<'info>,
-    
+
     pub system_program: Program<'info, System>,
 }
+
+#[account]
+pub struct UserProfile {
+    pub games_created: u64,
+    pub games_joined: u64,
+    pub total_winnings: u64,
+}
+
 
 #[derive(Accounts)]
 pub struct JoinGame<'info> {
     #[account(
         mut,
-        constraint = game.status == GameStatus::WaitingForPlayers @ GameError::GameNotJoinable,
-        constraint = game.player_count < game.max_players @ GameError::GameFull
+        seeds = [b"global_game"],
+        bump = game.bump,
     )]
     pub game: Account<'info, PirateGame>,
-    
+
     #[account(mut)]
     pub player: Signer<'info>,
-    
+
     pub system_program: Program<'info, System>,
 }
 
 #[derive(Accounts)]
-pub struct MakeMove<'info> {
+pub struct StartGame<'info> {
     #[account(
         mut,
-        constraint = game.status == GameStatus::Active @ GameError::GameNotActive
+        seeds = [b"global_game"],
+        bump = game.bump,
     )]
+    pub game: Account<'info, PirateGame>,
+
+    pub authority: Signer<'info>,
+}
+
+#[derive(Accounts)]
+pub struct ResetGame<'info> {
+    #[account(
+        mut,
+        seeds = [b"global_game"],
+        bump = game.bump,
+    )]
+    pub game: Account<'info, PirateGame>,
+
+    pub authority: Signer<'info>,
+}
+
+#[derive(Accounts)]
+pub struct MakeMove<'info> {
+    #[account(mut)]
     pub game: Account<'info, PirateGame>,
     
     pub player: Signer<'info>,
@@ -419,10 +376,7 @@ pub struct MakeMove<'info> {
 
 #[derive(Accounts)]
 pub struct ScanCoordinate<'info> {
-    #[account(
-        mut,
-        constraint = game.status == GameStatus::Active @ GameError::GameNotActive
-    )]
+    #[account(mut)]
     pub game: Account<'info, PirateGame>,
     
     pub player: Signer<'info>,
@@ -453,17 +407,17 @@ pub fn get_ship_costs(ship_type: &ShipType) -> Resources {
     Resources { gold, crew, cannons, supplies }
 }
 
-pub fn get_territory_resources(x: u8, y: u8, territory_map: &[[TerritoryCell; MAP_SIZE]; MAP_SIZE]) -> Resources {
-    if x as usize >= MAP_SIZE || y as usize >= MAP_SIZE {
-        return Resources::default();
+pub fn get_territory_resources(x: u8, y: u8, territory_map: &Vec<TerritoryCell>) -> Resources {
+    let index = (x as usize * MAP_SIZE) + y as usize;
+    if let Some(cell) = territory_map.get(index) {
+        return match cell.cell_type {
+            TerritoryCellType::Island => Resources { gold: 0, crew: 0, cannons: 0, supplies: 3 },
+            TerritoryCellType::Port => Resources { gold: 5, crew: 2, cannons: 0, supplies: 0 },
+            TerritoryCellType::Treasure => Resources { gold: 10, crew: 0, cannons: 0, supplies: 0 },
+            _ => Resources::default(),
+        };
     }
-    
-    match territory_map[x as usize][y as usize].cell_type {
-        TerritoryCellType::Island => Resources { gold: 0, crew: 0, cannons: 0, supplies: 3 },
-        TerritoryCellType::Port => Resources { gold: 5, crew: 2, cannons: 0, supplies: 0 },
-        TerritoryCellType::Treasure => Resources { gold: 10, crew: 0, cannons: 0, supplies: 0 },
-        _ => Resources::default(),
-    }
+    Resources::default()
 }
 
 pub fn get_ship_resource_multiplier(ship_type: &ShipType) -> f32 {
@@ -498,44 +452,41 @@ pub fn has_adjacent_controlled_port(player: &PlayerData, x: u8, y: u8) -> bool {
     false
 }
 
-pub fn generate_strategic_map(seed: u64) -> Result<[[TerritoryCell; MAP_SIZE]; MAP_SIZE]> {
-    let mut map = [[TerritoryCell {
-        cell_type: TerritoryCellType::Water,
-        owner: None,
-    }; MAP_SIZE]; MAP_SIZE];
+pub fn generate_strategic_map(seed: u64) -> Vec<TerritoryCell> {
+    let mut map: Vec<TerritoryCell> = Vec::with_capacity(MAP_SIZE * MAP_SIZE);
     
-    // Generate strategic layout
+    // Generate strategic layout (flattened 5x5)
     for x in 0..MAP_SIZE {
         for y in 0..MAP_SIZE {
-            let distance_from_center = ((x as f32 - 4.5).powi(2) + (y as f32 - 4.5).powi(2)).sqrt();
+            let distance_from_center = ((x as f32 - 2.0).powi(2) + (y as f32 - 2.0).powi(2)).sqrt();
             let cell_seed = seed.wrapping_add((x * MAP_SIZE + y) as u64);
             let rand_val = (cell_seed * 1103515245 + 12345) % 100;
             
-            map[x][y].cell_type = if distance_from_center < 2.0 {
+            let cell_type = if distance_from_center < 1.5 {
                 // Center - valuable territories
                 if rand_val < 40 { TerritoryCellType::Treasure }
                 else if rand_val < 70 { TerritoryCellType::Port }
                 else { TerritoryCellType::Water }
-            } else if distance_from_center < 4.0 {
+            } else if distance_from_center < 2.5 {
                 // Mid area - mixed
                 if rand_val < 20 { TerritoryCellType::Island }
                 else if rand_val < 35 { TerritoryCellType::Port }
                 else { TerritoryCellType::Water }
-            } else if distance_from_center < 6.0 {
-                // Outer area - mostly water with hazards
+            } else {
+                // Outer area - mostly water with some hazards
                 if rand_val < 10 { TerritoryCellType::Storm }
                 else if rand_val < 15 { TerritoryCellType::Reef }
                 else { TerritoryCellType::Water }
-            } else {
-                // Edge - hazardous
-                if rand_val < 20 { TerritoryCellType::Whirlpool }
-                else if rand_val < 35 { TerritoryCellType::Storm }
-                else { TerritoryCellType::Water }
             };
+            
+            map.push(TerritoryCell {
+                cell_type,
+                owner: None,
+            });
         }
     }
     
-    Ok(map)
+    map
 }
 
 pub fn deploy_starting_fleets(game: &mut PirateGame) -> Result<()> {

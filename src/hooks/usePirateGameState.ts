@@ -4,7 +4,7 @@ import { GameState, Player, GameAction, Ship, Coordinate } from '../types/game';
 import { PirateGameEngine } from '../lib/gameLogic';
 import { PirateGameManager } from '../lib/pirateGameEngine';
 import { GameBalance } from '../lib/gameBalance';
-import { createNewGameFlow, joinGameFlow } from '../lib/server/anchorActions';
+import { initializeGlobalGame, joinGlobalGame } from '../lib/server/anchorActions';
 
 interface PirateGameStore {
   // Game State
@@ -79,18 +79,32 @@ export const usePirateGameState = create<PirateGameStore>((set, get) => ({
   scannedCoordinates: new Set(),
   scanChargesRemaining: 3,
 
-  // Create a new pirate game on-chain
+  // Join the global game (or initialize if first time)
   createGame: async (players: Player[], entryFee: number): Promise<boolean> => {
     try {
       set({ isLoading: true, error: null });
 
-      // Create game on-chain via server action
-      console.log('🚀 Creating game on Solana blockchain...');
-      const gameIdNumber = await createNewGameFlow();
-      console.log('✅ Game created on-chain with ID:', gameIdNumber);
+      console.log('🚀 Joining global game on Solana...');
 
-      // Create corresponding local game state with on-chain game ID
-      const gameId = `pirate_${gameIdNumber}`;
+      try {
+        // Try to join the global game
+        await joinGlobalGame();
+        console.log('✅ Joined global game');
+      } catch (joinError: any) {
+        // If game not initialized, try to initialize it first
+        if (joinError?.message?.includes('AccountNotInitialized')) {
+          console.log('🎮 Game not initialized, initializing now...');
+          await initializeGlobalGame();
+          console.log('✅ Game initialized, now joining...');
+          await joinGlobalGame();
+          console.log('✅ Joined global game');
+        } else {
+          throw joinError;
+        }
+      }
+
+      // Create local game state
+      const gameId = 'global_game';
       const gameState = PirateGameManager.createNewGame(players, gameId);
 
       set({
@@ -101,34 +115,22 @@ export const usePirateGameState = create<PirateGameStore>((set, get) => ({
       return true;
 
     } catch (error) {
-      console.error("Failed to create pirate game:", error);
+      console.error("Failed to join global game:", error);
       set({
-        error: error instanceof Error ? error.message : 'Failed to create pirate game',
+        error: error instanceof Error ? error.message : 'Failed to join global game',
         isLoading: false
       });
       return false;
     }
   },
 
-  // Join an existing pirate game on-chain
+  // Join the global pirate game on-chain
   joinGame: async (gameId: string, player: Player): Promise<boolean> => {
     try {
-      // Parse game ID - expects format like "pirate_123" or just "123"
-      let gameIdNumber: number;
-      if (gameId.startsWith('pirate_')) {
-        gameIdNumber = parseInt(gameId.split('_')[1], 10);
-      } else {
-        gameIdNumber = parseInt(gameId, 10);
-      }
-
-      if (isNaN(gameIdNumber)) {
-        throw new Error(`Invalid game ID format: ${gameId}`);
-      }
-
-      // Join game on-chain via server action
-      console.log('🚀 Joining game on Solana blockchain...', gameIdNumber);
-      await joinGameFlow(gameIdNumber);
-      console.log('✅ Successfully joined game on-chain');
+      // With global game, we always join the same game
+      console.log('🚀 Joining global game on Solana...');
+      await joinGlobalGame();
+      console.log('✅ Successfully joined global game');
 
       // Update local game state
       const { gameState } = get();

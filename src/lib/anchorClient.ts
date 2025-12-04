@@ -1,12 +1,12 @@
-import { AnchorProvider, BN, Program, Idl } from '@project-serum/anchor';
+import { AnchorProvider, BN, Program, Idl } from '@coral-xyz/anchor';
 import { Connection, Keypair, PublicKey, SystemProgram, Transaction } from '@solana/web3.js';
 import fs from 'fs';
 import path from 'path';
-import { GAME_CONFIG, SOLANA_CONFIG } from '../utils/constants';
-import { PROGRAM_ID, getConfigPDA, getGamePDA } from './anchor';
+import { SOLANA_CONFIG } from '../utils/constants';
+import { PROGRAM_ID } from './anchor';
 
 class NodeWallet {
-  constructor(readonly payer: Keypair) {}
+  constructor(readonly payer: Keypair) { }
   get publicKey() { return this.payer.publicKey; }
   async signTransaction(tx: Transaction) { tx.sign(this.payer); return tx; }
   async signAllTransactions(txs: Transaction[]) { txs.forEach(t => t.sign(this.payer)); return txs; }
@@ -34,136 +34,92 @@ export async function getAnchorClient(): Promise<{ program: Program, provider: A
   const provider = new AnchorProvider(connection, wallet, { commitment: 'confirmed' });
   const idl = loadIdl();
   const programId = new PublicKey(SOLANA_CONFIG.PROGRAM_ID || PROGRAM_ID);
-  const program = new (Program as any)(idl, programId, provider) as Program;
+
+  // Anchor 0.29: Program(idl, programId, provider)
+  const program = new Program(idl as Idl, programId, provider);
   return { program, provider };
 }
 
-export async function createGameOnChain(program: any, provider: AnchorProvider) {
-  const entryLamports = new BN(Math.floor(GAME_CONFIG.ENTRY_FEE * 1e9));
-  
-  // Game PDA is derived from authority + timestamp in the program
-  // We don't need to calculate it here, Anchor will handle it
-  
+// Global game PDA helper
+export function getGlobalGamePDA(programId: PublicKey): [PublicKey, number] {
+  return PublicKey.findProgramAddressSync(
+    [Buffer.from("global_game")],
+    programId
+  );
+}
+
+// Initialize the single global game (one-time)
+export async function initializeGlobalGame(program: any, provider: AnchorProvider) {
+  const authority = provider.wallet.publicKey;
+  const [gamePDA] = getGlobalGamePDA(program.programId);
+
   const tx = await program.methods
-    .createGame(entryLamports, GAME_CONFIG.MAX_PLAYERS)
+    .initializeGame()
     .accounts({
-      authority: provider.wallet.publicKey,
+      game: gamePDA,
+      authority: authority,
       systemProgram: SystemProgram.programId,
     })
     .rpc();
-    
-  console.log('Game created, tx:', tx);
-  
-  // Parse game address from transaction logs
-  // For now, return a placeholder - you'll need to fetch the game account
-  return 0; // TODO: Parse game_id from event logs
+
+  console.log('Global game initialized, tx:', tx);
+  console.log('Game PDA:', gamePDA.toString());
+
+  return gamePDA.toString();
 }
 
-export async function joinGameOnChain(program: any, provider: AnchorProvider, gameId: number) {
-  // Need to find the game PDA - this requires knowing how it was created
-  // The program uses: seeds = [GAME_SEED, authority.key(), timestamp]
-  // This is problematic - we need the game's public key directly
-  
-  // For now, assume gameId is actually the game's public key as a string
-  const gamePubkey = new PublicKey(gameId);
-  
-  await program.methods
+// Join the global game
+export async function joinGlobalGame(program: any, provider: AnchorProvider) {
+  const [gamePDA] = getGlobalGamePDA(program.programId);
+
+  const tx = await program.methods
     .joinGame()
     .accounts({
-      game: gamePubkey,
-      player: provider.wallet.publicKey,
-      systemProgram: SystemProgram.programId,
-    })
-    .rpc();
-}
-
-export async function scanCoordinateOnChain(
-  program: any,
-  provider: AnchorProvider,
-  gameId: number,
-  coordinateX: number,
-  coordinateY: number
-) {
-  const [gamePDA] = getGamePDA(gameId);
-  await program.methods
-    .scanCoordinate(coordinateX, coordinateY)
-    .accounts({
       game: gamePDA,
       player: provider.wallet.publicKey,
       systemProgram: SystemProgram.programId,
     })
     .rpc();
+
+  console.log('Joined global game, tx:', tx);
+  return tx;
 }
 
-export async function makeMoveTimed(
-  program: any,
-  provider: AnchorProvider,
-  gameId: number,
-  shipId: number,
-  targetX: number,
-  targetY: number,
-  decisionTimeMs: number
-) {
-  const [gamePDA] = getGamePDA(gameId);
-  const decisionTimeSecs = Math.floor(decisionTimeMs / 1000);
-  
-  await program.methods
-    .makeMoveTimed(shipId, targetX, targetY, decisionTimeSecs)
+// Start the global game
+export async function startGlobalGame(program: any, provider: AnchorProvider) {
+  const [gamePDA] = getGlobalGamePDA(program.programId);
+
+  const tx = await program.methods
+    .startGame()
     .accounts({
       game: gamePDA,
-      player: provider.wallet.publicKey,
-      systemProgram: SystemProgram.programId,
+      authority: provider.wallet.publicKey,
     })
     .rpc();
+
+  console.log('Game started, tx:', tx);
+  return tx;
 }
 
-/**
- * Handle private tournament entry via Zcash memo
- * Wired from LightwalletdWatcher → ZcashMemoBridge → this function
- * DRY: Single source of truth for memo-triggered join_game transaction
- */
-export async function joinGamePrivateViaZcash(
-  program: any,
-  provider: AnchorProvider,
-  memoPayload: {
-    gameId: string;
-    solanaPubkey: string;
-    zcashTxHash?: string;
-    blockHeight?: number;
-  }
-) {
-  try {
-    // Convert gameId string to number
-    const gameIdNum = parseInt(memoPayload.gameId, 10);
-    if (isNaN(gameIdNum)) {
-      throw new Error(`Invalid game ID from memo: ${memoPayload.gameId}`);
-    }
+// Reset the global game (dev/testing)
+export async function resetGlobalGame(program: any, provider: AnchorProvider) {
+  const [gamePDA] = getGlobalGamePDA(program.programId);
 
-    // Construct accounts using PDAs
-    const [gamePDA] = getGamePDA(gameIdNum);
-    const [configPDA] = getConfigPDA();
-    const configAccount = await program.account.gameConfig.fetch(configPDA);
+  const tx = await program.methods
+    .resetGame()
+    .accounts({
+      game: gamePDA,
+      authority: provider.wallet.publicKey,
+    })
+    .rpc();
 
-    // Execute join_game instruction with player derived from memo
-    const playerPubkey = new PublicKey(memoPayload.solanaPubkey);
-    
-    const tx = await program.methods
-      .joinGame()
-      .accounts({
-        game: gamePDA,
-        config: configPDA,
-        player: playerPubkey,
-        treasury: configAccount.treasury,
-        systemProgram: SystemProgram.programId,
-      })
-      .rpc();
+  console.log('Game reset, tx:', tx);
+  return tx;
+}
 
-    console.log(`[Zcash Bridge] Player ${memoPayload.solanaPubkey} joined game ${gameIdNum} via Zcash memo`);
-    console.log(`[Zcash Bridge] Zcash TX: ${memoPayload.zcashTxHash}, Solana TX: ${tx}`);
-
-    return tx;
-  } catch (error) {
-    console.error('[Zcash Bridge] Failed to process private entry:', error);
-    throw error;
-  }
+// Fetch global game state
+export async function fetchGlobalGame(program: any) {
+  const [gamePDA] = getGlobalGamePDA(program.programId);
+  // Account name is camelCase in Anchor
+  return await (program.account as any).pirateGame.fetch(gamePDA);
 }

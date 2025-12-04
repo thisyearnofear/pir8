@@ -1,15 +1,18 @@
+[toolchain]
+anchor_version = "0.29.0"
+
 [features]
 seeds = false
 skip-lint = false
 
 [programs.localnet]
-pir8_game = "DXEKVy2KgSzAaadLYwMstxx5rto3sczC7Yg1znmYgxr4"
+pir8_game = "54S7Pw6cDQKWqW4JkdTGb3vEQqtnHsZ3SvB3LB1fST2V"
 
 [programs.devnet]
-pir8_game = "DXEKVy2KgSzAaadLYwMstxx5rto3sczC7Yg1znmYgxr4"
+pir8_game = "54S7Pw6cDQKWqW4JkdTGb3vEQqtnHsZ3SvB3LB1fST2V"
 
 [programs.mainnet]
-pir8_game = "DXEKVy2KgSzAaadLYwMstxx5rto3sczC7Yg1znmYgxr4"
+pir8_game = "54S7Pw6cDQKWqW4JkdTGb3vEQqtnHsZ3SvB3LB1fST2V"
 
 [registry]
 url = "https://api.apr.dev"

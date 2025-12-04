@@ -10,7 +10,8 @@
 
 import { useEffect, useRef, useCallback } from 'react';
 import { LightwalletdWatcher, MemoPayload } from '@/lib/integrations';
-import { joinGamePrivateViaZcash } from '@/lib/server/anchorActions';
+// TODO: Re-implement for global game
+// import { joinGamePrivateViaZcash } from '@/lib/server/anchorActions';
 import { ZCASH_CONFIG } from '@/utils/constants';
 import { usePirateGameState } from './usePirateGameState';
 
