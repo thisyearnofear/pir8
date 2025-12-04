@@ -1,5 +1,5 @@
 import { AnchorProvider, Program } from '@coral-xyz/anchor';
-import { createGameOnChain, joinGameOnChain } from '../../lib/server/anchorActions';
+import { initializeGlobalGame, joinGlobalGame } from '../../lib/server/anchorActions';
 import { GAME_CONFIG } from '../../utils/constants';
 
 export interface GameCommandResult {
@@ -11,16 +11,16 @@ export interface GameCommandResult {
 }
 
 /**
- * Create a new game on-chain
+ * Create a new game on-chain (initialize global game)
  */
 export async function createGame(program: Program, provider: AnchorProvider): Promise<GameCommandResult> {
   try {
-    const { gameId } = await createGameOnChain(program, provider);
+    const gameId = await initializeGlobalGame();
     return {
       success: true,
       action: 'create',
       gameId,
-      message: `Game created with address: ${gameId}`,
+      message: `Global game initialized: ${gameId}`,
     };
   } catch (err) {
     return {
@@ -32,29 +32,29 @@ export async function createGame(program: Program, provider: AnchorProvider): Pr
 }
 
 /**
- * Join an existing game on-chain
+ * Join an existing game on-chain (join global game)
  */
 export async function joinGame(program: Program, provider: AnchorProvider, gameId: string): Promise<GameCommandResult> {
   try {
-    await joinGameOnChain(program, provider, gameId);
+    await joinGlobalGame();
     return {
       success: true,
       action: 'join',
       gameId,
-      message: `Joined game ${gameId}`,
+      message: `Joined global game`,
     };
   } catch (err) {
     const errorMessage = err instanceof Error ? err.message : String(err);
 
     // If it's a "PlayerNotInGame" error, it likely means the player is already in the game
     // or there's a state inconsistency - treat this as success
-    if (errorMessage.includes('PlayerNotInGame')) {
-      console.log(`[Join Game] Player already in game ${gameId} or state mismatch, treating as success`);
+    if (errorMessage.includes('PlayerNotInGame') || errorMessage.includes('already')) {
+      console.log(`[Join Game] Player already in game, treating as success`);
       return {
         success: true,
         action: 'join',
         gameId,
-        message: `Player already in game ${gameId}`,
+        message: `Player already in global game`,
       };
     }
 

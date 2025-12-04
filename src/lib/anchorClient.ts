@@ -4,6 +4,7 @@ import fs from 'fs';
 import path from 'path';
 import { SOLANA_CONFIG } from '../utils/constants';
 import { PROGRAM_ID } from './anchor';
+import { getGlobalGamePDA } from './anchorUtils';
 
 class NodeWallet {
   constructor(readonly payer: Keypair) { }
@@ -38,14 +39,6 @@ export async function getAnchorClient(): Promise<{ program: Program, provider: A
   // Anchor 0.29: Program(idl, programId, provider)
   const program = new Program(idl as Idl, programId, provider);
   return { program, provider };
-}
-
-// Global game PDA helper
-export function getGlobalGamePDA(programId: PublicKey): [PublicKey, number] {
-  return PublicKey.findProgramAddressSync(
-    [Buffer.from("global_game")],
-    programId
-  );
 }
 
 // Initialize the single global game (one-time)

@@ -9,6 +9,7 @@ interface PirateControlsProps {
   gameState: GameState | null;
   onCreateGame: () => void;
   onQuickStart: () => void;
+  onStartGame?: () => void; // Added onStartGame
   onJoinGame: (gameId: string) => Promise<boolean>;
   onShipAction: (shipId: string, action: 'move' | 'attack' | 'claim' | 'collect' | 'build') => void;
   onEndTurn: () => void;
@@ -27,6 +28,7 @@ export default function PirateControls({
   gameState,
   onCreateGame,
   onQuickStart,
+  onStartGame,
   onJoinGame,
   onShipAction,
   onEndTurn,
@@ -40,6 +42,7 @@ export default function PirateControls({
   decisionTimeMs = 0,
   scanChargesRemaining = 3
 }: PirateControlsProps) {
+
   const { publicKey } = useWallet();
   const [gameIdInput, setGameIdInput] = useState('');
   const [showJoinForm, setShowJoinForm] = useState(false);
@@ -65,7 +68,7 @@ export default function PirateControls({
   const handleJoinSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!gameIdInput.trim()) return;
-    
+
     const success = await onJoinGame(gameIdInput.trim());
     if (success) {
       setGameIdInput('');
@@ -112,7 +115,7 @@ export default function PirateControls({
       <h3 className="text-lg font-bold text-neon-cyan text-center">
         🏴‍☠️ PREPARE FOR BATTLE
       </h3>
-      
+
       {publicKey && (
         <div className="game-actions space-y-3">
           <button
@@ -120,9 +123,9 @@ export default function PirateControls({
             disabled={isCreating}
             className="w-full bg-gradient-to-r from-neon-orange to-neon-gold text-black font-bold py-3 px-6 rounded-lg hover:shadow-neon-orange transition-all duration-300 disabled:opacity-50"
           >
-            {isCreating ? '⚓ Creating Arena...' : '⚔️ Create New Battle'}
+            {isCreating ? '⚓ Creating Arena...' : '⚔️ Create New Battle (0.1 SOL)'}
           </button>
-          
+
           {!showJoinForm ? (
             <button
               onClick={() => setShowJoinForm(true)}
@@ -145,7 +148,7 @@ export default function PirateControls({
                   disabled={isJoining || !gameIdInput.trim()}
                   className="flex-1 bg-neon-cyan text-black font-bold py-2 px-4 rounded-lg hover:bg-neon-cyan-bright transition-all duration-300 disabled:opacity-50"
                 >
-                  {isJoining ? 'Joining...' : 'Join'}
+                  {isJoining ? 'Joining...' : 'Join (0.1 SOL)'}
                 </button>
                 <button
                   type="button"
@@ -161,7 +164,7 @@ export default function PirateControls({
               </div>
             </form>
           )}
-          
+
           {joinError && (
             <div className="error-message bg-red-900 border border-red-500 rounded-lg p-3 text-red-200 text-sm">
               {joinError}
@@ -176,7 +179,7 @@ export default function PirateControls({
     const playerCount = gameState?.players.length || 0;
     const maxPlayers = 4; // MAX_PLAYERS from GAME_CONFIG
     const crewPercentage = Math.round((playerCount / maxPlayers) * 100);
-    
+
     const waitingMessages = [
       '🏴‍☠️ Hoisting the colors...',
       '⚓ Rallying the crew...',
@@ -206,18 +209,17 @@ export default function PirateControls({
             <span className="text-neon-cyan font-bold">BATTLE ROSTER:</span>
             <span className="text-neon-gold font-mono text-lg">{playerCount}/{maxPlayers}</span>
           </div>
-          
+
           {/* Progress Bar */}
           <div className="w-full bg-gray-800 rounded-full h-4 overflow-hidden border border-neon-cyan border-opacity-20">
-            <div 
-              className={`h-full transition-all duration-500 ${
-                playerCount >= 2 ? 'bg-gradient-to-r from-neon-green to-neon-cyan' : 
+            <div
+              className={`h-full transition-all duration-500 ${playerCount >= 2 ? 'bg-gradient-to-r from-neon-green to-neon-cyan' :
                 'bg-gradient-to-r from-neon-orange to-neon-gold'
-              }`}
+                }`}
               style={{ width: `${crewPercentage}%` }}
             />
           </div>
-          
+
           <div className="text-xs text-gray-300 mt-2 text-center">
             {playerCount === 1 && 'Awaiting crew members...'}
             {playerCount === 2 && '⚡ Battle ready! 2 pirates detected'}
@@ -257,7 +259,7 @@ export default function PirateControls({
         {/* Start Button */}
         {gameState && gameState.players.length >= 2 && (
           <button
-            onClick={onQuickStart}
+            onClick={onStartGame || onQuickStart}
             disabled={isCreating}
             className="w-full bg-gradient-to-r from-neon-green via-neon-cyan to-neon-blue text-black font-black py-3 px-6 rounded-lg hover:shadow-lg hover:scale-105 transition-all duration-300 disabled:opacity-50 text-lg drop-shadow"
           >
@@ -293,7 +295,7 @@ export default function PirateControls({
 
   const renderShipSelection = () => {
     const myShips = getMyShips();
-    
+
     return (
       <div className="ship-selection space-y-3">
         <h4 className="text-sm font-bold text-neon-cyan">🚢 YOUR FLEET</h4>
@@ -302,11 +304,10 @@ export default function PirateControls({
             <button
               key={ship.id}
               onClick={() => onShipSelect(ship.id === selectedShipId ? null : ship.id)}
-              className={`ship-card p-3 rounded-lg border-2 transition-all duration-300 ${
-                selectedShipId === ship.id
-                  ? 'border-neon-gold bg-neon-gold bg-opacity-20'
-                  : 'border-neon-blue bg-neon-blue bg-opacity-10 hover:bg-neon-blue hover:bg-opacity-20'
-              }`}
+              className={`ship-card p-3 rounded-lg border-2 transition-all duration-300 ${selectedShipId === ship.id
+                ? 'border-neon-gold bg-neon-gold bg-opacity-20'
+                : 'border-neon-blue bg-neon-blue bg-opacity-10 hover:bg-neon-blue hover:bg-opacity-20'
+                }`}
             >
               <div className="flex items-center justify-between">
                 <span className="text-lg">{SHIP_EMOJIS[ship.type]}</span>
@@ -318,7 +319,7 @@ export default function PirateControls({
                 {ship.type.toUpperCase()}
               </div>
               <div className="health-bar w-full bg-gray-700 rounded-full h-1 mt-2">
-                <div 
+                <div
                   className="h-full bg-gradient-to-r from-red-500 to-green-500 rounded-full"
                   style={{ width: `${(ship.health / ship.maxHealth) * 100}%` }}
                 ></div>
@@ -348,7 +349,7 @@ export default function PirateControls({
     return (
       <div className="action-controls space-y-3">
         <h4 className="text-sm font-bold text-neon-orange">⚔️ SHIP ACTIONS</h4>
-        
+
         {/* Ship info */}
         {selectedShip && (
           <div className="ship-info bg-gray-800 p-2 rounded border border-gray-600">
@@ -360,7 +361,7 @@ export default function PirateControls({
             </div>
           </div>
         )}
-        
+
         <div className="actions-grid grid grid-cols-2 gap-2 mb-3">
           <button
             onClick={() => onShipAction(selectedShipId, 'move')}
@@ -378,7 +379,7 @@ export default function PirateControls({
             <div className="text-xs">Attack</div>
           </button>
         </div>
-        
+
         <div className="actions-grid grid grid-cols-2 gap-2">
           <button
             onClick={() => onShipAction(selectedShipId, 'claim')}
@@ -414,182 +415,179 @@ export default function PirateControls({
     };
 
     return (
-    <div className="game-controls space-y-4 w-full max-w-sm">
-      <div className="turn-info text-center p-3 bg-black bg-opacity-50 rounded-lg border border-neon-cyan">
-        <div className="text-sm text-neon-cyan">
-          {isMyTurn() ? '🏴‍☠️ YOUR TURN' : '⏳ WAITING...'}
-        </div>
-        <div className="text-xs text-gray-300 mt-1">
-          Phase: {gameState?.currentPhase?.toUpperCase()}
-        </div>
-      </div>
-
-      {/* Weather & Conditions - Right side balance */}
-      {gameState?.globalWeather && (
-        <div className="weather-preview bg-gray-800 rounded-lg p-3 border border-gray-700">
-          <h4 className="text-xs font-bold text-neon-orange mb-2">🌊 WEATHER</h4>
-          <div className="flex items-center gap-2 mb-2">
-            <span className="text-lg">{getWeatherEmoji()}</span>
-            <div>
-              <div className="text-xs font-bold text-white capitalize">{gameState.globalWeather.type.replace('_', ' ')}</div>
-              <div className="text-xs text-neon-cyan">{gameState.globalWeather.duration} turns</div>
-            </div>
+      <div className="game-controls space-y-4 w-full max-w-sm">
+        <div className="turn-info text-center p-3 bg-black bg-opacity-50 rounded-lg border border-neon-cyan">
+          <div className="text-sm text-neon-cyan">
+            {isMyTurn() ? '🏴‍☠️ YOUR TURN' : '⏳ WAITING...'}
+          </div>
+          <div className="text-xs text-gray-300 mt-1">
+            Phase: {gameState?.currentPhase?.toUpperCase()}
           </div>
         </div>
-      )}
 
-      {/* Battle Snapshot - Right side balance */}
-      {gameState && (
-        <div className="battle-snapshot bg-gray-800 rounded-lg p-3 border border-gray-700">
-          <h4 className="text-xs font-bold text-neon-green mb-2">📊 BATTLEFIELD</h4>
-          <div className="grid grid-cols-2 gap-2 text-xs">
-            <div>
-              <span className="text-gray-400">Total Fleets:</span>
-              <span className="text-white font-mono ml-1">{gameState.players.reduce((t, p) => t + p.ships.filter(s => s.health > 0).length, 0)}</span>
-            </div>
-            <div>
-              <span className="text-gray-400">Claimed:</span>
-              <span className="text-white font-mono ml-1">{gameState.players.reduce((t, p) => t + p.controlledTerritories.length, 0)}</span>
-            </div>
-          </div>
-        </div>
-      )}
-
-      {isMyTurn() && (
-         <>
-           {/* Skill Metrics Display with Timer */}
-           <div className="skill-metrics bg-gradient-to-r from-gray-800 to-gray-900 border border-neon-magenta border-opacity-50 rounded-lg p-4 space-y-3">
-             <div className="flex items-center justify-between">
-               <span className="text-neon-cyan font-mono text-sm">⏱️ DECISION TIME:</span>
-               <span className={`${getTimerColor(decisionTimeMs)} font-bold font-mono text-lg`}>
-                 {formatTime(decisionTimeMs)}
-               </span>
-             </div>
-             
-             <div className="bg-gray-700 rounded h-2 overflow-hidden">
-               <div 
-                 className={`h-full transition-all ${
-                   decisionTimeMs < 5000 ? 'bg-neon-green' :
-                   decisionTimeMs < 10000 ? 'bg-neon-magenta' :
-                   decisionTimeMs < 15000 ? 'bg-neon-gold' :
-                   'bg-red-500'
-                }`}
-                 style={{ width: `${Math.min(100, (decisionTimeMs / 30000) * 100)}%` }}
-               ></div>
-             </div>
-
-             <div className="text-center text-xs text-neon-cyan font-mono">
-               Speed Bonus: {getSpeedBonusLabel(decisionTimeMs)}
-             </div>
-             
-             <div className="flex items-center justify-between text-xs border-t border-gray-700 pt-2">
-               <span className="text-neon-cyan font-mono">SCAN CHARGES:</span>
-               <div className="flex items-center gap-1">
-                 {Array.from({ length: 3 }).map((_, i) => (
-                   <div
-                     key={i}
-                     className={`w-2 h-2 rounded-full ${
-                       i < scanChargesRemaining ? 'bg-neon-magenta' : 'bg-gray-600'
-                     }`}
-                   ></div>
-                 ))}
-                 <span className={`font-bold ml-2 ${scanChargesRemaining > 0 ? 'text-neon-magenta' : 'text-red-500'}`}>
-                   {scanChargesRemaining} / 3
-                 </span>
-               </div>
-             </div>
-           </div>
-
-          {/* Scan Section */}
-          {scanChargesRemaining > 0 && (
-            <div className="scan-section bg-gradient-to-r from-gray-800 to-gray-900 border border-neon-magenta border-opacity-50 rounded-lg p-4 space-y-3">
-              <div className="flex items-center justify-between">
-                <h4 className="text-sm font-bold text-neon-magenta">🔍 SCAN COORDINATE</h4>
-                <span className="text-xs text-neon-cyan">{scanChargesRemaining} scans remaining</span>
+        {/* Weather & Conditions - Right side balance */}
+        {gameState?.globalWeather && (
+          <div className="weather-preview bg-gray-800 rounded-lg p-3 border border-gray-700">
+            <h4 className="text-xs font-bold text-neon-orange mb-2">🌊 WEATHER</h4>
+            <div className="flex items-center gap-2 mb-2">
+              <span className="text-lg">{getWeatherEmoji()}</span>
+              <div>
+                <div className="text-xs font-bold text-white capitalize">{gameState.globalWeather.type.replace('_', ' ')}</div>
+                <div className="text-xs text-neon-cyan">{gameState.globalWeather.duration} turns</div>
               </div>
-              
-              <p className="text-xs text-gray-300">
-                Select a coordinate to reveal its territory type without claiming it:
-              </p>
+            </div>
+          </div>
+        )}
 
-              <div
-                className="grid gap-2 p-3 bg-black bg-opacity-30 rounded"
-                style={{
-                  gridTemplateColumns: `repeat(${gameState?.gameMap.size || 7}, minmax(2rem, 1fr))`,
-                }}
-              >
-                {gameState?.gameMap && Array.from({ length: gameState.gameMap.size }).map((_, x) =>
-                  Array.from({ length: gameState.gameMap.size }).map((_, y) => (
-                    <button
-                      key={`${x}-${y}`}
-                      onClick={() => setSelectedCoordinate({ x, y })}
-                      disabled={scanChargesRemaining <= 0 || !isMyTurn()}
-                      title={`Scan coordinate (${x}, ${y})`}
-                      className={`p-2 rounded text-xs font-bold transition-all duration-200 ${
-                        selectedCoordinate?.x === x && selectedCoordinate?.y === y
+        {/* Battle Snapshot - Right side balance */}
+        {gameState && (
+          <div className="battle-snapshot bg-gray-800 rounded-lg p-3 border border-gray-700">
+            <h4 className="text-xs font-bold text-neon-green mb-2">📊 BATTLEFIELD</h4>
+            <div className="grid grid-cols-2 gap-2 text-xs">
+              <div>
+                <span className="text-gray-400">Total Fleets:</span>
+                <span className="text-white font-mono ml-1">{gameState.players.reduce((t, p) => t + p.ships.filter(s => s.health > 0).length, 0)}</span>
+              </div>
+              <div>
+                <span className="text-gray-400">Claimed:</span>
+                <span className="text-white font-mono ml-1">{gameState.players.reduce((t, p) => t + p.controlledTerritories.length, 0)}</span>
+              </div>
+            </div>
+          </div>
+        )}
+
+        {isMyTurn() && (
+          <>
+            {/* Skill Metrics Display with Timer */}
+            <div className="skill-metrics bg-gradient-to-r from-gray-800 to-gray-900 border border-neon-magenta border-opacity-50 rounded-lg p-4 space-y-3">
+              <div className="flex items-center justify-between">
+                <span className="text-neon-cyan font-mono text-sm">⏱️ DECISION TIME:</span>
+                <span className={`${getTimerColor(decisionTimeMs)} font-bold font-mono text-lg`}>
+                  {formatTime(decisionTimeMs)}
+                </span>
+              </div>
+
+              <div className="bg-gray-700 rounded h-2 overflow-hidden">
+                <div
+                  className={`h-full transition-all ${decisionTimeMs < 5000 ? 'bg-neon-green' :
+                    decisionTimeMs < 10000 ? 'bg-neon-magenta' :
+                      decisionTimeMs < 15000 ? 'bg-neon-gold' :
+                        'bg-red-500'
+                    }`}
+                  style={{ width: `${Math.min(100, (decisionTimeMs / 30000) * 100)}%` }}
+                ></div>
+              </div>
+
+              <div className="text-center text-xs text-neon-cyan font-mono">
+                Speed Bonus: {getSpeedBonusLabel(decisionTimeMs)}
+              </div>
+
+              <div className="flex items-center justify-between text-xs border-t border-gray-700 pt-2">
+                <span className="text-neon-cyan font-mono">SCAN CHARGES:</span>
+                <div className="flex items-center gap-1">
+                  {Array.from({ length: 3 }).map((_, i) => (
+                    <div
+                      key={i}
+                      className={`w-2 h-2 rounded-full ${i < scanChargesRemaining ? 'bg-neon-magenta' : 'bg-gray-600'
+                        }`}
+                    ></div>
+                  ))}
+                  <span className={`font-bold ml-2 ${scanChargesRemaining > 0 ? 'text-neon-magenta' : 'text-red-500'}`}>
+                    {scanChargesRemaining} / 3
+                  </span>
+                </div>
+              </div>
+            </div>
+
+            {/* Scan Section */}
+            {scanChargesRemaining > 0 && (
+              <div className="scan-section bg-gradient-to-r from-gray-800 to-gray-900 border border-neon-magenta border-opacity-50 rounded-lg p-4 space-y-3">
+                <div className="flex items-center justify-between">
+                  <h4 className="text-sm font-bold text-neon-magenta">🔍 SCAN COORDINATE</h4>
+                  <span className="text-xs text-neon-cyan">{scanChargesRemaining} scans remaining</span>
+                </div>
+
+                <p className="text-xs text-gray-300">
+                  Select a coordinate to reveal its territory type without claiming it:
+                </p>
+
+                <div
+                  className="grid gap-2 p-3 bg-black bg-opacity-30 rounded"
+                  style={{
+                    gridTemplateColumns: `repeat(${gameState?.gameMap.size || 7}, minmax(2rem, 1fr))`,
+                  }}
+                >
+                  {gameState?.gameMap && Array.from({ length: gameState.gameMap.size }).map((_, x) =>
+                    Array.from({ length: gameState.gameMap.size }).map((_, y) => (
+                      <button
+                        key={`${x}-${y}`}
+                        onClick={() => setSelectedCoordinate({ x, y })}
+                        disabled={scanChargesRemaining <= 0 || !isMyTurn()}
+                        title={`Scan coordinate (${x}, ${y})`}
+                        className={`p-2 rounded text-xs font-bold transition-all duration-200 ${selectedCoordinate?.x === x && selectedCoordinate?.y === y
                           ? 'bg-neon-magenta text-black ring-2 ring-neon-cyan shadow-lg'
                           : 'bg-gray-700 text-gray-300 hover:bg-gray-600 hover:text-neon-cyan'
-                      } ${scanChargesRemaining <= 0 ? 'opacity-50 cursor-not-allowed' : ''}`}
-                    >
-                      {x},{y}
-                    </button>
-                  ))
-                )}
-              </div>
-
-              {selectedCoordinate && (
-                <div className="text-center text-xs text-neon-cyan font-mono">
-                  Selected: ({selectedCoordinate.x}, {selectedCoordinate.y})
+                          } ${scanChargesRemaining <= 0 ? 'opacity-50 cursor-not-allowed' : ''}`}
+                      >
+                        {x},{y}
+                      </button>
+                    ))
+                  )}
                 </div>
-              )}
 
-              <button
-                onClick={handleScan}
-                disabled={!selectedCoordinate || scanChargesRemaining <= 0 || isScanning}
-                className="w-full bg-gradient-to-r from-neon-magenta to-purple-600 text-white font-bold py-3 px-3 rounded-lg hover:shadow-neon-magenta transition-all duration-300 disabled:opacity-50 disabled:cursor-not-allowed"
-              >
-                {isScanning ? '🔍 Scanning...' : `🔍 Execute Scan (${scanChargesRemaining})`}
-              </button>
+                {selectedCoordinate && (
+                  <div className="text-center text-xs text-neon-cyan font-mono">
+                    Selected: ({selectedCoordinate.x}, {selectedCoordinate.y})
+                  </div>
+                )}
+
+                <button
+                  onClick={handleScan}
+                  disabled={!selectedCoordinate || scanChargesRemaining <= 0 || isScanning}
+                  className="w-full bg-gradient-to-r from-neon-magenta to-purple-600 text-white font-bold py-3 px-3 rounded-lg hover:shadow-neon-magenta transition-all duration-300 disabled:opacity-50 disabled:cursor-not-allowed"
+                >
+                  {isScanning ? '🔍 Scanning...' : `🔍 Execute Scan (${scanChargesRemaining})`}
+                </button>
+              </div>
+            )}
+
+            {renderShipSelection()}
+            {renderActionControls()}
+
+            {/* Ship Building Section */}
+            <div className="ship-building space-y-3">
+              <h4 className="text-sm font-bold text-neon-cyan">🛠️ BUILD SHIPS</h4>
+              <div className="build-options grid grid-cols-2 gap-2">
+                <button
+                  onClick={() => onShipAction('build', 'build')}
+                  className="build-btn bg-neon-cyan bg-opacity-15 border border-neon-cyan text-neon-cyan py-2 px-2 rounded-lg hover:bg-neon-cyan hover:bg-opacity-25 transition-all duration-300"
+                  title="Build new ships at controlled ports"
+                >
+                  <div className="text-sm">⛵</div>
+                  <div className="text-xs">Sloop</div>
+                  <div className="text-xs text-gray-400">500💰</div>
+                </button>
+                <button
+                  onClick={() => onShipAction('build', 'build')}
+                  className="build-btn bg-neon-cyan bg-opacity-15 border border-neon-cyan text-neon-cyan py-2 px-2 rounded-lg hover:bg-neon-cyan hover:bg-opacity-25 transition-all duration-300"
+                  title="Build frigate"
+                >
+                  <div className="text-sm">🚢</div>
+                  <div className="text-xs">Frigate</div>
+                  <div className="text-xs text-gray-400">1.2k💰</div>
+                </button>
+              </div>
             </div>
-          )}
 
-          {renderShipSelection()}
-          {renderActionControls()}
-          
-          {/* Ship Building Section */}
-          <div className="ship-building space-y-3">
-            <h4 className="text-sm font-bold text-neon-cyan">🛠️ BUILD SHIPS</h4>
-            <div className="build-options grid grid-cols-2 gap-2">
-              <button
-                onClick={() => onShipAction('build', 'build')}
-                className="build-btn bg-neon-cyan bg-opacity-15 border border-neon-cyan text-neon-cyan py-2 px-2 rounded-lg hover:bg-neon-cyan hover:bg-opacity-25 transition-all duration-300"
-                title="Build new ships at controlled ports"
-              >
-                <div className="text-sm">⛵</div>
-                <div className="text-xs">Sloop</div>
-                <div className="text-xs text-gray-400">500💰</div>
-              </button>
-              <button
-                onClick={() => onShipAction('build', 'build')}
-                className="build-btn bg-neon-cyan bg-opacity-15 border border-neon-cyan text-neon-cyan py-2 px-2 rounded-lg hover:bg-neon-cyan hover:bg-opacity-25 transition-all duration-300"
-                title="Build frigate"
-              >
-                <div className="text-sm">🚢</div>
-                <div className="text-xs">Frigate</div>
-                <div className="text-xs text-gray-400">1.2k💰</div>
-              </button>
-            </div>
-          </div>
-
-          <button
-            onClick={onEndTurn}
-            className="w-full bg-gradient-to-r from-neon-magenta to-purple-600 text-white font-bold py-3 px-6 rounded-lg hover:shadow-neon-magenta transition-all duration-300"
-          >
-            ⚓ End Turn
-          </button>
-        </>
-      )}
-    </div>
+            <button
+              onClick={onEndTurn}
+              className="w-full bg-gradient-to-r from-neon-magenta to-purple-600 text-white font-bold py-3 px-6 rounded-lg hover:shadow-neon-magenta transition-all duration-300"
+            >
+              ⚓ End Turn
+            </button>
+          </>
+        )}
+      </div>
     );
   };
 
@@ -600,7 +598,7 @@ export default function PirateControls({
         {gameState?.gameStatus === 'waiting' && renderWaitingControls()}
         {gameState?.gameStatus === 'active' && renderGameControls()}
       </div>
-      
+
       {gameState?.gameStatus === 'completed' && (
         <div className="game-complete text-center space-y-4 w-full max-w-sm">
           <h3 className="text-xl font-bold text-neon-gold">

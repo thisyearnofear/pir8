@@ -5,7 +5,7 @@ dotenv.config({ path: path.join(process.cwd(), '.env.local') });
 
 import { ZCASH_CONFIG, API_ENDPOINTS, GAME_CONFIG } from '../src/utils/constants';
 import { ZcashMemoBridge } from '../src/lib/integrations';
-import { getAnchorClient } from '../src/lib/anchorClient';
+import { getAnchorClient } from '../src/lib/server/anchorActions';
 import { handleShieldedMemo } from '../src/cli/commands/game';
 
 type Action = 'join' | 'create';

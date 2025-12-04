@@ -1,6 +1,6 @@
 "use client";
 
-import { useWallet } from "@solana/wallet-adapter-react";
+import { useWallet, useAnchorWallet } from "@solana/wallet-adapter-react";
 import { usePirateGameState } from "@/hooks/usePirateGameState";
 import { useErrorHandler } from "@/hooks/useErrorHandler";
 import { useShowOnboarding } from "@/hooks/useShowOnboarding";
@@ -31,6 +31,7 @@ const WalletButtonWrapper = dynamic(
 
 export default function Home() {
   const { publicKey } = useWallet();
+  const wallet = useAnchorWallet();
   const {
     gameState,
     isLoading,
@@ -43,6 +44,7 @@ export default function Home() {
     averageDecisionTimeMs,
     createGame,
     joinGame,
+    startGame, // Added startGame
     moveShip,
     attackWithShip,
     claimTerritory,
@@ -92,18 +94,18 @@ export default function Home() {
   };
 
   const handleCreateGame = async () => {
-    if (!publicKey) {
+    if (!publicKey || !wallet) {
       setJoinError("Please connect your wallet first");
       return;
     }
 
     setIsCreatingGame(true);
     setJoinError(undefined);
-    
+
     try {
       const player = createPlayerFromWallet(publicKey);
-      const success = await createGame([player], 0.1);
-      
+      const success = await createGame([player], 0.1, wallet);
+
       if (success) {
         handleGameEvent("🏴‍☠️ Battle arena created! Awaiting pirates...");
       }
@@ -121,8 +123,8 @@ export default function Home() {
     try {
       setIsCreatingGame(true);
       const ai = createAIPlayer(gameState.gameId);
-      const success = await joinGame(gameState.gameId, ai);
-      
+      const success = await joinGame(gameState.gameId, ai, null); // Pass null wallet for AI
+
       if (success) {
         handleGameEvent("🧭 AI pirate joined the battle!");
       }
@@ -134,24 +136,24 @@ export default function Home() {
   };
 
   const handleJoinGame = async (gameIdInput: string): Promise<boolean> => {
-    if (!publicKey) {
+    if (!publicKey || !wallet) {
       setJoinError("Please connect your wallet first");
       return false;
     }
 
     setIsJoining(true);
     setJoinError(undefined);
-    
+
     try {
       const player = createPlayerFromWallet(publicKey);
-      const success = await joinGame(gameIdInput, player);
-      
+      const success = await joinGame(gameIdInput, player, wallet); // Pass wallet
+
       if (success) {
         handleGameEvent(`🏴‍☠️ Joined battle ${gameIdInput}!`);
       } else {
         setJoinError("Failed to join battle - invalid game ID or game full");
       }
-      
+
       return success;
     } catch (error) {
       console.error("Failed to join game:", error);
@@ -163,21 +165,21 @@ export default function Home() {
   };
 
   const handleCellSelect = async (coordinate: string) => {
-    if (!publicKey || !gameState || !isMyTurn(publicKey.toString())) return;
-    
+    if (!publicKey || !gameState || !isMyTurn(publicKey.toString()) || !wallet) return;
+
     if (selectedShipId) {
       // Move selected ship to coordinate
-      const success = await moveShip(selectedShipId, coordinate);
+      const success = await moveShip(selectedShipId, coordinate, wallet); // Pass wallet
       if (success) {
         handleGameEvent('Ship moved successfully!');
       }
     } else {
       // Try to select a ship at this coordinate
-      const myShips = getAllShips().filter(ship => 
+      const myShips = getAllShips().filter(ship =>
         ship.id.startsWith(publicKey.toString()) &&
         ship.position.x + ',' + ship.position.y === coordinate
       );
-      
+
       if (myShips.length > 0) {
         selectShip(myShips[0].id);
         handleGameEvent(`${myShips[0].type} selected`);
@@ -187,7 +189,7 @@ export default function Home() {
 
   const handleScanCoordinate = async (x: number, y: number) => {
     if (!publicKey || !gameState || !isMyTurn(publicKey.toString())) return;
-    
+
     try {
       await scanCoordinate(x, y);
     } catch (error) {
@@ -197,8 +199,8 @@ export default function Home() {
   };
 
   const handleShipAction = async (shipId: string, action: 'move' | 'attack' | 'claim' | 'collect' | 'build') => {
-    if (!publicKey || !gameState || !isMyTurn(publicKey.toString())) return;
-    
+    if (!publicKey || !gameState || !isMyTurn(publicKey.toString()) || !wallet) return;
+
     switch (action) {
       case 'move':
         handleGameEvent('Select a destination for your ship on the map');
@@ -209,7 +211,7 @@ export default function Home() {
         const myShips = getAllShips().filter(s => s.id.startsWith(publicKey.toString()));
         const selectedShip = myShips.find(s => s.id === shipId);
         if (selectedShip) {
-          const nearbyEnemies = getAllShips().filter(ship => 
+          const nearbyEnemies = getAllShips().filter(ship =>
             !ship.id.startsWith(publicKey.toString()) &&
             ship.health > 0 &&
             Math.sqrt(
@@ -217,9 +219,9 @@ export default function Home() {
               Math.pow(ship.position.y - selectedShip.position.y, 2)
             ) <= 1.5
           );
-          
+
           if (nearbyEnemies.length > 0) {
-            const success = await attackWithShip(shipId, nearbyEnemies[0].id);
+            const success = await attackWithShip(shipId, nearbyEnemies[0].id, wallet); // Pass wallet
             if (success) {
               handleGameEvent('⚔️ Attack launched!');
             }
@@ -232,14 +234,14 @@ export default function Home() {
         const ship = getAllShips().find(s => s.id === shipId);
         if (ship) {
           const coordinate = `${ship.position.x},${ship.position.y}`;
-          const success = await claimTerritory(shipId, coordinate);
+          const success = await claimTerritory(shipId, coordinate, wallet); // Pass wallet
           if (success) {
             handleGameEvent('🏴‍☠️ Territory claimed!');
           }
         }
         break;
       case 'collect':
-        const success = await collectResources(shipId);
+        const success = await collectResources(shipId, wallet); // Pass wallet
         if (success) {
           handleGameEvent('💎 Resources collected!');
         }
@@ -255,7 +257,7 @@ export default function Home() {
   const handleShipClick = (ship: Ship) => {
     if (!publicKey || !isMyTurn(publicKey.toString())) return;
     if (!ship.id.startsWith(publicKey.toString())) return; // Only my ships
-    
+
     selectShip(ship.id);
     setShipActionModalShip(ship);
   };
@@ -280,7 +282,7 @@ export default function Home() {
 
       {/* Manual sync button for testing blockchain synchronization */}
       <ManualSyncButton />
-      
+
       {/* Additional debug components in development mode */}
       {process.env.NODE_ENV !== 'production' && (
         <>
@@ -320,9 +322,9 @@ export default function Home() {
           )}
 
           <div className="grid grid-cols-1 lg:grid-cols-4 gap-6 h-screen max-h-[800px]">
-            {/* Left Panel: Player Stats & Battle Info */}
-            <div className="lg:col-span-1 space-y-4">
-              <PlayerStats 
+            {/* Left Panel: Player Stats Only */}
+            <div className="lg:col-span-1">
+              <PlayerStats
                 players={gameState?.players || []}
                 currentPlayerIndex={gameState?.currentPlayerIndex || 0}
                 gameStatus={gameState?.gameStatus || 'waiting'}
@@ -332,7 +334,6 @@ export default function Home() {
                 averageDecisionTimeMs={averageDecisionTimeMs}
                 scannedCoordinates={getScannedCoordinates()}
               />
-              <BattleInfoPanel gameState={gameState} />
             </div>
 
             {/* Main Game Area */}
@@ -363,12 +364,27 @@ export default function Home() {
               )}
             </div>
 
-            {/* Controls Panel */}
-            <div className="lg:col-span-1">
+            {/* Controls Panel with Battle Info */}
+            <div className="lg:col-span-1 space-y-4">
+              <BattleInfoPanel gameState={gameState} />
               <PirateControls
                 gameState={gameState}
                 onCreateGame={handleCreateGame}
                 onQuickStart={handleQuickStart}
+                onStartGame={async () => {
+                  if (!wallet) return;
+                  setIsCreatingGame(true);
+                  try {
+                    const success = await startGame(wallet); // Pass wallet
+                    if (success) {
+                      handleGameEvent("🏴‍☠️ Battle Started! Hoist the colors!");
+                    }
+                  } catch (error) {
+                    handleGameError(error, "start game");
+                  } finally {
+                    setIsCreatingGame(false);
+                  }
+                }}
                 onJoinGame={handleJoinGame}
                 onShipAction={handleShipAction}
                 onEndTurn={endTurn}

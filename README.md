@@ -53,24 +53,30 @@ Open [http://localhost:3000](http://localhost:3000) and connect your Solana wall
 
 ## ✨ Key Features
 
-### Current (Phase 1 - Foundation - 40% Complete)
+### Current (Phase 1B - Core Game Loop - 90% Complete) 🎯
 - ✅ **10x10 Strategic Map** - Territory generation with island/port/treasure placement
 - ✅ **Fleet System** - 4 ship types with distinct stats (speed, attack, defense, health)
-- ✅ **Core Instructions** - Create game, join game, move ship, attack, claim territory
+- ✅ **Core Instructions** - Create game, join game, start game, reset game
+- ✅ **Movement System** - Move ships within speed range with timing bonuses
+- ✅ **Combat System** - Attack ships with damage calculation and destruction
+- ✅ **Territory Control** - Claim ports, islands, and treasures
+- ✅ **Resource Economy** - Collect resources from controlled territories
+- ✅ **Ship Building** - Build new ships at controlled ports
+- ✅ **Victory Conditions** - Fleet dominance, territory control, economic victory
 - ✅ **Real-Time Updates** - Helius WebSocket monitoring integration
 - ✅ **Multi-Wallet Support** - Phantom, Solflare, Backpack via Wallet Adapter
 - 🏗️ **Zcash Privacy Bridge** - Shielded memo integration for private tournament entry (design ready)
 
-### In Progress (Phase 1 - Critical Path)
-- 🔧 **Contract Compilation** - Resolve module conflicts between instructions.rs and pirate_lib.rs
-- 🔧 **Devnet Deployment** - Deploy working contracts and test full gameplay
-- 🔧 **Resource System** - Resource generation from controlled territories, ship building costs
-- 🏗️ **Weather Mechanics** - Dynamic weather effects on movement and combat
+### In Progress (Phase 1B - Final Polish)
+- 🔧 **Contract Deployment** - Deploy updated contract to devnet
+- 🔧 **Frontend Integration** - Wire all 9 instructions to UI
+- 🏗️ **Auto Victory Check** - Call check_and_complete_game after each turn
+- 🏗️ **UI Polish** - Display resources, ship building interface, victory screen
 
-### Blocked Until Fixed
-- ❌ Devnet deployment (module declaration conflict)
-- ❌ End-to-end gameplay testing (deployment blocking)
-- ❌ Zcash bridge integration (deployment prerequisite)
+### Ready for Testing
+- ⏳ Full gameplay loop with 2+ players
+- ⏳ Resource generation and ship building
+- ⏳ Victory condition triggers
 
 ---
 

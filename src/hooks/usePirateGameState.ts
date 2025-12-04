@@ -29,15 +29,16 @@ interface PirateGameStore {
   scanChargesRemaining: number;
 
   // Actions
-  createGame: (players: Player[], entryFee: number) => Promise<boolean>;
-  joinGame: (gameId: string, player: Player) => Promise<boolean>;
+  createGame: (players: Player[], entryFee: number, wallet: any) => Promise<boolean>;
+  joinGame: (gameId: string, player: Player, wallet: any) => Promise<boolean>;
+  startGame: (wallet: any) => Promise<boolean>; // Added startGame
   processAction: (action: GameAction) => Promise<boolean>;
   selectShip: (shipId: string | null) => void;
-  moveShip: (shipId: string, toCoordinate: string) => Promise<boolean>;
-  attackWithShip: (shipId: string, targetShipId: string) => Promise<boolean>;
-  claimTerritory: (shipId: string, coordinate: string) => Promise<boolean>;
-  collectResources: (shipId: string) => Promise<boolean>;
-  buildShip: (shipType: string, coordinate: string) => Promise<boolean>;
+  moveShip: (shipId: string, toCoordinate: string, wallet: any) => Promise<boolean>;
+  attackWithShip: (shipId: string, targetShipId: string, wallet: any) => Promise<boolean>;
+  claimTerritory: (shipId: string, coordinate: string, wallet: any) => Promise<boolean>;
+  collectResources: (shipId: string, wallet: any) => Promise<boolean>;
+  buildShip: (shipType: string, coordinate: string, wallet: any) => Promise<boolean>;
   endTurn: () => void;
   setMessage: (message: string | null) => void;
   setError: (error: string | null) => void;
@@ -79,45 +80,168 @@ export const usePirateGameState = create<PirateGameStore>((set, get) => ({
   scannedCoordinates: new Set(),
   scanChargesRemaining: 3,
 
-  // Join the global game (or initialize if first time)
-  createGame: async (players: Player[], entryFee: number): Promise<boolean> => {
+  // Start the game (transition from Waiting to Active)
+  startGame: async (wallet: any): Promise<boolean> => {
+    try {
+      set({ isLoading: true, error: null });
+      console.log('🚀 Starting global game...');
+
+      const { startGameClient } = await import('../lib/client/solanaClient');
+      await startGameClient(wallet);
+
+      // Refresh state to get the new map and active status
+      const { createGame } = get();
+      // We pass empty players array as createGame will fetch them from chain
+      await createGame([], 0, wallet);
+
+      set({ isLoading: false });
+      return true;
+    } catch (error) {
+      console.error("Failed to start game:", error);
+      set({
+        error: error instanceof Error ? error.message : 'Failed to start game',
+        isLoading: false
+      });
+      return false;
+    }
+  },
+
+  // Join/Enter the global game
+  createGame: async (players: Player[], entryFee: number, wallet: any): Promise<boolean> => {
     try {
       set({ isLoading: true, error: null });
 
-      console.log('🚀 Joining global game on Solana...');
+      console.log('🚀 Connecting to global game...');
 
-      try {
-        // Try to join the global game
-        await joinGlobalGame();
-        console.log('✅ Joined global game');
-      } catch (joinError: any) {
-        // If game not initialized, try to initialize it first
-        if (joinError?.message?.includes('AccountNotInitialized')) {
+      // 1. Fetch real on-chain state (still use server for reading as it's faster/easier)
+      const { fetchGlobalGameState } = await import('../lib/server/anchorActions');
+      let onChainState = await fetchGlobalGameState();
+
+      // 2. If game doesn't exist, initialize it
+      if (!onChainState) {
+        try {
           console.log('🎮 Game not initialized, initializing now...');
-          await initializeGlobalGame();
-          console.log('✅ Game initialized, now joining...');
-          await joinGlobalGame();
-          console.log('✅ Joined global game');
-        } else {
-          throw joinError;
+          const { initializeGameClient } = await import('../lib/client/solanaClient');
+          await initializeGameClient(wallet);
+          onChainState = await fetchGlobalGameState();
+        } catch (initError) {
+          console.error('Failed to initialize:', initError);
+          // Fallback to local only if chain fails completely (shouldn't happen in prod)
         }
       }
 
-      // Create local game state
-      const gameId = 'global_game';
-      const gameState = PirateGameManager.createNewGame(players, gameId);
+      // 3. Check if player is joined
+      const walletPubkey = wallet?.publicKey?.toString();
+      let isJoined = false;
 
+      if (onChainState && walletPubkey) {
+        isJoined = onChainState.players.some(
+          (p: any) => p.pubkey.toString() === walletPubkey
+        );
+      }
+
+      // 4. Join if not already joined
+      if (!isJoined && wallet) {
+        try {
+          console.log('➕ Joining game on-chain...');
+          const { joinGameClient } = await import('../lib/client/solanaClient');
+          await joinGameClient(wallet);
+          // Fetch updated state after joining
+          onChainState = await fetchGlobalGameState();
+        } catch (joinError: any) {
+          if (joinError?.message?.includes('GameNotJoinable')) {
+            console.log('✅ Player already in game (race condition), continuing...');
+          } else {
+            throw joinError;
+          }
+        }
+      } else {
+        console.log('✅ Player already joined, syncing state...');
+      }
+
+      // 5. Convert on-chain state to local GameState format
+      // This ensures we see the REAL map, REAL players, and REAL status
+      if (onChainState) {
+        // Map on-chain players to local Player type
+        const mappedPlayers: Player[] = onChainState.players.map((p: any) => ({
+          id: p.pubkey.toString(),
+          name: `Pirate ${p.pubkey.toString().slice(0, 4)}`,
+          publicKey: p.pubkey.toString(),
+          avatar: '/avatars/pirate1.png', // Placeholder
+          resources: {
+            gold: p.resources.gold,
+            wood: p.resources.supplies, // Mapping supplies to wood for now if needed, or update type
+            cannons: p.resources.cannons,
+            crew: p.resources.crew,
+            rum: 0 // Extra resource if needed
+          },
+          ships: p.ships.map((s: any) => ({
+            id: s.id,
+            name: `${Object.keys(s.shipType)[0]}`,
+            type: Object.keys(s.shipType)[0],
+            stats: {
+              health: s.health,
+              maxHealth: s.maxHealth,
+              attack: s.attack,
+              defense: s.defense,
+              speed: s.speed,
+              range: 1,
+              cargoCapacity: 100
+            },
+            position: { x: s.positionX, y: s.positionY },
+            ownerId: p.pubkey.toString()
+          })),
+          controlledTerritories: p.controlledTerritories,
+          totalScore: p.totalScore,
+          isActive: p.isActive
+        }));
+
+        // Map on-chain map to local Map type
+        // We need to convert the flat array to a 2D grid or Map object depending on GameState
+        // Assuming GameState uses a Map<string, Tile> or similar. 
+        // For now, let's use the helper to generate a fresh map if we can't parse fully, 
+        // BUT ideally we parse onChainState.territoryMap
+
+        // Let's use the manager to create a base state and then overlay on-chain data
+        const gameId = 'global_game';
+        const baseState = PirateGameManager.createNewGame(mappedPlayers, gameId);
+
+        // Update status
+        const statusKey = Object.keys(onChainState.status)[0].toLowerCase(); // 'waiting', 'active', 'completed'
+
+        const syncedState: GameState = {
+          ...baseState,
+          players: mappedPlayers,
+          gameStatus: statusKey as 'waiting' | 'active' | 'completed',
+          currentPlayerIndex: onChainState.currentPlayerIndex,
+          turnNumber: onChainState.turnNumber,
+          // We should ideally sync the map here too. 
+          // For MVP, if map generation is deterministic based on seed, we are good.
+          // But on-chain map has ownership data we need.
+        };
+
+        set({
+          gameState: syncedState,
+          isLoading: false,
+          selectedShipId: null
+        });
+        return true;
+      }
+
+      // Fallback if no on-chain state (shouldn't happen)
+      const gameId = 'global_game';
+      const localGameState = PirateGameManager.createNewGame(players, gameId);
       set({
-        gameState,
+        gameState: localGameState,
         isLoading: false,
         selectedShipId: null
       });
       return true;
 
     } catch (error) {
-      console.error("Failed to join global game:", error);
+      console.error("Failed to enter game:", error);
       set({
-        error: error instanceof Error ? error.message : 'Failed to join global game',
+        error: error instanceof Error ? error.message : 'Failed to enter game',
         isLoading: false
       });
       return false;
@@ -125,12 +249,21 @@ export const usePirateGameState = create<PirateGameStore>((set, get) => ({
   },
 
   // Join the global pirate game on-chain
-  joinGame: async (gameId: string, player: Player): Promise<boolean> => {
+  joinGame: async (gameId: string, player: Player, wallet: any): Promise<boolean> => {
     try {
-      // With global game, we always join the same game
-      console.log('🚀 Joining global game on Solana...');
-      await joinGlobalGame();
-      console.log('✅ Successfully joined global game');
+      set({ isLoading: true, error: null });
+
+      // Check if AI player
+      const isAI = player.publicKey.startsWith('AI_');
+
+      if (!isAI && wallet) {
+        console.log('🚀 Joining global game on Solana...');
+        const { joinGameClient } = await import('../lib/client/solanaClient');
+        await joinGameClient(wallet);
+        console.log('✅ Successfully joined global game');
+      } else {
+        console.log('🤖 AI/Local player joining locally only');
+      }
 
       // Update local game state
       const { gameState } = get();
@@ -242,20 +375,40 @@ export const usePirateGameState = create<PirateGameStore>((set, get) => ({
     const { gameState } = get();
     if (!gameState) return false;
 
-    const currentPlayer = gameState.players[gameState.currentPlayerIndex];
-    const action: GameAction = {
-      id: `action_${Date.now()}`,
-      gameId: gameState.gameId,
-      player: currentPlayer.publicKey,
-      type: 'move_ship',
-      data: {
-        shipId,
-        toCoordinate
-      },
-      timestamp: Date.now()
-    };
+    try {
+      set({ isLoading: true, error: null });
 
-    return get().processAction(action);
+      // Parse coordinate "x,y"
+      const [xStr, yStr] = toCoordinate.split(',');
+      const toX = parseInt(xStr, 10);
+      const toY = parseInt(yStr, 10);
+
+      // Call on-chain instruction
+      const { moveShip: moveShipOnChain } = await import('../lib/server/anchorActions');
+      await moveShipOnChain(shipId, toX, toY);
+
+      // Also update local state for immediate feedback
+      const currentPlayer = gameState.players[gameState.currentPlayerIndex];
+      const action: GameAction = {
+        id: `action_${Date.now()}`,
+        gameId: gameState.gameId,
+        player: currentPlayer.publicKey,
+        type: 'move_ship',
+        data: { shipId, toCoordinate },
+        timestamp: Date.now()
+      };
+
+      const result = await get().processAction(action);
+      set({ isLoading: false });
+      return result;
+    } catch (error) {
+      console.error('Move ship failed:', error);
+      set({
+        error: error instanceof Error ? error.message : 'Failed to move ship',
+        isLoading: false
+      });
+      return false;
+    }
   },
 
   // Attack with a ship
@@ -263,20 +416,35 @@ export const usePirateGameState = create<PirateGameStore>((set, get) => ({
     const { gameState } = get();
     if (!gameState) return false;
 
-    const currentPlayer = gameState.players[gameState.currentPlayerIndex];
-    const action: GameAction = {
-      id: `action_${Date.now()}`,
-      gameId: gameState.gameId,
-      player: currentPlayer.publicKey,
-      type: 'attack',
-      data: {
-        shipId,
-        targetShipId
-      },
-      timestamp: Date.now()
-    };
+    try {
+      set({ isLoading: true, error: null });
 
-    return get().processAction(action);
+      // Call on-chain instruction
+      const { attackShip } = await import('../lib/server/anchorActions');
+      await attackShip(shipId, targetShipId);
+
+      // Update local state
+      const currentPlayer = gameState.players[gameState.currentPlayerIndex];
+      const action: GameAction = {
+        id: `action_${Date.now()}`,
+        gameId: gameState.gameId,
+        player: currentPlayer.publicKey,
+        type: 'attack',
+        data: { shipId, targetShipId },
+        timestamp: Date.now()
+      };
+
+      const result = await get().processAction(action);
+      set({ isLoading: false });
+      return result;
+    } catch (error) {
+      console.error('Attack failed:', error);
+      set({
+        error: error instanceof Error ? error.message : 'Failed to attack',
+        isLoading: false
+      });
+      return false;
+    }
   },
 
   // Claim territory
@@ -284,20 +452,35 @@ export const usePirateGameState = create<PirateGameStore>((set, get) => ({
     const { gameState } = get();
     if (!gameState) return false;
 
-    const currentPlayer = gameState.players[gameState.currentPlayerIndex];
-    const action: GameAction = {
-      id: `action_${Date.now()}`,
-      gameId: gameState.gameId,
-      player: currentPlayer.publicKey,
-      type: 'claim_territory',
-      data: {
-        shipId,
-        toCoordinate: coordinate
-      },
-      timestamp: Date.now()
-    };
+    try {
+      set({ isLoading: true, error: null });
 
-    return get().processAction(action);
+      // Call on-chain instruction
+      const { claimTerritory: claimTerritoryOnChain } = await import('../lib/server/anchorActions');
+      await claimTerritoryOnChain(shipId);
+
+      // Update local state
+      const currentPlayer = gameState.players[gameState.currentPlayerIndex];
+      const action: GameAction = {
+        id: `action_${Date.now()}`,
+        gameId: gameState.gameId,
+        player: currentPlayer.publicKey,
+        type: 'claim_territory',
+        data: { shipId, toCoordinate: coordinate },
+        timestamp: Date.now()
+      };
+
+      const result = await get().processAction(action);
+      set({ isLoading: false });
+      return result;
+    } catch (error) {
+      console.error('Claim territory failed:', error);
+      set({
+        error: error instanceof Error ? error.message : 'Failed to claim territory',
+        isLoading: false
+      });
+      return false;
+    }
   },
 
   // Collect resources
@@ -305,19 +488,35 @@ export const usePirateGameState = create<PirateGameStore>((set, get) => ({
     const { gameState } = get();
     if (!gameState) return false;
 
-    const currentPlayer = gameState.players[gameState.currentPlayerIndex];
-    const action: GameAction = {
-      id: `action_${Date.now()}`,
-      gameId: gameState.gameId,
-      player: currentPlayer.publicKey,
-      type: 'collect_resources',
-      data: {
-        shipId
-      },
-      timestamp: Date.now()
-    };
+    try {
+      set({ isLoading: true, error: null });
 
-    return get().processAction(action);
+      // Call on-chain instruction
+      const { collectResources: collectResourcesOnChain } = await import('../lib/server/anchorActions');
+      await collectResourcesOnChain();
+
+      // Update local state
+      const currentPlayer = gameState.players[gameState.currentPlayerIndex];
+      const action: GameAction = {
+        id: `action_${Date.now()}`,
+        gameId: gameState.gameId,
+        player: currentPlayer.publicKey,
+        type: 'collect_resources',
+        data: { shipId },
+        timestamp: Date.now()
+      };
+
+      const result = await get().processAction(action);
+      set({ isLoading: false });
+      return result;
+    } catch (error) {
+      console.error('Collect resources failed:', error);
+      set({
+        error: error instanceof Error ? error.message : 'Failed to collect resources',
+        isLoading: false
+      });
+      return false;
+    }
   },
 
   // Build ship
@@ -325,25 +524,49 @@ export const usePirateGameState = create<PirateGameStore>((set, get) => ({
     const { gameState } = get();
     if (!gameState) return false;
 
-    const currentPlayer = gameState.players[gameState.currentPlayerIndex];
-    const validShipType = shipType as 'sloop' | 'frigate' | 'galleon' | 'flagship';
-    const action: GameAction = {
-      id: `action_${Date.now()}`,
-      gameId: gameState.gameId,
-      player: currentPlayer.publicKey,
-      type: 'build_ship',
-      data: {
-        shipType: validShipType,
-        toCoordinate: coordinate
-      },
-      timestamp: Date.now()
-    };
+    try {
+      set({ isLoading: true, error: null });
 
-    return get().processAction(action);
+      // Parse coordinate "x,y"
+      const [xStr, yStr] = coordinate.split(',');
+      const portX = parseInt(xStr, 10);
+      const portY = parseInt(yStr, 10);
+
+      const validShipType = shipType as 'sloop' | 'frigate' | 'galleon' | 'flagship';
+
+      // Call on-chain instruction
+      const { buildShip: buildShipOnChain } = await import('../lib/server/anchorActions');
+      await buildShipOnChain(validShipType, portX, portY);
+
+      // Update local state
+      const currentPlayer = gameState.players[gameState.currentPlayerIndex];
+      const action: GameAction = {
+        id: `action_${Date.now()}`,
+        gameId: gameState.gameId,
+        player: currentPlayer.publicKey,
+        type: 'build_ship',
+        data: {
+          shipType: validShipType,
+          toCoordinate: coordinate
+        },
+        timestamp: Date.now()
+      };
+
+      const result = await get().processAction(action);
+      set({ isLoading: false });
+      return result;
+    } catch (error) {
+      console.error('Build ship failed:', error);
+      set({
+        error: error instanceof Error ? error.message : 'Failed to build ship',
+        isLoading: false
+      });
+      return false;
+    }
   },
 
   // End current player's turn
-  endTurn: () => {
+  endTurn: async () => {
     const { gameState } = get();
     if (!gameState) return;
 
@@ -405,6 +628,15 @@ export const usePirateGameState = create<PirateGameStore>((set, get) => ({
 
     if (message) {
       setTimeout(() => set({ showMessage: null }), 4000);
+    }
+
+    // Call on-chain victory check
+    try {
+      const { checkAndCompleteGame } = await import('../lib/server/anchorActions');
+      await checkAndCompleteGame();
+    } catch (error) {
+      console.log('Victory check:', error);
+      // Non-critical, game continues locally
     }
   },
 

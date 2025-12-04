@@ -6,7 +6,7 @@ import fs from 'fs';
 import path from 'path';
 import { SOLANA_CONFIG } from '@/utils/constants';
 import { PROGRAM_ID } from '../anchor';
-import { getGlobalGamePDA } from '../anchorClient';
+import { getGlobalGamePDA } from '../anchorUtils';
 
 class NodeWallet {
   constructor(readonly payer: Keypair) { }
@@ -72,6 +72,24 @@ export async function joinGlobalGame(): Promise<void> {
   const { program, provider } = await getAnchorClient();
   const [gamePDA] = getGlobalGamePDA(program.programId);
 
+  // Check if player is already in the game to avoid 500 errors
+  try {
+    const gameState = await (program.account as any).pirateGame.fetch(gamePDA);
+    const playerPubkey = provider.wallet.publicKey.toString();
+
+    const isAlreadyJoined = gameState.players.some(
+      (p: any) => p.pubkey.toString() === playerPubkey
+    );
+
+    if (isAlreadyJoined) {
+      console.log('Player already in global game, skipping transaction');
+      return;
+    }
+  } catch (e) {
+    // Game might not exist yet, proceed to try joining (which will fail with specific error if so)
+    console.log('Could not fetch game state, proceeding with join...');
+  }
+
   await program.methods
     .joinGame()
     .accounts({
@@ -120,9 +138,162 @@ export async function fetchGlobalGameState(): Promise<any> {
 
   try {
     // Account name is camelCase in Anchor
-    return await (program.account as any).pirateGame.fetch(gamePDA);
+    const rawState = await (program.account as any).pirateGame.fetch(gamePDA);
+
+    // Sanitize the data for Client Components
+    return sanitizeSolanaData(rawState);
   } catch (error) {
     console.log('Game not initialized yet');
     return null;
   }
+}
+
+// Helper to convert Solana types to JSON-friendly types
+function sanitizeSolanaData(data: any): any {
+  if (data === null || data === undefined) return data;
+
+  // Handle PublicKey
+  if (data.toBase58 && typeof data.toBase58 === 'function') {
+    return data.toBase58();
+  }
+
+  // Handle BN (BigNumber)
+  if (data.toNumber && typeof data.toNumber === 'function') {
+    try {
+      return data.toNumber();
+    } catch (e) {
+      return data.toString(); // Fallback for very large numbers
+    }
+  }
+
+  // Handle Array
+  if (Array.isArray(data)) {
+    return data.map(item => sanitizeSolanaData(item));
+  }
+
+  // Handle Object
+  if (typeof data === 'object') {
+    const result: any = {};
+    for (const key in data) {
+      result[key] = sanitizeSolanaData(data[key]);
+    }
+    return result;
+  }
+
+  return data;
+}
+
+// ============================================================================
+// GAMEPLAY INSTRUCTIONS
+// ============================================================================
+
+export async function moveShip(
+  shipId: string,
+  toX: number,
+  toY: number,
+  decisionTimeMs?: number
+): Promise<string> {
+  const { program, provider } = await getAnchorClient();
+  const [gamePDA] = getGlobalGamePDA(program.programId);
+
+  const tx = await program.methods
+    .moveShip(shipId, toX, toY, decisionTimeMs ? new BN(decisionTimeMs) : null)
+    .accounts({
+      game: gamePDA,
+      player: provider.wallet.publicKey,
+    })
+    .rpc();
+
+  console.log('Ship moved:', tx);
+  return tx;
+}
+
+export async function attackShip(
+  attackerShipId: string,
+  targetShipId: string
+): Promise<string> {
+  const { program, provider } = await getAnchorClient();
+  const [gamePDA] = getGlobalGamePDA(program.programId);
+
+  const tx = await program.methods
+    .attackShip(attackerShipId, targetShipId)
+    .accounts({
+      game: gamePDA,
+      player: provider.wallet.publicKey,
+    })
+    .rpc();
+
+  console.log('Ship attacked:', tx);
+  return tx;
+}
+
+export async function claimTerritory(shipId: string): Promise<string> {
+  const { program, provider } = await getAnchorClient();
+  const [gamePDA] = getGlobalGamePDA(program.programId);
+
+  const tx = await program.methods
+    .claimTerritory(shipId)
+    .accounts({
+      game: gamePDA,
+      player: provider.wallet.publicKey,
+    })
+    .rpc();
+
+  console.log('Territory claimed:', tx);
+  return tx;
+}
+
+export async function collectResources(): Promise<string> {
+  const { program, provider } = await getAnchorClient();
+  const [gamePDA] = getGlobalGamePDA(program.programId);
+
+  const tx = await program.methods
+    .collectResources()
+    .accounts({
+      game: gamePDA,
+      player: provider.wallet.publicKey,
+    })
+    .rpc();
+
+  console.log('Resources collected:', tx);
+  return tx;
+}
+
+export async function buildShip(
+  shipType: 'sloop' | 'frigate' | 'galleon' | 'flagship',
+  portX: number,
+  portY: number
+): Promise<string> {
+  const { program, provider } = await getAnchorClient();
+  const [gamePDA] = getGlobalGamePDA(program.programId);
+
+  // Convert ship type to Anchor enum format
+  const shipTypeEnum = { [shipType]: {} };
+
+  const tx = await program.methods
+    .buildShip(shipTypeEnum, portX, portY)
+    .accounts({
+      game: gamePDA,
+      player: provider.wallet.publicKey,
+    })
+    .rpc();
+
+  console.log('Ship built:', tx);
+  return tx;
+}
+
+export async function checkAndCompleteGame(): Promise<string> {
+  const { program, provider } = await getAnchorClient();
+  const [gamePDA] = getGlobalGamePDA(program.programId);
+
+  const tx = await program.methods
+    .checkAndCompleteGame()
+    .accounts({
+      game: gamePDA,
+      player: provider.wallet.publicKey,
+    })
+    .rpc();
+
+  console.log('Victory check completed:', tx);
+  return tx;
 }
