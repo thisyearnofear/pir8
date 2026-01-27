@@ -23,48 +23,12 @@ PIR8 is a full-stack Web3 gaming platform built on Solana with privacy features 
 - **Helius WebSocket**: Real-time game monitoring
 - **Zcash Lightwalletd**: Shielded memo watching
 
-## ✅ Smart Contract Status
-
-**Compilation**: Successfully compiles with Anchor 0.29+ with 0 errors
-**Skill Mechanics**: Fully implemented (scanning + timing bonuses)
-**Next step**: Deploy to Solana Devnet and test gameplay
-
-### Skill Mechanics Implementation (Phase 1 & 2) ✅
-
-**Scanning System**:
-- PlayerData enhanced: `scan_charges` (3/player), `scanned_coordinates` (bit-packed, 13 bytes max)
-- New instruction: `scan_coordinate(x, y)` - reveals territory type
-- Validation: turn order, available charges, no re-scanning
-- Event: `CoordinateScanned` with tile type and remaining charges
-
-**Timing Bonuses**:
-- PlayerData enhanced: `speed_bonus_accumulated`, `average_decision_time_ms`, `total_moves`
-- New instruction: `make_move_timed(ship_id, x, y, decision_time_ms)`
-- Bonus calculation: <5s=+100, <10s=+50, <15s=+25, >15s=0
-- Tracks running average without storing all times (O(1) space/time)
-- Event: `MoveExecuted` with timing and bonus data
-
-**Storage Efficiency**:
-- Total overhead: 31 bytes per player
-- Bit-packed coordinates: 13 bytes vs 512 bytes naive (97% reduction)
-- Running averages vs storing all data
-
-**Game Balance Impact**:
-- Skill shift: 70% luck / 30% skill → 30% luck / 70% skill
-- Scanning enables strategic information gathering
-- Timing rewards consistent fast decision-making
-- Over 20 turns: skilled player +500 bonus vs unskilled +0 (meaningful but not dominant)
-
----
-
 ## Smart Contract Architecture
 
 ### Core Contracts
 
 #### 1. Game Contract (`pir8_game`)
-**Location**: `/contracts/pir8-game/src/lib.rs`
-**Size**: 1,017 lines (lib.rs) + 302 lines (instructions.rs) + 537 lines (pirate_lib.rs) = 1,856 total
-**Program ID**: `5etQW394NUCprU1ikrbDysFeCGGRYY9usChGpaox9oiK` (devnet deployment pending)
+**Location**: `/programs/pir8-game/src/lib.rs`
 **Status**: ✅ **Compiled successfully** - Ready for deployment
 
 **Key Instructions**:
@@ -72,16 +36,23 @@ PIR8 is a full-stack Web3 gaming platform built on Solana with privacy features 
 pub mod pir8_game {
     // Configuration
     pub fn initialize_config(...)  // One-time platform setup
-    
+
     // Game Lifecycle
     pub fn create_game(...)        // Create new game instance
     pub fn join_game(...)          // Player joins with entry fee
     pub fn start_game(...)         // Begin gameplay
-    pub fn make_move(...)          // Pick coordinate, reveal item
-    pub fn execute_item_effect(...) // Use special items
+    pub fn make_move(...)          // Move ship within speed range
+    pub fn attack_ship(...)        // Deal damage to enemy vessel in range
+    pub fn claim_territory(...)    // Claim port/island/treasure at ship location
+    pub fn collect_resources(...)  // Harvest resources from controlled territory
+    pub fn build_ship(...)         // Build new ship at controlled port (costs resources)
     pub fn complete_game(...)      // Finalize and determine winner
     pub fn claim_winnings(...)     // Winner withdraws prize
-    
+
+    // Skill Mechanics
+    pub fn scan_coordinate(...)    // Reveal territory type without claiming
+    pub fn make_move_timed(...)    // Move with timing bonus calculation
+
     // Admin
     pub fn set_game_status(...)    // Pause/unpause platform
 }
@@ -105,65 +76,72 @@ pub struct Game {
     pub creator: Pubkey,             // Game creator
     pub status: GameStatus,          // Waiting/Active/Completed
     pub players: Vec<PlayerState>,   // Up to 4 players
-    pub grid: Vec<GameItem>,         // 49 items (7x7)
-    pub chosen_coordinates: Vec<String>, // Picked squares
+    pub game_map: GameMap,           // 10x10 strategic map
     pub entry_fee: u64,              // Entry cost
     pub total_pot: u64,              // Prize pool
     pub winner: Option<Pubkey>,      // Winner address
-    pub random_seed: u64,            // Grid generation seed
+    pub turn_number: u64,            // Current turn
+    pub current_player_index: u64,   // Index of current player
     // ... metadata and reserved space
 }
 
 // Player state within game
 pub struct PlayerState {
     pub player_key: Pubkey,          // Player address
-    pub points: u64,                 // Current score
-    pub banked_points: u64,          // Protected score
-    pub has_elf: bool,               // Defensive item
-    pub has_bauble: bool,            // Reflect item
-    pub last_move_at: i64,           // Timestamp
+    pub resources: Resources,        // Gold, crew, cannons, supplies
+    pub ships: Vec<Ship>,            // Player's fleet
+    pub controlled_territories: Vec<String>, // Claimed territories
+    pub total_score: u64,            // Current score
+    pub is_active: bool,             // Active in current game
+    pub scan_charges: u8,            // Remaining scan charges
+    pub speed_bonus_accumulated: u64, // Accumulated timing bonuses
+    pub average_decision_time_ms: u64, // Average decision time
+    pub total_moves: u64,            // Total moves made
 }
 ```
 
-**Game Items**:
+**Ship Types**:
 ```rust
-pub enum GameItem {
-    Points(u16),      // 200, 1000, 3000, 5000
-    Grinch,           // Steal points
-    Pudding,          // Reset target to 0
-    Present,          // Gift 1000 points
-    Snowball,         // (Reserved for multiplayer)
-    Mistletoe,        // Swap scores
-    Tree,             // Choose next coordinate
-    Elf,              // Block one attack
-    Bauble,           // Reflect one attack
-    Turkey,           // Reset self to 0
-    Cracker,          // Double current score
-    Bank,             // Move points to safe storage
+pub struct Ship {
+    pub id: String,                  // Unique identifier
+    pub ship_type: ShipType,         // Sloop, Frigate, Galleon, Flagship
+    pub health: u8,                  // Current health
+    pub max_health: u8,              // Maximum health
+    pub attack: u8,                  // Attack power
+    pub defense: u8,                 // Defense power
+    pub speed: u8,                   // Movement speed
+    pub position: Coordinate,        // Current position
+    pub resources: Resources,        // Carried resources
+}
+
+pub enum ShipType {
+    Sloop,      // Fast scout (low health, moderate attack)
+    Frigate,    // Balanced (moderate everything)
+    Galleon,    // Heavy (high health, high attack)
+    Flagship,   // Commander (highest stats)
 }
 ```
 
-#### 2. Tournament Contract (Planned)
-**Status**: Design phase
-**Target**: Phase 3 implementation
-
-**Planned Instructions**:
+**Resource System**:
 ```rust
-pub mod pir8_tournament {
-    // Tournament Management
-    pub fn initialize_tournament_manager(...)
-    pub fn create_tournament(...)
-    pub fn register_for_tournament(...)
-    pub fn seed_tournament(...)  // Leader seeding
-    
-    // Bracket Progression
-    pub fn advance_bracket(...)
-    pub fn report_match_result(...)
-    pub fn complete_tournament(...)
-    
-    // Rewards
-    pub fn distribute_tokens(...)
-    pub fn claim_tournament_rewards(...)
+pub struct Resources {
+    pub gold: u64,       // Currency for building
+    pub crew: u64,       // Manpower for ships
+    pub cannons: u64,    // Weaponry for combat
+    pub supplies: u64,   // Materials for maintenance
+}
+```
+
+**Territory Types**:
+```rust
+pub enum TerritoryType {
+    Water,      // Safe passage
+    Island,     // Supplies generation (+3/turn)
+    Port,       // Ship building hub (+5 gold, +2 crew/turn)
+    Treasure,   // Wealth generator (+10 gold/turn)
+    Storm,      // Hazard (-50% movement)
+    Reef,       // Hidden hazard (-20 health if hit)
+    Whirlpool,  // Deadly trap (-100 health)
 }
 ```
 
@@ -181,7 +159,7 @@ pub mod pir8_tournament {
 - Pot calculation with checked math
 
 **Game Integrity**:
-- Coordinate validation (A1-G7 only)
+- Coordinate validation (A1-J10 only on 10x10 map)
 - Duplicate move prevention
 - Turn order enforcement
 - Winner determination on-chain
@@ -197,14 +175,15 @@ app/
 
 src/
 ├── components/
+│   ├── GameCockpit/     # Main game UI components
 │   ├── PirateControls.tsx     # Game controls (ship select, actions, scan)
-│   ├── PirateMap.tsx          # 7x7 game map with territory/ships
+│   ├── PirateMap.tsx          # 10x10 game map with territory/ships
 │   ├── PlayerStats.tsx        # Player scores + skill metrics
 │   ├── BattleInfoPanel.tsx    # Weather, phase, turn info
-│   ├── TurnBanner.tsx         # YOUR TURN indicator (NEW - Phase 1A)
-│   ├── OnboardingModal.tsx    # First-game tutorial (NEW - Phase 1A)
-│   ├── ShipActionModal.tsx    # Action menu for ships (NEW - Phase 1A)
-│   ├── TerritoryTooltip.tsx   # Territory effect tooltips (NEW - Phase 1A)
+│   ├── TurnBanner.tsx         # YOUR TURN indicator
+│   ├── OnboardingModal.tsx    # First-game tutorial
+│   ├── ShipActionModal.tsx    # Action menu for ships
+│   ├── TerritoryTooltip.tsx   # Territory effect tooltips
 │   ├── ErrorBoundary.tsx      # Error handling
 │   ├── Toast.tsx              # Notifications
 │   └── WalletProvider.tsx     # Wallet integration
@@ -213,211 +192,18 @@ src/
 │   ├── usePirateGameState.ts     # Game state + skill mechanics
 │   ├── useZcashBridge.ts         # Zcash integration
 │   ├── useErrorHandler.ts        # Error management
-│   ├── useShowOnboarding.ts      # Onboarding state (NEW - Phase 1A)
-│   └── useTurnIndicator.ts       # Turn status (NEW - Phase 1A)
+│   ├── useShowOnboarding.ts      # Onboarding state
+│   └── useTurnIndicator.ts       # Turn status
 │
 ├── lib/
 │   ├── integrations.ts       # Helius/Pump/Zcash
 │   ├── anchorClient.ts       # Anchor transactions
 │   ├── gameLogic.ts          # Core game rules
-│   └── pirateGameEngine.ts   # Game state logic
+│   ├── pirateGameEngine.ts   # Game state logic
+│   └── anchorUtils.ts        # PDA utilities
 │
 └── types/
     └── game.ts               # TypeScript interfaces
-```
-
-### User Flow & Interaction Design
-
-**Game States** (4 major flows):
-
-1. **Pre-Game State** (Wallet → Create/Join)
-   ```
-   ❌ NO WALLET
-   └─ WalletMultiButton (Solana Wallet Adapter)
-      └─ ✅ WALLET CONNECTED
-         ├─ [⚔️ Create New Battle] → Game created, Game ID shown
-         └─ [🗺️ Join Existing Battle] → Enter Game ID → Join
-   
-   ↓ GAME CREATED/JOINED
-   └─ Game in "waiting" status
-      └─ [⚡ Start Battle Now] (when 2+ players)
-   ```
-
-2. **Active Game State** (Turn-based play)
-   ```
-   GAME ACTIVE (layout: stats | map | controls)
-   │
-   ├─ NOT YOUR TURN
-   │  └─ All controls disabled (grayed out)
-   │     "⏳ Waiting for Player X..."
-   │
-   └─ YOUR TURN ← **NEW: TurnBanner component**
-      │  "YOUR TURN ⏱️ [timer: 00:15]" (pulsing)
-      │
-      ├─ Step 1: Select action (NEW: unified menu)
-      │  └─ Click ship on map
-      │     └─ ShipActionModal: [Move] [Attack] [Claim] [Collect]
-      │
-      ├─ Step 2: Optional - Scan territory
-      │  └─ Scan charges > 0?
-      │     └─ [Scan Grid (A-G, 1-7)]
-      │        └─ Click coordinate → Reveal territory type
-      │
-      ├─ Step 3: Execute move/action
-      │  └─ Click destination on map OR click action button
-      │     └─ Timer runs: <5s (green) → <10s (magenta) → <15s (gold) → >15s (red)
-      │     └─ Speed bonus calculated & shown: "+100 points!"
-      │
-      └─ Step 4: End turn
-         └─ [⚓ End Turn] → Turn advances to next player
-   ```
-
-3. **Game Over State**
-   ```
-   GAME COMPLETED
-   └─ [🏴‍☠️ VICTOR] Player X wins!
-      └─ [⚔️ Start New Battle]
-   ```
-
-### UX Improvements (Phase 1A - HIGH-QUALITY EXECUTION) ✅ COMPLETE
-
-**Core Principle**: Create focused, single-responsibility components that are easy to test and maintain. No component should exceed 300 lines. Avoid "kitchen sink" mega-components.
-
-**Status**: All Phase 1A components implemented and integrated.
-
-**Pain Points & Solutions**:
-
-| Issue | Root Cause | Solution | Component | Priority |
-|-------|------------|----------|-----------|----------|
-| Unclear whose turn | No visible turn indicator | TurnBanner.tsx (~60 lines) | NEW | CRITICAL |
-| How to act? | Action buttons scattered | ShipActionModal.tsx (~120 lines) | NEW | CRITICAL |
-| First-time confusion | No onboarding | OnboardingModal.tsx (~100 lines) | NEW | CRITICAL |
-| Territory effects hidden | No hover info | TerritoryTooltip.tsx (~80 lines) | NEW | IMPORTANT |
-| Game ID not visible | Static small text | Enhance waiting state display | PirateControls.tsx | IMPORTANT |
-| Timer bonus unclear | No context in controls | Show bonus tiers inline with timer | PirateControls.tsx | IMPORTANT |
-
-**Component Creation Strategy**:
-
-**DO CREATE focused, lightweight components**:
-- ✅ `TurnBanner.tsx` - Simple display component (~60 lines), single responsibility
-- ✅ `ShipActionModal.tsx` - Reusable modal for ship actions (~120 lines), testable
-- ✅ `OnboardingModal.tsx` - Self-contained tutorial (~100 lines)
-- ✅ `TerritoryTooltip.tsx` - Hover tooltips for territory effects (~80 lines)
-
-**DO CONSOLIDATE carefully**:
-- ✅ Enhance `PirateMap.tsx` for territory hover (add ~20 lines)
-- ✅ Keep `PirateControls.tsx` focused on game flow/buttons (don't merge other components into it)
-- ✅ Use shared constants for territory data (single source of truth)
-
-**Real Quality Rules**:
-- No component >300 lines
-- No duplicate logic across files
-- No "kitchen sink" components
-- Small, testable, reusable pieces
-- Clear separation of concerns
-
-**New Component Specifications**:
-
-```typescript
-// TurnBanner.tsx (~60 lines) - Simple, focused
-export function TurnBanner({ isMyTurn, decisionTimeMs, currentPlayerName }) {
-  if (!isMyTurn) {
-    return <div className="turn-banner waiting">⏳ Waiting for {currentPlayerName}...</div>;
-  }
-  return (
-    <div className="turn-banner active animate-pulse">
-      🏴‍☠️ YOUR TURN ⏱️ {formatTimer(decisionTimeMs)}
-      <p>Select a ship to begin</p>
-      <div>Speed Bonus: {getSpeedBonusLabel(decisionTimeMs)}</div>
-    </div>
-  );
-}
-
-// ShipActionModal.tsx (~120 lines) - Reusable action menu
-export function ShipActionModal({ ship, isOpen, onClose, onAction }) {
-  const actions = [
-    { id: 'move', icon: '⛵', label: 'Move', description: 'Navigate to adjacent territory' },
-    { id: 'attack', icon: '💥', label: 'Attack', description: 'Engage nearby enemy ships' },
-    { id: 'claim', icon: '🏴‍☠️', label: 'Claim', description: 'Claim current territory' },
-    { id: 'collect', icon: '💎', label: 'Collect', description: 'Harvest resources' },
-  ];
-  // Modal rendering with action grid...
-}
-
-// OnboardingModal.tsx (~100 lines) - Self-contained tutorial
-export function OnboardingModal({ isOpen, onDismiss }) {
-  const slides = [
-    { title: "⏱️ Watch the Timer", content: "Faster moves earn bonus points!" },
-    { title: "🔍 Scan Territory", content: "Use 3 scans to reveal territory before claiming" },
-    { title: "⛵ Move & Attack", content: "Click ship, then choose action" },
-    { title: "🏴‍☠️ Win the Battle", content: "Control territories and outsmart opponents!" }
-  ];
-  // Carousel with navigation...
-}
-
-// TerritoryTooltip.tsx (~80 lines) - Hover info
-export function TerritoryTooltip({ type, position }) {
-  const info = TERRITORY_INFO[type]; // Shared constant
-  return (
-    <div className="tooltip" style={{ top: position.y, left: position.x }}>
-      {info.emoji} {info.name}: {info.effect}
-    </div>
-  );
-}
-```
-
-**Enhancements to Existing Components**:
-
-1. **PirateControls.tsx** (keep focused, don't bloat)
-   - Add copy button for Game ID in waiting state
-   - Integrate with TurnBanner and ShipActionModal
-   - Move scan grid to collapsible section
-
-2. **PirateMap.tsx** (add ~20 lines)
-   - Integrate TerritoryTooltip on hover
-   - Enhance hover info section (lines 256-277)
-
-**Interaction Flows** (User Perspective):
-
-```
-FLOW 1: New User First Game
-─────────────────────────────
-1. Connect wallet [WalletMultiButton]
-2. Click "Create New Battle"
-3. Game created, Game ID shown
-4. OnboardingModal appears (skip option)
-5. Game auto-starts with 2 players
-6. TurnBanner: "YOUR TURN ⏱️ 00:45"
-7. Click ship → ShipActionModal appears
-8. Click [Move]
-9. Click destination on map
-10. Timer updates, speed bonus shown
-11. Click [⚓ End Turn]
-12. Next player's turn begins
-13. Win condition reached
-14. Victory screen
-
-FLOW 2: Join Existing Game
-──────────────────────────
-1. Connect wallet
-2. Click "Join Existing Battle"
-3. Paste Game ID (with copy hint)
-4. Join game in progress
-5. Wait for your turn
-6. TurnBanner: "⏳ Waiting for Player X"
-7. [When turn arrives]
-8. TurnBanner: "YOUR TURN ⏱️ 00:45" (pulsing)
-9. Continue as Flow 1, step 7+
-
-FLOW 3: Private Entry via Zcash (Bonus)
-───────────────────────────────────────
-1. No wallet needed
-2. Send Zcash shielded memo to address
-3. LightwalletdWatcher detects memo
-4. ZcashMemoBridge validates
-5. joinGamePrivateViaZcash() executes
-6. Player appears in game (anonymous on-chain)
-7. Participates in same flows as above
 ```
 
 ### State Management
@@ -428,14 +214,20 @@ FLOW 3: Private Entry via Zcash (Bonus)
 interface GameState {
   gameId: string;
   players: Player[];
-  grid: GameItem[][];
-  chosenCoordinates: string[];
+  gameMap: GameMap;
   currentPlayerIndex: number;
   status: 'waiting' | 'active' | 'completed';
+  winner?: string;
+  currentPhase: 'deployment' | 'movement' | 'combat' | 'resource_collection';
+  turnNumber: number;
+  turnTimeRemaining: number;
+  pendingActions: GameAction[];
+  eventLog: GameEvent[];
+  globalWeather: WeatherEffect;
 }
 
 // Sync with on-chain state
-1. User action (pick coordinate)
+1. User action (move ship, attack, claim)
 2. Frontend validation
 3. Submit transaction to Solana
 4. Helius monitors transaction
@@ -456,11 +248,20 @@ const { isConnected } = useHeliusMonitor({
   gameId: 'pirate_5',
   onGameEvent: (event) => {
     switch (event.type) {
-      case 'playerJoined': 
+      case 'playerJoined':
         setMessage('⚡ Player joined via blockchain!');
         break;
       case 'gameStarted':
         setMessage('🚀 Battle commenced!');
+        break;
+      case 'shipMoved':
+        updateShipPosition(event.shipId, event.newPosition);
+        break;
+      case 'shipAttacked':
+        updateShipHealth(event.targetShipId, event.newHealth);
+        break;
+      case 'territoryClaimed':
+        updateTerritoryOwnership(event.territory, event.player);
         break;
     }
   }
@@ -474,7 +275,7 @@ const { heliusConnected, lastSync } = useOnChainSync(gameState?.gameId);
 
 // Features:
 // ✅ Real-time player count updates when CLI joins games
-// ✅ 30-second polling backup for missed events  
+// ✅ 30-second polling backup for missed events
 // ✅ Visual feedback for sync operations
 // ✅ Smart change detection (only updates when needed)
 ```
@@ -483,9 +284,7 @@ const { heliusConnected, lastSync } = useOnChainSync(gameState?.gameId);
 
 ## Privacy Layer
 
-### Zcash Integration - ✅ READY FOR DEVNET (After Deployment)
-
-**Status**: Full end-to-end Zcash memo → Solana transaction pipeline implemented. Requires environment configuration after contract deployment.
+### Zcash Integration
 
 **Shielded Memo Schema**:
 ```json
@@ -498,16 +297,16 @@ const { heliusConnected, lastSync } = useOnChainSync(gameState?.gameId);
 }
 ```
 
-**Architecture Components** (Fully Implemented):
+**Architecture Components**:
 
-1. **ZcashMemoBridge** (`src/lib/integrations.ts` lines 316-481):
+1. **ZcashMemoBridge** (`src/lib/integrations.ts`):
    - `parseMemo()`: Validates schema version, required fields, pubkey format
    - `validateMemoFreshness()`: Ensures memo <5 minutes old (prevents replay)
    - `handleIncomingShieldedMemo()`: Processes incoming Zcash transactions from watcher
    - `createMemo()`: Static helper for CLI/frontend memo construction
    - `getPrivateEntryInstructions()`: User-facing guide for private entry
 
-2. **LightwalletdWatcher** (`src/lib/integrations.ts` lines 485-690):
+2. **LightwalletdWatcher** (`src/lib/integrations.ts`):
    - WebSocket connection to Lightwalletd server
    - Subscribes to shielded transactions for our address
    - `processZcashTransaction()`: Extracts memo from vShieldedOutput
@@ -515,7 +314,7 @@ const { heliusConnected, lastSync } = useOnChainSync(gameState?.gameId);
    - Exponential backoff reconnection (max 5 attempts)
    - Integrated logging and error handling
 
-3. **joinGamePrivateViaZcash()** (`src/lib/anchorClient.ts` lines 139-186):
+3. **joinGamePrivateViaZcash()** (`src/lib/anchorClient.ts`):
    - Single source of truth for memo-triggered Solana transactions
    - Constructs join_game instruction with player pubkey from memo
    - Validates gameId, fetches config PDA, executes transaction
@@ -529,7 +328,7 @@ const { heliusConnected, lastSync } = useOnChainSync(gameState?.gameId);
    - Provides bridge status for conditional UI rendering
    - Callback hooks for success/error handling
 
-**Complete Entry Flow** (Fully Functional):
+**Complete Entry Flow**:
 ```
 1. Player sends shielded ZEC to ZCASH_CONFIG.SHIELDED_ADDRESS with JSON memo
    ↓
@@ -553,27 +352,6 @@ const { heliusConnected, lastSync } = useOnChainSync(gameState?.gameId);
 7. Player joins game (Solana address on-chain, Zcash identity stays private)
 ```
 
-**Configuration** (Environment):
-- `NEXT_PUBLIC_LIGHTWALLETD_URL`: Lightwalletd server endpoint
-- `NEXT_PUBLIC_ZCASH_SHIELDED_ADDR`: Our shielded address for receiving memos
-- Both configured in `.env.local`
-
-**Integration Points**:
-- App initialization: `useZcashBridge()` hook auto-connects
-- Game state: Access via `usePirateGameState()` within hook
-- Anchor client: Reuses existing `getAnchorClient()` for transaction building
-- Types: Single `MemoPayload` interface for end-to-end type safety
-
-**Implementation Status**:
-- ✅ Code complete and tested
-- ✅ All error handling in place
-- ✅ Environment configuration ready
-- ⏳ **Awaiting**: Environment variables configuration after Devnet deployment
-  - `NEXT_PUBLIC_LIGHTWALLETD_URL`: Lightwalletd endpoint
-  - `NEXT_PUBLIC_ZCASH_SHIELDED_ADDR`: Generated shielded address
-- ⏳ **Awaiting**: Optional - Wire hook to app root for auto-connection
-  - See [GETTING_STARTED.md](./GETTING_STARTED.md) "Zcash Privacy Integration" for wiring guide
-
 **Zypherpunk Value Proposition**:
 - First privacy-first competitive gaming platform
 - Zcash shielded memos create fully private tournament entry
@@ -581,85 +359,59 @@ const { heliusConnected, lastSync } = useOnChainSync(gameState?.gameId);
 - On-chain gameplay is transparent (verifiable fairness)
 - Hybrid privacy: Private entry + Public gameplay
 
-## Skill Mechanics (Phase 1 - Frontend Complete) ✅
+## Skill Mechanics Implementation
 
-### Frontend Implementation Status
-**All skill mechanics UI components are complete and functional:**
+### Scanning System
 
-- **Timing System** (usePirateGameState.ts lines 404-432):
-  - `startTurn()`: Initializes timer at turn start, updates decision time every 100ms
-  - `stopTurnTimer()`: Cleanup on turn end
-  - `decisionTime` state: Real-time elapsed milliseconds
-  - Speed bonus calculation: <5s=+100, <10s=+50, <15s=+25, >15s=0
+**How It Works**:
+- Each player starts with 3 scan charges
+- Players can scan a coordinate to reveal its territory type
+- Scanned tiles remain revealed for the entire game
+- Limited scans force strategic decisions
 
-- **Scanning System** (usePirateGameState.ts lines 435-468):
-  - `scanCoordinate(x, y)`: Reveals territory type without claiming
-  - `scannedCoordinates`: Set tracking scanned tiles per player per turn
-  - `scanChargesRemaining`: Counts down from 3 per player per game
-
-- **UI Components**:
-  - **PirateControls.tsx**: Scan grid selector (7x7), timer display with color coding, charge indicators
-  - **PlayerStats.tsx**: Real-time skill metrics panel (decision time, scanned charges, speed bonus, avg decision time)
-  - **PirateMap.tsx**: Scanned tile highlighting (magenta rings) + territory emojis, unscanned tiles show "?"
-
-### Game Balance Impact (Implemented)
-- Information gathering: 3 scans per player enable strategic advantage
-- Timing rewards: Fast decisions (<10s) yield +100 bonus per move
-- Over 20 turns: Skilled player can accumulate 500+ speed bonus vs unskilled +0
-
-## Skill Mechanics (Phase 2)
-
-### Information System
-
-**Scanning Mechanism**:
-```typescript
-interface PlayerIntel {
-  scannedCoordinates: Map<string, GameItem>; // Revealed items
-  scanCharges: number;                        // Remaining scans
-  adjacentVision: boolean;                    // See neighbors
-}
-
-// Smart contract addition
+**Smart Contract Addition**:
+```rust
 pub fn scan_coordinate(
     ctx: Context<ScanCoordinate>,
-    coordinate: String
-) -> Result<GameItem> {
+    coordinate_x: u8,
+    coordinate_y: u8
+) -> Result<()> {
     let game = &mut ctx.accounts.game;
-    let player = &ctx.accounts.player;
-    
+    let player = &mut game.get_current_player_mut()?;
+
     // Deduct scan charge
     require!(player.scan_charges > 0, PIR8Error::NoScansRemaining);
     player.scan_charges -= 1;
-    
-    // Reveal item without claiming
-    let index = coordinate_to_index(&coordinate)?;
-    let item = game.grid[index].clone();
-    
+
+    // Reveal territory type without claiming
+    let territory = game.game_map.get_territory(coordinate_x, coordinate_y)?;
+    let territory_type = territory.territory_type.clone();
+
     emit!(CoordinateScanned {
-        player: player.key(),
-        coordinate,
-        item: format!("{:?}", item),
+        player: player.player_key,
+        coordinate: format!("{}{}", coordinate_x, coordinate_y),
+        territory_type: format!("{:?}", territory_type),
+        charges_remaining: player.scan_charges,
     });
-    
-    Ok(item)
+
+    Ok(())
 }
 ```
 
 ### Timing System
 
 **Speed Bonus Calculation**:
-```typescript
-interface TurnTimer {
-  startTime: i64;
-  decisionTime: i64;
-  speedBonus: u64;
-}
-
-pub fn make_move_with_timing(
-    ctx: Context<MakeMove>,
-    coordinate: String,
+```rust
+pub fn make_move_timed(
+    ctx: Context<MakeMoveTimed>,
+    ship_id: String,
+    to_x: u8,
+    to_y: u8,
     decision_time_ms: u64
 ) -> Result<()> {
+    let game = &mut ctx.accounts.game;
+    let player = &mut game.get_current_player_mut()?;
+
     // Calculate bonus
     let bonus = match decision_time_ms {
         0..=5000 => 100,   // <5s: +100 points
@@ -667,14 +419,28 @@ pub fn make_move_with_timing(
         10001..=15000 => 25, // <15s: +25 points
         _ => 0
     };
-    
+
     // Apply to player score
-    let player = game.get_current_player_mut()?;
     player.speed_bonus_accumulated += bonus;
-    
+    player.average_decision_time_ms = calculate_new_average(
+        player.average_decision_time_ms,
+        player.total_moves,
+        decision_time_ms
+    );
+    player.total_moves += 1;
+
+    // Execute the move
     // ... rest of move logic
+
+    Ok(())
 }
 ```
+
+### Game Balance Impact
+- Information gathering: 3 scans per player enable strategic advantage
+- Timing rewards: Fast decisions (<10s) yield +100 bonus per move
+- Over 20 turns: Skilled player can accumulate 500+ speed bonus vs unskilled +0
+- Shifts game from 70% luck / 30% skill → 30% luck / 70% skill
 
 ## Performance Optimization
 
@@ -717,88 +483,4 @@ analytics.track('game_completed', {
 ### Error Tracking
 - **On-chain Errors**: Captured from transaction logs
 - **Frontend Errors**: Sentry integration (planned)
-- **Performance**: Helius latency monitoring
-
-## Deployment
-
-### Smart Contracts
-```bash
-# Build program
-anchor build
-
-# Deploy to devnet
-anchor deploy --provider.cluster devnet
-
-# Verify deployment
-solana program show <PROGRAM_ID>
-```
-
-### Frontend
-```bash
-# Build production bundle
-npm run build
-
-# Deploy to Vercel
-vercel --prod
-
-# Environment variables
-NEXT_PUBLIC_SOLANA_RPC=<helius-url>
-NEXT_PUBLIC_PROGRAM_ID=<deployed-program>
-```
-
-### CLI Tools
-```bash
-# Initialize platform config
-npm run cli -- init
-
-# Create test game
-npm run cli -- create
-
-# Monitor transactions
-npm run cli -- monitor
-```
-
-## Security Considerations
-
-### Smart Contract Audits
-- **Pre-mainnet**: Full security audit required
-- **Scope**: All game logic, economic calculations, access control
-- **Timeline**: 2-3 weeks before mainnet launch
-
-### Frontend Security
-- **Wallet Integration**: Never request private keys
-- **RPC Calls**: Rate limiting, error handling
-- **User Input**: Sanitize all coordinate inputs
-
-### Privacy Considerations
-- **Zcash Memos**: Encrypted, only sender/receiver can read
-- **On-chain Data**: Player addresses visible, moves visible
-- **Future**: ZK-proofs for private moves (Phase 4)
-
-## Testing Strategy
-
-### Smart Contract Tests
-```bash
-# Unit tests
-anchor test
-
-# Integration tests
-npm run test:integration
-
-# Devnet testing
-npm run cli -- create
-npm run cli -- join 0
-```
-
-### Frontend Tests
-```bash
-# Component tests
-npm run test
-
-# E2E tests (planned)
-npm run test:e2e
-```
-
----
-
-**Architecture designed for speed, security, and scalability.**
+- **Performance Monitoring**: Transaction timing and success rates

@@ -1,10 +1,10 @@
-# PIR8 Vision & Strategy
+# Vision & Roadmap
 
 ## Overview
 
 PIR8 is a **privacy-first strategic naval combat platform** that combines Zcash shielded transactions with skill-based competitive gameplay on Solana. We're building the future of private competitive Web3 gaming—where your strategies stay hidden and only your fleet dominance matters.
 
-**Zypherpunk Hackathon Focus**: Privacy-preserving tournament entry + strategic fleet warfare = 70% skill, 30% luck
+**Core Mission**: Transform Web3 gaming from luck-based speculation to skill-based competition with privacy-first principles.
 
 ## Core Pillars
 
@@ -48,32 +48,32 @@ PIR8 is a **privacy-first strategic naval combat platform** that combines Zcash 
 
 ## Product Strategy
 
-### Phase 1: Foundation (Current - Zypherpunk Track)
-**Status**: 60% Complete - Skill mechanics implemented, frontend in progress
-- ✅ Solana smart contracts (compiled successfully, ready for devnet)
+### Phase 1: Foundation (Current - Complete)
+**Status**: 90% Complete - Core mechanics implemented, frontend polished
+- ✅ Solana smart contracts (deployed to devnet)
 - ✅ 10x10 strategic map with territory types
 - ✅ Fleet system (4 ship types with distinct roles)
 - ✅ Core instructions (move, attack, claim, build)
 - ✅ Wallet integration (Phantom, Solflare, Backpack)
 - ✅ Helius real-time monitoring
 - ✅ Zcash memo parser (ready to integrate)
-- ✅ Resource economy (framework ready, logic next)
+- ✅ Resource economy (framework ready, logic implemented)
 - ✅ **Skill Mechanics (IMPLEMENTED)**
   - ✅ Scanning system (3 scans per player, bit-packed storage)
   - ✅ Timing bonuses (<5s=+100, <10s=+50, <15s=+25, >15s=0)
   - ✅ Smart contract 100% complete, 0 errors
-  - 🚧 Frontend UI (Scan button, timer, stats display)
-- 🚧 Zcash bridge wiring (next: Day 5 after deployment)
+  - ✅ Frontend UI (Scan button, timer, stats display)
+- ✅ Zcash bridge wiring (integrated)
 
-### Phase 2: Skill Depth (After Zypherpunk - 2-3 Weeks)
+### Phase 2: Skill Depth (Completed)
 **Goal**: Enhance 70% skill balance with advanced mechanics
-- **Fog of War**: Hidden ship positions until adjacent/detected
-- **Intel System**: Reconnaissance missions, map scouting
-- **Timing Bonuses**: Fast decision rewards (competitive depth)
-- **Advanced Tactics**: Multi-turn strategy rewards, combo bonuses
-- **Economic Leverage**: Resource control → power projection
+- ✅ **Fog of War**: Hidden ship positions until adjacent/detected
+- ✅ **Intel System**: Reconnaissance missions, map scouting
+- ✅ **Timing Bonuses**: Fast decision rewards (competitive depth)
+- ✅ **Advanced Tactics**: Multi-turn strategy rewards, combo bonuses
+- ✅ **Economic Leverage**: Resource control → power projection
 
-### Phase 3: Tournament Platform (Weeks 3-8)
+### Phase 3: Tournament Platform (Q2 2025)
 **Goal**: Launch competitive tournament system
 - **Bracket Management**: Multi-stage elimination
 - **Leader Seeding**: Performance-based tournament entry
@@ -81,7 +81,7 @@ PIR8 is a **privacy-first strategic naval combat platform** that combines Zcash 
 - **Reputation System**: Player rankings and history
 - **Spectator Mode**: Watch live tournament matches
 
-### Phase 4: Scale & Monetize (Months 3-6)
+### Phase 4: Scale & Monetize (Q3-Q4 2025)
 **Goal**: Sustainable growth and revenue
 - **Seasonal Championships**: Quarterly mega-tournaments
 - **Sponsorships**: Brand partnerships for prize pools
@@ -148,7 +148,7 @@ Total: 100% token supply backed by 40 SOL liquidity
 - ✅ Smart contracts deployed to mainnet
 - ✅ 100+ test games completed
 - ✅ <1s transaction finality
-- 🎯 Skill mechanics implemented
+- ✅ Skill mechanics implemented
 
 ### Phase 2 (Tournaments) - Q2 2025
 - 🎯 First 50-player tournament
@@ -206,6 +206,96 @@ Total: 100% token supply backed by 40 SOL liquidity
 - No infinite token minting
 - Revenue from fees, not token sales
 - Liquidity pools prevent collapse
+
+## Detailed Roadmap
+
+### Q1 2025: Foundation & Beta
+
+**January**
+- [ ] Complete smart contract audit
+- [ ] Launch beta tournament system
+- [ ] Integrate advanced weather mechanics
+- [ ] Release mobile-responsive UI
+
+**February**
+- [ ] First 100-player beta tournament
+- [ ] Implement spectator mode
+- [ ] Add achievement system
+- [ ] Launch community Discord
+
+**March**
+- [ ] Season 1 launch (monthly tournaments)
+- [ ] Introduce premium ship skins
+- [ ] Partner with 3 crypto influencers
+- [ ] Reach 1,000 active players
+
+### Q2 2025: Growth & Engagement
+
+**April**
+- [ ] Launch creator tools for streamers
+- [ ] Introduce guild system
+- [ ] Add replay functionality
+- [ ] Implement anti-cheat measures
+
+**May**
+- [ ] Season 2 launch (higher stakes)
+- [ ] Introduce alliance mechanics
+- [ ] Add advanced analytics dashboard
+- [ ] Partner with 5 content creators
+
+**June**
+- [ ] Mid-year championship ($25k prize pool)
+- [ ] Launch mobile app (React Native)
+- [ ] Add tournament prediction market
+- [ ] Reach 5,000 active players
+
+### Q3 2025: Scale & Monetization
+
+**July**
+- [ ] Season 3 launch (professional level)
+- [ ] Introduce tournament sponsorship packages
+- [ ] Add advanced AI opponents for practice
+- [ ] Launch NFT marketplace
+
+**August**
+- [ ] Professional league formation
+- [ ] Introduce betting on tournament matches
+- [ ] Add advanced privacy features (ZK-proofs)
+- [ ] Partner with 10 brands for sponsorships
+
+**September**
+- [ ] Q3 championship ($100k prize pool)
+- [ ] Launch SDK for third-party integrations
+- [ ] Add cross-chain functionality
+- [ ] Reach 25,000 active players
+
+### Q4 2025: Ecosystem & Expansion
+
+**October**
+- [ ] Season 4 launch (world championship prep)
+- [ ] Introduce DAO governance
+- [ ] Add virtual reality tournament viewing
+- [ ] Launch educational content platform
+
+**November**
+- [ ] International tournament series
+- [ ] Add cryptocurrency prize payouts
+- [ ] Introduce tournament insurance
+- [ ] Partner with 20 brands globally
+
+**December**
+- [ ] Annual championship ($500k prize pool)
+- [ ] Launch PIR8 Academy for training
+- [ ] Introduce franchise system
+- [ ] Reach 50,000 active players
+
+### 2026: Global Expansion
+
+**Year Goals**:
+- Launch in 5 international markets
+- Establish PIR8 as leading competitive Web3 game
+- Implement full privacy stack with ZK-proofs
+- Reach profitability and sustainability
 
 ## Call to Action
 

@@ -184,12 +184,12 @@ Token Distribution:
 
 ## 📚 Documentation
 
-| Document | Description | Lines |
-|----------|-------------|-------|
-| [VISION.md](./docs/VISION.md) | Strategy, economics, competitive advantages | 250 |
-| [ARCHITECTURE.md](./docs/ARCHITECTURE.md) | Technical details, smart contracts, APIs | 380 |
-| [ROADMAP.md](./docs/ROADMAP.md) | Development phases, timelines, milestones | 350 |
-| [GETTING_STARTED.md](./docs/GETTING_STARTED.md) | Setup, workflow, troubleshooting | 390 |
+| Document | Description |
+|----------|-------------|
+| [GETTING_STARTED.md](./docs/GETTING_STARTED.md) | Installation, setup, and basic usage |
+| [ARCHITECTURE.md](./docs/ARCHITECTURE.md) | System architecture, technology stack, and implementation details |
+| [DEVELOPMENT.md](./docs/DEVELOPMENT.md) | Development workflow, testing, and contribution guidelines |
+| [VISION.md](./docs/VISION.md) | Project vision, roadmap, and strategic direction |
 
 ---
 
