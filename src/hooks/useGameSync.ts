@@ -11,7 +11,7 @@ import { Player, GameState } from '@/types/game';
  * Uses debouncing to prevent race conditions
  */
 export const useGameSync = (gameId?: string) => {
-    const { gameState, setMessage, setError, setGameState } = usePirateGameState();
+    const { gameState, setMessage, setGameState } = usePirateGameState();
     const lastSyncRef = useRef<number>(0);
     const lastVersionRef = useRef<number>(0);
     const syncTimeoutRef = useRef<NodeJS.Timeout | null>(null);
@@ -81,7 +81,8 @@ export const useGameSync = (gameId?: string) => {
                     totalMoves: p.totalMoves || 0
                 }));
 
-                const statusKey = Object.keys(onChainState.status)[0].toLowerCase();
+                const rawStatus = onChainState.status ? Object.keys(onChainState.status)[0] : 'waiting';
+                const statusKey = (rawStatus || 'waiting').toLowerCase();
 
                 const updatedGameState: GameState = {
                     ...gameState,
@@ -119,20 +120,20 @@ export const useGameSync = (gameId?: string) => {
 
     // Set up polling fallback (30 seconds)
     useEffect(() => {
-        if (gameId) {
-            // Initial sync
+        if (!gameId) return;
+
+        // Initial sync
+        debouncedSync();
+
+        // Polling fallback
+        pollIntervalRef.current = setInterval(() => {
             debouncedSync();
+        }, 30000);
 
-            // Polling fallback
-            pollIntervalRef.current = setInterval(() => {
-                debouncedSync();
-            }, 30000);
-
-            return () => {
-                if (pollIntervalRef.current) clearInterval(pollIntervalRef.current);
-                if (syncTimeoutRef.current) clearTimeout(syncTimeoutRef.current);
-            };
-        }
+        return () => {
+            if (pollIntervalRef.current) clearInterval(pollIntervalRef.current);
+            if (syncTimeoutRef.current) clearTimeout(syncTimeoutRef.current);
+        };
     }, [gameId, debouncedSync]);
 
     return {

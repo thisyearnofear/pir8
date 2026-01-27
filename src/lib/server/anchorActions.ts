@@ -1,7 +1,7 @@
 'use server';
 
 import { AnchorProvider, BN, Program, Idl } from '@coral-xyz/anchor';
-import { Connection, Keypair, PublicKey, SystemProgram, Transaction } from '@solana/web3.js';
+import { Connection, Keypair, PublicKey, SystemProgram } from '@solana/web3.js';
 import fs from 'fs';
 import path from 'path';
 import { SOLANA_CONFIG } from '@/utils/constants';
@@ -10,7 +10,7 @@ import { getGlobalGamePDA } from '../anchorUtils';
 
 class NodeWallet {
   constructor(readonly payer: Keypair) { }
-  get publicKey() { return this.payer.publicKey; }
+  get publicKey() { return (this.payer as any).publicKey; }
   async signTransaction(tx: any) { tx.sign(this.payer); return tx; }
   async signAllTransactions(txs: any[]) { txs.forEach(t => t.sign(this.payer)); return txs; }
 }
@@ -38,7 +38,7 @@ export async function getAnchorClient(): Promise<{ program: Program; provider: A
 
   try {
     const idl = loadIdl();
-    const programId = new PublicKey(SOLANA_CONFIG.PROGRAM_ID || PROGRAM_ID);
+    const programId = SOLANA_CONFIG.PROGRAM_ID ? new PublicKey(SOLANA_CONFIG.PROGRAM_ID) : PROGRAM_ID;
     console.log('[Anchor Client] Loading program:', programId.toString());
 
     // Anchor 0.29: Program(idl, programId, provider)
@@ -53,14 +53,14 @@ export async function getAnchorClient(): Promise<{ program: Program; provider: A
 
 export async function initializeGlobalGame(): Promise<string> {
   const { program, provider } = await getAnchorClient();
-  const [gamePDA] = getGlobalGamePDA(new PublicKey(PROGRAM_ID));
+  const [gamePDA] = getGlobalGamePDA(PROGRAM_ID);
 
-  const tx = await program.methods
+  await (program as any).methods
     .initializeGame(new BN(Date.now()))
     .accounts({
       game: gamePDA,
-      authority: provider.wallet.publicKey,
-      systemProgram: SystemProgram.programId,
+      authority: (provider as any).wallet.publicKey,
+      systemProgram: (SystemProgram as any).programId,
     })
     .rpc();
 
@@ -70,12 +70,12 @@ export async function initializeGlobalGame(): Promise<string> {
 
 export async function joinGlobalGame(): Promise<void> {
   const { program, provider } = await getAnchorClient();
-  const [gamePDA] = getGlobalGamePDA(new PublicKey(PROGRAM_ID));
+  const [gamePDA] = getGlobalGamePDA(PROGRAM_ID);
 
   // Check if player is already in the game to avoid 500 errors
   try {
-    const gameState = await (program.account as any).pirateGame.fetch(gamePDA);
-    const playerPubkey = provider.wallet.publicKey.toString();
+    const gameState = await (program as any).account.pirateGame.fetch(gamePDA);
+    const playerPubkey = (provider as any).wallet.publicKey.toString();
 
     const isAlreadyJoined = gameState.players.some(
       (p: any) => p.pubkey.toString() === playerPubkey
@@ -90,12 +90,12 @@ export async function joinGlobalGame(): Promise<void> {
     console.log('Could not fetch game state, proceeding with join...');
   }
 
-  await program.methods
+  await (program as any).methods
     .joinGame()
     .accounts({
       game: gamePDA,
-      player: provider.wallet.publicKey,
-      systemProgram: SystemProgram.programId,
+      player: (provider as any).wallet.publicKey,
+      systemProgram: (SystemProgram as any).programId,
     })
     .rpc();
 
@@ -104,13 +104,13 @@ export async function joinGlobalGame(): Promise<void> {
 
 export async function startGlobalGame(): Promise<void> {
   const { program, provider } = await getAnchorClient();
-  const [gamePDA] = getGlobalGamePDA(new PublicKey(PROGRAM_ID));
+  const [gamePDA] = getGlobalGamePDA(PROGRAM_ID);
 
-  await program.methods
+  await (program as any).methods
     .startGame()
     .accounts({
       game: gamePDA,
-      authority: provider.wallet.publicKey,
+      authority: (provider as any).wallet.publicKey,
     })
     .rpc();
 
@@ -118,9 +118,6 @@ export async function startGlobalGame(): Promise<void> {
 }
 
 export async function resetGlobalGame(): Promise<void> {
-  const { program, provider } = await getAnchorClient();
-  const [gamePDA] = getGlobalGamePDA(new PublicKey(PROGRAM_ID));
-
   // Note: resetGame might not exist in our IDL, so we'll skip this function for now
   // or implement a different approach if needed
   console.log('Game reset function - may need implementation adjustment');
@@ -128,11 +125,11 @@ export async function resetGlobalGame(): Promise<void> {
 
 export async function fetchGlobalGameState(): Promise<any> {
   const { program } = await getAnchorClient();
-  const [gamePDA] = getGlobalGamePDA(new PublicKey(PROGRAM_ID));
+  const [gamePDA] = getGlobalGamePDA(PROGRAM_ID);
 
   try {
     // Account name is camelCase in Anchor
-    const rawState = await (program.account as any).pirateGame.fetch(gamePDA);
+    const rawState = await (program as any).account.pirateGame.fetch(gamePDA);
 
     // Sanitize the data for Client Components
     return sanitizeSolanaData(rawState);
@@ -184,17 +181,16 @@ function sanitizeSolanaData(data: any): any {
 export async function moveShip(
   shipId: string,
   toX: number,
-  toY: number,
-  decisionTimeMs?: number
+  toY: number
 ): Promise<string> {
   const { program, provider } = await getAnchorClient();
-  const [gamePDA] = getGlobalGamePDA(new PublicKey(PROGRAM_ID));
+  const [gamePDA] = getGlobalGamePDA(PROGRAM_ID);
 
-  const tx = await program.methods
+  const tx = await (program as any).methods
     .moveShip(shipId, toX, toY)
     .accounts({
       game: gamePDA,
-      player: provider.wallet.publicKey,
+      player: (provider as any).wallet.publicKey,
     })
     .rpc();
 
@@ -207,13 +203,13 @@ export async function attackShip(
   targetShipId: string
 ): Promise<string> {
   const { program, provider } = await getAnchorClient();
-  const [gamePDA] = getGlobalGamePDA(new PublicKey(PROGRAM_ID));
+  const [gamePDA] = getGlobalGamePDA(PROGRAM_ID);
 
-  const tx = await program.methods
+  const tx = await (program as any).methods
     .attackShip(attackerShipId, targetShipId)
     .accounts({
       game: gamePDA,
-      player: provider.wallet.publicKey,
+      player: (provider as any).wallet.publicKey,
     })
     .rpc();
 
@@ -223,13 +219,13 @@ export async function attackShip(
 
 export async function claimTerritory(x: number, y: number): Promise<string> {
   const { program, provider } = await getAnchorClient();
-  const [gamePDA] = getGlobalGamePDA(new PublicKey(PROGRAM_ID));
+  const [gamePDA] = getGlobalGamePDA(PROGRAM_ID);
 
-  const tx = await program.methods
+  const tx = await (program as any).methods
     .claimTerritory(x, y)
     .accounts({
       game: gamePDA,
-      player: provider.wallet.publicKey,
+      player: (provider as any).wallet.publicKey,
     })
     .rpc();
 
@@ -239,13 +235,13 @@ export async function claimTerritory(x: number, y: number): Promise<string> {
 
 export async function collectResources(x: number, y: number): Promise<string> {
   const { program, provider } = await getAnchorClient();
-  const [gamePDA] = getGlobalGamePDA(new PublicKey(PROGRAM_ID));
+  const [gamePDA] = getGlobalGamePDA(PROGRAM_ID);
 
-  const tx = await program.methods
+  const tx = await (program as any).methods
     .collectResources(x, y)
     .accounts({
       game: gamePDA,
-      player: provider.wallet.publicKey,
+      player: (provider as any).wallet.publicKey,
     })
     .rpc();
 
@@ -257,13 +253,13 @@ export async function buildShip(
   shipType: 'sloop' | 'frigate' | 'galleon' | 'flagship'
 ): Promise<string> {
   const { program, provider } = await getAnchorClient();
-  const [gamePDA] = getGlobalGamePDA(new PublicKey(PROGRAM_ID));
+  const [gamePDA] = getGlobalGamePDA(PROGRAM_ID);
 
-  const tx = await program.methods
+  const tx = await (program as any).methods
     .buildShip(shipType)
     .accounts({
       game: gamePDA,
-      player: provider.wallet.publicKey,
+      player: (provider as any).wallet.publicKey,
     })
     .rpc();
 
@@ -272,9 +268,6 @@ export async function buildShip(
 }
 
 export async function checkAndCompleteGame(): Promise<string> {
-  const { program, provider } = await getAnchorClient();
-  const [gamePDA] = getGlobalGamePDA(new PublicKey(PROGRAM_ID));
-
   // Note: checkAndCompleteGame might not exist in our IDL, so we'll skip this function for now
   // or implement a different approach if needed
   console.log('Victory check function - may need implementation adjustment');
@@ -291,8 +284,8 @@ export async function joinGamePrivateViaZcash(params: {
   zcashTxHash?: string;
   blockHeight?: number;
 }): Promise<string> {
-  const { program, provider } = await getAnchorClient();
-  const [gamePDA] = getGlobalGamePDA(new PublicKey(PROGRAM_ID));
+  const { program } = await getAnchorClient();
+  const [gamePDA] = getGlobalGamePDA(PROGRAM_ID);
 
   console.log('[Zcash Bridge] Executing private join for:', {
     gameId: params.gameId,
@@ -306,7 +299,7 @@ export async function joinGamePrivateViaZcash(params: {
 
     // Check if player is already in the game
     try {
-      const gameState = await (program.account as any).pirateGame.fetch(gamePDA);
+      const gameState = await (program as any).account.pirateGame.fetch(gamePDA);
       const isAlreadyJoined = gameState.players.some(
         (p: any) => p.pubkey.toString() === params.solanaPubkey
       );
@@ -320,12 +313,12 @@ export async function joinGamePrivateViaZcash(params: {
     }
 
     // Execute join_game instruction with the player from Zcash memo
-    const tx = await program.methods
+    const tx = await (program as any).methods
       .joinGame()
       .accounts({
         game: gamePDA,
         player: playerPubkey,
-        systemProgram: SystemProgram.programId,
+        systemProgram: (SystemProgram as any).programId,
       })
       .rpc();
 

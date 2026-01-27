@@ -57,7 +57,9 @@ export class PirateGameManager {
       gold: 1000,
       crew: 50,
       cannons: 10,
-      supplies: 100
+      supplies: 100,
+      wood: 0,
+      rum: 0,
     };
   }
 
@@ -72,7 +74,7 @@ export class PirateGameManager {
         const coordinate = this.coordinateToString({ x, y });
         const cellType = this.generateTerritoryType(x, y, size);
 
-        cells[x][y] = {
+        cells[x]![y] = {
           coordinate,
           type: cellType,
           owner: null,
@@ -129,7 +131,7 @@ export class PirateGameManager {
         defense: 10,
         speed: 3,
         position: startingPosition,
-        resources: { gold: 0, crew: 0, cannons: 0, supplies: 0 }
+        resources: { gold: 0, crew: 0, cannons: 0, supplies: 0, wood: 0, rum: 0 }
       }
     ];
   }
@@ -185,7 +187,7 @@ export class PirateGameManager {
 
     for (let i = 0; i < playerCount && i < corners.length; i++) {
       if (corners[i]) {
-        positions.push(corners[i]);
+        positions.push(corners[i]!);
       }
     }
 
@@ -283,13 +285,17 @@ export class PirateGameManager {
     // const moveResult = PirateGameEngine.processShipMovement(ship, toPosition, gameState.gameMap);
 
     // For now, assume move is valid (smart contract will validate)
-    const moveResult = { success: true, updatedShip: { ...ship, position: toPosition } };
+    const moveResult = { 
+      success: true, 
+      updatedShip: { ...ship, position: toPosition },
+      message: 'Movement processed'
+    };
 
     if (!moveResult.success) {
       return {
         updatedGameState: gameState,
         success: false,
-        message: moveResult.message || 'Unknown error during movement'
+        message: 'Movement failed'
       };
     }
 
@@ -362,11 +368,13 @@ export class PirateGameManager {
     }
 
     // Skip players with no active ships
+    let nextPlayer = gameState.players[nextPlayerIndex];
     while (
-      gameState.players[nextPlayerIndex] &&
-      gameState.players[nextPlayerIndex].ships.every(ship => ship.health === 0)
+      nextPlayer &&
+      nextPlayer.ships.every(ship => ship.health === 0)
     ) {
       nextPlayerIndex = (nextPlayerIndex + 1) % gameState.players.length;
+      nextPlayer = gameState.players[nextPlayerIndex];
       if (nextPlayerIndex === gameState.currentPlayerIndex) {
         // Only one player left with ships - game should end
         break;
@@ -432,10 +440,10 @@ export class PirateGameManager {
     if (isGameOver) {
       // const winner = PirateGameEngine.determineWinner(gameState.players, gameState.gameMap);
       const winner = null; // Smart contract will determine winner
-      const updatedGameState = {
+      const updatedGameState: GameState = {
         ...gameState,
         gameStatus: 'completed' as const,
-        winner: null,
+        winner: undefined,
       };
 
       return { isGameOver: true, winner, updatedGameState };
@@ -523,7 +531,12 @@ export class PirateGameManager {
 
     // NOTE: Combat logic moved to smart contract
     // const combatResult = PirateGameEngine.processShipCombat(attackerShip, targetShip);
-    const combatResult = { success: true, updatedAttacker: attackerShip, updatedTarget: targetShip };
+    const combatResult = { 
+      success: true, 
+      updatedAttacker: attackerShip, 
+      updatedTarget: targetShip,
+      message: 'Attack completed' 
+    };
 
     // Update game state
     const updatedPlayers = [...gameState.players];
@@ -531,7 +544,7 @@ export class PirateGameManager {
       ...targetPlayer,
       publicKey: targetPlayer.publicKey, // Ensure publicKey is preserved
       ships: targetPlayer.ships.map(s =>
-        s.id === targetShipId ? combatResult.updatedTarget : s
+        s.id === targetShipId ? combatResult.updatedTarget! : s
       )
     };
 
@@ -600,22 +613,31 @@ export class PirateGameManager {
 
     // NOTE: Territory logic moved to smart contract
     // const claimResult = PirateGameEngine.processTerritoryClaim(player, toCoordinate, gameState.gameMap);
-    const claimResult = { success: true };
+    const claimResult = { 
+      success: true, 
+      message: 'Territory claimed',
+      updatedMap: gameState.gameMap // Fallback to current map
+    };
 
     if (!claimResult.success) {
       return {
         updatedGameState: gameState,
         success: false,
-        message: claimResult.message
+        message: (claimResult as any).message || 'Claim failed'
       };
     }
 
     // Update game state using the updated map from claimResult
     const updatedPlayers = [...gameState.players];
+    const targetPlayer = updatedPlayers[playerIndex];
+    if (!targetPlayer) {
+        return { updatedGameState: gameState, success: false, message: 'Player not found' };
+    }
+
     updatedPlayers[playerIndex] = {
-      ...currentPlayer,
-      publicKey: currentPlayer.publicKey, // Ensure publicKey is preserved
-      controlledTerritories: [...currentPlayer.controlledTerritories, toCoordinate]
+      ...targetPlayer,
+      publicKey: targetPlayer.publicKey, // Ensure publicKey is preserved
+      controlledTerritories: [...targetPlayer.controlledTerritories, toCoordinate]
     };
 
     const updatedGameState = {
@@ -724,6 +746,8 @@ export class PirateGameManager {
         crew: currentPlayer.resources.crew + (collectedResources.crew || 0),
         cannons: currentPlayer.resources.cannons + (collectedResources.cannons || 0),
         supplies: currentPlayer.resources.supplies + (collectedResources.supplies || 0),
+        wood: currentPlayer.resources.wood + (collectedResources.wood || 0),
+        rum: currentPlayer.resources.rum + (collectedResources.rum || 0),
       }
     };
 
@@ -769,6 +793,14 @@ export class PirateGameManager {
 
     const playerIndex = gameState.players.findIndex(p => p.publicKey === player);
     const currentPlayer = gameState.players[playerIndex];
+
+    if (!currentPlayer) {
+      return {
+        updatedGameState: gameState,
+        success: false,
+        message: 'Player not found'
+      };
+    }
 
     // Check if player has reached ship limit
     const activeShips = currentPlayer.ships.filter(ship => ship.health > 0);
@@ -848,7 +880,7 @@ export class PirateGameManager {
       defense: 10,
       speed: 2,
       position: buildCoord,
-      resources: { gold: 0, crew: 0, cannons: 0, supplies: 0 }
+      resources: { gold: 0, crew: 0, cannons: 0, supplies: 0, wood: 0, rum: 0 }
     };
 
     // Deduct resources and add ship
@@ -861,6 +893,8 @@ export class PirateGameManager {
         crew: currentPlayer.resources.crew - costs.crew,
         cannons: currentPlayer.resources.cannons - costs.cannons,
         supplies: currentPlayer.resources.supplies - costs.supplies,
+        wood: currentPlayer.resources.wood - (costs.wood || 0),
+        rum: currentPlayer.resources.rum - (costs.rum || 0),
       },
       ships: [...currentPlayer.ships, newShip]
     };
@@ -876,11 +910,11 @@ export class PirateGameManager {
    * Get ship building costs
    */
   static getShipBuildingCosts(shipType: ShipType): Resources {
-    const costs = {
-      sloop: { gold: 500, crew: 10, cannons: 5, supplies: 20 },
-      frigate: { gold: 1200, crew: 25, cannons: 15, supplies: 40 },
-      galleon: { gold: 2500, crew: 50, cannons: 30, supplies: 80 },
-      flagship: { gold: 5000, crew: 100, cannons: 60, supplies: 150 },
+    const costs: Record<ShipType, Resources> = {
+      sloop: { gold: 500, crew: 10, cannons: 5, supplies: 20, wood: 0, rum: 0 },
+      frigate: { gold: 1200, crew: 25, cannons: 15, supplies: 40, wood: 0, rum: 0 },
+      galleon: { gold: 2500, crew: 50, cannons: 30, supplies: 80, wood: 0, rum: 0 },
+      flagship: { gold: 5000, crew: 100, cannons: 60, supplies: 150, wood: 0, rum: 0 },
     };
     return costs[shipType];
   }

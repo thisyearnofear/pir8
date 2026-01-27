@@ -4,7 +4,7 @@ import { useWallet } from "@solana/wallet-adapter-react";
 import { usePirateGameState } from "@/hooks/usePirateGameState";
 import { useErrorHandler } from "@/hooks/useErrorHandler";
 import { useShowOnboarding } from "@/hooks/useShowOnboarding";
-import { useGameSync } from "@/hooks/useGameSync";
+import { useViralSystem } from "@/hooks/useViralSystem";
 import { ErrorBoundary } from "@/components/ErrorBoundary";
 import { ErrorToast, SuccessToast } from "@/components/Toast";
 import PirateMap from "@/components/PirateMap";
@@ -20,6 +20,8 @@ import VictoryScreen from "@/components/VictoryScreen";
 import { ManualSyncButton } from "@/components/ManualSyncButton";
 import { GameSyncStatus } from "@/components/GameSyncRecovery";
 import PrivacyStatusIndicator from "@/components/PrivacyStatusIndicator";
+import ViralEventModal from "@/components/ViralEventModal";
+import SocialModal from "@/components/SocialModal";
 import { useState, useEffect } from "react";
 import dynamic from "next/dynamic";
 import { createPlayerFromWallet, createAIPlayer } from "@/lib/playerHelper";
@@ -66,17 +68,22 @@ export default function Home() {
   const [isJoining, setIsJoining] = useState(false);
   const [joinError, setJoinError] = useState<string | undefined>();
   const [shipActionModalShip, setShipActionModalShip] = useState<Ship | null>(null);
+  const [socialModal, setSocialModal] = useState<{ type: 'leaderboard' | 'referral'; isOpen: boolean }>({
+    type: 'leaderboard',
+    isOpen: false
+  });
+
   const { handleGameError } = useErrorHandler();
   const { shown: showOnboarding, dismiss: dismissOnboarding } = useShowOnboarding();
 
-  // Set up consolidated game synchronization
-  const { heliusConnected, lastSync } = useGameSync(gameState?.gameId || '');
-
-  // Get current player
+  // Get current player - moved up before viral system
   const getCurrentPlayer = () => {
     if (!gameState || !publicKey) return null;
     return gameState.players.find((p: any) => p.publicKey === publicKey.toString()) || null;
   };
+
+  // Consolidated viral system
+  const viralSystem = useViralSystem(gameState, getCurrentPlayer());
 
   // Get current player name for TurnBanner
   const getCurrentPlayerName = () => {
@@ -139,10 +146,16 @@ export default function Home() {
     }
   }, [isMyTurn(publicKey?.toString()), gameState?.currentPlayerIndex, gameState?.gameStatus]);
 
-  // Simplified game event handling
+  // Simplified game event handling with viral moments
   const handleGameEvent = (message: string) => {
     setMessage(message);
     setTimeout(() => setMessage(null), 3000);
+  };
+
+  // Handle viral sharing - now consolidated
+  const handleViralShare = (event: any, platform?: 'twitter' | 'discord' | 'copy') => {
+    viralSystem.handleShare(event, platform);
+    handleGameEvent('🚀 Epic moment shared! Spread the world!');
   };
 
   const handleCreateGame = async () => {
@@ -221,7 +234,7 @@ export default function Home() {
 
     if (selectedShipId) {
       // Move selected ship to coordinate
-      const success = await moveShip(selectedShipId, coordinate, wallet); // Pass wallet
+      const success = await moveShip(selectedShipId, coordinate, wallet);
       if (success) {
         handleGameEvent('Ship moved successfully!');
       }
@@ -260,8 +273,8 @@ export default function Home() {
         break;
       case 'attack':
         // Find nearby enemy ships and attack
-        const myShips = getAllShips().filter(s => s.id.startsWith(publicKey.toString()));
-        const selectedShip = myShips.find(s => s.id === shipId);
+        const myShips = getAllShips().filter((s: any) => s.id.startsWith(publicKey.toString()));
+        const selectedShip = myShips.find((s: any) => s.id === shipId);
         if (selectedShip) {
           const nearbyEnemies = getAllShips().filter((ship: any) =>
             !ship.id.startsWith(publicKey.toString()) &&
@@ -273,7 +286,7 @@ export default function Home() {
           );
 
           if (nearbyEnemies.length > 0) {
-            const success = await attackWithShip(shipId, nearbyEnemies[0].id, wallet); // Pass wallet
+            const success = await attackWithShip(shipId, nearbyEnemies[0].id, wallet);
             if (success) {
               handleGameEvent('⚔️ Attack launched!');
             }
@@ -286,7 +299,7 @@ export default function Home() {
         const ship = getAllShips().find((s: any) => s.id === shipId);
         if (ship) {
           const coordinate = `${ship.position.x},${ship.position.y}`;
-          const success = await claimTerritory(shipId, coordinate, wallet); // Pass wallet
+          const success = await claimTerritory(shipId, coordinate, wallet);
           if (success) {
             handleGameEvent('🏴‍☠️ Territory claimed!');
           }
@@ -337,6 +350,19 @@ export default function Home() {
         />
       )}
 
+      {/* Consolidated Viral System */}
+      <ViralEventModal
+        event={viralSystem.currentEvent}
+        onShare={handleViralShare}
+        onDismiss={viralSystem.dismissCurrentEvent}
+      />
+      <SocialModal
+        type={socialModal.type}
+        gameId={gameState?.gameId}
+        isOpen={socialModal.isOpen}
+        onClose={() => setSocialModal(prev => ({ ...prev, isOpen: false }))}
+      />
+
       <ErrorToast error={error} onClose={clearError} />
       <SuccessToast message={showMessage} onClose={() => setMessage(null)} />
 
@@ -352,20 +378,84 @@ export default function Home() {
 
       <div className="min-h-screen bg-gradient-to-b from-slate-900 to-slate-800 text-white">
         <div className="container mx-auto px-4 py-6">
-          <header className="mb-4">
-            <div className="flex items-center justify-between mb-4">
+          <header className="mb-6">
+            <div className="flex items-center justify-between mb-6">
               <div className="flex-1" />
               <div className="text-center flex-1">
-                <h1 className="text-4xl font-bold text-neon-cyan mb-2">
-                  🏴‍☠️ PIR8 BATTLE ARENA
-                </h1>
-                <p className="text-gray-300">
-                  Strategic naval warfare on the blockchain
-                </p>
+                <div className="relative">
+                  {/* Animated background glow */}
+                  <div className="absolute inset-0 bg-gradient-to-r from-neon-cyan/20 via-neon-gold/20 to-neon-cyan/20 
+                                  rounded-2xl blur-xl animate-pulse"></div>
+
+                  {/* Main title */}
+                  <div className="relative bg-gradient-to-br from-slate-900/90 to-slate-800/90 
+                                  border-2 border-neon-cyan/50 rounded-2xl p-6 backdrop-blur-sm
+                                  shadow-2xl shadow-neon-cyan/20">
+                    <h1 className="text-5xl font-black text-transparent bg-clip-text 
+                                   bg-gradient-to-r from-neon-cyan via-neon-gold to-neon-cyan mb-3
+                                   animate-pulse drop-shadow-2xl">
+                      🏴‍☠️ PIR8 BATTLE ARENA
+                    </h1>
+                    <p className="text-lg text-gray-300 font-semibold tracking-wide">
+                      Strategic naval warfare on the blockchain
+                    </p>
+
+                    {/* Dynamic status indicators */}
+                    <div className="flex items-center justify-center gap-4 mt-4">
+                      <div className="flex items-center gap-2 bg-slate-700/60 rounded-full px-4 py-2 border border-neon-cyan/30">
+                        <div className="w-2 h-2 bg-green-400 rounded-full animate-pulse"></div>
+                        <span className="text-sm font-mono text-green-400">LIVE</span>
+                      </div>
+                      <div className="flex items-center gap-2 bg-slate-700/60 rounded-full px-4 py-2 border border-neon-gold/30">
+                        <span className="text-sm font-mono text-neon-gold">DEVNET</span>
+                      </div>
+                      {gameState?.players && gameState.players.length > 0 && (
+                        <div className="flex items-center gap-2 bg-slate-700/60 rounded-full px-4 py-2 border border-neon-magenta/30">
+                          <span className="text-sm font-mono text-neon-magenta">
+                            {gameState.players.length} PIRATES
+                          </span>
+                        </div>
+                      )}
+                    </div>
+                  </div>
+                </div>
               </div>
               <div className="flex-1 flex justify-end items-center gap-4">
+                <button
+                  onClick={() => setSocialModal({ type: 'referral', isOpen: true })}
+                  className="relative group"
+                >
+                  <div className="absolute inset-0 bg-neon-gold/20 rounded-xl blur-md group-hover:blur-lg transition-all"></div>
+                  <div className="relative bg-gradient-to-r from-neon-gold/80 to-neon-orange/80 
+                                  hover:from-neon-gold hover:to-neon-orange
+                                  text-black font-bold py-2 px-4 rounded-xl
+                                  hover:shadow-lg hover:shadow-neon-gold/50 hover:scale-105 
+                                  active:scale-95 transition-all duration-300 flex items-center gap-2">
+                    <span className="text-lg">🚀</span>
+                    <span className="hidden sm:inline">Invite</span>
+                  </div>
+                </button>
+                <button
+                  onClick={() => setSocialModal({ type: 'leaderboard', isOpen: true })}
+                  className="relative group"
+                >
+                  <div className="absolute inset-0 bg-neon-magenta/20 rounded-xl blur-md group-hover:blur-lg transition-all"></div>
+                  <div className="relative bg-gradient-to-r from-neon-magenta/80 to-neon-orange/80 
+                                  hover:from-neon-magenta hover:to-neon-orange
+                                  text-black font-bold py-2 px-4 rounded-xl
+                                  hover:shadow-lg hover:shadow-neon-magenta/50 hover:scale-105 
+                                  active:scale-95 transition-all duration-300 flex items-center gap-2">
+                    <span className="text-lg">🏆</span>
+                    <span className="hidden sm:inline">Leaderboard</span>
+                  </div>
+                </button>
                 <PrivacyStatusIndicator />
-                <WalletButtonWrapper />
+                <div className="relative">
+                  <div className="absolute inset-0 bg-neon-cyan/20 rounded-xl blur-md"></div>
+                  <div className="relative">
+                    <WalletButtonWrapper />
+                  </div>
+                </div>
               </div>
             </div>
           </header>
@@ -410,15 +500,90 @@ export default function Home() {
                   scannedCoordinates={getScannedCoordinates()}
                 />
               ) : (
-                <div className="flex-1 flex items-center justify-center bg-slate-800 rounded-lg border border-neon-cyan border-opacity-30">
-                  <div className="text-center p-8">
-                    <div className="text-6xl mb-4">🗺️</div>
-                    <h3 className="text-xl text-neon-cyan mb-2">
-                      Battle Map Loading...
+                <div className="flex-1 flex items-center justify-center relative overflow-hidden">
+                  {/* Animated background */}
+                  <div className="absolute inset-0 bg-gradient-to-br from-slate-900 via-slate-800 to-slate-900 rounded-2xl">
+                    <div className="absolute inset-0 bg-[url('/images/ocean-pattern.svg')] opacity-5"></div>
+                    <div className="absolute top-10 left-10 w-32 h-32 bg-neon-cyan/5 rounded-full blur-3xl animate-pulse"></div>
+                    <div className="absolute bottom-10 right-10 w-40 h-40 bg-neon-gold/5 rounded-full blur-3xl animate-pulse delay-1000"></div>
+                    <div className="absolute top-1/2 left-1/3 w-24 h-24 bg-neon-magenta/5 rounded-full blur-2xl animate-pulse delay-500"></div>
+                  </div>
+
+                  {/* Main content */}
+                  <div className="relative z-10 text-center p-12 max-w-2xl">
+                    {/* Animated ship icon */}
+                    <div className="mb-8 relative">
+                      <div className="text-9xl animate-bounce filter drop-shadow-2xl">🗺️</div>
+                      <div className="absolute -top-4 -right-4 text-4xl animate-spin-slow">⚓</div>
+                      <div className="absolute -bottom-4 -left-4 text-3xl animate-pulse">💰</div>
+                    </div>
+
+                    {/* Dynamic title */}
+                    <h3 className="text-4xl font-black text-transparent bg-clip-text 
+                                   bg-gradient-to-r from-neon-cyan via-neon-gold to-neon-cyan mb-4
+                                   animate-pulse">
+                      Prepare for Battle!
                     </h3>
-                    <p className="text-gray-400">
-                      {!gameState ? 'Create or join a game to begin' : 'Preparing battle arena...'}
-                    </p>
+
+                    {/* Status message */}
+                    <div className="mb-8">
+                      {!gameState ? (
+                        <div className="space-y-3">
+                          <p className="text-xl text-gray-300 font-semibold">
+                            Ready to command your pirate fleet?
+                          </p>
+                          <p className="text-gray-400 leading-relaxed">
+                            Create a new battle arena or join an existing crew.
+                            Strategic naval warfare awaits!
+                          </p>
+                        </div>
+                      ) : (
+                        <div className="space-y-3">
+                          <p className="text-xl text-neon-gold font-semibold">
+                            Battle Arena Initializing...
+                          </p>
+                          <p className="text-gray-400">
+                            Preparing the seven seas for epic naval combat
+                          </p>
+                        </div>
+                      )}
+                    </div>
+
+                    {/* Action indicators */}
+                    <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-8">
+                      <div className="bg-slate-800/60 border border-neon-cyan/30 rounded-xl p-4 
+                                      hover:bg-slate-700/60 hover:border-neon-cyan/50 transition-all
+                                      hover:scale-105 hover:shadow-lg hover:shadow-neon-cyan/20">
+                        <div className="text-3xl mb-2">⚔️</div>
+                        <div className="text-sm font-semibold text-neon-cyan">Strategic Combat</div>
+                        <div className="text-xs text-gray-400 mt-1">Skill-based warfare</div>
+                      </div>
+
+                      <div className="bg-slate-800/60 border border-neon-gold/30 rounded-xl p-4 
+                                      hover:bg-slate-700/60 hover:border-neon-gold/50 transition-all
+                                      hover:scale-105 hover:shadow-lg hover:shadow-neon-gold/20">
+                        <div className="text-3xl mb-2">💰</div>
+                        <div className="text-sm font-semibold text-neon-gold">Real Rewards</div>
+                        <div className="text-xs text-gray-400 mt-1">Earn while you play</div>
+                      </div>
+
+                      <div className="bg-slate-800/60 border border-neon-magenta/30 rounded-xl p-4 
+                                      hover:bg-slate-700/60 hover:border-neon-magenta/50 transition-all
+                                      hover:scale-105 hover:shadow-lg hover:shadow-neon-magenta/20">
+                        <div className="text-3xl mb-2">🔒</div>
+                        <div className="text-sm font-semibold text-neon-magenta">Privacy First</div>
+                        <div className="text-xs text-gray-400 mt-1">Zcash integration</div>
+                      </div>
+                    </div>
+
+                    {/* Call to action */}
+                    <div className="text-center">
+                      <div className="inline-flex items-center gap-2 bg-gradient-to-r from-neon-cyan/20 to-neon-gold/20 
+                                      border border-neon-cyan/50 rounded-full px-6 py-3 backdrop-blur-sm">
+                        <span className="text-neon-cyan font-bold">🏴‍☠️</span>
+                        <span className="text-gray-300 font-semibold">Use the controls panel to begin →</span>
+                      </div>
+                    </div>
                   </div>
                 </div>
               )}
@@ -474,6 +639,7 @@ export default function Home() {
                 onScanCoordinate={handleScanCoordinate}
                 decisionTimeMs={decisionTime}
                 scanChargesRemaining={scanChargesRemaining}
+                speedBonusAccumulated={speedBonusAccumulated}
               />
             </div>
           </div>

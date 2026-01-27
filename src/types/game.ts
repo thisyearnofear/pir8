@@ -1,7 +1,14 @@
 // Core Pirate Strategy Game Types
-export type TerritoryCellType = 'water' | 'island' | 'port' | 'treasure' | 'storm' | 'reef' | 'whirlpool';
-export type ShipType = 'sloop' | 'frigate' | 'galleon' | 'flagship';
-export type ResourceType = 'gold' | 'crew' | 'cannons' | 'supplies';
+export type TerritoryCellType =
+  | "water"
+  | "island"
+  | "port"
+  | "treasure"
+  | "storm"
+  | "reef"
+  | "whirlpool";
+export type ShipType = "sloop" | "frigate" | "galleon" | "flagship";
+export type ResourceType = "gold" | "crew" | "cannons" | "supplies";
 
 // Ship represents a player's fleet unit
 export interface Ship {
@@ -28,7 +35,7 @@ export interface TerritoryCell {
 
 // Weather effects that can affect territories
 export interface WeatherEffect {
-  type: 'storm' | 'fog' | 'calm' | 'trade_winds';
+  type: "storm" | "fog" | "calm" | "trade_winds";
   duration: number; // turns remaining
   effect: {
     movementModifier?: number;
@@ -50,6 +57,8 @@ export interface Resources {
   crew: number;
   cannons: number;
   supplies: number;
+  wood: number;
+  rum: number;
 }
 
 // Coordinate system for the game map
@@ -67,12 +76,12 @@ export interface Player {
   controlledTerritories: string[]; // coordinate strings
   totalScore: number;
   isActive: boolean;
-  
+
   // ===== SKILL MECHANICS =====
   // Scanning system
   scanCharges: number;
-  scannedCoordinates: string[];  // Coordinates revealed via scans
-  
+  scannedCoordinates: string[]; // Coordinates revealed via scans
+
   // Timing bonuses
   speedBonusAccumulated: number;
   averageDecisionTimeMs: number;
@@ -84,9 +93,9 @@ export interface GameState {
   players: Player[];
   currentPlayerIndex: number;
   gameMap: GameMap;
-  gameStatus: 'waiting' | 'active' | 'completed';
+  gameStatus: "waiting" | "active" | "completed";
   winner?: string;
-  currentPhase: 'deployment' | 'movement' | 'combat' | 'resource_collection';
+  currentPhase: "deployment" | "movement" | "combat" | "resource_collection";
   turnNumber: number;
   turnTimeRemaining?: number;
   pendingActions: GameAction[];
@@ -97,7 +106,15 @@ export interface GameState {
 // Game events for history/replay
 export interface GameEvent {
   id: string;
-  type: 'ship_moved' | 'ship_attacked' | 'territory_claimed' | 'resources_collected' | 'ship_built' | 'weather_change' | 'coordinate_scanned' | 'move_executed';
+  type:
+    | "ship_moved"
+    | "ship_attacked"
+    | "territory_claimed"
+    | "resources_collected"
+    | "ship_built"
+    | "weather_change"
+    | "coordinate_scanned"
+    | "move_executed";
   playerId: string;
   turnNumber: number;
   timestamp: number;
@@ -109,11 +126,17 @@ export interface GameAction {
   id: string;
   gameId: string;
   player: string;
-  type: 'move_ship' | 'attack' | 'collect_resources' | 'build_ship' | 'claim_territory' | 'scan_coordinate';
+  type:
+    | "move_ship"
+    | "attack"
+    | "collect_resources"
+    | "build_ship"
+    | "claim_territory"
+    | "scan_coordinate";
   data: ActionData;
   timestamp: number;
   signature?: string;
-  decisionTimeMs?: number;  // For timing bonuses
+  decisionTimeMs?: number; // For timing bonuses
 }
 
 export interface ActionData {
@@ -123,7 +146,7 @@ export interface ActionData {
   targetShipId?: string;
   shipType?: ShipType;
   resourceAmount?: Partial<Resources>;
-  coordinate?: string;  // For scanning
+  coordinate?: string; // For scanning
 }
 
 export interface GameConfig {
@@ -135,9 +158,12 @@ export interface GameConfig {
 }
 
 // Ship configurations for different types
-export const SHIP_CONFIGS: Record<ShipType, Omit<Ship, 'id' | 'position' | 'resources'>> = {
+export const SHIP_CONFIGS: Record<
+  ShipType,
+  Omit<Ship, "id" | "position" | "resources">
+> = {
   sloop: {
-    type: 'sloop',
+    type: "sloop",
     maxHealth: 100,
     health: 100,
     attack: 20,
@@ -145,7 +171,7 @@ export const SHIP_CONFIGS: Record<ShipType, Omit<Ship, 'id' | 'position' | 'reso
     speed: 3,
   },
   frigate: {
-    type: 'frigate',
+    type: "frigate",
     maxHealth: 200,
     health: 200,
     attack: 40,
@@ -153,7 +179,7 @@ export const SHIP_CONFIGS: Record<ShipType, Omit<Ship, 'id' | 'position' | 'reso
     speed: 2,
   },
   galleon: {
-    type: 'galleon',
+    type: "galleon",
     maxHealth: 350,
     health: 350,
     attack: 60,
@@ -161,7 +187,7 @@ export const SHIP_CONFIGS: Record<ShipType, Omit<Ship, 'id' | 'position' | 'reso
     speed: 1,
   },
   flagship: {
-    type: 'flagship',
+    type: "flagship",
     maxHealth: 500,
     health: 500,
     attack: 80,
@@ -171,7 +197,10 @@ export const SHIP_CONFIGS: Record<ShipType, Omit<Ship, 'id' | 'position' | 'reso
 };
 
 // Territory cell resource generation rates
-export const TERRITORY_RESOURCE_GENERATION: Record<TerritoryCellType, Partial<Resources>> = {
+export const TERRITORY_RESOURCE_GENERATION: Record<
+  TerritoryCellType,
+  Partial<Resources>
+> = {
   water: {},
   island: { supplies: 2 },
   port: { gold: 3, crew: 1 },
@@ -181,9 +210,15 @@ export const TERRITORY_RESOURCE_GENERATION: Record<TerritoryCellType, Partial<Re
   whirlpool: {},
 };
 
-export const COORDINATE_LETTERS = ['A', 'B', 'C', 'D', 'E', 'F', 'G'];
-export const COORDINATE_NUMBERS = ['1', '2', '3', '4', '5', '6', '7'];
+export const COORDINATE_LETTERS = ["A", "B", "C", "D", "E", "F", "G"];
+export const COORDINATE_NUMBERS = ["1", "2", "3", "4", "5", "6", "7"];
 
 export const LETTERS_TO_INDEX: { [key: string]: number } = {
-  'A': 0, 'B': 1, 'C': 2, 'D': 3, 'E': 4, 'F': 5, 'G': 6
+  A: 0,
+  B: 1,
+  C: 2,
+  D: 3,
+  E: 4,
+  F: 5,
+  G: 6,
 };

@@ -40,16 +40,16 @@ export default function GameStatePanel({
   winner,
   players = [],
   gameId,
-  grid = [],
-  chosenCoordinates = [],
-  onCoordinateSelect,
-  isMyTurn = false,
+  grid: _grid = [],
+  chosenCoordinates: _chosenCoordinates = [],
+  onCoordinateSelect: _onCoordinateSelect,
+  isMyTurn: _isMyTurn = false,
   collapsed = false,
   onToggle,
 }: GameStatePanelProps) {
   const [joinGameId, setJoinGameId] = useState("");
   console.log("[GameStatePanel] Rendering state:", state, { isCreating, gameId, playersCount: players.length });
-  
+
   switch (state) {
     case "disconnected":
       return (

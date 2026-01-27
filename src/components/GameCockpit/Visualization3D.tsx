@@ -22,15 +22,20 @@ export default function Visualization3D({
   audioReactivity = 1.0,
 }: Visualization3DProps) {
   const containerRef = useRef<HTMLDivElement>(null);
-  const sceneRef = useRef<THREE.Scene>();
-  const cameraRef = useRef<THREE.PerspectiveCamera>();
-  const rendererRef = useRef<THREE.WebGLRenderer>();
-  const controlsRef = useRef<OrbitControls>();
-  const sphereRef = useRef<THREE.Mesh>();
-  const sphereGroupRef = useRef<THREE.Group>();
-  const uniformsRef = useRef<any>();
-  const animationIdRef = useRef<number>();
-  const frequencyDataRef = useRef<Uint8Array>(new Uint8Array(128));
+  const sceneRef = useRef<THREE.Scene | null>(null);
+  const cameraRef = useRef<THREE.PerspectiveCamera | null>(null);
+  const rendererRef = useRef<THREE.WebGLRenderer | null>(null);
+  const controlsRef = useRef<OrbitControls | null>(null);
+  const sphereRef = useRef<THREE.Mesh | null>(null);
+  const sphereGroupRef = useRef<THREE.Group | null>(null);
+  const uniformsRef = useRef<any>(null);
+  const animationIdRef = useRef<number | null>(null);
+  const frequencyDataRef = useRef<Uint8Array | null>(null);
+
+  // Initialize frequency data array
+  useEffect(() => {
+    frequencyDataRef.current = new Uint8Array(128);
+  }, []);
   const rotationSpeedRef = useRef(rotationSpeed);
   const distortionRef = useRef(distortionFactor);
   const reactivityRef = useRef(audioReactivity);
@@ -283,7 +288,7 @@ export default function Visualization3D({
           audioAnalyser.getByteFrequencyData(tempData);
           let sum = 0;
           for (let i = 0; i < tempData.length; i++) {
-            sum += tempData[i];
+            sum += tempData[i] || 0;
           }
           const avgLevel = sum / tempData.length / 255; // Normalize to 0-1
           audioRotationFactor = 1 + avgLevel * reactivityRef.current;
@@ -308,11 +313,11 @@ export default function Visualization3D({
         }
       }
 
-      if (isAudioPlaying && audioAnalyser && uniformsRef.current) {
-        audioAnalyser.getByteFrequencyData(frequencyDataRef.current);
+      if (isAudioPlaying && audioAnalyser && uniformsRef.current && frequencyDataRef.current) {
+        audioAnalyser.getByteFrequencyData(frequencyDataRef.current as any);
         for (let i = 0; i < 128; i++) {
           uniformsRef.current.u_frequency.value[i] =
-            frequencyDataRef.current[i] / 255.0;
+            (frequencyDataRef.current[i] || 0) / 255.0;
         }
         uniformsRef.current.u_reactivity.value = reactivityRef.current;
         uniformsRef.current.u_distortion.value = distortionRef.current;

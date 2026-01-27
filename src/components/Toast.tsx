@@ -27,7 +27,7 @@ export function Toast({ message, type = 'info', duration = 5000, onClose }: Toas
     if (message) {
       setIsVisible(true);
       setIsLeaving(false);
-      
+
       // Haptic feedback for mobile
       if (isMobile) {
         if (type === 'error') triggerHaptic('heavy');
@@ -44,9 +44,10 @@ export function Toast({ message, type = 'info', duration = 5000, onClose }: Toas
     } else {
       setIsVisible(false);
     }
+    return undefined; // Explicit return for when condition is false
   }, [message, type, duration, isMobile, triggerHaptic]);
 
-  
+
 
   if (!isVisible || !message) return null;
 
@@ -88,7 +89,7 @@ export function Toast({ message, type = 'info', duration = 5000, onClose }: Toas
             </p>
           </div>
         </div>
-        
+
         {type !== 'loading' && (
           <button
             onClick={handleClose}
@@ -98,7 +99,7 @@ export function Toast({ message, type = 'info', duration = 5000, onClose }: Toas
             ×
           </button>
         )}
-        
+
         {type === 'loading' && (
           <div className="ml-3">
             <div className="pirate-spinner w-4 h-4 border-white"></div>

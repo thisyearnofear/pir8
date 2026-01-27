@@ -9,7 +9,7 @@ import { useState } from 'react';
  * Use this to test if blockchain sync is working
  */
 export function ManualSyncButton() {
-  const gameState = usePirateGameState((state) => state.gameState);
+  const { gameState } = usePirateGameState();
   const { forceSync } = useGameSync(gameState?.gameId);
   const [isSyncing, setIsSyncing] = useState(false);
 

@@ -5,25 +5,73 @@
 @tailwind utilities;
 
 /* Pirate Theme Colors */
-.text-neon-cyan { color: #00ffff; }
-.text-neon-orange { color: #ff6b00; }
-.text-neon-gold { color: #ffd700; }
-.text-neon-blue { color: #0080ff; }
-.text-neon-magenta { color: #ff00ff; }
-.text-neon-green { color: #00ff00; }
+.text-neon-cyan {
+  color: #00ffff;
+}
 
-.bg-neon-cyan { background-color: #00ffff; }
-.bg-neon-orange { background-color: #ff6b00; }
-.bg-neon-gold { background-color: #ffd700; }
-.bg-neon-blue { background-color: #0080ff; }
-.bg-neon-magenta { background-color: #ff00ff; }
-.bg-neon-green { background-color: #00ff00; }
+.text-neon-orange {
+  color: #ff6b00;
+}
 
-.border-neon-cyan { border-color: #00ffff; }
-.border-neon-orange { border-color: #ff6b00; }
-.border-neon-gold { border-color: #ffd700; }
-.border-neon-blue { border-color: #0080ff; }
-.border-neon-magenta { border-color: #ff00ff; }
+.text-neon-gold {
+  color: #ffd700;
+}
+
+.text-neon-blue {
+  color: #0080ff;
+}
+
+.text-neon-magenta {
+  color: #ff00ff;
+}
+
+.text-neon-green {
+  color: #00ff00;
+}
+
+.bg-neon-cyan {
+  background-color: #00ffff;
+}
+
+.bg-neon-orange {
+  background-color: #ff6b00;
+}
+
+.bg-neon-gold {
+  background-color: #ffd700;
+}
+
+.bg-neon-blue {
+  background-color: #0080ff;
+}
+
+.bg-neon-magenta {
+  background-color: #ff00ff;
+}
+
+.bg-neon-green {
+  background-color: #00ff00;
+}
+
+.border-neon-cyan {
+  border-color: #00ffff;
+}
+
+.border-neon-orange {
+  border-color: #ff6b00;
+}
+
+.border-neon-gold {
+  border-color: #ffd700;
+}
+
+.border-neon-blue {
+  border-color: #0080ff;
+}
+
+.border-neon-magenta {
+  border-color: #ff00ff;
+}
 
 /* Pirate Map Styles */
 .territory-cell {
@@ -69,15 +117,25 @@
 }
 
 @keyframes holographic {
-  0%, 100% { background-position: 0% 50%; }
-  50% { background-position: 100% 50%; }
+
+  0%,
+  100% {
+    background-position: 0% 50%;
+  }
+
+  50% {
+    background-position: 100% 50%;
+  }
 }
 
 @keyframes battle-pulse {
-  0%, 100% { 
+
+  0%,
+  100% {
     box-shadow: 0 0 10px rgba(0, 255, 255, 0.3);
   }
-  50% { 
+
+  50% {
     box-shadow: 0 0 30px rgba(0, 255, 255, 0.6);
   }
 }
@@ -101,13 +159,25 @@
 }
 
 @keyframes storm-effect {
-  0% { filter: brightness(1.0); }
-  100% { filter: brightness(0.7); }
+  0% {
+    filter: brightness(1.0);
+  }
+
+  100% {
+    filter: brightness(0.7);
+  }
 }
 
 @keyframes wind-effect {
-  0%, 100% { transform: translateX(0); }
-  50% { transform: translateX(2px); }
+
+  0%,
+  100% {
+    transform: translateX(0);
+  }
+
+  50% {
+    transform: translateX(2px);
+  }
 }
 
 /* Ship movement animations */
@@ -120,9 +190,19 @@
 }
 
 @keyframes attack-shake {
-  0%, 100% { transform: translateX(0); }
-  25% { transform: translateX(-2px); }
-  75% { transform: translateX(2px); }
+
+  0%,
+  100% {
+    transform: translateX(0);
+  }
+
+  25% {
+    transform: translateX(-2px);
+  }
+
+  75% {
+    transform: translateX(2px);
+  }
 }
 
 :root {
@@ -1932,7 +2012,10 @@ body.modal-open {
 
 /* Reduced Motion Accessibility */
 @media (prefers-reduced-motion: reduce) {
-  *, *::before, *::after {
+
+  *,
+  *::before,
+  *::after {
     animation: none !important;
     transition: none !important;
   }
@@ -1948,5 +2031,658 @@ body.modal-open {
   .scanner-frame-game .corner-br,
   .pirate-spinner {
     animation: none !important;
+  }
+}
+
+/* ================================================
+   ENHANCED UI ANIMATIONS FOR IMPROVED COMPONENTS
+   ================================================ */
+
+/* Enhanced Timer and Speed Bonus Animations */
+.speed-timer-glow {
+  animation: speedTimerPulse 2s ease-in-out infinite;
+}
+
+@keyframes speedTimerPulse {
+
+  0%,
+  100% {
+    box-shadow: 0 0 15px rgba(0, 217, 255, 0.3);
+  }
+
+  50% {
+    box-shadow: 0 0 25px rgba(0, 217, 255, 0.6);
+  }
+}
+
+.speed-bonus-flash {
+  animation: speedBonusFlash 0.5s ease-in-out;
+}
+
+@keyframes speedBonusFlash {
+
+  0%,
+  100% {
+    opacity: 1;
+  }
+
+  50% {
+    opacity: 0.7;
+    transform: scale(1.1);
+  }
+}
+
+/* Enhanced Battle Info Panel Animations */
+.battle-info-enhanced {
+  position: relative;
+  overflow: hidden;
+}
+
+.battle-info-enhanced::after {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: -100%;
+  width: 100%;
+  height: 100%;
+  background: linear-gradient(90deg,
+      transparent,
+      rgba(0, 217, 255, 0.1),
+      transparent);
+  animation: battleInfoScan 8s ease-in-out infinite;
+}
+
+@keyframes battleInfoScan {
+  0% {
+    left: -100%;
+  }
+
+  50% {
+    left: 100%;
+  }
+
+  100% {
+    left: 100%;
+  }
+}
+
+/* Enhanced Player Stats Animations */
+.player-rank-badge {
+  animation: rankBadgePulse 3s ease-in-out infinite;
+}
+
+@keyframes rankBadgePulse {
+
+  0%,
+  100% {
+    transform: scale(1);
+    box-shadow: 0 0 10px rgba(255, 215, 0, 0.3);
+  }
+
+  50% {
+    transform: scale(1.05);
+    box-shadow: 0 0 20px rgba(255, 215, 0, 0.6);
+  }
+}
+
+.fleet-health-bar {
+  position: relative;
+  overflow: hidden;
+}
+
+.fleet-health-bar::after {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: -100%;
+  width: 50%;
+  height: 100%;
+  background: linear-gradient(90deg,
+      transparent,
+      rgba(255, 255, 255, 0.3),
+      transparent);
+  animation: healthBarShimmer 2s ease-in-out infinite;
+}
+
+@keyframes healthBarShimmer {
+  0% {
+    left: -100%;
+  }
+
+  100% {
+    left: 100%;
+  }
+}
+
+/* Enhanced Control Panel Animations */
+.control-panel-enhanced {
+  position: relative;
+}
+
+.control-panel-enhanced::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  height: 2px;
+  background: linear-gradient(90deg,
+      transparent,
+      var(--neon-cyan),
+      var(--neon-magenta),
+      var(--neon-orange),
+      transparent);
+  animation: controlPanelScan 6s linear infinite;
+}
+
+@keyframes controlPanelScan {
+  0% {
+    opacity: 0;
+  }
+
+  50% {
+    opacity: 1;
+  }
+
+  100% {
+    opacity: 0;
+  }
+}
+
+/* Enhanced Button Hover Effects */
+.pirate-button-enhanced {
+  position: relative;
+  overflow: hidden;
+  transition: all 0.3s cubic-bezier(0.34, 1.56, 0.64, 1);
+}
+
+.pirate-button-enhanced::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: -100%;
+  width: 100%;
+  height: 100%;
+  background: linear-gradient(90deg,
+      transparent,
+      rgba(255, 255, 255, 0.2),
+      transparent);
+  transition: left 0.5s ease;
+}
+
+.pirate-button-enhanced:hover::before {
+  left: 100%;
+}
+
+.pirate-button-enhanced:hover {
+  transform: translateY(-2px) scale(1.02);
+  box-shadow: 0 8px 25px rgba(0, 217, 255, 0.4);
+}
+
+/* Enhanced Modal Animations */
+.modal-enhanced {
+  animation: modalSlideIn 0.4s cubic-bezier(0.34, 1.56, 0.64, 1);
+}
+
+@keyframes modalSlideIn {
+  0% {
+    opacity: 0;
+    transform: scale(0.8) translateY(-50px);
+  }
+
+  100% {
+    opacity: 1;
+    transform: scale(1) translateY(0);
+  }
+}
+
+.modal-backdrop-enhanced {
+  animation: backdropFadeIn 0.3s ease-out;
+}
+
+@keyframes backdropFadeIn {
+  0% {
+    opacity: 0;
+  }
+
+  100% {
+    opacity: 1;
+  }
+}
+
+/* Enhanced Scan Coordinate Grid */
+.scan-grid-enhanced {
+  display: grid;
+  gap: 4px;
+  padding: 12px;
+  background: rgba(15, 22, 41, 0.6);
+  border-radius: 12px;
+  border: 1px solid rgba(255, 0, 255, 0.3);
+}
+
+.scan-coordinate-button {
+  aspect-ratio: 1;
+  background: rgba(255, 0, 255, 0.1);
+  border: 1px solid rgba(255, 0, 255, 0.3);
+  border-radius: 6px;
+  color: var(--neon-magenta);
+  font-weight: 700;
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 10px;
+  transition: all 0.2s cubic-bezier(0.34, 1.56, 0.64, 1);
+  cursor: pointer;
+}
+
+.scan-coordinate-button:hover:not(:disabled) {
+  background: rgba(255, 0, 255, 0.2);
+  border-color: var(--neon-magenta);
+  transform: scale(1.1);
+  box-shadow: 0 0 15px rgba(255, 0, 255, 0.4);
+}
+
+.scan-coordinate-button.selected {
+  background: rgba(0, 217, 255, 0.3);
+  border-color: var(--neon-cyan);
+  color: var(--neon-cyan);
+  box-shadow: 0 0 20px rgba(0, 217, 255, 0.5);
+  animation: scanSelectedPulse 1s ease-in-out infinite;
+}
+
+@keyframes scanSelectedPulse {
+
+  0%,
+  100% {
+    transform: scale(1.1);
+  }
+
+  50% {
+    transform: scale(1.2);
+  }
+}
+
+.scan-coordinate-button:disabled {
+  opacity: 0.3;
+  cursor: not-allowed;
+  filter: grayscale(70%);
+}
+
+/* Enhanced Progress Bars */
+.progress-bar-enhanced {
+  position: relative;
+  background: rgba(0, 0, 0, 0.3);
+  border-radius: 8px;
+  overflow: hidden;
+  border: 1px solid rgba(0, 217, 255, 0.2);
+}
+
+.progress-bar-enhanced::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: linear-gradient(90deg,
+      transparent 0%,
+      rgba(255, 255, 255, 0.1) 50%,
+      transparent 100%);
+  animation: progressShimmer 2s ease-in-out infinite;
+}
+
+@keyframes progressShimmer {
+  0% {
+    transform: translateX(-100%);
+  }
+
+  100% {
+    transform: translateX(100%);
+  }
+}
+
+/* Enhanced Status Indicators */
+.status-indicator-enhanced {
+  position: relative;
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  padding: 8px 16px;
+  background: rgba(15, 22, 41, 0.8);
+  border-radius: 20px;
+  border: 1px solid rgba(0, 217, 255, 0.3);
+  backdrop-filter: blur(10px);
+}
+
+.status-indicator-enhanced::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: linear-gradient(45deg,
+      rgba(0, 217, 255, 0.1),
+      rgba(255, 0, 255, 0.1),
+      rgba(255, 107, 53, 0.1));
+  border-radius: 20px;
+  opacity: 0;
+  transition: opacity 0.3s ease;
+}
+
+.status-indicator-enhanced:hover::before {
+  opacity: 1;
+}
+
+.status-dot {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  animation: statusDotPulse 2s ease-in-out infinite;
+}
+
+@keyframes statusDotPulse {
+
+  0%,
+  100% {
+    opacity: 1;
+    transform: scale(1);
+  }
+
+  50% {
+    opacity: 0.7;
+    transform: scale(1.2);
+  }
+}
+
+/* Enhanced Card Hover Effects */
+.card-enhanced {
+  transition: all 0.3s cubic-bezier(0.34, 1.56, 0.64, 1);
+  position: relative;
+  overflow: hidden;
+}
+
+.card-enhanced::after {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: linear-gradient(135deg,
+      rgba(0, 217, 255, 0.05),
+      rgba(255, 0, 255, 0.05),
+      rgba(255, 107, 53, 0.05));
+  opacity: 0;
+  transition: opacity 0.3s ease;
+  pointer-events: none;
+}
+
+.card-enhanced:hover {
+  transform: translateY(-4px) scale(1.02);
+  box-shadow: 0 12px 40px rgba(0, 217, 255, 0.2);
+}
+
+.card-enhanced:hover::after {
+  opacity: 1;
+}
+
+/* Enhanced Text Glow Effects */
+.text-glow-cyan {
+  text-shadow: 0 0 10px rgba(0, 217, 255, 0.5);
+  animation: textGlowCyan 3s ease-in-out infinite;
+}
+
+@keyframes textGlowCyan {
+
+  0%,
+  100% {
+    text-shadow: 0 0 10px rgba(0, 217, 255, 0.5);
+  }
+
+  50% {
+    text-shadow: 0 0 20px rgba(0, 217, 255, 0.8);
+  }
+}
+
+.text-glow-gold {
+  text-shadow: 0 0 10px rgba(255, 215, 0, 0.5);
+  animation: textGlowGold 3s ease-in-out infinite;
+}
+
+@keyframes textGlowGold {
+
+  0%,
+  100% {
+    text-shadow: 0 0 10px rgba(255, 215, 0, 0.5);
+  }
+
+  50% {
+    text-shadow: 0 0 20px rgba(255, 215, 0, 0.8);
+  }
+}
+
+/* Enhanced Loading Animations */
+.loading-enhanced {
+  position: relative;
+  display: inline-block;
+}
+
+.loading-enhanced::after {
+  content: '';
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  width: 20px;
+  height: 20px;
+  margin: -10px 0 0 -10px;
+  border: 2px solid rgba(0, 217, 255, 0.2);
+  border-top: 2px solid var(--neon-cyan);
+  border-radius: 50%;
+  animation: loadingSpin 1s linear infinite;
+}
+
+@keyframes loadingSpin {
+  0% {
+    transform: rotate(0deg);
+  }
+
+  100% {
+    transform: rotate(360deg);
+  }
+}
+
+/* Enhanced Notification Styles */
+.notification-enhanced {
+  position: relative;
+  background: rgba(15, 22, 41, 0.95);
+  backdrop-filter: blur(20px);
+  border: 1px solid var(--neon-cyan);
+  border-radius: 12px;
+  padding: 16px 24px;
+  box-shadow: 0 8px 32px rgba(0, 217, 255, 0.3);
+  animation: notificationSlideIn 0.5s cubic-bezier(0.34, 1.56, 0.64, 1);
+}
+
+@keyframes notificationSlideIn {
+  0% {
+    opacity: 0;
+    transform: translateY(-50px) scale(0.8);
+  }
+
+  100% {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
+}
+
+.notification-enhanced::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  height: 2px;
+  background: linear-gradient(90deg,
+      transparent,
+      var(--neon-cyan),
+      var(--neon-magenta),
+      var(--neon-orange),
+      transparent);
+  animation: notificationScan 3s ease-in-out infinite;
+}
+
+@keyframes notificationScan {
+
+  0%,
+  100% {
+    opacity: 0.5;
+  }
+
+  50% {
+    opacity: 1;
+  }
+}
+
+/* Custom Scrollbar for Enhanced Components */
+.custom-scrollbar {
+  scrollbar-width: thin;
+  scrollbar-color: rgba(0, 217, 255, 0.5) rgba(15, 22, 41, 0.3);
+}
+
+.custom-scrollbar::-webkit-scrollbar {
+  width: 6px;
+}
+
+.custom-scrollbar::-webkit-scrollbar-track {
+  background: rgba(15, 22, 41, 0.3);
+  border-radius: 3px;
+}
+
+.custom-scrollbar::-webkit-scrollbar-thumb {
+  background: rgba(0, 217, 255, 0.5);
+  border-radius: 3px;
+  transition: background 0.3s ease;
+}
+
+.custom-scrollbar::-webkit-scrollbar-thumb:hover {
+  background: rgba(0, 217, 255, 0.8);
+}
+
+/* Enhanced Background Patterns */
+.bg-pattern-enhanced {
+  background-image:
+    radial-gradient(circle at 25% 25%, rgba(0, 217, 255, 0.1) 0%, transparent 50%),
+    radial-gradient(circle at 75% 75%, rgba(255, 0, 255, 0.1) 0%, transparent 50%),
+    radial-gradient(circle at 50% 50%, rgba(255, 107, 53, 0.05) 0%, transparent 50%);
+  animation: bgPatternShift 20s ease-in-out infinite;
+}
+
+@keyframes bgPatternShift {
+
+  0%,
+  100% {
+    background-position: 0% 0%, 100% 100%, 50% 50%;
+  }
+
+  33% {
+    background-position: 100% 0%, 0% 100%, 25% 75%;
+  }
+
+  66% {
+    background-position: 0% 100%, 100% 0%, 75% 25%;
+  }
+}
+
+/* Enhanced Responsive Breakpoints */
+@media (max-width: 1024px) {
+  .card-enhanced {
+    padding: 16px;
+  }
+
+  .scan-grid-enhanced {
+    gap: 3px;
+    padding: 8px;
+  }
+
+  .scan-coordinate-button {
+    font-size: 9px;
+  }
+}
+
+@media (max-width: 768px) {
+
+  .battle-info-enhanced,
+  .control-panel-enhanced {
+    padding: 16px;
+  }
+
+  .status-indicator-enhanced {
+    padding: 6px 12px;
+    font-size: 12px;
+  }
+
+  .progress-bar-enhanced {
+    height: 6px;
+  }
+}
+
+@media (max-width: 480px) {
+  .card-enhanced {
+    padding: 12px;
+  }
+
+  .notification-enhanced {
+    padding: 12px 16px;
+    font-size: 12px;
+  }
+
+  .scan-coordinate-button {
+    font-size: 8px;
+  }
+}
+
+/* Accessibility Enhancements */
+@media (prefers-reduced-motion: reduce) {
+
+  .speed-timer-glow,
+  .battle-info-enhanced::after,
+  .player-rank-badge,
+  .fleet-health-bar::after,
+  .control-panel-enhanced::before,
+  .scan-coordinate-button.selected,
+  .progress-bar-enhanced::before,
+  .status-dot,
+  .text-glow-cyan,
+  .text-glow-gold,
+  .loading-enhanced::after,
+  .notification-enhanced::before,
+  .bg-pattern-enhanced {
+    animation: none !important;
+  }
+
+  .pirate-button-enhanced:hover,
+  .card-enhanced:hover {
+    transform: none !important;
+  }
+}
+
+/* High Contrast Mode Support */
+@media (prefers-contrast: high) {
+
+  .card-enhanced,
+  .notification-enhanced,
+  .status-indicator-enhanced {
+    border-width: 2px;
+    background: rgba(0, 0, 0, 0.9);
+  }
+
+  .scan-coordinate-button,
+  .pirate-button-enhanced {
+    border-width: 2px;
+  }
+
+  .text-glow-cyan,
+  .text-glow-gold {
+    text-shadow: none;
+    font-weight: 900;
   }
 }

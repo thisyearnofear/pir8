@@ -1,4 +1,4 @@
-import { GameState, Player, Ship, Coordinate } from '../types/game';
+import { GameState, Player, Ship } from '../types/game';
 import { ERROR_MESSAGES } from './constants';
 import { PirateGameManager } from '../lib/pirateGameEngine';
 

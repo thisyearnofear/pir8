@@ -1,12 +1,13 @@
 import { Player, Resources } from '@/types/game';
 import { PublicKey } from '@solana/web3.js';
-import { PirateGameManager } from './pirateGameEngine';
 
 const DEFAULT_RESOURCES: Resources = {
   gold: 1000,
   crew: 50,
   cannons: 20,
   supplies: 100,
+  wood: 0,
+  rum: 0,
 };
 
 /**

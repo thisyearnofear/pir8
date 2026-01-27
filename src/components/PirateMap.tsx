@@ -1,10 +1,10 @@
 'use client';
 
 import { useState, useRef } from 'react';
-import { GameMap, TerritoryCell, Ship, TerritoryCellType } from '../types/game';
+import { GameMap, TerritoryCell, Ship } from '../types/game';
 import { TERRITORY_EMOJIS, SHIP_EMOJIS } from '../utils/constants';
 import { PirateGameManager } from '../lib/pirateGameEngine';
-import TerritoryTooltip, { TERRITORY_INFO } from './TerritoryTooltip';
+import TerritoryTooltip from './TerritoryTooltip';
 
 interface PirateMapProps {
   gameMap: GameMap;
@@ -167,7 +167,7 @@ export default function PirateMap({
     return className;
   };
 
-  const renderCellContent = (coordinate: string): JSX.Element => {
+  const renderCellContent = (coordinate: string): React.ReactElement => {
     const cell = getCellAtCoordinate(coordinate);
     const ship = getShipAtPosition(coordinate);
     const isScanned = isCoordinateScanned(coordinate);
@@ -208,8 +208,8 @@ export default function PirateMap({
     );
   };
 
-  const renderMapGrid = (): JSX.Element[] => {
-    const cells: JSX.Element[] = [];
+  const renderMapGrid = (): React.ReactElement[] => {
+    const cells: React.ReactElement[] = [];
 
     for (let x = 0; x < gameMap.size; x++) {
       for (let y = 0; y < gameMap.size; y++) {

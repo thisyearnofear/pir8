@@ -22,7 +22,7 @@ export class ErrorBoundary extends React.Component<ErrorBoundaryProps, ErrorBoun
     return { hasError: true, error };
   }
 
-  componentDidCatch(error: Error, errorInfo: React.ErrorInfo) {
+  override componentDidCatch(error: Error, errorInfo: React.ErrorInfo) {
     // Handle stack overflow specially - immediate recovery
     if (error.message.includes('Maximum call stack size exceeded')) {
       console.warn('PIR8 Stack Overflow detected - reloading page immediately');
@@ -30,9 +30,9 @@ export class ErrorBoundary extends React.Component<ErrorBoundaryProps, ErrorBoun
       window.location.reload();
       return;
     }
-    
+
     console.error('PIR8 Error Boundary:', error, errorInfo);
-    
+
     // Send error to monitoring service in production
     if (process.env.NODE_ENV === 'production') {
       // Add error reporting here if needed
@@ -43,7 +43,7 @@ export class ErrorBoundary extends React.Component<ErrorBoundaryProps, ErrorBoun
     this.setState({ hasError: false, error: undefined });
   };
 
-  render() {
+  override render() {
     if (this.state.hasError) {
       if (this.props.fallback) {
         return <this.props.fallback error={this.state.error!} resetError={this.resetError} />;

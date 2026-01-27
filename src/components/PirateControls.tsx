@@ -3,7 +3,7 @@
 import { useState } from 'react';
 import { useWallet } from '@solana/wallet-adapter-react';
 import { Ship, GameState, Player } from '../types/game';
-import { SHIP_EMOJIS, SHIP_DESCRIPTIONS } from '../utils/constants';
+import { SHIP_EMOJIS } from '../utils/constants';
 
 interface PirateControlsProps {
   gameState: GameState | null;
@@ -22,6 +22,7 @@ interface PirateControlsProps {
   onScanCoordinate?: (x: number, y: number) => Promise<void>;
   decisionTimeMs?: number;
   scanChargesRemaining?: number;
+  speedBonusAccumulated?: number;
 }
 
 export default function PirateControls({
@@ -40,7 +41,8 @@ export default function PirateControls({
   onShipSelect,
   onScanCoordinate,
   decisionTimeMs = 0,
-  scanChargesRemaining = 3
+  scanChargesRemaining = 3,
+  speedBonusAccumulated = 0
 }: PirateControlsProps) {
 
   const { publicKey } = useWallet();
@@ -62,7 +64,7 @@ export default function PirateControls({
   const isMyTurn = (): boolean => {
     if (!gameState || !publicKey) return false;
     const currentPlayer = gameState.players[gameState.currentPlayerIndex];
-    return currentPlayer.publicKey === publicKey.toString();
+    return currentPlayer?.publicKey === publicKey.toString();
   };
 
   const handleJoinSubmit = async (e: React.FormEvent) => {
@@ -111,65 +113,155 @@ export default function PirateControls({
   };
 
   const renderPreGameControls = () => (
-    <div className="pre-game-controls space-y-4 w-full max-w-sm">
-      <h3 className="text-lg font-bold text-neon-cyan text-center">
-        🏴‍☠️ PREPARE FOR BATTLE
-      </h3>
+    <div className="pre-game-controls space-y-6 w-full max-w-sm">
+      {/* Enhanced Header */}
+      <div className="text-center relative">
+        <div className="absolute inset-0 bg-gradient-to-r from-neon-orange/20 to-neon-gold/20 rounded-2xl blur-xl"></div>
+        <div className="relative bg-gradient-to-br from-slate-900/90 to-slate-800/90 
+                        border-2 border-neon-gold rounded-2xl p-6 backdrop-blur-sm">
+          <div className="text-6xl mb-3 animate-bounce filter drop-shadow-2xl">🏴‍☠️</div>
+          <h3 className="text-2xl font-black text-transparent bg-clip-text 
+                         bg-gradient-to-r from-neon-cyan via-neon-gold to-neon-cyan mb-2">
+            PREPARE FOR BATTLE
+          </h3>
+          <p className="text-sm text-gray-300 font-semibold">
+            Command your fleet in strategic naval warfare
+          </p>
+        </div>
+      </div>
 
-      {publicKey && (
-        <div className="game-actions space-y-3">
+      {publicKey ? (
+        <div className="game-actions space-y-4">
+          {/* Create Game Button - Enhanced */}
           <button
             onClick={onCreateGame}
             disabled={isCreating}
-            className="w-full bg-gradient-to-r from-neon-orange to-neon-gold text-black font-bold py-3 px-6 rounded-lg hover:shadow-neon-orange transition-all duration-300 disabled:opacity-50"
+            className="w-full group relative overflow-hidden bg-gradient-to-r from-neon-orange via-neon-gold to-neon-orange 
+                       text-black font-black py-4 px-6 rounded-xl border-2 border-neon-gold
+                       hover:shadow-2xl hover:shadow-neon-gold/50 hover:scale-105 
+                       active:scale-95 transition-all duration-300 disabled:opacity-50 disabled:hover:scale-100"
           >
-            {isCreating ? '⚓ Creating Arena...' : '⚔️ Create New Battle (0.1 SOL)'}
+            <div className="absolute inset-0 bg-gradient-to-r from-transparent via-white/20 to-transparent 
+                            translate-x-[-100%] group-hover:translate-x-[100%] transition-transform duration-700"></div>
+            <div className="relative flex items-center justify-center gap-3">
+              <span className="text-2xl animate-pulse">{isCreating ? '⚓' : '⚔️'}</span>
+              <div className="text-left">
+                <div className="text-lg font-black drop-shadow">
+                  {isCreating ? 'Creating Arena...' : 'Create New Battle'}
+                </div>
+                <div className="text-sm font-bold opacity-80">0.1 SOL Entry Fee</div>
+              </div>
+            </div>
           </button>
 
+          {/* Join Game Section */}
           {!showJoinForm ? (
             <button
               onClick={() => setShowJoinForm(true)}
-              className="w-full bg-gradient-to-r from-neon-cyan to-neon-blue text-black font-bold py-3 px-6 rounded-lg hover:shadow-neon-cyan transition-all duration-300"
+              className="w-full group relative overflow-hidden bg-gradient-to-r from-neon-cyan via-neon-blue to-neon-cyan 
+                         text-black font-black py-4 px-6 rounded-xl border-2 border-neon-cyan
+                         hover:shadow-2xl hover:shadow-neon-cyan/50 hover:scale-105 
+                         active:scale-95 transition-all duration-300"
             >
-              🗺️ Join Existing Battle
+              <div className="absolute inset-0 bg-gradient-to-r from-transparent via-white/20 to-transparent 
+                              translate-x-[-100%] group-hover:translate-x-[100%] transition-transform duration-700"></div>
+              <div className="relative flex items-center justify-center gap-3">
+                <span className="text-2xl">🗺️</span>
+                <div className="text-left">
+                  <div className="text-lg font-black drop-shadow">Join Existing Battle</div>
+                  <div className="text-sm font-bold opacity-80">Enter Game ID</div>
+                </div>
+              </div>
             </button>
           ) : (
-            <form onSubmit={handleJoinSubmit} className="join-form space-y-2">
-              <input
-                type="text"
-                value={gameIdInput}
-                onChange={(e) => setGameIdInput(e.target.value)}
-                placeholder="Enter Game ID..."
-                className="w-full bg-gray-800 border border-neon-cyan rounded-lg px-4 py-2 text-white focus:ring-2 focus:ring-neon-cyan"
-              />
-              <div className="flex gap-2">
-                <button
-                  type="submit"
-                  disabled={isJoining || !gameIdInput.trim()}
-                  className="flex-1 bg-neon-cyan text-black font-bold py-2 px-4 rounded-lg hover:bg-neon-cyan-bright transition-all duration-300 disabled:opacity-50"
-                >
-                  {isJoining ? 'Joining...' : 'Join (0.1 SOL)'}
-                </button>
-                <button
-                  type="button"
-                  onClick={() => {
-                    setShowJoinForm(false);
-                    setGameIdInput('');
-                    onClearJoinError();
-                  }}
-                  className="px-4 py-2 bg-gray-600 text-white rounded-lg hover:bg-gray-700 transition-all duration-300"
-                >
-                  Cancel
-                </button>
+            <div className="join-form bg-gradient-to-br from-slate-800/90 to-slate-700/90 
+                            border-2 border-neon-cyan/50 rounded-xl p-4 space-y-3 backdrop-blur-sm">
+              <div className="text-center mb-3">
+                <h4 className="text-lg font-bold text-neon-cyan flex items-center justify-center gap-2">
+                  🗺️ Join Battle Arena
+                </h4>
+                <p className="text-xs text-gray-400 mt-1">Enter the Game ID to join an existing battle</p>
               </div>
-            </form>
-          )}
 
-          {joinError && (
-            <div className="error-message bg-red-900 border border-red-500 rounded-lg p-3 text-red-200 text-sm">
-              {joinError}
+              <form onSubmit={handleJoinSubmit} className="space-y-3">
+                <div className="relative">
+                  <input
+                    type="text"
+                    value={gameIdInput}
+                    onChange={(e) => setGameIdInput(e.target.value)}
+                    placeholder="Enter Game ID..."
+                    className="w-full bg-slate-900/80 border-2 border-neon-cyan/50 rounded-lg px-4 py-3 
+                               text-white font-mono text-sm focus:ring-2 focus:ring-neon-cyan 
+                               focus:border-neon-cyan transition-all placeholder-gray-500"
+                  />
+                  <div className="absolute right-3 top-1/2 transform -translate-y-1/2 text-neon-cyan">
+                    🎯
+                  </div>
+                </div>
+
+                <div className="flex gap-2">
+                  <button
+                    type="submit"
+                    disabled={isJoining || !gameIdInput.trim()}
+                    className="flex-1 bg-gradient-to-r from-neon-cyan to-neon-blue text-black 
+                               font-bold py-3 px-4 rounded-lg hover:shadow-lg hover:shadow-neon-cyan/50
+                               hover:scale-105 active:scale-95 transition-all duration-300 
+                               disabled:opacity-50 disabled:hover:scale-100"
+                  >
+                    {isJoining ? (
+                      <div className="flex items-center justify-center gap-2">
+                        <div className="w-4 h-4 border-2 border-black border-t-transparent rounded-full animate-spin"></div>
+                        Joining...
+                      </div>
+                    ) : (
+                      '⚓ Join (0.1 SOL)'
+                    )}
+                  </button>
+
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setShowJoinForm(false);
+                      setGameIdInput('');
+                      onClearJoinError();
+                    }}
+                    className="px-4 py-3 bg-slate-600/80 text-white rounded-lg border border-slate-500
+                               hover:bg-slate-500/80 hover:scale-105 active:scale-95 transition-all duration-300"
+                  >
+                    ✕
+                  </button>
+                </div>
+              </form>
             </div>
           )}
+
+          {/* Error Display - Enhanced */}
+          {joinError && (
+            <div className="error-message bg-gradient-to-r from-red-900/90 to-red-800/90 
+                            border-2 border-red-500/50 rounded-xl p-4 backdrop-blur-sm">
+              <div className="flex items-center gap-3">
+                <span className="text-2xl">⚠️</span>
+                <div>
+                  <div className="text-red-200 font-bold text-sm">Battle Join Failed</div>
+                  <div className="text-red-300 text-xs mt-1">{joinError}</div>
+                </div>
+              </div>
+            </div>
+          )}
+        </div>
+      ) : (
+        /* Wallet Connection Prompt - Enhanced */
+        <div className="wallet-prompt bg-gradient-to-br from-slate-800/90 to-slate-700/90 
+                        border-2 border-neon-magenta/50 rounded-xl p-6 text-center backdrop-blur-sm">
+          <div className="text-5xl mb-4 animate-pulse filter drop-shadow-2xl">👛</div>
+          <h4 className="text-xl font-bold text-neon-magenta mb-2">Connect Your Wallet</h4>
+          <p className="text-sm text-gray-300 leading-relaxed">
+            Connect your Solana wallet to create or join pirate battles and earn real rewards
+          </p>
+          <div className="mt-4 flex items-center justify-center gap-2 text-xs text-gray-400">
+            <span>🔒</span>
+            <span>Secure • Decentralized • Rewarding</span>
+          </div>
         </div>
       )}
     </div>
@@ -458,43 +550,120 @@ export default function PirateControls({
 
         {isMyTurn() && (
           <>
-            {/* Skill Metrics Display with Timer */}
-            <div className="skill-metrics bg-gradient-to-r from-gray-800 to-gray-900 border border-neon-magenta border-opacity-50 rounded-lg p-4 space-y-3">
-              <div className="flex items-center justify-between">
-                <span className="text-neon-cyan font-mono text-sm">⏱️ DECISION TIME:</span>
-                <span className={`${getTimerColor(decisionTimeMs)} font-bold font-mono text-lg`}>
-                  {formatTime(decisionTimeMs)}
-                </span>
+            {/* Enhanced Skill Metrics Display with Timer */}
+            <div className="skill-metrics bg-gradient-to-br from-slate-900 via-slate-800 to-slate-900 
+                            border-2 border-neon-magenta/50 rounded-2xl p-5 space-y-4 relative overflow-hidden
+                            shadow-2xl shadow-neon-magenta/20">
+
+              {/* Animated background elements */}
+              <div className="absolute top-2 right-2 w-16 h-16 bg-neon-magenta/10 rounded-full blur-xl animate-pulse"></div>
+              <div className="absolute bottom-2 left-2 w-12 h-12 bg-neon-cyan/10 rounded-full blur-lg animate-pulse delay-1000"></div>
+
+              {/* Header */}
+              <div className="relative text-center mb-4">
+                <h4 className="text-xl font-black text-transparent bg-clip-text 
+                               bg-gradient-to-r from-neon-magenta via-neon-cyan to-neon-magenta">
+                  ⏱️ CAPTAIN'S REFLEXES
+                </h4>
+                <p className="text-xs text-gray-400 mt-1">Speed determines your bonus points</p>
               </div>
 
-              <div className="bg-gray-700 rounded h-2 overflow-hidden">
-                <div
-                  className={`h-full transition-all ${decisionTimeMs < 5000 ? 'bg-neon-green' :
-                    decisionTimeMs < 10000 ? 'bg-neon-magenta' :
-                      decisionTimeMs < 15000 ? 'bg-neon-gold' :
-                        'bg-red-500'
-                    }`}
-                  style={{ width: `${Math.min(100, (decisionTimeMs / 30000) * 100)}%` }}
-                ></div>
+              {/* Main Timer Display */}
+              <div className="relative bg-black/40 rounded-xl p-4 border border-neon-magenta/30">
+                <div className="flex items-center justify-between mb-3">
+                  <span className="text-neon-cyan font-mono text-sm font-bold">DECISION TIME:</span>
+                  <div className="flex items-center gap-2">
+                    <div className={`w-3 h-3 rounded-full animate-pulse ${decisionTimeMs < 5000 ? 'bg-green-400' :
+                      decisionTimeMs < 10000 ? 'bg-yellow-400' :
+                        decisionTimeMs < 15000 ? 'bg-orange-400' : 'bg-red-500'
+                      }`}></div>
+                    <span className={`${getTimerColor(decisionTimeMs)} font-black font-mono text-2xl drop-shadow-lg`}>
+                      {formatTime(decisionTimeMs)}
+                    </span>
+                  </div>
+                </div>
+
+                {/* Enhanced Progress Bar */}
+                <div className="relative bg-gray-800 rounded-full h-4 overflow-hidden border border-gray-600">
+                  <div
+                    className={`h-full transition-all duration-300 relative ${decisionTimeMs < 5000 ? 'bg-gradient-to-r from-green-400 to-green-500' :
+                      decisionTimeMs < 10000 ? 'bg-gradient-to-r from-yellow-400 to-yellow-500' :
+                        decisionTimeMs < 15000 ? 'bg-gradient-to-r from-orange-400 to-orange-500' :
+                          'bg-gradient-to-r from-red-500 to-red-600'
+                      }`}
+                    style={{ width: `${Math.min(100, (decisionTimeMs / 30000) * 100)}%` }}
+                  >
+                    <div className="absolute inset-0 bg-gradient-to-r from-transparent via-white/30 to-transparent 
+                                    animate-pulse"></div>
+                  </div>
+                </div>
+
+                {/* Speed Bonus Indicator */}
+                <div className="text-center mt-3">
+                  <div className={`inline-flex items-center gap-2 px-4 py-2 rounded-full border-2 ${decisionTimeMs < 5000 ? 'bg-green-500/20 border-green-400 text-green-400' :
+                    decisionTimeMs < 10000 ? 'bg-yellow-500/20 border-yellow-400 text-yellow-400' :
+                      decisionTimeMs < 15000 ? 'bg-orange-500/20 border-orange-400 text-orange-400' :
+                        'bg-red-500/20 border-red-500 text-red-400'
+                    }`}>
+                    <span className="text-lg">⚡</span>
+                    <span className="font-bold text-sm">{getSpeedBonusLabel(decisionTimeMs)}</span>
+                  </div>
+                </div>
               </div>
 
-              <div className="text-center text-xs text-neon-cyan font-mono">
-                Speed Bonus: {getSpeedBonusLabel(decisionTimeMs)}
+              {/* Speed Bonus Breakdown */}
+              <div className="grid grid-cols-3 gap-2 text-xs">
+                <div className={`text-center p-2 rounded-lg border ${decisionTimeMs < 5000 ? 'bg-green-500/20 border-green-400 text-green-400' :
+                  'bg-gray-800/50 border-gray-600 text-gray-500'
+                  }`}>
+                  <div className="font-bold">&lt; 5s</div>
+                  <div className="text-xs">+100 pts</div>
+                </div>
+                <div className={`text-center p-2 rounded-lg border ${decisionTimeMs >= 5000 && decisionTimeMs < 10000 ? 'bg-yellow-500/20 border-yellow-400 text-yellow-400' :
+                  'bg-gray-800/50 border-gray-600 text-gray-500'
+                  }`}>
+                  <div className="font-bold">&lt; 10s</div>
+                  <div className="text-xs">+50 pts</div>
+                </div>
+                <div className={`text-center p-2 rounded-lg border ${decisionTimeMs >= 10000 && decisionTimeMs < 15000 ? 'bg-orange-500/20 border-orange-400 text-orange-400' :
+                  'bg-gray-800/50 border-gray-600 text-gray-500'
+                  }`}>
+                  <div className="font-bold">&lt; 15s</div>
+                  <div className="text-xs">+25 pts</div>
+                </div>
               </div>
 
-              <div className="flex items-center justify-between text-xs border-t border-gray-700 pt-2">
-                <span className="text-neon-cyan font-mono">SCAN CHARGES:</span>
-                <div className="flex items-center gap-1">
-                  {Array.from({ length: 3 }).map((_, i) => (
-                    <div
-                      key={i}
-                      className={`w-2 h-2 rounded-full ${i < scanChargesRemaining ? 'bg-neon-magenta' : 'bg-gray-600'
-                        }`}
-                    ></div>
-                  ))}
-                  <span className={`font-bold ml-2 ${scanChargesRemaining > 0 ? 'text-neon-magenta' : 'text-red-500'}`}>
+              {/* Additional Stats */}
+              <div className="grid grid-cols-2 gap-3 pt-3 border-t border-neon-magenta/20">
+                <div className="text-center">
+                  <div className="flex items-center justify-center gap-1 mb-1">
+                    <span className="text-lg">🔍</span>
+                    <span className="text-xs font-bold text-neon-cyan">SCAN CHARGES</span>
+                  </div>
+                  <div className="flex items-center justify-center gap-1">
+                    {Array.from({ length: 3 }).map((_, i) => (
+                      <div
+                        key={i}
+                        className={`w-3 h-3 rounded-full border-2 transition-all ${i < scanChargesRemaining
+                          ? 'bg-neon-magenta border-neon-magenta shadow-lg shadow-neon-magenta/50'
+                          : 'bg-gray-700 border-gray-600'
+                          }`}
+                      ></div>
+                    ))}
+                  </div>
+                  <div className={`text-sm font-bold mt-1 ${scanChargesRemaining > 0 ? 'text-neon-magenta' : 'text-red-500'
+                    }`}>
                     {scanChargesRemaining} / 3
-                  </span>
+                  </div>
+                </div>
+
+                <div className="text-center">
+                  <div className="flex items-center justify-center gap-1 mb-1">
+                    <span className="text-lg">🏆</span>
+                    <span className="text-xs font-bold text-neon-gold">SPEED BONUS</span>
+                  </div>
+                  <div className="text-xl font-black text-neon-green">+{speedBonusAccumulated}</div>
+                  <div className="text-xs text-gray-400">points earned</div>
                 </div>
               </div>
             </div>

@@ -4,7 +4,6 @@
  */
 
 import { useEffect, useRef, useCallback } from 'react';
-import { useConnection } from '@solana/wallet-adapter-react';
 import { HeliusMonitor } from '../lib/integrations';
 import { usePirateGameState } from './usePirateGameState';
 
@@ -21,7 +20,6 @@ export interface GameEvent {
 }
 
 export const useHeliusMonitor = ({ gameId, onGameEvent }: UseHeliusMonitorProps = {}) => {
-  const { connection } = useConnection();
   const { setMessage, clearError } = usePirateGameState();
   const monitorRef = useRef<HeliusMonitor | null>(null);
   const isConnectedRef = useRef(false);
@@ -185,5 +183,5 @@ function extractGameIdFromLog(log: string): string {
   // Extract game ID from program log
   // Format: "Program log: GameCreated { game_id: 123, ... }"
   const match = log.match(/game_id:\s*(\d+)/);
-  return match ? match[1] : 'unknown';
+  return match?.[1] ?? 'unknown';
 }

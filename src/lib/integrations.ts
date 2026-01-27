@@ -3,7 +3,7 @@
  * Consolidates your test implementations from /tests directory
  */
 
-import { SOLANA_CONFIG, API_ENDPOINTS, ZCASH_CONFIG } from '../utils/constants';
+import { SOLANA_CONFIG, API_ENDPOINTS, ZCASH_CONFIG } from "../utils/constants";
 
 // ENHANCED Helius Integration (based on helius-transaction-monitor.ts)
 export class HeliusMonitor {
@@ -13,36 +13,50 @@ export class HeliusMonitor {
   private lastErrorAt = 0;
   private errorThrottleMs = 30000;
   private pingInterval: any = null;
-  private logLevel: 'silent' | 'error' | 'warn' | 'info' | 'debug' =
-    (process.env.NEXT_PUBLIC_LOG_LEVEL as any) || 'error';
+  private logLevel: "silent" | "error" | "warn" | "info" | "debug" =
+    (process.env.NEXT_PUBLIC_LOG_LEVEL as any) || "error";
 
-  constructor(private onTransaction: (data: any) => void) { }
+  constructor(
+    private onTransaction: (data: any) => void,
+    _gameId?: string,
+  ) {}
 
   connect() {
-    if (this.ws && (this.ws.readyState === WebSocket.CONNECTING || this.ws.readyState === WebSocket.OPEN)) {
-      this.log('warn', 'WebSocket already connected or connecting');
+    if (
+      this.ws &&
+      (this.ws.readyState === WebSocket.CONNECTING ||
+        this.ws.readyState === WebSocket.OPEN)
+    ) {
+      this.log("warn", "WebSocket already connected or connecting");
       return;
     }
 
     if (!API_ENDPOINTS.HELIUS_RPC) {
-      throw new Error('Helius RPC URL not configured');
+      throw new Error("Helius RPC URL not configured");
     }
 
     // Use WebSocket endpoint
-    const wsUrl = API_ENDPOINTS.HELIUS_RPC.replace('https://', 'wss://').replace('http://', 'ws://');
+    const wsUrl = API_ENDPOINTS.HELIUS_RPC.replace(
+      "https://",
+      "wss://",
+    ).replace("http://", "ws://");
     this.ws = new WebSocket(wsUrl);
 
     this.ws.onopen = () => {
-      this.log('info', 'Helius WebSocket connected');
+      this.log("info", "Helius WebSocket connected");
       this.reconnectAttempts = 0;
       if (!this.pingInterval) {
         this.pingInterval = setInterval(() => {
           if (this.ws && this.ws.readyState === WebSocket.OPEN) {
             try {
               this.ws.send(
-                JSON.stringify({ jsonrpc: '2.0', id: Math.random(), method: 'ping' })
+                JSON.stringify({
+                  jsonrpc: "2.0",
+                  id: Math.random(),
+                  method: "ping",
+                }),
               );
-            } catch { }
+            } catch {}
           }
         }, 60000);
       }
@@ -59,7 +73,7 @@ export class HeliusMonitor {
           this.onTransaction(data);
         }
       } catch (error) {
-        this.log('error', 'Failed to parse Helius message');
+        this.log("error", "Failed to parse Helius message");
       }
     };
 
@@ -68,7 +82,7 @@ export class HeliusMonitor {
         clearInterval(this.pingInterval);
         this.pingInterval = null;
       }
-      this.log('warn', 'Helius WebSocket disconnected');
+      this.log("warn", "Helius WebSocket disconnected");
       this.handleReconnect();
     };
 
@@ -76,7 +90,7 @@ export class HeliusMonitor {
       const now = Date.now();
       if (now - this.lastErrorAt > this.errorThrottleMs) {
         this.lastErrorAt = now;
-        this.log('error', 'Helius WebSocket error');
+        this.log("error", "Helius WebSocket error");
       }
     };
   }
@@ -85,12 +99,13 @@ export class HeliusMonitor {
     if (!this.ws || this.ws.readyState !== WebSocket.OPEN) return;
 
     const includeAccounts = [SOLANA_CONFIG.PROGRAM_ID].filter(Boolean);
-    if (SOLANA_CONFIG.TREASURY_ADDRESS) includeAccounts.push(SOLANA_CONFIG.TREASURY_ADDRESS);
+    if (SOLANA_CONFIG.TREASURY_ADDRESS)
+      includeAccounts.push(SOLANA_CONFIG.TREASURY_ADDRESS);
 
     const subscribeMessage = {
-      jsonrpc: '2.0',
+      jsonrpc: "2.0",
       id: 1,
-      method: 'transactionSubscribe',
+      method: "transactionSubscribe",
       params: [
         {
           vote: false,
@@ -99,19 +114,19 @@ export class HeliusMonitor {
           accountInclude: includeAccounts,
         },
         {
-          commitment: 'finalized',
-          encoding: 'jsonParsed',
-          transactionDetails: 'full',
+          commitment: "finalized",
+          encoding: "jsonParsed",
+          transactionDetails: "full",
           showRewards: true,
-          maxSupportedTransactionVersion: 0
-        }
-      ]
+          maxSupportedTransactionVersion: 0,
+        },
+      ],
     };
 
     try {
       this.ws.send(JSON.stringify(subscribeMessage));
-    } catch { }
-    this.log('debug', 'Subscribed to PIR8 game transactions');
+    } catch {}
+    this.log("debug", "Subscribed to PIR8 game transactions");
   }
 
   private isPir8GameTransaction(data: any): boolean {
@@ -123,9 +138,10 @@ export class HeliusMonitor {
       const accountKeys = transaction?.message?.accountKeys;
       if (!accountKeys) return false;
 
-      return accountKeys.some((key: any) =>
-        key?.pubkey === SOLANA_CONFIG.PROGRAM_ID ||
-        key === SOLANA_CONFIG.PROGRAM_ID
+      return accountKeys.some(
+        (key: any) =>
+          key?.pubkey === SOLANA_CONFIG.PROGRAM_ID ||
+          key === SOLANA_CONFIG.PROGRAM_ID,
       );
     } catch {
       return false;
@@ -139,41 +155,41 @@ export class HeliusMonitor {
 
       // Parse PIR8 game events from logs
       for (const log of logs) {
-        if (log.includes('GameCreated')) {
+        if (log.includes("GameCreated")) {
           this.handleGameCreated();
-        } else if (log.includes('PlayerJoined')) {
+        } else if (log.includes("PlayerJoined")) {
           this.handlePlayerJoined();
-        } else if (log.includes('GameStarted')) {
+        } else if (log.includes("GameStarted")) {
           this.handleGameStarted();
-        } else if (log.includes('MoveMade')) {
+        } else if (log.includes("MoveMade")) {
           this.handleMoveMade();
-        } else if (log.includes('GameCompleted')) {
+        } else if (log.includes("GameCompleted")) {
           this.handleGameCompleted();
         }
       }
     } catch {
-      this.log('error', 'Error processing game transaction');
+      this.log("error", "Error processing game transaction");
     }
   }
 
   private handleGameCreated() {
-    this.log('debug', 'Game Created');
+    this.log("debug", "Game Created");
   }
 
   private handlePlayerJoined() {
-    this.log('debug', 'Player Joined');
+    this.log("debug", "Player Joined");
   }
 
   private handleGameStarted() {
-    this.log('debug', 'Game Started');
+    this.log("debug", "Game Started");
   }
 
   private handleMoveMade() {
-    this.log('debug', 'Move Made');
+    this.log("debug", "Move Made");
   }
 
   private handleGameCompleted() {
-    this.log('debug', 'Game Completed');
+    this.log("debug", "Game Completed");
   }
 
   private handleReconnect() {
@@ -181,7 +197,10 @@ export class HeliusMonitor {
       this.reconnectAttempts++;
       const delay = Math.pow(2, this.reconnectAttempts) * 1000;
       setTimeout(() => {
-        this.log('warn', `Reconnecting (${this.reconnectAttempts}/${this.maxReconnectAttempts})`);
+        this.log(
+          "warn",
+          `Reconnecting (${this.reconnectAttempts}/${this.maxReconnectAttempts})`,
+        );
         this.connect();
       }, delay);
     }
@@ -198,13 +217,16 @@ export class HeliusMonitor {
     }
   }
 
-  private log(level: 'error' | 'warn' | 'info' | 'debug' | 'silent', message: string) {
+  private log(
+    level: "error" | "warn" | "info" | "debug" | "silent",
+    message: string,
+  ) {
     const order = { silent: 0, error: 1, warn: 2, info: 3, debug: 4 } as const;
     const current = order[this.logLevel];
     const target = order[level];
-    if (target <= current && level !== 'silent') {
-      if (level === 'error') console.error(message);
-      else if (level === 'warn') console.warn(message);
+    if (target <= current && level !== "silent") {
+      if (level === "error") console.error(message);
+      else if (level === "warn") console.warn(message);
       else console.log(message);
     }
   }
@@ -220,26 +242,26 @@ export interface TokenCreationParams {
 }
 
 export class PumpFunCreator {
-  private static readonly PUMPPORTAL_API = 'https://pumpportal.fun/api';
+  private static readonly PUMPPORTAL_API = "https://pumpportal.fun/api";
 
   static async createToken(params: TokenCreationParams) {
     try {
       const response = await fetch(`${this.PUMPPORTAL_API}/trade-local`, {
-        method: 'POST',
+        method: "POST",
         headers: {
-          'Content-Type': 'application/json',
+          "Content-Type": "application/json",
         },
         body: JSON.stringify({
-          publicKey: '', // Will be set by wallet
-          action: 'create',
+          publicKey: "", // Will be set by wallet
+          action: "create",
           tokenMetadata: {
             name: params.name,
             symbol: params.symbol,
             description: params.description,
             image: params.imageUrl || this.getDefaultPirateImage(params.symbol),
           },
-          mint: '', // Generated by PumpPortal
-          denominatedInSol: 'true',
+          mint: "", // Generated by PumpPortal
+          denominatedInSol: "true",
           amount: params.initialBuySOL || 0,
           slippage: 10,
           priorityFee: 0.0001,
@@ -252,7 +274,7 @@ export class PumpFunCreator {
 
       return await response.json();
     } catch (error) {
-      console.error('PumpFun token creation error:', error);
+      console.error("PumpFun token creation error:", error);
       throw error;
     }
   }
@@ -260,7 +282,9 @@ export class PumpFunCreator {
   static async getTokenInfo(mintAddress: string) {
     try {
       // Implementation based on your test file
-      const response = await fetch(`${this.PUMPPORTAL_API}/token/${mintAddress}`);
+      const response = await fetch(
+        `${this.PUMPPORTAL_API}/token/${mintAddress}`,
+      );
 
       if (!response.ok) {
         throw new Error(`Token info fetch failed: ${response.statusText}`);
@@ -268,7 +292,7 @@ export class PumpFunCreator {
 
       return await response.json();
     } catch (error) {
-      console.error('PumpFun token info error:', error);
+      console.error("PumpFun token info error:", error);
       throw error;
     }
   }
@@ -276,35 +300,37 @@ export class PumpFunCreator {
   private static getDefaultPirateImage(symbol?: string): string {
     // Return default pirate-themed token image based on symbol
     const pirateImages = [
-      'https://via.placeholder.com/400x400/FFD700/000000?text=🏴‍☠️',
-      'https://via.placeholder.com/400x400/8B4513/FFD700?text=⚔️',
-      'https://via.placeholder.com/400x400/DC143C/FFFFFF?text=💰',
+      "https://via.placeholder.com/400x400/FFD700/000000?text=🏴‍☠️",
+      "https://via.placeholder.com/400x400/8B4513/FFD700?text=⚔️",
+      "https://via.placeholder.com/400x400/DC143C/FFFFFF?text=💰",
     ];
 
     if (!symbol) {
-      return pirateImages[0];
+      return pirateImages[0]!;
     }
 
-    const hash = symbol.split('').reduce((acc, char) => acc + char.charCodeAt(0), 0);
-    return pirateImages[hash % pirateImages.length] || pirateImages[0];
+    const hash = symbol
+      .split("")
+      .reduce((acc, char) => acc + char.charCodeAt(0), 0);
+    return pirateImages[hash % pirateImages.length]! || pirateImages[0]!;
   }
 
   static generateWinnerTokenMetadata(playerName: string, score: number) {
-    const symbols = ['CAPT', 'PLND', 'TRSR', 'SKULL', 'SHIP'];
+    const symbols = ["CAPT", "PLND", "TRSR", "SKULL", "SHIP"];
     const randomSymbol = symbols[Math.floor(Math.random() * symbols.length)];
 
     return {
       name: `Captain ${playerName}`,
       symbol: `${randomSymbol}${Date.now().toString().slice(-3)}`,
       description: `🏴‍☠️ Victory token for pirate ${playerName} who scored ${score} points in PIR8 battle! Arrr! 🏴‍☠️`,
-      imageUrl: this.getDefaultPirateImage(randomSymbol || 'PIRATE'),
+      imageUrl: this.getDefaultPirateImage(randomSymbol || "PIRATE"),
     };
   }
 }
 
 // Game Integration Helpers
 export function setupGameIntegrations() {
-  const heliusMonitor = new HeliusMonitor(() => { });
+  const heliusMonitor = new HeliusMonitor(() => {});
 
   heliusMonitor.connect();
 
@@ -320,7 +346,7 @@ export function setupGameIntegrations() {
 export interface MemoPayload {
   version: number;
   gameId: string;
-  action: 'join' | 'create';
+  action: "join" | "create";
   solanaPubkey: string;
   timestamp: number;
   metadata: Record<string, any>;
@@ -332,7 +358,7 @@ export class ZcashMemoBridge {
   private static readonly MEMO_MAX_SIZE = 512; // Zcash memo limit in bytes
   private static readonly MEMO_STALE_THRESHOLD = 5 * 60 * 1000; // 5 minutes
 
-  constructor(private onEntry: (payload: MemoPayload) => void) { }
+  constructor(private onEntry: (payload: MemoPayload) => void) {}
 
   /**
    * Parse Zcash shielded memo containing tournament entry data
@@ -342,7 +368,7 @@ export class ZcashMemoBridge {
     try {
       // Validate memo size
       if (memo.length > ZcashMemoBridge.MEMO_MAX_SIZE) {
-        console.warn('Memo exceeds Zcash size limit');
+        console.warn("Memo exceeds Zcash size limit");
         return null;
       }
 
@@ -350,38 +376,38 @@ export class ZcashMemoBridge {
 
       // Validate schema version
       if (data.v !== ZCASH_CONFIG.MEMO_SCHEMA_VERSION) {
-        console.warn('Invalid memo schema version');
+        console.warn("Invalid memo schema version");
         return null;
       }
 
       // Validate required fields
       if (!data.gameId || !data.action || !data.solanaPubkey) {
-        console.warn('Missing required memo fields');
+        console.warn("Missing required memo fields");
         return null;
       }
 
       // Validate action type
-      if (!['join', 'create'].includes(data.action)) {
-        console.warn('Invalid memo action');
+      if (!["join", "create"].includes(data.action)) {
+        console.warn("Invalid memo action");
         return null;
       }
 
       // Validate Solana pubkey format (base58, 44 chars)
       if (data.solanaPubkey.length !== 44) {
-        console.warn('Invalid Solana pubkey format');
+        console.warn("Invalid Solana pubkey format");
         return null;
       }
 
       return {
         version: data.v,
         gameId: data.gameId,
-        action: data.action as 'join' | 'create',
+        action: data.action as "join" | "create",
         solanaPubkey: data.solanaPubkey,
         timestamp: data.timestamp || Date.now(),
         metadata: data.metadata || {},
       };
     } catch (error) {
-      console.error('Failed to parse memo:', error);
+      console.error("Failed to parse memo:", error);
       return null;
     }
   }
@@ -392,7 +418,7 @@ export class ZcashMemoBridge {
   private validateMemoFreshness(payload: MemoPayload): boolean {
     const timeSinceCreation = Date.now() - payload.timestamp;
     if (timeSinceCreation > ZcashMemoBridge.MEMO_STALE_THRESHOLD) {
-      console.warn('Memo is stale (>5 minutes old)');
+      console.warn("Memo is stale (>5 minutes old)");
       return false;
     }
     return true;
@@ -405,11 +431,11 @@ export class ZcashMemoBridge {
   async handleIncomingShieldedMemo(
     memo: string,
     zcashTxHash: string,
-    blockHeight: number
+    blockHeight: number,
   ): Promise<boolean> {
     const parsed = this.parseMemo(memo);
     if (!parsed) {
-      console.warn('Invalid memo, skipping entry');
+      console.warn("Invalid memo, skipping entry");
       return false;
     }
 
@@ -434,7 +460,7 @@ export class ZcashMemoBridge {
    */
   static createMemo(payload: {
     gameId: string;
-    action: 'join' | 'create';
+    action: "join" | "create";
     solanaPubkey: string;
     metadata?: Record<string, any>;
   }): string {
@@ -450,7 +476,7 @@ export class ZcashMemoBridge {
     const memoStr = JSON.stringify(memo);
     if (memoStr.length > 512) {
       throw new Error(
-        `Memo too large (${memoStr.length} > 512 bytes). Reduce metadata.`
+        `Memo too large (${memoStr.length} > 512 bytes). Reduce metadata.`,
       );
     }
 
@@ -460,10 +486,13 @@ export class ZcashMemoBridge {
   /**
    * Get instructions for player to join tournament privately via Zcash
    */
-  static getPrivateEntryInstructions(gameId: string, playerPubkey: string): string {
+  static getPrivateEntryInstructions(
+    gameId: string,
+    playerPubkey: string,
+  ): string {
     const memo = this.createMemo({
       gameId,
-      action: 'join',
+      action: "join",
       solanaPubkey: playerPubkey,
     });
 
@@ -495,17 +524,17 @@ export class LightwalletdWatcher {
   private maxReconnectAttempts = 5;
   private pingInterval: any = null;
   private memoBridge: ZcashMemoBridge;
-  private logLevel: 'silent' | 'error' | 'warn' | 'info' | 'debug' =
-    (process.env.NEXT_PUBLIC_LOG_LEVEL as any) || 'error';
+  private logLevel: "silent" | "error" | "warn" | "info" | "debug" =
+    (process.env.NEXT_PUBLIC_LOG_LEVEL as any) || "error";
 
   constructor(
     private onMemoEntry: (payload: MemoPayload) => Promise<void>,
-    private zcashAddress: string
+    private zcashAddress: string,
   ) {
     // Initialize bridge with callback to Solana transaction handler
     this.memoBridge = new ZcashMemoBridge((payload) => {
-      this.onMemoEntry(payload).catch(err =>
-        this.log('error', `Failed to process memo entry: ${err.message}`)
+      this.onMemoEntry(payload).catch((err) =>
+        this.log("error", `Failed to process memo entry: ${err.message}`),
       );
     });
   }
@@ -517,8 +546,14 @@ export class LightwalletdWatcher {
     try {
       this.connect();
     } catch (error) {
-      this.log('error', `Lightwalletd connection failed: ${error instanceof Error ? error.message : 'Unknown error'}`);
-      this.log('info', 'Zcash bridge will be unavailable - continuing without privacy features');
+      this.log(
+        "error",
+        `Lightwalletd connection failed: ${error instanceof Error ? error.message : "Unknown error"}`,
+      );
+      this.log(
+        "info",
+        "Zcash bridge will be unavailable - continuing without privacy features",
+      );
     }
   }
 
@@ -526,24 +561,28 @@ export class LightwalletdWatcher {
    * Connect to Lightwalletd server and monitor shielded transactions
    */
   connect(lightwalletdUrl: string = ZCASH_CONFIG.LIGHTWALLETD_URL) {
-    if (this.ws && (this.ws.readyState === WebSocket.CONNECTING || this.ws.readyState === WebSocket.OPEN)) {
-      this.log('warn', 'Lightwalletd already connected');
+    if (
+      this.ws &&
+      (this.ws.readyState === WebSocket.CONNECTING ||
+        this.ws.readyState === WebSocket.OPEN)
+    ) {
+      this.log("warn", "Lightwalletd already connected");
       return;
     }
 
     if (!lightwalletdUrl) {
-      throw new Error('Lightwalletd URL not configured');
+      throw new Error("Lightwalletd URL not configured");
     }
 
     // Convert HTTP to WebSocket protocol
     const wsUrl = lightwalletdUrl
-      .replace('https://', 'wss://')
-      .replace('http://', 'ws://');
+      .replace("https://", "wss://")
+      .replace("http://", "ws://");
 
     this.ws = new WebSocket(wsUrl);
 
     this.ws.onopen = () => {
-      this.log('info', 'Lightwalletd connected');
+      this.log("info", "Lightwalletd connected");
       this.reconnectAttempts = 0;
       this.setupPingInterval();
       this.subscribeToShieldedTransactions();
@@ -554,7 +593,7 @@ export class LightwalletdWatcher {
         const data = JSON.parse(event.data);
         this.processZcashTransaction(data);
       } catch (error) {
-        this.log('error', 'Failed to parse Lightwalletd message');
+        this.log("error", "Failed to parse Lightwalletd message");
       }
     };
 
@@ -564,7 +603,7 @@ export class LightwalletdWatcher {
     };
 
     this.ws.onerror = () => {
-      this.log('error', 'Lightwalletd WebSocket error');
+      this.log("error", "Lightwalletd WebSocket error");
     };
   }
 
@@ -575,20 +614,23 @@ export class LightwalletdWatcher {
     if (!this.ws || this.ws.readyState !== WebSocket.OPEN) return;
 
     const subscription = {
-      jsonrpc: '2.0',
+      jsonrpc: "2.0",
       id: 1,
-      method: 'subscribe',
+      method: "subscribe",
       params: {
         target: this.zcashAddress,
         minConfirmations: 1,
-      }
+      },
     };
 
     try {
       this.ws.send(JSON.stringify(subscription));
-      this.log('debug', `Subscribed to Lightwalletd for address ${this.zcashAddress}`);
+      this.log(
+        "debug",
+        `Subscribed to Lightwalletd for address ${this.zcashAddress}`,
+      );
     } catch (error) {
-      this.log('error', 'Failed to subscribe to shielded transactions');
+      this.log("error", "Failed to subscribe to shielded transactions");
     }
   }
 
@@ -614,12 +656,12 @@ export class LightwalletdWatcher {
           await this.memoBridge.handleIncomingShieldedMemo(
             memoText,
             txHash,
-            blockHeight
+            blockHeight,
           );
         }
       }
     } catch (error) {
-      this.log('error', `Failed to process Zcash transaction: ${error}`);
+      this.log("error", `Failed to process Zcash transaction: ${error}`);
     }
   }
 
@@ -630,14 +672,14 @@ export class LightwalletdWatcher {
   private decodeMemo(memo: string | Buffer): string {
     try {
       // Try hex decoding first (common in Zcash)
-      if (typeof memo === 'string') {
-        const buffer = Buffer.from(memo, 'hex');
+      if (typeof memo === "string") {
+        const buffer = Buffer.from(memo, "hex");
         return buffer.toString().trim();
       }
       return memo.toString().trim();
     } catch {
-      this.log('warn', 'Failed to decode memo');
-      return '';
+      this.log("warn", "Failed to decode memo");
+      return "";
     }
   }
 
@@ -650,8 +692,10 @@ export class LightwalletdWatcher {
     this.pingInterval = setInterval(() => {
       if (this.ws && this.ws.readyState === WebSocket.OPEN) {
         try {
-          this.ws.send(JSON.stringify({ jsonrpc: '2.0', id: Date.now(), method: 'ping' }));
-        } catch { }
+          this.ws.send(
+            JSON.stringify({ jsonrpc: "2.0", id: Date.now(), method: "ping" }),
+          );
+        } catch {}
       }
     }, 60000); // Ping every 60 seconds
   }
@@ -663,10 +707,13 @@ export class LightwalletdWatcher {
     if (this.reconnectAttempts < this.maxReconnectAttempts) {
       this.reconnectAttempts++;
       const delay = Math.pow(2, this.reconnectAttempts) * 1000;
-      this.log('warn', `Reconnecting to Lightwalletd in ${delay}ms (${this.reconnectAttempts}/${this.maxReconnectAttempts})`);
+      this.log(
+        "warn",
+        `Reconnecting to Lightwalletd in ${delay}ms (${this.reconnectAttempts}/${this.maxReconnectAttempts})`,
+      );
       setTimeout(() => this.connect(), delay);
     } else {
-      this.log('error', 'Max reconnect attempts reached for Lightwalletd');
+      this.log("error", "Max reconnect attempts reached for Lightwalletd");
     }
   }
 
@@ -689,23 +736,32 @@ export class LightwalletdWatcher {
    */
   disconnect() {
     this.cleanup();
-    this.log('info', 'Lightwalletd watcher disconnected');
+    this.log("info", "Lightwalletd watcher disconnected");
   }
 
-  private log(level: 'error' | 'warn' | 'info' | 'debug' | 'silent', message: string) {
+  private log(
+    level: "error" | "warn" | "info" | "debug" | "silent",
+    message: string,
+  ) {
     const order = { silent: 0, error: 1, warn: 2, info: 3, debug: 4 } as const;
     const current = order[this.logLevel];
     const target = order[level];
-    if (target <= current && level !== 'silent') {
-      if (level === 'error') console.error(`[Lightwalletd] ${message}`);
-      else if (level === 'warn') console.warn(`[Lightwalletd] ${message}`);
+    if (target <= current && level !== "silent") {
+      if (level === "error") console.error(`[Lightwalletd] ${message}`);
+      else if (level === "warn") console.warn(`[Lightwalletd] ${message}`);
       else console.log(`[Lightwalletd] ${message}`);
     }
   }
 }
 
-export async function createWinnerToken(winner: { name: string; score: number }) {
-  const tokenMetadata = PumpFunCreator.generateWinnerTokenMetadata(winner.name, winner.score);
+export async function createWinnerToken(winner: {
+  name: string;
+  score: number;
+}) {
+  const tokenMetadata = PumpFunCreator.generateWinnerTokenMetadata(
+    winner.name,
+    winner.score,
+  );
 
   try {
     const result = await PumpFunCreator.createToken({
@@ -721,7 +777,7 @@ export async function createWinnerToken(winner: { name: string; score: number })
   } catch (error) {
     return {
       success: false,
-      error: error instanceof Error ? error.message : 'Token creation failed',
+      error: error instanceof Error ? error.message : "Token creation failed",
     };
   }
 }

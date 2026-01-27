@@ -46,14 +46,14 @@ export const initializeGameClient = async (wallet: any) => {
     if (!wallet) throw new Error("Wallet not connected");
 
     const program = await getClientProgram(wallet);
-    const [gamePDA] = getGlobalGamePDA(program.programId);
+    const [gamePDA] = getGlobalGamePDA((program as any).programId);
 
-    const tx = await program.methods
+    const tx = await (program as any).methods
         .initializeGame()
         .accounts({
             game: gamePDA,
             authority: wallet.publicKey,
-            systemProgram: SystemProgram.programId,
+            systemProgram: (SystemProgram as any).programId,
         })
         .rpc();
 
@@ -65,14 +65,14 @@ export const joinGameClient = async (wallet: any) => {
     if (!wallet) throw new Error("Wallet not connected");
 
     const program = await getClientProgram(wallet);
-    const [gamePDA] = getGlobalGamePDA(program.programId);
+    const [gamePDA] = getGlobalGamePDA((program as any).programId);
 
-    const tx = await program.methods
+    const tx = await (program as any).methods
         .joinGame()
         .accounts({
             game: gamePDA,
             player: wallet.publicKey,
-            systemProgram: SystemProgram.programId,
+            systemProgram: (SystemProgram as any).programId,
         })
         .rpc();
 
@@ -84,9 +84,9 @@ export const startGameClient = async (wallet: any) => {
     if (!wallet) throw new Error("Wallet not connected");
 
     const program = await getClientProgram(wallet);
-    const [gamePDA] = getGlobalGamePDA(program.programId);
+    const [gamePDA] = getGlobalGamePDA((program as any).programId);
 
-    const tx = await program.methods
+    const tx = await (program as any).methods
         .startGame()
         .accounts({
             game: gamePDA,
@@ -100,9 +100,9 @@ export const startGameClient = async (wallet: any) => {
 
 export const moveShipClient = async (wallet: any, shipId: string, x: number, y: number, decisionTimeMs?: number) => {
     const program = await getClientProgram(wallet);
-    const [gamePDA] = getGlobalGamePDA(program.programId);
+    const [gamePDA] = getGlobalGamePDA((program as any).programId);
 
-    const tx = await program.methods
+    const tx = await (program as any).methods
         .moveShip(shipId, x, y, decisionTimeMs ? new BN(decisionTimeMs) : null)
         .accounts({
             game: gamePDA,
@@ -116,9 +116,9 @@ export const moveShipClient = async (wallet: any, shipId: string, x: number, y: 
 
 export const attackShipClient = async (wallet: any, attackerShipId: string, targetShipId: string) => {
     const program = await getClientProgram(wallet);
-    const [gamePDA] = getGlobalGamePDA(program.programId);
+    const [gamePDA] = getGlobalGamePDA((program as any).programId);
 
-    const tx = await program.methods
+    const tx = await (program as any).methods
         .attackShip(attackerShipId, targetShipId)
         .accounts({
             game: gamePDA,
@@ -132,9 +132,9 @@ export const attackShipClient = async (wallet: any, attackerShipId: string, targ
 
 export const claimTerritoryClient = async (wallet: any, shipId: string) => {
     const program = await getClientProgram(wallet);
-    const [gamePDA] = getGlobalGamePDA(program.programId);
+    const [gamePDA] = getGlobalGamePDA((program as any).programId);
 
-    const tx = await program.methods
+    const tx = await (program as any).methods
         .claimTerritory(shipId)
         .accounts({
             game: gamePDA,
@@ -148,9 +148,9 @@ export const claimTerritoryClient = async (wallet: any, shipId: string) => {
 
 export const collectResourcesClient = async (wallet: any) => {
     const program = await getClientProgram(wallet);
-    const [gamePDA] = getGlobalGamePDA(program.programId);
+    const [gamePDA] = getGlobalGamePDA((program as any).programId);
 
-    const tx = await program.methods
+    const tx = await (program as any).methods
         .collectResources()
         .accounts({
             game: gamePDA,
@@ -164,12 +164,12 @@ export const collectResourcesClient = async (wallet: any) => {
 
 export const buildShipClient = async (wallet: any, shipType: string, portX: number, portY: number) => {
     const program = await getClientProgram(wallet);
-    const [gamePDA] = getGlobalGamePDA(program.programId);
+    const [gamePDA] = getGlobalGamePDA((program as any).programId);
 
     // Convert string to enum format expected by Rust
     const shipTypeEnum = { [shipType]: {} };
 
-    const tx = await program.methods
+    const tx = await (program as any).methods
         .buildShip(shipTypeEnum, portX, portY)
         .accounts({
             game: gamePDA,
@@ -183,9 +183,9 @@ export const buildShipClient = async (wallet: any, shipType: string, portX: numb
 
 export const scanCoordinateClient = async (wallet: any, x: number, y: number) => {
     const program = await getClientProgram(wallet);
-    const [gamePDA] = getGlobalGamePDA(program.programId);
+    const [gamePDA] = getGlobalGamePDA((program as any).programId);
 
-    const tx = await program.methods
+    const tx = await (program as any).methods
         .scanCoordinate(x, y)
         .accounts({
             game: gamePDA,
@@ -199,9 +199,9 @@ export const scanCoordinateClient = async (wallet: any, x: number, y: number) =>
 
 export const endTurnClient = async (wallet: any) => {
     const program = await getClientProgram(wallet);
-    const [gamePDA] = getGlobalGamePDA(program.programId);
+    const [gamePDA] = getGlobalGamePDA((program as any).programId);
 
-    const tx = await program.methods
+    const tx = await (program as any).methods
         .endTurn()
         .accounts({
             game: gamePDA,
@@ -215,10 +215,10 @@ export const endTurnClient = async (wallet: any) => {
 
 export const fetchGameStateClient = async (wallet: any) => {
     const program = await getClientProgram(wallet);
-    const [gamePDA] = getGlobalGamePDA(program.programId);
+    const [gamePDA] = getGlobalGamePDA((program as any).programId);
 
     try {
-        const gameState = await program.account.pirateGame.fetch(gamePDA);
+        const gameState = await (program as any).account.pirateGame.fetch(gamePDA);
         return gameState;
     } catch (error) {
         console.log('Game not initialized yet');

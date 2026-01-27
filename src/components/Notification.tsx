@@ -23,6 +23,7 @@ export default function Notification({ message, isVisible, onClose, duration = 3
     } else {
       setShowNotification(false);
     }
+    return undefined; // Explicit return for when condition is false
   }, [isVisible, duration, onClose]);
 
   if (!showNotification) return null;

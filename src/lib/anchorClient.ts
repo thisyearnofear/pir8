@@ -8,13 +8,13 @@ import { getGlobalGamePDA } from './anchorUtils';
 
 class NodeWallet {
   constructor(readonly payer: Keypair) { }
-  get publicKey() { return this.payer.publicKey; }
+  get publicKey() { return (this.payer as any).publicKey; }
   async signTransaction(tx: Transaction) {
-    tx.sign(this.payer);
+    (tx as any).sign(this.payer);
     return tx;
   }
   async signAllTransactions(txs: Transaction[]) {
-    txs.forEach(t => t.sign(this.payer));
+    txs.forEach(t => (t as any).sign(this.payer));
     return txs;
   }
 }
@@ -40,7 +40,7 @@ export async function getAnchorClient(): Promise<{ program: Program, provider: A
   const wallet = new NodeWallet(payer) as any;
   const provider = new AnchorProvider(connection, wallet, { commitment: 'confirmed' });
   const idl = loadIdl();
-  const programId = new PublicKey(SOLANA_CONFIG.PROGRAM_ID || PROGRAM_ID);
+  const programId = SOLANA_CONFIG.PROGRAM_ID ? new PublicKey(SOLANA_CONFIG.PROGRAM_ID) : PROGRAM_ID;
 
   // Anchor 0.29: Program(idl, programId, provider)
   const program = new Program(idl as Idl, programId, provider);
@@ -58,7 +58,7 @@ export async function initializeGlobalGame(program: any, provider: AnchorProvide
     .accounts({
       game: gamePDA,
       authority: authority,
-      systemProgram: SystemProgram.programId,
+      systemProgram: (SystemProgram as any).programId,
     })
     .rpc();
 
@@ -77,7 +77,7 @@ export async function joinGlobalGame(program: any, provider: AnchorProvider) {
     .accounts({
       game: gamePDA,
       player: (provider as any).wallet?.publicKey || (provider as any).publicKey,
-      systemProgram: SystemProgram.programId,
+      systemProgram: (SystemProgram as any).programId,
     })
     .rpc();
 

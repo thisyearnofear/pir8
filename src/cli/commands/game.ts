@@ -1,6 +1,5 @@
 import { AnchorProvider, Program } from '@coral-xyz/anchor';
 import { initializeGlobalGame, joinGlobalGame } from '../../lib/server/anchorActions';
-import { GAME_CONFIG } from '../../utils/constants';
 
 export interface GameCommandResult {
   success: boolean;
@@ -13,7 +12,7 @@ export interface GameCommandResult {
 /**
  * Create a new game on-chain (initialize global game)
  */
-export async function createGame(program: Program, provider: AnchorProvider): Promise<GameCommandResult> {
+export async function createGame(_program: Program, _provider: AnchorProvider): Promise<GameCommandResult> {
   try {
     const gameId = await initializeGlobalGame();
     return {
@@ -34,7 +33,7 @@ export async function createGame(program: Program, provider: AnchorProvider): Pr
 /**
  * Join an existing game on-chain (join global game)
  */
-export async function joinGame(program: Program, provider: AnchorProvider, gameId: string): Promise<GameCommandResult> {
+export async function joinGame(_program: Program, _provider: AnchorProvider, gameId: string): Promise<GameCommandResult> {
   try {
     await joinGlobalGame();
     return {
@@ -72,13 +71,13 @@ export async function joinGame(program: Program, provider: AnchorProvider, gameI
  * Returns onchain_<address> format for consistency with watcher
  */
 export async function handleShieldedMemo(
-  program: Program,
-  provider: AnchorProvider,
+  _program: Program,
+  _provider: AnchorProvider,
   gameId: string | undefined
 ): Promise<GameCommandResult> {
   // If no gameId, create new game
   if (!gameId) {
-    return createGame(program, provider);
+    return createGame(_program, _provider);
   }
 
   // Parse game address - handle multiple formats
@@ -95,7 +94,7 @@ export async function handleShieldedMemo(
 
   try {
     // Try to join the existing game first
-    const result = await joinGame(program, provider, gameAddress);
+    const result = await joinGame(_program, _provider, gameAddress);
 
     if (result.success) {
       console.log(`[Memo Handler] Successfully joined game ${gameAddress}`);
@@ -115,13 +114,13 @@ export async function handleShieldedMemo(
 
       // For other errors, create new game as fallback
       console.log(`[Memo Handler] Creating new game as fallback`);
-      return createGame(program, provider);
+      return createGame(_program, _provider);
     }
 
     return result;
   } catch (error) {
     console.log(`[Memo Handler] Exception joining game ${gameAddress}:`, error);
     // If join fails (game doesn't exist or other error), create new game
-    return createGame(program, provider);
+    return createGame(_program, _provider);
   }
 }

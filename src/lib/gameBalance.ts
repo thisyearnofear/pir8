@@ -10,25 +10,25 @@ export class GameBalance {
    */
   static readonly SHIP_BALANCE = {
     sloop: {
-      cost: { gold: 500, crew: 10, cannons: 5, supplies: 20 },
+      cost: { gold: 500, crew: 10, cannons: 5, supplies: 20, wood: 0, rum: 0 },
       strength: 1.0,
       speed: 3,
       resourceBonus: 1.0
     },
     frigate: {
-      cost: { gold: 1200, crew: 25, cannons: 15, supplies: 40 },
+      cost: { gold: 1200, crew: 25, cannons: 15, supplies: 40, wood: 0, rum: 0 },
       strength: 2.0,
       speed: 2,
       resourceBonus: 1.2
     },
     galleon: {
-      cost: { gold: 2500, crew: 50, cannons: 30, supplies: 80 },
+      cost: { gold: 2500, crew: 50, cannons: 30, supplies: 80, wood: 0, rum: 0 },
       strength: 3.5,
       speed: 1,
       resourceBonus: 1.5
     },
     flagship: {
-      cost: { gold: 5000, crew: 100, cannons: 60, supplies: 150 },
+      cost: { gold: 5000, crew: 100, cannons: 60, supplies: 150, wood: 0, rum: 0 },
       strength: 5.0,
       speed: 1,
       resourceBonus: 1.3
@@ -128,7 +128,9 @@ export class GameBalance {
       resources.gold +
       (resources.crew * 5) +
       (resources.cannons * 10) +
-      (resources.supplies * 2)
+      (resources.supplies * 2) +
+      (resources.wood * 2) +
+      (resources.rum * 10)
     );
   }
 

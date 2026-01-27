@@ -36,7 +36,7 @@ export function useZcashBridge(options: UseZcashBridgeOptions = {}) {
         });
 
         // Execute private join_game instruction via client
-        const { joinGameClient } = await import('../lib/client/solanaClient');
+        // const { joinGameClient } = await import('../lib/client/solanaClient');
         // Note: This would need wallet context - for now just log
         console.log('[Zcash Bridge] Would execute join game for:', payload.solanaPubkey);
 

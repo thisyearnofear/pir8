@@ -65,14 +65,14 @@ export class PIR8PirateInstructions {
     private provider: AnchorProvider
   ) { }
 
-  async createGame(entryFee: number, maxPlayers: number): Promise<{ tx: string; gameId: PublicKey }> {
+  async createGame(_entryFee: number, _maxPlayers: number): Promise<{ tx: string; gameId: PublicKey }> {
     const timestamp = Math.floor(Date.now() / 1000);
     const timestampBytes = new ArrayBuffer(8);
     const timestampView = new DataView(timestampBytes);
     timestampView.setBigInt64(0, BigInt(timestamp), true); // little endian
 
     // Use the program ID from the program instance
-    const programId = this.program.programId || new PublicKey(this.program.idl.metadata?.address || '');
+    const programId = (this.program as any).programId || new PublicKey((this.program as any).idl.metadata?.address || '');
 
     const [gameId] = PublicKey.findProgramAddressSync(
       [
@@ -83,12 +83,12 @@ export class PIR8PirateInstructions {
       programId
     );
 
-    const tx = await this.program.methods
+    const tx = await (this.program as any).methods
       .initializeGame(new BN(Date.now())) // Using initializeGame from our IDL
       .accounts({
         game: gameId,
         authority: (this.provider as any).wallet.publicKey,
-        systemProgram: SystemProgram.programId,
+        systemProgram: (SystemProgram as any).programId,
       })
       .rpc();
 
@@ -96,7 +96,7 @@ export class PIR8PirateInstructions {
   }
 
   async joinGame(gameId: PublicKey): Promise<string> {
-    const tx = await this.program.methods
+    const tx = await (this.program as any).methods
       .joinGame()
       .accounts({
         game: gameId,
@@ -113,7 +113,7 @@ export class PIR8PirateInstructions {
     toX: number,
     toY: number
   ): Promise<string> {
-    const tx = await this.program.methods
+    const tx = await (this.program as any).methods
       .moveShip(shipId, toX, toY)
       .accounts({
         game: gameId,
@@ -129,7 +129,7 @@ export class PIR8PirateInstructions {
     attackerShipId: string,
     targetShipId: string
   ): Promise<string> {
-    const tx = await this.program.methods
+    const tx = await (this.program as any).methods
       .attackShip(attackerShipId, targetShipId)
       .accounts({
         game: gameId,
@@ -145,7 +145,7 @@ export class PIR8PirateInstructions {
     x: number,
     y: number
   ): Promise<string> {
-    const tx = await this.program.methods
+    const tx = await (this.program as any).methods
       .claimTerritory(x, y)
       .accounts({
         game: gameId,
@@ -159,7 +159,7 @@ export class PIR8PirateInstructions {
   async getGame(gameId: PublicKey): Promise<PirateGameAccount | null> {
     try {
       // Access the account using the proper syntax
-      const account = await this.program.account.pirateGame.fetch(gameId);
+      const account = await (this.program as any).account.pirateGame.fetch(gameId);
       return account as PirateGameAccount;
     } catch (error) {
       console.error('Failed to fetch game:', error);
@@ -203,6 +203,8 @@ export class PirateGameConverter {
         crew: playerData.resources.crew,
         cannons: playerData.resources.cannons,
         supplies: playerData.resources.supplies,
+        wood: 0,
+        rum: 0,
       },
       ships: playerData.ships.map(this.convertToFrontendShip),
       controlledTerritories: playerData.controlledTerritories,
@@ -230,7 +232,7 @@ export class PirateGameConverter {
         x: shipData.positionX,
         y: shipData.positionY
       },
-      resources: { gold: 0, crew: 0, cannons: 0, supplies: 0 },
+      resources: { gold: 0, crew: 0, cannons: 0, supplies: 0, wood: 0, rum: 0 },
     };
   }
 

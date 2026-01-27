@@ -9,7 +9,6 @@ import { getAnchorClient } from '../lib/server/anchorActions';
 import { createGame, joinGame, handleShieldedMemo, GameCommandResult } from './commands/game';
 import { monitorHelius, HeliusMonitorResult } from './commands/monitoring';
 import { createWinnerToken, TokenCreateResult } from './commands/token';
-import { SOLANA_CONFIG } from '../utils/constants';
 
 interface CliArgs {
   command?: string;
@@ -33,7 +32,7 @@ function parseArgs(): CliArgs {
       i++;
     } else if (arg === '--help' || arg === '-h') {
       args.help = true;
-    } else if (!arg.startsWith('--')) {
+    } else if (arg && !arg.startsWith('--')) {
       if (!args.command) {
         args.command = arg;
       } else {
@@ -104,8 +103,8 @@ async function main() {
           process.exit(1);
         }
         // Handle onchain_ prefix or raw address
-        const gameAddress = gameId.startsWith('onchain_') 
-          ? gameId.replace('onchain_', '') 
+        const gameAddress = gameId.startsWith('onchain_')
+          ? gameId.replace('onchain_', '')
           : gameId;
         result = await joinGame(program, provider, gameAddress);
         break;
@@ -141,8 +140,8 @@ async function main() {
       }
 
       case 'monitor': {
-        const apiKey = process.env.NEXT_PUBLIC_HELIUS_API_KEY;
-        const treasury = process.env.NEXT_PUBLIC_TREASURY_ADDRESS;
+        const apiKey = process.env['NEXT_PUBLIC_HELIUS_API_KEY'];
+        const treasury = process.env['NEXT_PUBLIC_TREASURY_ADDRESS'];
         if (!apiKey || !treasury) {
           console.error('Error: NEXT_PUBLIC_HELIUS_API_KEY and NEXT_PUBLIC_TREASURY_ADDRESS required');
           process.exit(1);

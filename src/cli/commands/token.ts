@@ -10,11 +10,11 @@ export interface TokenCreateResult {
 /**
  * Create winner token via PumpPortal
  */
-export async function createWinnerToken(gameId: number, winnerPubkey: string): Promise<TokenCreateResult> {
+export async function createWinnerToken(gameId: number, _winnerPubkey: string): Promise<TokenCreateResult> {
   try {
     const tokenName = `PIR8 Game #${gameId} Winner`;
     const tokenSymbol = `WIN${gameId}`;
-    
+
     // TODO: Generate token metadata (image, description)
     // For now, use defaults
     const response = await fetch('https://pumpportal.fun/api/trade-local', {
@@ -65,7 +65,7 @@ export async function createWinnerToken(gameId: number, winnerPubkey: string): P
 /**
  * Monitor for game completion and trigger token creation
  */
-export async function watchGameCompletion(gameId: number): Promise<TokenCreateResult> {
+export async function watchGameCompletion(_gameId: number): Promise<TokenCreateResult> {
   // TODO: Subscribe to game completion events
   // For now, stub implementation
   return {

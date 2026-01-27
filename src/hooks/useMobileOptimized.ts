@@ -57,6 +57,7 @@ export const useMobileOptimized = ({
     if (!isTouch) return;
 
     const touch = e.touches[0];
+    if (!touch) return;
     touchStartPos.current = { x: touch.clientX, y: touch.clientY };
     
     // Start long press timer
@@ -77,6 +78,7 @@ export const useMobileOptimized = ({
     if (!isTouch || !touchStartPos.current) return;
 
     const touch = e.touches[0];
+    if (!touch) return;
     const deltaX = Math.abs(touch.clientX - touchStartPos.current.x);
     const deltaY = Math.abs(touch.clientY - touchStartPos.current.y);
     
@@ -97,6 +99,7 @@ export const useMobileOptimized = ({
     }
 
     const touch = e.changedTouches[0];
+    if (!touch) return;
     const deltaX = Math.abs(touch.clientX - touchStartPos.current.x);
     const deltaY = Math.abs(touch.clientY - touchStartPos.current.y);
     
