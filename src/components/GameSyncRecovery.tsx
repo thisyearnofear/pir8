@@ -9,8 +9,8 @@ import { usePirateGameState } from '@/hooks/usePirateGameState';
  * detects the mismatch and switches to the correct game
  */
 export function GameSyncRecovery() {
-  const { gameState } = usePirateGameState();
-  
+  const gameState = usePirateGameState((state) => state.gameState);
+
   const { attemptRecovery, currentPlayerCount, expectedPlayerCount } = useGameIdRecovery({
     currentGameId: gameState?.gameId,
     expectedPlayerCount: 2, // We expect 2 players for a full game
@@ -27,7 +27,7 @@ export function GameSyncRecovery() {
  * GameSyncStatus - Shows sync status in debug mode
  */
 export function GameSyncStatus() {
-  const { gameState } = usePirateGameState();
+  const gameState = usePirateGameState((state) => state.gameState);
   const { currentPlayerCount, expectedPlayerCount, attemptRecovery } = useGameIdRecovery({
     currentGameId: gameState?.gameId,
     expectedPlayerCount: 2,
@@ -45,7 +45,7 @@ export function GameSyncStatus() {
       <div>Game ID: {gameState.gameId}</div>
       <div>Players: {currentPlayerCount}/{expectedPlayerCount}</div>
       <div>Status: {needsRecovery ? '⚠️ Needs Recovery' : '✅ Synced'}</div>
-      
+
       {needsRecovery && (
         <button
           onClick={attemptRecovery}

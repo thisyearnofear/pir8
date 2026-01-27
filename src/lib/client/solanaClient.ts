@@ -1,47 +1,55 @@
 import { AnchorProvider, Program, Idl, BN } from '@coral-xyz/anchor';
 import { Connection, PublicKey, SystemProgram } from '@solana/web3.js';
 import { SOLANA_CONFIG } from '@/utils/constants';
-import { PROGRAM_ID } from '../anchor';
 import { getGlobalGamePDA } from '../anchorUtils';
 
-// Re-use the IDL from the server side or import it directly
-import idl from '../../../target/idl/pir8_game.json';
+// Import IDL - we'll need to generate this after building the contract
+let cachedIdl: Idl | null = null;
 
-export const getClientProgram = (wallet: any) => {
-    const connection = new Connection(SOLANA_CONFIG.RPC_URL || 'https://api.devnet.solana.com', 'confirmed');
+async function getIdl(): Promise<Idl> {
+    if (cachedIdl) return cachedIdl;
+
+    try {
+        // Try to load from public folder first
+        const response = await fetch('/idl/pir8_game.json');
+        if (response.ok) {
+            cachedIdl = await response.json();
+            return cachedIdl!;
+        }
+    } catch (error) {
+        console.warn('Could not load IDL from public folder');
+    }
+
+    // Fallback: try to import directly (this will work in development)
+    try {
+        const idlModule = await import('../../../target/idl/pir8_game.json');
+        cachedIdl = idlModule.default || idlModule;
+        return cachedIdl!;
+    } catch (error) {
+        throw new Error('Could not load program IDL. Make sure to build the Anchor program first.');
+    }
+}
+
+export const getClientProgram = async (wallet: any): Promise<Program> => {
+    const connection = new Connection(
+        SOLANA_CONFIG.RPC_URL || 'https://api.devnet.solana.com',
+        'confirmed'
+    );
     const provider = new AnchorProvider(connection, wallet, { commitment: 'confirmed' });
-    return new Program(idl as Idl, new PublicKey(PROGRAM_ID), provider);
-};
+    const idl = await getIdl();
+    const programId = new PublicKey(SOLANA_CONFIG.PROGRAM_ID!);
 
-export const joinGameClient = async (wallet: any) => {
-    if (!wallet) throw new Error("Wallet not connected");
-
-    const program = getClientProgram(wallet);
-    const [gamePDA] = getGlobalGamePDA(new PublicKey(PROGRAM_ID));
-
-    console.log("Creating join transaction...");
-
-    const tx = await program.methods
-        .joinGame()
-        .accountsStrict({
-            game: gamePDA,
-            player: wallet.publicKey,
-            systemProgram: SystemProgram.programId,
-        })
-        .rpc();
-
-    console.log("Joined game with tx:", tx);
-    return tx;
+    return new Program(idl, programId, provider);
 };
 
 export const initializeGameClient = async (wallet: any) => {
     if (!wallet) throw new Error("Wallet not connected");
 
-    const program = getClientProgram(wallet);
-    const [gamePDA] = getGlobalGamePDA(new PublicKey(PROGRAM_ID));
+    const program = await getClientProgram(wallet);
+    const [gamePDA] = getGlobalGamePDA(program.programId);
 
     const tx = await program.methods
-        .initializeGame(new BN(Date.now()))
+        .initializeGame()
         .accounts({
             game: gamePDA,
             authority: wallet.publicKey,
@@ -49,14 +57,34 @@ export const initializeGameClient = async (wallet: any) => {
         })
         .rpc();
 
+    console.log('✅ Game initialized:', tx);
+    return tx;
+};
+
+export const joinGameClient = async (wallet: any) => {
+    if (!wallet) throw new Error("Wallet not connected");
+
+    const program = await getClientProgram(wallet);
+    const [gamePDA] = getGlobalGamePDA(program.programId);
+
+    const tx = await program.methods
+        .joinGame()
+        .accounts({
+            game: gamePDA,
+            player: wallet.publicKey,
+            systemProgram: SystemProgram.programId,
+        })
+        .rpc();
+
+    console.log('✅ Joined game:', tx);
     return tx;
 };
 
 export const startGameClient = async (wallet: any) => {
     if (!wallet) throw new Error("Wallet not connected");
 
-    const program = getClientProgram(wallet);
-    const [gamePDA] = getGlobalGamePDA(new PublicKey(PROGRAM_ID));
+    const program = await getClientProgram(wallet);
+    const [gamePDA] = getGlobalGamePDA(program.programId);
 
     const tx = await program.methods
         .startGame()
@@ -66,75 +94,134 @@ export const startGameClient = async (wallet: any) => {
         })
         .rpc();
 
+    console.log('✅ Game started:', tx);
     return tx;
 };
 
 export const moveShipClient = async (wallet: any, shipId: string, x: number, y: number, decisionTimeMs?: number) => {
-    const program = getClientProgram(wallet);
-    const [gamePDA] = getGlobalGamePDA(new PublicKey(PROGRAM_ID));
+    const program = await getClientProgram(wallet);
+    const [gamePDA] = getGlobalGamePDA(program.programId);
 
     const tx = await program.methods
-        .moveShip(shipId, x, y)
+        .moveShip(shipId, x, y, decisionTimeMs ? new BN(decisionTimeMs) : null)
         .accounts({
             game: gamePDA,
             player: wallet.publicKey,
         })
         .rpc();
+
+    console.log('✅ Ship moved:', tx);
     return tx;
 };
 
-export const attackShipClient = async (wallet: any, attackerId: string, targetId: string) => {
-    const program = getClientProgram(wallet);
-    const [gamePDA] = getGlobalGamePDA(new PublicKey(PROGRAM_ID));
+export const attackShipClient = async (wallet: any, attackerShipId: string, targetShipId: string) => {
+    const program = await getClientProgram(wallet);
+    const [gamePDA] = getGlobalGamePDA(program.programId);
 
     const tx = await program.methods
-        .attackShip(attackerId, targetId)
+        .attackShip(attackerShipId, targetShipId)
         .accounts({
             game: gamePDA,
             player: wallet.publicKey,
         })
         .rpc();
+
+    console.log('✅ Ship attacked:', tx);
     return tx;
 };
 
-export const claimTerritoryClient = async (wallet: any, x: number, y: number) => {
-    const program = getClientProgram(wallet);
-    const [gamePDA] = getGlobalGamePDA(new PublicKey(PROGRAM_ID));
+export const claimTerritoryClient = async (wallet: any, shipId: string) => {
+    const program = await getClientProgram(wallet);
+    const [gamePDA] = getGlobalGamePDA(program.programId);
 
     const tx = await program.methods
-        .claimTerritory(x, y)
+        .claimTerritory(shipId)
         .accounts({
             game: gamePDA,
             player: wallet.publicKey,
         })
         .rpc();
+
+    console.log('✅ Territory claimed:', tx);
     return tx;
 };
 
-export const collectResourcesClient = async (wallet: any, x: number, y: number) => {
-    const program = getClientProgram(wallet);
-    const [gamePDA] = getGlobalGamePDA(new PublicKey(PROGRAM_ID));
+export const collectResourcesClient = async (wallet: any) => {
+    const program = await getClientProgram(wallet);
+    const [gamePDA] = getGlobalGamePDA(program.programId);
 
     const tx = await program.methods
-        .collectResources(x, y)
+        .collectResources()
         .accounts({
             game: gamePDA,
             player: wallet.publicKey,
         })
         .rpc();
+
+    console.log('✅ Resources collected:', tx);
     return tx;
 };
 
-export const buildShipClient = async (wallet: any, shipType: string) => {
-    const program = getClientProgram(wallet);
-    const [gamePDA] = getGlobalGamePDA(new PublicKey(PROGRAM_ID));
+export const buildShipClient = async (wallet: any, shipType: string, portX: number, portY: number) => {
+    const program = await getClientProgram(wallet);
+    const [gamePDA] = getGlobalGamePDA(program.programId);
+
+    // Convert string to enum format expected by Rust
+    const shipTypeEnum = { [shipType]: {} };
 
     const tx = await program.methods
-        .buildShip(shipType)
+        .buildShip(shipTypeEnum, portX, portY)
         .accounts({
             game: gamePDA,
             player: wallet.publicKey,
         })
         .rpc();
+
+    console.log('✅ Ship built:', tx);
     return tx;
+};
+
+export const scanCoordinateClient = async (wallet: any, x: number, y: number) => {
+    const program = await getClientProgram(wallet);
+    const [gamePDA] = getGlobalGamePDA(program.programId);
+
+    const tx = await program.methods
+        .scanCoordinate(x, y)
+        .accounts({
+            game: gamePDA,
+            player: wallet.publicKey,
+        })
+        .rpc();
+
+    console.log('✅ Coordinate scanned:', tx);
+    return tx;
+};
+
+export const endTurnClient = async (wallet: any) => {
+    const program = await getClientProgram(wallet);
+    const [gamePDA] = getGlobalGamePDA(program.programId);
+
+    const tx = await program.methods
+        .endTurn()
+        .accounts({
+            game: gamePDA,
+            player: wallet.publicKey,
+        })
+        .rpc();
+
+    console.log('✅ Turn ended:', tx);
+    return tx;
+};
+
+export const fetchGameStateClient = async (wallet: any) => {
+    const program = await getClientProgram(wallet);
+    const [gamePDA] = getGlobalGamePDA(program.programId);
+
+    try {
+        const gameState = await program.account.pirateGame.fetch(gamePDA);
+        return gameState;
+    } catch (error) {
+        console.log('Game not initialized yet');
+        return null;
+    }
 };

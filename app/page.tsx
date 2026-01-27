@@ -1,6 +1,6 @@
 "use client";
 
-import { useWallet, useAnchorWallet } from "@solana/wallet-adapter-react";
+import { useWallet } from "@solana/wallet-adapter-react";
 import { usePirateGameState } from "@/hooks/usePirateGameState";
 import { useErrorHandler } from "@/hooks/useErrorHandler";
 import { useShowOnboarding } from "@/hooks/useShowOnboarding";
@@ -33,11 +33,9 @@ const WalletButtonWrapper = dynamic(
 );
 
 export default function Home() {
-  const { publicKey } = useWallet();
-  const wallet = useAnchorWallet();
+  const { publicKey, wallet } = useWallet();
   const {
     gameState,
-    isLoading,
     error,
     showMessage,
     selectedShipId,
@@ -47,7 +45,7 @@ export default function Home() {
     averageDecisionTimeMs,
     createGame,
     joinGame,
-    startGame, // Added startGame
+    startGame,
     moveShip,
     attackWithShip,
     claimTerritory,
@@ -58,10 +56,8 @@ export default function Home() {
     setMessage,
     clearError,
     isMyTurn,
-    getMyShips,
     getAllShips,
     startTurn,
-    stopTurnTimer,
     scanCoordinate,
     getScannedCoordinates
   } = usePirateGameState();
@@ -74,12 +70,12 @@ export default function Home() {
   const { shown: showOnboarding, dismiss: dismissOnboarding } = useShowOnboarding();
 
   // Set up consolidated game synchronization
-  const { heliusConnected, lastSync } = useGameSync(gameState?.gameId);
+  const { heliusConnected, lastSync } = useGameSync(gameState?.gameId || '');
 
   // Get current player
   const getCurrentPlayer = () => {
     if (!gameState || !publicKey) return null;
-    return gameState.players.find(p => p.publicKey === publicKey.toString()) || null;
+    return gameState.players.find((p: any) => p.publicKey === publicKey.toString()) || null;
   };
 
   // Get current player name for TurnBanner
@@ -231,7 +227,7 @@ export default function Home() {
       }
     } else {
       // Try to select a ship at this coordinate
-      const myShips = getAllShips().filter(ship =>
+      const myShips = getAllShips().filter((ship: any) =>
         ship.id.startsWith(publicKey.toString()) &&
         ship.position.x + ',' + ship.position.y === coordinate
       );
@@ -267,7 +263,7 @@ export default function Home() {
         const myShips = getAllShips().filter(s => s.id.startsWith(publicKey.toString()));
         const selectedShip = myShips.find(s => s.id === shipId);
         if (selectedShip) {
-          const nearbyEnemies = getAllShips().filter(ship =>
+          const nearbyEnemies = getAllShips().filter((ship: any) =>
             !ship.id.startsWith(publicKey.toString()) &&
             ship.health > 0 &&
             Math.sqrt(
@@ -287,7 +283,7 @@ export default function Home() {
         }
         break;
       case 'claim':
-        const ship = getAllShips().find(s => s.id === shipId);
+        const ship = getAllShips().find((s: any) => s.id === shipId);
         if (ship) {
           const coordinate = `${ship.position.x},${ship.position.y}`;
           const success = await claimTerritory(shipId, coordinate, wallet); // Pass wallet

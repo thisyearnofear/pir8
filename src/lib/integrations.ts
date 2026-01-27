@@ -16,7 +16,7 @@ export class HeliusMonitor {
   private logLevel: 'silent' | 'error' | 'warn' | 'info' | 'debug' =
     (process.env.NEXT_PUBLIC_LOG_LEVEL as any) || 'error';
 
-  constructor(private onTransaction: (data: any) => void) {}
+  constructor(private onTransaction: (data: any) => void) { }
 
   connect() {
     if (this.ws && (this.ws.readyState === WebSocket.CONNECTING || this.ws.readyState === WebSocket.OPEN)) {
@@ -273,13 +273,17 @@ export class PumpFunCreator {
     }
   }
 
-  private static getDefaultPirateImage(symbol: string): string {
+  private static getDefaultPirateImage(symbol?: string): string {
     // Return default pirate-themed token image based on symbol
     const pirateImages = [
       'https://via.placeholder.com/400x400/FFD700/000000?text=🏴‍☠️',
       'https://via.placeholder.com/400x400/8B4513/FFD700?text=⚔️',
       'https://via.placeholder.com/400x400/DC143C/FFFFFF?text=💰',
     ];
+
+    if (!symbol) {
+      return pirateImages[0];
+    }
 
     const hash = symbol.split('').reduce((acc, char) => acc + char.charCodeAt(0), 0);
     return pirateImages[hash % pirateImages.length] || pirateImages[0];
@@ -293,7 +297,7 @@ export class PumpFunCreator {
       name: `Captain ${playerName}`,
       symbol: `${randomSymbol}${Date.now().toString().slice(-3)}`,
       description: `🏴‍☠️ Victory token for pirate ${playerName} who scored ${score} points in PIR8 battle! Arrr! 🏴‍☠️`,
-      imageUrl: this.getDefaultPirateImage(randomSymbol),
+      imageUrl: this.getDefaultPirateImage(randomSymbol || 'PIRATE'),
     };
   }
 }

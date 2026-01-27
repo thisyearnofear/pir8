@@ -33,7 +33,7 @@ export const ZCASH_CONFIG = {
   LIGHTWALLETD_URL: process.env.NEXT_PUBLIC_LIGHTWALLETD_URL || 'https://lightwalletd.com:9067',
   SHIELDED_ADDRESS: process.env.NEXT_PUBLIC_ZCASH_SHIELDED_ADDR || '',
   MEMO_SCHEMA_VERSION: '1',
-  ENABLED: process.env.NEXT_PUBLIC_ZCASH_ENABLED === 'true',
+  ENABLED: process.env['NEXT_PUBLIC_ZCASH_ENABLED'] === 'true',
 } as const;
 
 // Pirate Territory & Ship Mappings

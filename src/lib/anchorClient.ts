@@ -9,8 +9,14 @@ import { getGlobalGamePDA } from './anchorUtils';
 class NodeWallet {
   constructor(readonly payer: Keypair) { }
   get publicKey() { return this.payer.publicKey; }
-  async signTransaction(tx: Transaction) { tx.sign(this.payer); return tx; }
-  async signAllTransactions(txs: Transaction[]) { txs.forEach(t => t.sign(this.payer)); return txs; }
+  async signTransaction(tx: Transaction) {
+    tx.sign(this.payer);
+    return tx;
+  }
+  async signAllTransactions(txs: Transaction[]) {
+    txs.forEach(t => t.sign(this.payer));
+    return txs;
+  }
 }
 
 function loadKeypairFromEnv(): Keypair {
@@ -43,8 +49,9 @@ export async function getAnchorClient(): Promise<{ program: Program, provider: A
 
 // Initialize the single global game (one-time)
 export async function initializeGlobalGame(program: any, provider: AnchorProvider) {
-  const authority = (provider as any).wallet.publicKey;
-  const [gamePDA] = getGlobalGamePDA(program.programId || new PublicKey(program.idl.metadata.address));
+  const authority = (provider as any).wallet?.publicKey || (provider as any).publicKey;
+  const programId = program.programId;
+  const [gamePDA] = getGlobalGamePDA(programId);
 
   const tx = await program.methods
     .initializeGame(new BN(Date.now()))
@@ -63,13 +70,13 @@ export async function initializeGlobalGame(program: any, provider: AnchorProvide
 
 // Join the global game
 export async function joinGlobalGame(program: any, provider: AnchorProvider) {
-  const [gamePDA] = getGlobalGamePDA(program.programId || new PublicKey(program.idl.metadata.address));
+  const [gamePDA] = getGlobalGamePDA(program.programId);
 
   const tx = await program.methods
     .joinGame()
     .accounts({
       game: gamePDA,
-      player: (provider as any).wallet.publicKey,
+      player: (provider as any).wallet?.publicKey || (provider as any).publicKey,
       systemProgram: SystemProgram.programId,
     })
     .rpc();
@@ -80,13 +87,13 @@ export async function joinGlobalGame(program: any, provider: AnchorProvider) {
 
 // Start the global game
 export async function startGlobalGame(program: any, provider: AnchorProvider) {
-  const [gamePDA] = getGlobalGamePDA(program.programId || new PublicKey(program.idl.metadata.address));
+  const [gamePDA] = getGlobalGamePDA(program.programId);
 
   const tx = await program.methods
     .startGame()
     .accounts({
       game: gamePDA,
-      authority: (provider as any).wallet.publicKey,
+      authority: (provider as any).wallet?.publicKey || (provider as any).publicKey,
     })
     .rpc();
 
@@ -96,13 +103,13 @@ export async function startGlobalGame(program: any, provider: AnchorProvider) {
 
 // Reset the global game (dev/testing)
 export async function resetGlobalGame(program: any, provider: AnchorProvider) {
-  const [gamePDA] = getGlobalGamePDA(program.programId || new PublicKey(program.idl.metadata.address));
+  const [gamePDA] = getGlobalGamePDA(program.programId);
 
   const tx = await program.methods
     .resetGame()
     .accounts({
       game: gamePDA,
-      authority: (provider as any).wallet.publicKey,
+      authority: (provider as any).wallet?.publicKey || (provider as any).publicKey,
     })
     .rpc();
 
@@ -112,7 +119,7 @@ export async function resetGlobalGame(program: any, provider: AnchorProvider) {
 
 // Fetch global game state
 export async function fetchGlobalGame(program: any) {
-  const [gamePDA] = getGlobalGamePDA(program.programId || new PublicKey(program.idl.metadata.address));
+  const [gamePDA] = getGlobalGamePDA(program.programId);
   // Account name is camelCase in Anchor
-  return await (program.account as any).pirateGame.fetch(gamePDA);
+  return await program.account.pirateGame.fetch(gamePDA);
 }

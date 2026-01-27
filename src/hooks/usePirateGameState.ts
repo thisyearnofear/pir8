@@ -206,7 +206,7 @@ export const usePirateGameState = create<PirateGameStore>((set, get) => ({
         const baseState = PirateGameManager.createNewGame(mappedPlayers, gameId);
 
         // Update status
-        const statusKey = Object.keys(onChainState.status)[0].toLowerCase(); // 'waiting', 'active', 'completed'
+        const statusKey = onChainState.status ? Object.keys(onChainState.status)[0].toLowerCase() : 'waiting'; // 'waiting', 'active', 'completed'
 
         const syncedState: GameState = {
           ...baseState,
@@ -286,10 +286,11 @@ export const usePirateGameState = create<PirateGameStore>((set, get) => ({
           gameState.gameMap.size
         );
 
-        if (startingPositions[updatedPlayers.length - 1]) {
+        const playerStartingPosition = startingPositions[updatedPlayers.length - 1];
+        if (playerStartingPosition && playerStartingPosition[0]) {
           enhancedPlayer.ships = PirateGameManager.createStartingFleet(
             player.publicKey,
-            startingPositions[updatedPlayers.length - 1][0] // Take the first position
+            playerStartingPosition[0] // Take the first position
           );
         }
 
@@ -378,11 +379,15 @@ export const usePirateGameState = create<PirateGameStore>((set, get) => ({
       set({ isLoading: true, error: null });
 
       // Call on-chain instruction
-      const { moveShip: moveShipOnChain } = await import('../lib/server/anchorActions');
-      await moveShipOnChain(shipId, toX, toY, decisionTimeMs);
+      const { moveShipClient } = await import('../lib/client/solanaClient');
+      await moveShipClient(wallet, shipId, toX, toY, decisionTimeMs);
 
       // Also update local state for immediate feedback
       const currentPlayer = gameState.players[gameState.currentPlayerIndex];
+      if (!currentPlayer) {
+        throw new Error('No current player found');
+      }
+
       const action: GameAction = {
         id: `action_${Date.now()}`,
         gameId: gameState.gameId,
@@ -415,11 +420,15 @@ export const usePirateGameState = create<PirateGameStore>((set, get) => ({
       set({ isLoading: true, error: null });
 
       // Call on-chain instruction
-      const { attackShip } = await import('../lib/server/anchorActions');
-      await attackShip(shipId, targetShipId);
+      const { attackShipClient } = await import('../lib/client/solanaClient');
+      await attackShipClient(wallet, shipId, targetShipId);
 
       // Update local state
       const currentPlayer = gameState.players[gameState.currentPlayerIndex];
+      if (!currentPlayer) {
+        throw new Error('No current player found');
+      }
+
       const action: GameAction = {
         id: `action_${Date.now()}`,
         gameId: gameState.gameId,
@@ -451,11 +460,15 @@ export const usePirateGameState = create<PirateGameStore>((set, get) => ({
       set({ isLoading: true, error: null });
 
       // Call on-chain instruction
-      const { claimTerritory: claimTerritoryOnChain } = await import('../lib/server/anchorActions');
-      await claimTerritoryOnChain(shipId);
+      const { claimTerritoryClient } = await import('../lib/client/solanaClient');
+      await claimTerritoryClient(wallet, shipId);
 
       // Update local state
       const currentPlayer = gameState.players[gameState.currentPlayerIndex];
+      if (!currentPlayer) {
+        throw new Error('No current player found');
+      }
+
       const action: GameAction = {
         id: `action_${Date.now()}`,
         gameId: gameState.gameId,
@@ -487,11 +500,15 @@ export const usePirateGameState = create<PirateGameStore>((set, get) => ({
       set({ isLoading: true, error: null });
 
       // Call on-chain instruction
-      const { collectResources: collectResourcesOnChain } = await import('../lib/server/anchorActions');
-      await collectResourcesOnChain();
+      const { collectResourcesClient } = await import('../lib/client/solanaClient');
+      await collectResourcesClient(wallet);
 
       // Update local state
       const currentPlayer = gameState.players[gameState.currentPlayerIndex];
+      if (!currentPlayer) {
+        throw new Error('No current player found');
+      }
+
       const action: GameAction = {
         id: `action_${Date.now()}`,
         gameId: gameState.gameId,
@@ -525,11 +542,15 @@ export const usePirateGameState = create<PirateGameStore>((set, get) => ({
       const validShipType = shipType as 'sloop' | 'frigate' | 'galleon' | 'flagship';
 
       // Call on-chain instruction
-      const { buildShip: buildShipOnChain } = await import('../lib/server/anchorActions');
-      await buildShipOnChain(validShipType, portX, portY);
+      const { buildShipClient } = await import('../lib/client/solanaClient');
+      await buildShipClient(wallet, validShipType, portX, portY);
 
       // Update local state
       const currentPlayer = gameState.players[gameState.currentPlayerIndex];
+      if (!currentPlayer) {
+        throw new Error('No current player found');
+      }
+
       const action: GameAction = {
         id: `action_${Date.now()}`,
         gameId: gameState.gameId,
@@ -562,6 +583,8 @@ export const usePirateGameState = create<PirateGameStore>((set, get) => ({
 
     // Generate resources for current player before ending turn
     const currentPlayer = gameState.players[gameState.currentPlayerIndex];
+    if (!currentPlayer) return;
+
     const income = GameBalance.generateTurnIncome(currentPlayer, gameState.gameMap);
 
     // Update player resources
@@ -572,7 +595,8 @@ export const usePirateGameState = create<PirateGameStore>((set, get) => ({
         gold: currentPlayer.resources.gold + (income.gold || 0),
         crew: currentPlayer.resources.crew + (income.crew || 0),
         cannons: currentPlayer.resources.cannons + (income.cannons || 0),
-        supplies: currentPlayer.resources.supplies + (income.supplies || 0),
+        wood: currentPlayer.resources.wood + (income.supplies || 0), // Map supplies to wood
+        rum: currentPlayer.resources.rum || 0,
       }
     };
 
@@ -622,10 +646,11 @@ export const usePirateGameState = create<PirateGameStore>((set, get) => ({
 
     // Call on-chain victory check
     try {
-      const { checkAndCompleteGame } = await import('../lib/server/anchorActions');
-      await checkAndCompleteGame();
+      const { endTurnClient } = await import('../lib/client/solanaClient');
+      // We'll need a wallet here - this should be called from the UI with wallet context
+      // await endTurnClient(wallet);
     } catch (error) {
-      console.log('Victory check:', error);
+      console.log('End turn on-chain call failed:', error);
       // Non-critical, game continues locally
     }
   },
@@ -688,6 +713,8 @@ export const usePirateGameState = create<PirateGameStore>((set, get) => ({
     if (!gameState || !turnStartTime || scanChargesRemaining <= 0) return false;
 
     const currentPlayer = gameState.players[gameState.currentPlayerIndex];
+    if (!currentPlayer) return false;
+
     const decisionTimeMs = Date.now() - turnStartTime;
     const coordinate = `${coordinateX},${coordinateY}`;
 
@@ -719,11 +746,13 @@ export const usePirateGameState = create<PirateGameStore>((set, get) => ({
   },
 
   // Skill Mechanics: Move ship with timing bonus
-  moveShipTimed: async (shipId: string, toCoordinate: string): Promise<boolean> => {
+  moveShipTimed: async (shipId: string, toX: number, toY: number): Promise<boolean> => {
     const { gameState, turnStartTime, speedBonusAccumulated, averageDecisionTimeMs, totalMovesCount } = get();
     if (!gameState || !turnStartTime) return false;
 
     const currentPlayer = gameState.players[gameState.currentPlayerIndex];
+    if (!currentPlayer) return false;
+
     const decisionTimeMs = Date.now() - turnStartTime;
 
     // Calculate speed bonus based on decision time thresholds
@@ -763,7 +792,7 @@ export const usePirateGameState = create<PirateGameStore>((set, get) => ({
       type: 'move_ship',
       data: {
         shipId,
-        toCoordinate
+        toCoordinate: `${toX},${toY}`
       },
       timestamp: Date.now(),
       decisionTimeMs
@@ -790,8 +819,8 @@ export const usePirateGameState = create<PirateGameStore>((set, get) => ({
   // Getters
   getCurrentPlayer: () => {
     const { gameState } = get();
-    if (!gameState) return null;
-    return gameState.players[gameState.currentPlayerIndex];
+    if (!gameState || gameState.players.length === 0) return null;
+    return gameState.players[gameState.currentPlayerIndex] || null;
   },
 
   getMyShips: (playerPK: string) => {
@@ -807,7 +836,7 @@ export const usePirateGameState = create<PirateGameStore>((set, get) => ({
     if (!gameState || gameState.gameStatus !== 'active') return false;
     if (!walletPk) return false;
     const current = gameState.players[gameState.currentPlayerIndex];
-    return current.publicKey === walletPk;
+    return current?.publicKey === walletPk;
   },
 
   getAllShips: () => {

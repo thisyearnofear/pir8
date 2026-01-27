@@ -27,7 +27,7 @@ export function formatSOL(amount: number, decimals: number = 4): string {
  */
 export function generateRandomCoordinate(excludeList: string[] = []): string {
   const allCoords: string[] = [];
-  
+
   for (let row = 1; row <= 7; row++) {
     for (const letter of COORDINATE_LETTERS) {
       const coord = `${letter}${row}`;
@@ -36,11 +36,11 @@ export function generateRandomCoordinate(excludeList: string[] = []): string {
       }
     }
   }
-  
+
   if (allCoords.length === 0) {
     throw new Error('No coordinates available');
   }
-  
+
   return allCoords[Math.floor(Math.random() * allCoords.length)]!;
 }
 
@@ -48,25 +48,25 @@ export function generateRandomCoordinate(excludeList: string[] = []): string {
  * Validate coordinate format and availability
  */
 export function validateCoordinate(
-  coordinate: string, 
+  coordinate: string,
   takenCoords: string[] = []
 ): { isValid: boolean; error?: string } {
   // Check format
   if (!/^[A-G][1-7]$/.test(coordinate)) {
-    return { 
-      isValid: false, 
-      error: 'Invalid format. Use A1-G7' 
+    return {
+      isValid: false,
+      error: 'Invalid format. Use A1-G7'
     };
   }
-  
+
   // Check availability
   if (takenCoords.includes(coordinate)) {
-    return { 
-      isValid: false, 
-      error: 'Coordinate already taken' 
+    return {
+      isValid: false,
+      error: 'Coordinate already taken'
     };
   }
-  
+
   return { isValid: true };
 }
 
@@ -74,15 +74,19 @@ export function validateCoordinate(
  * Convert coordinate string to grid indices
  */
 export function coordToIndices(coordinate: string): [number, number] {
-  if (coordinate.length < 2) {
+  if (!coordinate || coordinate.length < 2) {
     throw new Error('Invalid coordinate format');
   }
 
-  const letter = coordinate[0].toUpperCase();
-  const number = coordinate[1];
+  const letter = coordinate[0]?.toUpperCase();
+  const numberStr = coordinate.slice(1);
+
+  if (!letter || !numberStr) {
+    throw new Error('Invalid coordinate format');
+  }
 
   const col = LETTERS_TO_INDEX[letter];
-  const row = parseInt(number) - 1;
+  const row = parseInt(numberStr, 10) - 1;
 
   if (col === undefined || isNaN(row) || row < 0 || row > 6) {
     throw new Error('Invalid coordinate');
@@ -98,7 +102,7 @@ export function indicesToCoord(row: number, col: number): string {
   if (row < 0 || row > 6 || col < 0 || col > 6) {
     throw new Error('Invalid grid indices');
   }
-  
+
   return `${COORDINATE_LETTERS[col]}${row + 1}`;
 }
 
@@ -117,7 +121,7 @@ export function debounce<T extends (...args: any[]) => any>(
   wait: number
 ): (...args: Parameters<T>) => void {
   let timeout: NodeJS.Timeout;
-  
+
   return (...args: Parameters<T>) => {
     clearTimeout(timeout);
     timeout = setTimeout(() => func(...args), wait);
@@ -139,10 +143,10 @@ export function generateGameId(): string {
 export function areAdjacent(coord1: string, coord2: string): boolean {
   const [row1, col1] = coordToIndices(coord1);
   const [row2, col2] = coordToIndices(coord2);
-  
+
   const rowDiff = Math.abs(row1 - row2);
   const colDiff = Math.abs(col1 - col2);
-  
+
   return (rowDiff <= 1 && colDiff <= 1) && !(rowDiff === 0 && colDiff === 0);
 }
 
