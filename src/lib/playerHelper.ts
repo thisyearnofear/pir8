@@ -1,6 +1,6 @@
 import { Player, Resources } from '@/types/game';
 import { PublicKey } from '@solana/web3.js';
-import { PirateGameEngine } from './gameLogic';
+import { PirateGameManager } from './pirateGameEngine';
 
 const DEFAULT_RESOURCES: Resources = {
   gold: 1000,

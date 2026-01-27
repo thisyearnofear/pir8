@@ -17,13 +17,13 @@ export const joinGameClient = async (wallet: any) => {
     if (!wallet) throw new Error("Wallet not connected");
 
     const program = getClientProgram(wallet);
-    const [gamePDA] = getGlobalGamePDA(program.programId);
+    const [gamePDA] = getGlobalGamePDA(new PublicKey(PROGRAM_ID));
 
     console.log("Creating join transaction...");
 
     const tx = await program.methods
         .joinGame()
-        .accounts({
+        .accountsStrict({
             game: gamePDA,
             player: wallet.publicKey,
             systemProgram: SystemProgram.programId,
@@ -38,10 +38,10 @@ export const initializeGameClient = async (wallet: any) => {
     if (!wallet) throw new Error("Wallet not connected");
 
     const program = getClientProgram(wallet);
-    const [gamePDA] = getGlobalGamePDA(program.programId);
+    const [gamePDA] = getGlobalGamePDA(new PublicKey(PROGRAM_ID));
 
     const tx = await program.methods
-        .initializeGame()
+        .initializeGame(new BN(Date.now()))
         .accounts({
             game: gamePDA,
             authority: wallet.publicKey,
@@ -56,7 +56,7 @@ export const startGameClient = async (wallet: any) => {
     if (!wallet) throw new Error("Wallet not connected");
 
     const program = getClientProgram(wallet);
-    const [gamePDA] = getGlobalGamePDA(program.programId);
+    const [gamePDA] = getGlobalGamePDA(new PublicKey(PROGRAM_ID));
 
     const tx = await program.methods
         .startGame()
@@ -71,10 +71,10 @@ export const startGameClient = async (wallet: any) => {
 
 export const moveShipClient = async (wallet: any, shipId: string, x: number, y: number, decisionTimeMs?: number) => {
     const program = getClientProgram(wallet);
-    const [gamePDA] = getGlobalGamePDA(program.programId);
+    const [gamePDA] = getGlobalGamePDA(new PublicKey(PROGRAM_ID));
 
     const tx = await program.methods
-        .moveShip(shipId, x, y, decisionTimeMs ? new BN(decisionTimeMs) : null)
+        .moveShip(shipId, x, y)
         .accounts({
             game: gamePDA,
             player: wallet.publicKey,
@@ -85,7 +85,7 @@ export const moveShipClient = async (wallet: any, shipId: string, x: number, y: 
 
 export const attackShipClient = async (wallet: any, attackerId: string, targetId: string) => {
     const program = getClientProgram(wallet);
-    const [gamePDA] = getGlobalGamePDA(program.programId);
+    const [gamePDA] = getGlobalGamePDA(new PublicKey(PROGRAM_ID));
 
     const tx = await program.methods
         .attackShip(attackerId, targetId)
@@ -97,12 +97,12 @@ export const attackShipClient = async (wallet: any, attackerId: string, targetId
     return tx;
 };
 
-export const claimTerritoryClient = async (wallet: any, shipId: string) => {
+export const claimTerritoryClient = async (wallet: any, x: number, y: number) => {
     const program = getClientProgram(wallet);
-    const [gamePDA] = getGlobalGamePDA(program.programId);
+    const [gamePDA] = getGlobalGamePDA(new PublicKey(PROGRAM_ID));
 
     const tx = await program.methods
-        .claimTerritory(shipId)
+        .claimTerritory(x, y)
         .accounts({
             game: gamePDA,
             player: wallet.publicKey,
@@ -111,12 +111,12 @@ export const claimTerritoryClient = async (wallet: any, shipId: string) => {
     return tx;
 };
 
-export const collectResourcesClient = async (wallet: any) => {
+export const collectResourcesClient = async (wallet: any, x: number, y: number) => {
     const program = getClientProgram(wallet);
-    const [gamePDA] = getGlobalGamePDA(program.programId);
+    const [gamePDA] = getGlobalGamePDA(new PublicKey(PROGRAM_ID));
 
     const tx = await program.methods
-        .collectResources()
+        .collectResources(x, y)
         .accounts({
             game: gamePDA,
             player: wallet.publicKey,
@@ -125,14 +125,12 @@ export const collectResourcesClient = async (wallet: any) => {
     return tx;
 };
 
-export const buildShipClient = async (wallet: any, shipType: string, x: number, y: number) => {
+export const buildShipClient = async (wallet: any, shipType: string) => {
     const program = getClientProgram(wallet);
-    const [gamePDA] = getGlobalGamePDA(program.programId);
-
-    const shipTypeEnum = { [shipType]: {} };
+    const [gamePDA] = getGlobalGamePDA(new PublicKey(PROGRAM_ID));
 
     const tx = await program.methods
-        .buildShip(shipTypeEnum, x, y)
+        .buildShip(shipType)
         .accounts({
             game: gamePDA,
             player: wallet.publicKey,

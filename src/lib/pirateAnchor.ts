@@ -1,6 +1,6 @@
-import { AnchorProvider, Program, BN, Idl } from '@coral-xyz/anchor';
-import { PublicKey, Keypair, SystemProgram, Connection } from '@solana/web3.js';
-import { GameState, Player, Ship, Resources, GameEvent } from '../types/game';
+import { AnchorProvider, Program, BN } from '@coral-xyz/anchor';
+import { PublicKey, SystemProgram } from '@solana/web3.js';
+import { GameState, Player, Ship } from '../types/game';
 
 // Pirate game account interfaces matching the Rust structs
 export interface PirateGameAccount {
@@ -67,23 +67,27 @@ export class PIR8PirateInstructions {
 
   async createGame(entryFee: number, maxPlayers: number): Promise<{ tx: string; gameId: PublicKey }> {
     const timestamp = Math.floor(Date.now() / 1000);
-    const timestampBytes = Buffer.allocUnsafe(8);
-    timestampBytes.writeBigInt64LE(BigInt(timestamp), 0);
+    const timestampBytes = new ArrayBuffer(8);
+    const timestampView = new DataView(timestampBytes);
+    timestampView.setBigInt64(0, BigInt(timestamp), true); // little endian
+
+    // Use the program ID from the program instance
+    const programId = this.program.programId || new PublicKey(this.program.idl.metadata?.address || '');
 
     const [gameId] = PublicKey.findProgramAddressSync(
       [
         Buffer.from("pirate_game"),
-        this.provider.wallet.publicKey.toBuffer(),
-        timestampBytes
+        (this.provider as any).wallet.publicKey.toBytes(),
+        Buffer.from(timestampBytes as any)
       ],
-      this.program.programId
+      programId
     );
 
     const tx = await this.program.methods
-      .createGame(new BN(entryFee), maxPlayers)
+      .initializeGame(new BN(Date.now())) // Using initializeGame from our IDL
       .accounts({
         game: gameId,
-        authority: this.provider.wallet.publicKey,
+        authority: (this.provider as any).wallet.publicKey,
         systemProgram: SystemProgram.programId,
       })
       .rpc();
@@ -96,7 +100,7 @@ export class PIR8PirateInstructions {
       .joinGame()
       .accounts({
         game: gameId,
-        player: this.provider.wallet.publicKey,
+        player: (this.provider as any).wallet.publicKey,
       })
       .rpc();
 
@@ -113,7 +117,7 @@ export class PIR8PirateInstructions {
       .moveShip(shipId, toX, toY)
       .accounts({
         game: gameId,
-        player: this.provider.wallet.publicKey,
+        player: (this.provider as any).wallet.publicKey,
       })
       .rpc();
 
@@ -129,7 +133,7 @@ export class PIR8PirateInstructions {
       .attackShip(attackerShipId, targetShipId)
       .accounts({
         game: gameId,
-        player: this.provider.wallet.publicKey,
+        player: (this.provider as any).wallet.publicKey,
       })
       .rpc();
 
@@ -138,13 +142,14 @@ export class PIR8PirateInstructions {
 
   async claimTerritory(
     gameId: PublicKey,
-    shipId: string
+    x: number,
+    y: number
   ): Promise<string> {
     const tx = await this.program.methods
-      .claimTerritory(shipId)
+      .claimTerritory(x, y)
       .accounts({
         game: gameId,
-        player: this.provider.wallet.publicKey,
+        player: (this.provider as any).wallet.publicKey,
       })
       .rpc();
 
@@ -153,6 +158,7 @@ export class PIR8PirateInstructions {
 
   async getGame(gameId: PublicKey): Promise<PirateGameAccount | null> {
     try {
+      // Access the account using the proper syntax
       const account = await this.program.account.pirateGame.fetch(gameId);
       return account as PirateGameAccount;
     } catch (error) {

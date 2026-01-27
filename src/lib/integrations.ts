@@ -10,16 +10,13 @@ export class HeliusMonitor {
   private ws: WebSocket | null = null;
   private reconnectAttempts = 0;
   private maxReconnectAttempts = 5;
-  private gameId: string | null = null;
   private lastErrorAt = 0;
   private errorThrottleMs = 30000;
   private pingInterval: any = null;
   private logLevel: 'silent' | 'error' | 'warn' | 'info' | 'debug' =
     (process.env.NEXT_PUBLIC_LOG_LEVEL as any) || 'error';
 
-  constructor(private onTransaction: (data: any) => void, gameId?: string) {
-    this.gameId = gameId || null;
-  }
+  constructor(private onTransaction: (data: any) => void) {}
 
   connect() {
     if (this.ws && (this.ws.readyState === WebSocket.CONNECTING || this.ws.readyState === WebSocket.OPEN)) {
@@ -143,15 +140,15 @@ export class HeliusMonitor {
       // Parse PIR8 game events from logs
       for (const log of logs) {
         if (log.includes('GameCreated')) {
-          this.handleGameCreated(log);
+          this.handleGameCreated();
         } else if (log.includes('PlayerJoined')) {
-          this.handlePlayerJoined(log);
+          this.handlePlayerJoined();
         } else if (log.includes('GameStarted')) {
-          this.handleGameStarted(log);
+          this.handleGameStarted();
         } else if (log.includes('MoveMade')) {
-          this.handleMoveMade(log);
+          this.handleMoveMade();
         } else if (log.includes('GameCompleted')) {
-          this.handleGameCompleted(log);
+          this.handleGameCompleted();
         }
       }
     } catch {
@@ -159,23 +156,23 @@ export class HeliusMonitor {
     }
   }
 
-  private handleGameCreated(log: string) {
+  private handleGameCreated() {
     this.log('debug', 'Game Created');
   }
 
-  private handlePlayerJoined(log: string) {
+  private handlePlayerJoined() {
     this.log('debug', 'Player Joined');
   }
 
-  private handleGameStarted(log: string) {
+  private handleGameStarted() {
     this.log('debug', 'Game Started');
   }
 
-  private handleMoveMade(log: string) {
+  private handleMoveMade() {
     this.log('debug', 'Move Made');
   }
 
-  private handleGameCompleted(log: string) {
+  private handleGameCompleted() {
     this.log('debug', 'Game Completed');
   }
 
@@ -285,7 +282,7 @@ export class PumpFunCreator {
     ];
 
     const hash = symbol.split('').reduce((acc, char) => acc + char.charCodeAt(0), 0);
-    return pirateImages[hash % pirateImages.length];
+    return pirateImages[hash % pirateImages.length] || pirateImages[0];
   }
 
   static generateWinnerTokenMetadata(playerName: string, score: number) {
@@ -302,7 +299,7 @@ export class PumpFunCreator {
 }
 
 // Game Integration Helpers
-export function setupGameIntegrations(gameId: string) {
+export function setupGameIntegrations() {
   const heliusMonitor = new HeliusMonitor(() => { });
 
   heliusMonitor.connect();
@@ -631,9 +628,9 @@ export class LightwalletdWatcher {
       // Try hex decoding first (common in Zcash)
       if (typeof memo === 'string') {
         const buffer = Buffer.from(memo, 'hex');
-        return buffer.toString('utf-8').trim();
+        return buffer.toString().trim();
       }
-      return memo.toString('utf-8').trim();
+      return memo.toString().trim();
     } catch {
       this.log('warn', 'Failed to decode memo');
       return '';

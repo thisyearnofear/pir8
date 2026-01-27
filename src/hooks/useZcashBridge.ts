@@ -10,8 +10,7 @@
 
 import { useEffect, useRef, useCallback } from 'react';
 import { LightwalletdWatcher, MemoPayload } from '@/lib/integrations';
-// TODO: Re-implement for global game
-// import { joinGamePrivateViaZcash } from '@/lib/server/anchorActions';
+import { joinGamePrivateViaZcash } from '@/lib/server/anchorActions';
 import { ZCASH_CONFIG } from '@/utils/constants';
 import { usePirateGameState } from './usePirateGameState';
 
@@ -63,9 +62,11 @@ export function useZcashBridge(options: UseZcashBridgeOptions = {}) {
    * Monitors Zcash for incoming shielded transactions to our address
    */
   useEffect(() => {
-    // Disable Zcash bridge in development to prevent connection spam
-    if (process.env.NODE_ENV === 'development') {
-      console.log('[Zcash Bridge] Disabled in development mode');
+    // Check if Zcash integration is explicitly enabled
+    const zcashEnabled = process.env.NEXT_PUBLIC_ZCASH_ENABLED === 'true';
+
+    if (!zcashEnabled) {
+      console.log('[Zcash Bridge] Disabled via NEXT_PUBLIC_ZCASH_ENABLED');
       return;
     }
 
@@ -92,7 +93,7 @@ export function useZcashBridge(options: UseZcashBridgeOptions = {}) {
         console.log('[Zcash Bridge] Graceful fallback - bridge unavailable');
         // Don't throw error to prevent app disruption
       }
-    }, 5000); // Wait 5 seconds after app startup
+    }, 3000); // Wait 3 seconds after app startup (reduced from 5s for 2026)
 
     // Cleanup on unmount
     return () => {

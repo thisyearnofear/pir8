@@ -636,4 +636,78 @@ pub mod pir8_game {
 
         Ok(())
     }
+
+    /// Scan a coordinate to reveal tile type (skill mechanic)
+    pub fn scan_coordinate(
+        ctx: Context<MakeMove>,
+        coordinate_x: u8,
+        coordinate_y: u8,
+    ) -> Result<()> {
+        let game = &mut ctx.accounts.game;
+        let player_pubkey = ctx.accounts.player.key();
+
+        // Validate game state
+        require!(game.status == GameStatus::Active, GameError::GameNotActive);
+        
+        // Validate it's the player's turn
+        let current_player = game.get_current_player()
+            .ok_or(GameError::NotPlayerTurn)?;
+        require!(current_player.pubkey == player_pubkey, GameError::NotPlayerTurn);
+
+        // Get tile type first (before mutable borrow)
+        let index = (coordinate_x as usize * MAP_SIZE) + coordinate_y as usize;
+        let tile_type = game.territory_map.get(index)
+            .map(|cell| format!("{:?}", cell.cell_type))
+            .unwrap_or_else(|| "Unknown".to_string());
+
+        // Get player and check scan charges
+        let player = game.get_player_mut(&player_pubkey)
+            .ok_or(GameError::NotPlayerTurn)?;
+        require!(player.scan_charges > 0, GameError::NoScansRemaining);
+
+        // Check if already scanned
+        require!(
+            !is_coordinate_scanned(&player.scanned_coordinates, coordinate_x, coordinate_y),
+            GameError::CoordinateAlreadyScanned
+        );
+
+        // Mark as scanned
+        mark_coordinate_scanned(&mut player.scanned_coordinates, coordinate_x, coordinate_y)?;
+        player.scan_charges -= 1;
+
+        emit!(CoordinateScanned {
+            game_id: 0,
+            player: player_pubkey,
+            coordinate_x,
+            coordinate_y,
+            tile_type,
+            scan_charges_remaining: player.scan_charges,
+        });
+
+        // Advance turn
+        game.advance_turn();
+
+        Ok(())
+    }
+
+    /// End current player's turn without taking an action
+    pub fn end_turn(
+        ctx: Context<MakeMove>,
+    ) -> Result<()> {
+        let game = &mut ctx.accounts.game;
+        let player_pubkey = ctx.accounts.player.key();
+
+        // Validate game state
+        require!(game.status == GameStatus::Active, GameError::GameNotActive);
+        
+        // Validate it's the player's turn
+        let current_player = game.get_current_player()
+            .ok_or(GameError::NotPlayerTurn)?;
+        require!(current_player.pubkey == player_pubkey, GameError::NotPlayerTurn);
+
+        // Advance turn
+        game.advance_turn();
+
+        Ok(())
+    }
 }

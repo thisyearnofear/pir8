@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { GameState, Player } from '@/types/game';
 import { validateShipMove } from '@/utils/validation';
-import { PirateGameEngine } from '@/lib/gameLogic';
+import { PirateGameManager } from '@/lib/pirateGameEngine';
 
 // In-memory game storage (will be replaced with Anchor program)
 const games = new Map<string, GameState>();
@@ -47,12 +47,12 @@ export async function GET(request: NextRequest) {
 
 function handleCreateGame(gameId: string, data: { player?: Player; entryFee?: number }) {
   if (games.has(gameId)) return NextResponse.json({ error: 'Game already exists' }, { status: 409 });
-  const gameMap = PirateGameEngine.createGameMap(10);
+  const gameMap = PirateGameManager.createGameMap(10);
   const players: Player[] = [];
   if (data?.player) {
     players.push({
       ...data.player,
-      resources: PirateGameEngine.generateStartingResources(),
+      resources: PirateGameManager.generateStartingResources(),
       ships: [],
       controlledTerritories: [],
       totalScore: 0,
@@ -87,7 +87,7 @@ function handleJoinGame(gameId: string, data: { player: Player }) {
   if (game.players.length >= 4) return NextResponse.json({ error: 'Game is full' }, { status: 400 });
   game.players.push({
     ...data.player,
-    resources: PirateGameEngine.generateStartingResources(),
+    resources: PirateGameManager.generateStartingResources(),
     ships: [],
     controlledTerritories: [],
     totalScore: 0,
@@ -106,18 +106,18 @@ function handleJoinGame(gameId: string, data: { player: Player }) {
 function handleMove(gameId: string, playerId: string, data: { shipId: string; coordinate: string }) {
   const game = games.get(gameId);
   if (!game) return NextResponse.json({ error: 'Game not found' }, { status: 404 });
-  
+
   if (!data.shipId) {
     return NextResponse.json({ error: 'Ship ID required' }, { status: 400 });
   }
-  
+
   const validation = validateShipMove(game, playerId, data.shipId, data.coordinate);
   if (!validation.isValid) return NextResponse.json({ error: validation.error }, { status: 400 });
-  
+
   // Update game state with the move
   game.turnNumber++;
   game.currentPlayerIndex = (game.currentPlayerIndex + 1) % game.players.length;
-  
+
   games.set(gameId, game);
   return NextResponse.json({ game });
 }

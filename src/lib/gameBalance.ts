@@ -1,4 +1,4 @@
-import { ShipType, TerritoryCellType, Resources } from '../types/game';
+import { ShipType, Resources } from '../types/game';
 
 /**
  * Game balance configurations and calculations
@@ -71,17 +71,19 @@ export class GameBalance {
    * Combat damage calculations
    */
   static calculateCombatDamage(
-    attackerType: ShipType, 
+    attackerType: ShipType,
     defenderType: ShipType,
     attackerHealth: number,
     defenderDefense: number
   ): number {
     const attackerStrength = this.SHIP_BALANCE[attackerType].strength;
+    const defenderStrength = this.SHIP_BALANCE[defenderType].strength;
     const healthMultiplier = attackerHealth / 100; // Full health = 100% damage
-    
+
     const baseDamage = attackerStrength * 20 * healthMultiplier;
-    const effectiveDamage = Math.max(1, baseDamage - defenderDefense);
-    
+    const defenseReduction = defenderDefense * (defenderStrength / 10); // Defense effectiveness based on ship type
+    const effectiveDamage = Math.max(1, baseDamage - defenseReduction);
+
     // Add some randomness (±15%)
     const variance = 0.85 + (Math.random() * 0.3);
     return Math.floor(effectiveDamage * variance);
@@ -95,9 +97,8 @@ export class GameBalance {
     
     for (const coordStr of controlledTerritories) {
       const [x, y] = coordStr.split(',').map(Number);
-      const territory = gameMap.cells[x]?.[y];
-      
-      if (territory) {
+      if (x !== undefined && y !== undefined && gameMap.cells[x] && gameMap.cells[x][y]) {
+        const territory = gameMap.cells[x][y];
         const generation = this.TERRITORY_GENERATION[territory.type as keyof typeof this.TERRITORY_GENERATION];
         score += generation?.baseGeneration || 0;
       }

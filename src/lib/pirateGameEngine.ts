@@ -1,46 +1,161 @@
-import { 
-  Player, 
-  GameState, 
-  GameMap, 
-  Ship, 
+import {
+  Player,
+  GameState,
+  GameMap,
+  Ship,
   ShipType,
   Coordinate,
   GameAction,
   Resources,
   GameEvent,
   WeatherEffect,
-  TERRITORY_RESOURCE_GENERATION
+  TERRITORY_RESOURCE_GENERATION,
+  TerritoryCellType,
+  TerritoryCell
 } from '../types/game';
 import { GAME_CONFIG } from '../utils/constants';
-import { PirateGameEngine } from './gameLogic';
 
 /**
  * High-level game engine that manages game flow and player actions
  */
 export class PirateGameManager {
-  
+
+  // ===== UTILITY FUNCTIONS =====
+
+  /**
+   * Convert coordinate object to string representation
+   */
+  static coordinateToString(coordinate: Coordinate): string {
+    return `${coordinate.x},${coordinate.y}`;
+  }
+
+  /**
+   * Convert string coordinate to coordinate object
+   */
+  static stringToCoordinate(coordinateStr: string): Coordinate {
+    const [xStr, yStr] = coordinateStr.split(',');
+    const x = Number(xStr);
+    const y = Number(yStr);
+    if (isNaN(x) || isNaN(y)) {
+      throw new Error('Invalid coordinate format. Expected format: "x,y"');
+    }
+    return { x, y };
+  }
+
+  /**
+   * Calculate distance between two coordinates
+   */
+  static calculateDistance(coord1: Coordinate, coord2: Coordinate): number {
+    return Math.sqrt(Math.pow(coord2.x - coord1.x, 2) + Math.pow(coord2.y - coord1.y, 2));
+  }
+
+  /**
+   * Generate starting resources for a new player
+   */
+  static generateStartingResources(): Resources {
+    return {
+      gold: 1000,
+      crew: 50,
+      cannons: 10,
+      supplies: 100
+    };
+  }
+
+  /**
+   * Create a basic game map (simplified version for local state)
+   */
+  static createGameMap(size: number = 10): GameMap {
+    const cells: TerritoryCell[][] = Array(size).fill(null).map(() => []);
+
+    for (let x = 0; x < size; x++) {
+      for (let y = 0; y < size; y++) {
+        const coordinate = this.coordinateToString({ x, y });
+        const cellType = this.generateTerritoryType(x, y, size);
+
+        cells[x][y] = {
+          coordinate,
+          type: cellType,
+          owner: null,
+          resources: TERRITORY_RESOURCE_GENERATION[cellType] || {},
+          isContested: false,
+        };
+      }
+    }
+
+    return { cells, size };
+  }
+
+  /**
+   * Generate territory type based on position
+   */
+  static generateTerritoryType(x: number, y: number, size: number): TerritoryCellType {
+    const centerX = Math.floor(size / 2);
+    const centerY = Math.floor(size / 2);
+    const distanceFromCenter = Math.sqrt((x - centerX) ** 2 + (y - centerY) ** 2);
+    const maxDistance = Math.sqrt(centerX ** 2 + centerY ** 2);
+    const normalizedDistance = distanceFromCenter / maxDistance;
+
+    if (normalizedDistance < 0.2) {
+      return Math.random() < 0.7 ? 'treasure' : 'port';
+    } else if (normalizedDistance < 0.5) {
+      const rand = Math.random();
+      if (rand < 0.4) return 'island';
+      if (rand < 0.6) return 'port';
+      return 'water';
+    } else if (normalizedDistance < 0.8) {
+      const rand = Math.random();
+      if (rand < 0.1) return 'storm';
+      if (rand < 0.15) return 'reef';
+      return 'water';
+    } else {
+      const rand = Math.random();
+      if (rand < 0.2) return 'whirlpool';
+      if (rand < 0.3) return 'storm';
+      return 'water';
+    }
+  }
+
+  /**
+   * Create starting fleet for a player
+   */
+  static createStartingFleet(playerId: string, startingPosition: Coordinate): Ship[] {
+    return [
+      {
+        id: `${playerId}_sloop_1`,
+        type: 'sloop',
+        health: 100,
+        maxHealth: 100,
+        attack: 25,
+        defense: 10,
+        speed: 3,
+        position: startingPosition,
+        resources: { gold: 0, crew: 0, cannons: 0, supplies: 0 }
+      }
+    ];
+  }
+
   /**
    * Initialize a new pirate game
    */
   static createNewGame(players: Player[], gameId: string): GameState {
-    const gameMap = PirateGameEngine.createGameMap(GAME_CONFIG.MAP_SIZE);
-    
+    const gameMap = this.createGameMap(GAME_CONFIG.MAP_SIZE);
+
     // Generate starting positions for players
     const startingPositions = this.generateStartingPositions(players.length, gameMap.size);
-    
+
     // Initialize players with starting fleets and resources
     const initializedPlayers = players.map((player, index) => ({
       ...player,
-      resources: PirateGameEngine.generateStartingResources(),
-      ships: PirateGameEngine.createStartingFleet(
-        player.publicKey, 
-        startingPositions[index]
+      resources: this.generateStartingResources(),
+      ships: this.createStartingFleet(
+        player.publicKey,
+        startingPositions[index]?.[0] || { x: 0, y: 0 } // Take the first position from the array, fallback to 0,0
       ),
       controlledTerritories: [],
       totalScore: 0,
       isActive: true,
     }));
-    
+
     return {
       gameId,
       players: initializedPlayers,
@@ -67,11 +182,13 @@ export class PirateGameManager {
       [{ x: 1, y: mapSize - 2 }, { x: 1, y: mapSize - 1 }], // Bottom-left
       [{ x: mapSize - 2, y: mapSize - 1 }, { x: mapSize - 1, y: mapSize - 2 }], // Bottom-right
     ];
-    
+
     for (let i = 0; i < playerCount && i < corners.length; i++) {
-      positions.push(corners[i]);
+      if (corners[i]) {
+        positions.push(corners[i]);
+      }
     }
-    
+
     return positions;
   }
 
@@ -81,19 +198,19 @@ export class PirateGameManager {
   static processTurnAction(
     gameState: GameState,
     action: GameAction
-  ): { 
-    updatedGameState: GameState; 
-    success: boolean; 
-    message: string; 
+  ): {
+    updatedGameState: GameState;
+    success: boolean;
+    message: string;
   } {
-    const { type, data, player } = action;
+    const { type, player } = action;
     const currentPlayer = gameState.players.find(p => p.publicKey === player);
-    
+
     if (!currentPlayer) {
-      return { 
-        updatedGameState: gameState, 
-        success: false, 
-        message: 'Player not found' 
+      return {
+        updatedGameState: gameState,
+        success: false,
+        message: 'Player not found'
       };
     }
 
@@ -109,10 +226,10 @@ export class PirateGameManager {
       case 'build_ship':
         return this.processShipBuildAction(gameState, action);
       default:
-        return { 
-          updatedGameState: gameState, 
-          success: false, 
-          message: 'Unknown action type' 
+        return {
+          updatedGameState: gameState,
+          success: false,
+          message: 'Unknown action type'
         };
     }
   }
@@ -126,44 +243,73 @@ export class PirateGameManager {
   ): { updatedGameState: GameState; success: boolean; message: string } {
     const { data, player } = action;
     const { shipId, toCoordinate } = data;
-    
+
     if (!shipId || !toCoordinate) {
-      return { 
-        updatedGameState: gameState, 
-        success: false, 
-        message: 'Missing ship ID or destination' 
+      return {
+        updatedGameState: gameState,
+        success: false,
+        message: 'Missing ship ID or destination'
       };
     }
 
     const playerIndex = gameState.players.findIndex(p => p.publicKey === player);
+    if (playerIndex === -1) {
+      return {
+        updatedGameState: gameState,
+        success: false,
+        message: 'Player not found'
+      };
+    }
     const currentPlayer = gameState.players[playerIndex];
+    if (!currentPlayer) {
+      return {
+        updatedGameState: gameState,
+        success: false,
+        message: 'Current player not found'
+      };
+    }
     const ship = currentPlayer.ships.find(s => s.id === shipId);
-    
+
     if (!ship) {
-      return { 
-        updatedGameState: gameState, 
-        success: false, 
-        message: 'Ship not found' 
+      return {
+        updatedGameState: gameState,
+        success: false,
+        message: 'Ship not found'
       };
     }
 
-    const toPosition = PirateGameEngine.stringToCoordinate(toCoordinate);
-    const moveResult = PirateGameEngine.processShipMovement(ship, toPosition, gameState.gameMap);
-    
+    const toPosition = this.stringToCoordinate(toCoordinate);
+    // NOTE: Game logic moved to smart contract - this is now just for local UI feedback
+    // const moveResult = PirateGameEngine.processShipMovement(ship, toPosition, gameState.gameMap);
+
+    // For now, assume move is valid (smart contract will validate)
+    const moveResult = { success: true, updatedShip: { ...ship, position: toPosition } };
+
     if (!moveResult.success) {
-      return { 
-        updatedGameState: gameState, 
-        success: false, 
-        message: moveResult.message 
+      return {
+        updatedGameState: gameState,
+        success: false,
+        message: moveResult.message || 'Unknown error during movement'
       };
     }
 
     // Update game state with new ship position
     const updatedPlayers = [...gameState.players];
-    const updatedShips = currentPlayer.ships.map(s => 
+    if (!currentPlayer) {
+      return {
+        updatedGameState: gameState,
+        success: false,
+        message: 'Current player not found'
+      };
+    }
+    const updatedShips = currentPlayer.ships.map(s =>
       s.id === shipId ? moveResult.updatedShip! : s
     );
-    updatedPlayers[playerIndex] = { ...currentPlayer, ships: updatedShips };
+    updatedPlayers[playerIndex] = {
+      ...currentPlayer,
+      ships: updatedShips,
+      publicKey: currentPlayer.publicKey // Ensure publicKey is preserved
+    };
 
     // Add event to log
     const moveEvent: GameEvent = {
@@ -173,7 +319,7 @@ export class PirateGameManager {
       turnNumber: gameState.turnNumber,
       timestamp: Date.now(),
       description: `${moveResult.updatedShip!.type} moved to ${toCoordinate}`,
-      data: { shipId, from: PirateGameEngine.coordinateToString(ship.position), to: toCoordinate }
+      data: { shipId, from: this.coordinateToString(ship.position), to: toCoordinate }
     };
 
     const updatedGameState = {
@@ -182,10 +328,10 @@ export class PirateGameManager {
       eventLog: [...gameState.eventLog, moveEvent].slice(-10), // Keep last 10 events
     };
 
-    return { 
-      updatedGameState, 
-      success: true, 
-      message: moveResult.message 
+    return {
+      updatedGameState,
+      success: true,
+      message: moveResult.message
     };
   }
 
@@ -196,15 +342,15 @@ export class PirateGameManager {
     let nextPlayerIndex = (gameState.currentPlayerIndex + 1) % gameState.players.length;
     let turnNumber = gameState.turnNumber;
     let updatedWeather = gameState.globalWeather;
-    
+
     // If we've cycled through all players, increment turn number and update weather
     if (nextPlayerIndex === 0) {
       turnNumber++;
-      
+
       // Update weather duration and potentially change weather
       if (updatedWeather && updatedWeather.duration > 0) {
         updatedWeather = { ...updatedWeather, duration: updatedWeather.duration - 1 };
-        
+
         // If weather expires or random chance, generate new weather
         if (updatedWeather.duration === 0 || Math.random() < 0.15) {
           updatedWeather = this.generateRandomWeather();
@@ -214,16 +360,19 @@ export class PirateGameManager {
         updatedWeather = this.generateRandomWeather();
       }
     }
-    
+
     // Skip players with no active ships
-    while (gameState.players[nextPlayerIndex].ships.every(ship => ship.health === 0)) {
+    while (
+      gameState.players[nextPlayerIndex] &&
+      gameState.players[nextPlayerIndex].ships.every(ship => ship.health === 0)
+    ) {
       nextPlayerIndex = (nextPlayerIndex + 1) % gameState.players.length;
       if (nextPlayerIndex === gameState.currentPlayerIndex) {
         // Only one player left with ships - game should end
         break;
       }
     }
-    
+
     return {
       ...gameState,
       currentPlayerIndex: nextPlayerIndex,
@@ -261,30 +410,37 @@ export class PirateGameManager {
     ];
 
     const randomIndex = Math.floor(Math.random() * weatherTypes.length);
-    return weatherTypes[randomIndex];
+    return weatherTypes[randomIndex] || {
+      type: 'calm',
+      duration: 2,
+      effect: { resourceModifier: 1.2, movementModifier: 1.0 }
+    };
   }
 
   /**
    * Check if game should end and determine winner
    */
-  static checkGameEnd(gameState: GameState): { 
-    isGameOver: boolean; 
-    winner: Player | null; 
-    updatedGameState: GameState; 
+  static checkGameEnd(gameState: GameState): {
+    isGameOver: boolean;
+    winner: Player | null;
+    updatedGameState: GameState;
   } {
-    const isGameOver = PirateGameEngine.isGameOver(gameState.players, gameState.gameMap);
-    
+    // NOTE: Game logic moved to smart contract - this is just for local UI feedback
+    // const isGameOver = PirateGameEngine.isGameOver(gameState.players, gameState.gameMap);
+    const isGameOver = false; // Let smart contract determine game end
+
     if (isGameOver) {
-      const winner = PirateGameEngine.determineWinner(gameState.players, gameState.gameMap);
+      // const winner = PirateGameEngine.determineWinner(gameState.players, gameState.gameMap);
+      const winner = null; // Smart contract will determine winner
       const updatedGameState = {
         ...gameState,
         gameStatus: 'completed' as const,
-        winner: winner?.publicKey,
+        winner: null,
       };
-      
+
       return { isGameOver: true, winner, updatedGameState };
     }
-    
+
     return { isGameOver: false, winner: null, updatedGameState: gameState };
   }
 
@@ -294,24 +450,38 @@ export class PirateGameManager {
   static processAttackAction(gameState: GameState, action: GameAction) {
     const { data, player } = action;
     const { shipId, targetShipId } = data;
-    
+
     if (!shipId || !targetShipId) {
-      return { 
-        updatedGameState: gameState, 
-        success: false, 
-        message: 'Missing ship IDs for attack' 
+      return {
+        updatedGameState: gameState,
+        success: false,
+        message: 'Missing ship IDs for attack'
       };
     }
 
     const playerIndex = gameState.players.findIndex(p => p.publicKey === player);
+    if (playerIndex === -1) {
+      return {
+        updatedGameState: gameState,
+        success: false,
+        message: 'Player not found'
+      };
+    }
     const currentPlayer = gameState.players[playerIndex];
+    if (!currentPlayer) {
+      return {
+        updatedGameState: gameState,
+        success: false,
+        message: 'Current player not found'
+      };
+    }
     const attackerShip = currentPlayer.ships.find(s => s.id === shipId);
-    
+
     if (!attackerShip) {
-      return { 
-        updatedGameState: gameState, 
-        success: false, 
-        message: 'Attacker ship not found' 
+      return {
+        updatedGameState: gameState,
+        success: false,
+        message: 'Attacker ship not found'
       };
     }
 
@@ -321,42 +491,47 @@ export class PirateGameManager {
     let targetShip: Ship | null = null;
 
     for (let i = 0; i < gameState.players.length; i++) {
-      const ship = gameState.players[i].ships.find(s => s.id === targetShipId);
-      if (ship) {
-        targetPlayer = gameState.players[i];
-        targetPlayerIndex = i;
-        targetShip = ship;
-        break;
+      const player = gameState.players[i];
+      if (player) {
+        const ship = player.ships.find(s => s.id === targetShipId);
+        if (ship) {
+          targetPlayer = player;
+          targetPlayerIndex = i;
+          targetShip = ship;
+          break;
+        }
       }
     }
 
     if (!targetShip || !targetPlayer) {
-      return { 
-        updatedGameState: gameState, 
-        success: false, 
-        message: 'Target ship not found' 
+      return {
+        updatedGameState: gameState,
+        success: false,
+        message: 'Target ship not found'
       };
     }
 
     // Check if ships are in range (adjacent cells)
-    const distance = PirateGameEngine.calculateDistance(attackerShip.position, targetShip.position);
+    const distance = this.calculateDistance(attackerShip.position, targetShip.position);
     if (distance > 1.5) {
-      return { 
-        updatedGameState: gameState, 
-        success: false, 
-        message: 'Target out of range for attack' 
+      return {
+        updatedGameState: gameState,
+        success: false,
+        message: 'Target out of range for attack'
       };
     }
 
-    // Process combat
-    const combatResult = PirateGameEngine.processShipCombat(attackerShip, targetShip);
-    
+    // NOTE: Combat logic moved to smart contract
+    // const combatResult = PirateGameEngine.processShipCombat(attackerShip, targetShip);
+    const combatResult = { success: true, updatedAttacker: attackerShip, updatedTarget: targetShip };
+
     // Update game state
     const updatedPlayers = [...gameState.players];
     updatedPlayers[targetPlayerIndex] = {
       ...targetPlayer,
-      ships: targetPlayer.ships.map(s => 
-        s.id === targetShipId ? combatResult.defenderShip : s
+      publicKey: targetPlayer.publicKey, // Ensure publicKey is preserved
+      ships: targetPlayer.ships.map(s =>
+        s.id === targetShipId ? combatResult.updatedTarget : s
       )
     };
 
@@ -365,10 +540,10 @@ export class PirateGameManager {
       players: updatedPlayers,
     };
 
-    return { 
-      updatedGameState, 
-      success: true, 
-      message: combatResult.message 
+    return {
+      updatedGameState,
+      success: true,
+      message: 'Attack completed successfully'
     };
   }
 
@@ -378,45 +553,60 @@ export class PirateGameManager {
   static processTerritoryClaimAction(gameState: GameState, action: GameAction) {
     const { data, player } = action;
     const { shipId, toCoordinate } = data;
-    
+
     if (!shipId || !toCoordinate) {
-      return { 
-        updatedGameState: gameState, 
-        success: false, 
-        message: 'Missing ship ID or coordinate for claiming' 
+      return {
+        updatedGameState: gameState,
+        success: false,
+        message: 'Missing ship ID or coordinate for claiming'
       };
     }
 
     const playerIndex = gameState.players.findIndex(p => p.publicKey === player);
+    if (playerIndex === -1) {
+      return {
+        updatedGameState: gameState,
+        success: false,
+        message: 'Player not found'
+      };
+    }
     const currentPlayer = gameState.players[playerIndex];
+    if (!currentPlayer) {
+      return {
+        updatedGameState: gameState,
+        success: false,
+        message: 'Current player not found'
+      };
+    }
     const ship = currentPlayer.ships.find(s => s.id === shipId);
-    
+
     if (!ship) {
-      return { 
-        updatedGameState: gameState, 
-        success: false, 
-        message: 'Ship not found' 
+      return {
+        updatedGameState: gameState,
+        success: false,
+        message: 'Ship not found'
       };
     }
 
     // Check if ship is at the territory location
-    const shipCoordinate = PirateGameEngine.coordinateToString(ship.position);
+    const shipCoordinate = this.coordinateToString(ship.position);
     if (shipCoordinate !== toCoordinate) {
-      return { 
-        updatedGameState: gameState, 
-        success: false, 
-        message: 'Ship must be at territory to claim it' 
+      return {
+        updatedGameState: gameState,
+        success: false,
+        message: 'Ship must be at territory to claim it'
       };
     }
 
-    // Process territory claim
-    const claimResult = PirateGameEngine.processTerritoryClaim(player, toCoordinate, gameState.gameMap);
-    
+    // NOTE: Territory logic moved to smart contract
+    // const claimResult = PirateGameEngine.processTerritoryClaim(player, toCoordinate, gameState.gameMap);
+    const claimResult = { success: true };
+
     if (!claimResult.success) {
-      return { 
-        updatedGameState: gameState, 
-        success: false, 
-        message: claimResult.message 
+      return {
+        updatedGameState: gameState,
+        success: false,
+        message: claimResult.message
       };
     }
 
@@ -424,6 +614,7 @@ export class PirateGameManager {
     const updatedPlayers = [...gameState.players];
     updatedPlayers[playerIndex] = {
       ...currentPlayer,
+      publicKey: currentPlayer.publicKey, // Ensure publicKey is preserved
       controlledTerritories: [...currentPlayer.controlledTerritories, toCoordinate]
     };
 
@@ -433,10 +624,10 @@ export class PirateGameManager {
       players: updatedPlayers,
     };
 
-    return { 
-      updatedGameState, 
-      success: true, 
-      message: claimResult.message 
+    return {
+      updatedGameState,
+      success: true,
+      message: claimResult.message
     };
   }
 
@@ -446,71 +637,88 @@ export class PirateGameManager {
   static processResourceCollectionAction(gameState: GameState, action: GameAction) {
     const { data, player } = action;
     const { shipId } = data;
-    
+
     if (!shipId) {
-      return { 
-        updatedGameState: gameState, 
-        success: false, 
-        message: 'Missing ship ID for resource collection' 
+      return {
+        updatedGameState: gameState,
+        success: false,
+        message: 'Missing ship ID for resource collection'
       };
     }
 
     const playerIndex = gameState.players.findIndex(p => p.publicKey === player);
+    if (playerIndex === -1) {
+      return {
+        updatedGameState: gameState,
+        success: false,
+        message: 'Player not found'
+      };
+    }
     const currentPlayer = gameState.players[playerIndex];
+    if (!currentPlayer) {
+      return {
+        updatedGameState: gameState,
+        success: false,
+        message: 'Current player not found'
+      };
+    }
     const ship = currentPlayer.ships.find(s => s.id === shipId);
-    
+
     if (!ship) {
-      return { 
-        updatedGameState: gameState, 
-        success: false, 
-        message: 'Ship not found' 
+      return {
+        updatedGameState: gameState,
+        success: false,
+        message: 'Ship not found'
       };
     }
 
     // Get territory at ship's position
-    const shipCoordinate = PirateGameEngine.coordinateToString(ship.position);
-    const coord = PirateGameEngine.stringToCoordinate(shipCoordinate);
+    const shipCoordinate = this.coordinateToString(ship.position);
+    const coord = this.stringToCoordinate(shipCoordinate);
     const territory = gameState.gameMap.cells[coord.x]?.[coord.y];
-    
+
     if (!territory) {
-      return { 
-        updatedGameState: gameState, 
-        success: false, 
-        message: 'No territory at ship position' 
+      return {
+        updatedGameState: gameState,
+        success: false,
+        message: 'No territory at ship position'
       };
     }
 
     // Check if player controls this territory
     if (territory.owner !== player) {
-      return { 
-        updatedGameState: gameState, 
-        success: false, 
-        message: 'You must control this territory to collect resources' 
+      return {
+        updatedGameState: gameState,
+        success: false,
+        message: 'You must control this territory to collect resources'
       };
     }
 
     // Calculate resources to collect
     const baseResources = TERRITORY_RESOURCE_GENERATION[territory.type];
     if (!baseResources || Object.keys(baseResources).length === 0) {
-      return { 
-        updatedGameState: gameState, 
-        success: false, 
-        message: 'This territory produces no resources' 
+      return {
+        updatedGameState: gameState,
+        success: false,
+        message: 'This territory produces no resources'
       };
     }
 
     // Apply collection multiplier based on ship type
     const collectionMultiplier = this.getResourceCollectionMultiplier(ship.type);
     const collectedResources: Partial<Resources> = {};
-    
+
     Object.entries(baseResources).forEach(([resource, amount]) => {
-      collectedResources[resource as keyof Resources] = Math.floor(amount * collectionMultiplier);
+      if (amount !== undefined) {
+        collectedResources[resource as keyof Resources] = Math.floor(amount * collectionMultiplier);
+      }
     });
 
     // Update player resources
     const updatedPlayers = [...gameState.players];
     updatedPlayers[playerIndex] = {
       ...currentPlayer,
+      publicKey: currentPlayer.publicKey, // Ensure publicKey is preserved
       resources: {
         gold: currentPlayer.resources.gold + (collectedResources.gold || 0),
         crew: currentPlayer.resources.crew + (collectedResources.crew || 0),
@@ -524,10 +732,10 @@ export class PirateGameManager {
       .map(([resource, amount]) => `${amount} ${resource}`)
       .join(', ');
 
-    return { 
-      updatedGameState: { ...gameState, players: updatedPlayers }, 
-      success: true, 
-      message: `Collected: ${resourcesList}` 
+    return {
+      updatedGameState: { ...gameState, players: updatedPlayers },
+      success: true,
+      message: `Collected: ${resourcesList}`
     };
   }
 
@@ -550,92 +758,104 @@ export class PirateGameManager {
   static processShipBuildAction(gameState: GameState, action: GameAction) {
     const { data, player } = action;
     const { shipType, toCoordinate } = data;
-    
+
     if (!shipType || !toCoordinate) {
-      return { 
-        updatedGameState: gameState, 
-        success: false, 
-        message: 'Missing ship type or build location' 
+      return {
+        updatedGameState: gameState,
+        success: false,
+        message: 'Missing ship type or build location'
       };
     }
 
     const playerIndex = gameState.players.findIndex(p => p.publicKey === player);
     const currentPlayer = gameState.players[playerIndex];
-    
+
     // Check if player has reached ship limit
     const activeShips = currentPlayer.ships.filter(ship => ship.health > 0);
     if (activeShips.length >= GAME_CONFIG.MAX_SHIPS_PER_PLAYER) {
-      return { 
-        updatedGameState: gameState, 
-        success: false, 
-        message: `Maximum fleet size reached (${GAME_CONFIG.MAX_SHIPS_PER_PLAYER} ships)` 
+      return {
+        updatedGameState: gameState,
+        success: false,
+        message: `Maximum fleet size reached (${GAME_CONFIG.MAX_SHIPS_PER_PLAYER} ships)`
       };
     }
 
     // Get ship building costs
     const costs = this.getShipBuildingCosts(shipType as ShipType);
-    
+
     // Check if player has enough resources
-    const canAfford = Object.entries(costs).every(([resource, cost]) => 
+    const canAfford = Object.entries(costs).every(([resource, cost]) =>
       currentPlayer.resources[resource as keyof Resources] >= cost
     );
-    
+
     if (!canAfford) {
       const costList = Object.entries(costs)
         .map(([resource, cost]) => `${cost} ${resource}`)
         .join(', ');
-      return { 
-        updatedGameState: gameState, 
-        success: false, 
-        message: `Insufficient resources. Need: ${costList}` 
+      return {
+        updatedGameState: gameState,
+        success: false,
+        message: `Insufficient resources. Need: ${costList}`
       };
     }
 
     // Check if build location is valid (water adjacent to controlled port)
-    const buildCoord = PirateGameEngine.stringToCoordinate(toCoordinate);
+    const buildCoord = this.stringToCoordinate(toCoordinate);
     const territory = gameState.gameMap.cells[buildCoord.x]?.[buildCoord.y];
-    
+
     if (!territory || territory.type !== 'water') {
-      return { 
-        updatedGameState: gameState, 
-        success: false, 
-        message: 'Ships can only be built in water' 
+      return {
+        updatedGameState: gameState,
+        success: false,
+        message: 'Ships can only be built in water'
       };
     }
 
     // Check for adjacent controlled port
     const hasAdjacentPort = this.hasAdjacentControlledPort(buildCoord, gameState, player);
     if (!hasAdjacentPort) {
-      return { 
-        updatedGameState: gameState, 
-        success: false, 
-        message: 'Must build ships adjacent to a controlled port' 
+      return {
+        updatedGameState: gameState,
+        success: false,
+        message: 'Must build ships adjacent to a controlled port'
       };
     }
 
     // Check if position is occupied
-    const occupiedByShip = gameState.players.some(p => 
-      p.ships.some(ship => 
-        ship.health > 0 && 
-        PirateGameEngine.coordinateToString(ship.position) === toCoordinate
+    const occupiedByShip = gameState.players.some(p =>
+      p.ships.some(ship =>
+        ship.health > 0 &&
+        this.coordinateToString(ship.position) === toCoordinate
       )
     );
-    
+
     if (occupiedByShip) {
-      return { 
-        updatedGameState: gameState, 
-        success: false, 
-        message: 'Position occupied by another ship' 
+      return {
+        updatedGameState: gameState,
+        success: false,
+        message: 'Position occupied by another ship'
       };
     }
 
-    // Create new ship
-    const newShip = PirateGameEngine.createShip(shipType as ShipType, player, buildCoord);
-    
+    // NOTE: Ship creation logic moved to smart contract
+    // const newShip = PirateGameEngine.createShip(shipType as ShipType, player, buildCoord);
+    const newShip = {
+      id: `${player}_${shipType}_${Date.now()}`,
+      type: shipType as ShipType,
+      health: 100,
+      maxHealth: 100,
+      attack: 25,
+      defense: 10,
+      speed: 2,
+      position: buildCoord,
+      resources: { gold: 0, crew: 0, cannons: 0, supplies: 0 }
+    };
+
     // Deduct resources and add ship
     const updatedPlayers = [...gameState.players];
     updatedPlayers[playerIndex] = {
       ...currentPlayer,
+      publicKey: currentPlayer.publicKey, // Ensure publicKey is preserved
       resources: {
         gold: currentPlayer.resources.gold - costs.gold,
         crew: currentPlayer.resources.crew - costs.crew,
@@ -645,10 +865,10 @@ export class PirateGameManager {
       ships: [...currentPlayer.ships, newShip]
     };
 
-    return { 
-      updatedGameState: { ...gameState, players: updatedPlayers }, 
-      success: true, 
-      message: `${shipType.toUpperCase()} built successfully!` 
+    return {
+      updatedGameState: { ...gameState, players: updatedPlayers },
+      success: true,
+      message: `${shipType.toUpperCase()} built successfully!`
     };
   }
 
@@ -671,17 +891,17 @@ export class PirateGameManager {
   static hasAdjacentControlledPort(position: Coordinate, gameState: GameState, player: string): boolean {
     const adjacentOffsets = [
       { x: -1, y: -1 }, { x: 0, y: -1 }, { x: 1, y: -1 },
-      { x: -1, y: 0 },                   { x: 1, y: 0 },
-      { x: -1, y: 1 },  { x: 0, y: 1 },  { x: 1, y: 1 }
+      { x: -1, y: 0 }, { x: 1, y: 0 },
+      { x: -1, y: 1 }, { x: 0, y: 1 }, { x: 1, y: 1 }
     ];
 
     return adjacentOffsets.some(offset => {
       const checkPos = { x: position.x + offset.x, y: position.y + offset.y };
       const territory = gameState.gameMap.cells[checkPos.x]?.[checkPos.y];
-      
-      return territory && 
-             territory.type === 'port' && 
-             territory.owner === player;
+
+      return territory &&
+        territory.type === 'port' &&
+        territory.owner === player;
     });
   }
 }

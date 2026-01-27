@@ -3,7 +3,7 @@
 import { useState, useRef } from 'react';
 import { GameMap, TerritoryCell, Ship, TerritoryCellType } from '../types/game';
 import { TERRITORY_EMOJIS, SHIP_EMOJIS } from '../utils/constants';
-import { PirateGameEngine } from '../lib/gameLogic';
+import { PirateGameManager } from '../lib/pirateGameEngine';
 import TerritoryTooltip, { TERRITORY_INFO } from './TerritoryTooltip';
 
 interface PirateMapProps {
@@ -17,10 +17,10 @@ interface PirateMapProps {
   scannedCoordinates?: string[];
 }
 
-export default function PirateMap({ 
-  gameMap, 
-  ships, 
-  onCellSelect, 
+export default function PirateMap({
+  gameMap,
+  ships,
+  onCellSelect,
   onShipClick,
   isMyTurn,
   selectedShipId,
@@ -37,14 +37,14 @@ export default function PirateMap({
 
   const handleCellClick = (coordinate: string) => {
     if (!isMyTurn) return;
-    
+
     // Check if clicking on a ship
     const ship = getShipAtPosition(coordinate);
     if (ship && isMyShip(ship) && onShipClick) {
       onShipClick(ship);
       return;
     }
-    
+
     onCellSelect(coordinate);
   };
 
@@ -60,13 +60,13 @@ export default function PirateMap({
   };
 
   const getShipAtPosition = (coordinate: string): Ship | undefined => {
-    return ships.find(ship => 
-      PirateGameEngine.coordinateToString(ship.position) === coordinate && ship.health > 0
+    return ships.find(ship =>
+      PirateGameManager.coordinateToString(ship.position) === coordinate && ship.health > 0
     );
   };
 
   const getCellAtCoordinate = (coordinate: string): TerritoryCell | undefined => {
-    const coord = PirateGameEngine.stringToCoordinate(coordinate);
+    const coord = PirateGameManager.stringToCoordinate(coordinate);
     return gameMap.cells[coord.x]?.[coord.y];
   };
 
@@ -77,13 +77,13 @@ export default function PirateMap({
 
   const isValidMoveTarget = (coordinate: string): boolean => {
     if (!selectedShipId || !currentPlayerPK) return false;
-    
+
     const selectedShip = ships.find(s => s.id === selectedShipId);
     if (!selectedShip) return false;
-    
-    const targetCoord = PirateGameEngine.stringToCoordinate(coordinate);
-    const distance = PirateGameEngine.calculateDistance(selectedShip.position, targetCoord);
-    
+
+    const targetCoord = PirateGameManager.stringToCoordinate(coordinate);
+    const distance = PirateGameManager.calculateDistance(selectedShip.position, targetCoord);
+
     return distance <= selectedShip.speed;
   };
 
@@ -92,7 +92,7 @@ export default function PirateMap({
     const ship = getShipAtPosition(coordinate);
     const isScanned = isCoordinateScanned(coordinate);
     let className = 'territory-cell ';
-    
+
     // Unscanned tile - show as "?"
     if (!isScanned && cell) {
       className += 'bg-gray-700 bg-opacity-50 hover:bg-gray-600 border border-gray-600 ';
@@ -101,7 +101,7 @@ export default function PirateMap({
       if (isScanned) {
         className += 'ring-2 ring-neon-magenta ring-opacity-80 shadow-lg ';
       }
-      
+
       // Base cell styling based on territory type
       if (cell) {
         switch (cell.type) {
@@ -171,7 +171,7 @@ export default function PirateMap({
     const cell = getCellAtCoordinate(coordinate);
     const ship = getShipAtPosition(coordinate);
     const isScanned = isCoordinateScanned(coordinate);
-    
+
     return (
       <div className="cell-content h-full w-full flex flex-col items-center justify-center text-lg relative">
         {/* Unscanned territory - show question mark */}
@@ -180,25 +180,25 @@ export default function PirateMap({
             ?
           </div>
         )}
-        
+
         {/* Territory emoji - only for scanned tiles */}
         {isScanned && cell && (
           <div className="territory-icon">
             {TERRITORY_EMOJIS[cell.type]}
           </div>
         )}
-        
+
         {/* Ship overlay */}
         {ship && (
           <div className={`ship-icon absolute ${isMyShip(ship) ? 'text-neon-cyan' : 'text-red-400'}`}>
             {SHIP_EMOJIS[ship.type]}
           </div>
         )}
-        
+
         {/* Health indicator for damaged ships */}
         {ship && ship.health < ship.maxHealth && (
           <div className="health-bar absolute bottom-1 left-1 right-1 h-1 bg-gray-600 rounded">
-            <div 
+            <div
               className="h-full bg-gradient-to-r from-red-500 to-green-500 rounded"
               style={{ width: `${(ship.health / ship.maxHealth) * 100}%` }}
             ></div>
@@ -210,11 +210,11 @@ export default function PirateMap({
 
   const renderMapGrid = (): JSX.Element[] => {
     const cells: JSX.Element[] = [];
-    
+
     for (let x = 0; x < gameMap.size; x++) {
       for (let y = 0; y < gameMap.size; y++) {
         const coordinate = `${x},${y}`;
-        
+
         cells.push(
           <div
             key={coordinate}
@@ -228,7 +228,7 @@ export default function PirateMap({
         );
       }
     }
-    
+
     return cells;
   };
 
@@ -250,8 +250,8 @@ export default function PirateMap({
           <span>🌀 Whirlpool</span>
         </div>
       </div>
-      
-      <div 
+
+      <div
         className="game-map-grid relative"
         style={{
           display: 'grid',
@@ -264,7 +264,7 @@ export default function PirateMap({
         }}
       >
         {renderMapGrid()}
-        
+
         {/* Territory Tooltip */}
         {hoveredCell && isCoordinateScanned(hoveredCoordinate!) && (
           <TerritoryTooltip
@@ -274,7 +274,7 @@ export default function PirateMap({
           />
         )}
       </div>
-      
+
       {/* Selection info */}
       {selectedShipId && (
         <div className="mt-4 p-3 bg-neon-cyan bg-opacity-10 border border-neon-cyan rounded-lg text-center">
@@ -286,7 +286,7 @@ export default function PirateMap({
           </div>
         </div>
       )}
-      
+
       {/* Hover info */}
       {hoveredCoordinate && (
         <div className="mt-2 p-2 bg-black bg-opacity-50 border border-gray-500 rounded text-center">
@@ -303,7 +303,7 @@ export default function PirateMap({
           )}
           {getShipAtPosition(hoveredCoordinate) && (
             <div className="text-xs text-neon-magenta">
-              {getShipAtPosition(hoveredCoordinate)!.type} - 
+              {getShipAtPosition(hoveredCoordinate)!.type} -
               {getShipAtPosition(hoveredCoordinate)!.health}HP
             </div>
           )}

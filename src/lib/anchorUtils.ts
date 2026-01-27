@@ -9,7 +9,7 @@ export const getGlobalGamePDA = (programId: PublicKey): [PublicKey, number] => {
 
 export const getPlayerPDA = (programId: PublicKey, playerPubkey: PublicKey) => {
     return PublicKey.findProgramAddressSync(
-        [Buffer.from("player"), playerPubkey.toBuffer()],
+        [Buffer.from("player"), playerPubkey.toBytes()],
         programId
     );
 };

@@ -1,6 +1,6 @@
 import { GameState, Player, Ship, Coordinate } from '../types/game';
 import { ERROR_MESSAGES } from './constants';
-import { PirateGameEngine } from '../lib/gameLogic';
+import { PirateGameManager } from '../lib/pirateGameEngine';
 
 /**
  * Validation utilities for game logic
@@ -27,16 +27,16 @@ export function validateShipMove(
       error: ERROR_MESSAGES.GAME_NOT_ACTIVE
     };
   }
-  
+
   // Check if it's player's turn
   const currentPlayer = gameState.players[gameState.currentPlayerIndex];
-  if (currentPlayer.publicKey !== playerId) {
+  if (!currentPlayer || currentPlayer.publicKey !== playerId) {
     return {
       isValid: false,
       error: ERROR_MESSAGES.NOT_YOUR_TURN
     };
   }
-  
+
   // Find the ship
   const ship = currentPlayer.ships.find(s => s.id === shipId);
   if (!ship) {
@@ -45,7 +45,7 @@ export function validateShipMove(
       error: 'Ship not found'
     };
   }
-  
+
   // Check if ship is alive
   if (ship.health <= 0) {
     return {
@@ -53,12 +53,12 @@ export function validateShipMove(
       error: 'Ship has been destroyed'
     };
   }
-  
+
   // Check coordinate validity
   try {
-    const targetCoord = PirateGameEngine.stringToCoordinate(toCoordinate);
-    const distance = PirateGameEngine.calculateDistance(ship.position, targetCoord);
-    
+    const targetCoord = PirateGameManager.stringToCoordinate(toCoordinate);
+    const distance = PirateGameManager.calculateDistance(ship.position, targetCoord);
+
     if (distance > ship.speed) {
       return {
         isValid: false,
@@ -71,7 +71,7 @@ export function validateShipMove(
       error: ERROR_MESSAGES.INVALID_COORDINATE
     };
   }
-  
+
   return { isValid: true };
 }
 
@@ -105,7 +105,7 @@ export function validatePlayerAction(
         };
       }
       break;
-      
+
     case 'swap':
       if (!targetPlayer) {
         return {
@@ -114,7 +114,7 @@ export function validatePlayerAction(
         };
       }
       break;
-      
+
     case 'gift':
       if (!targetPlayer) {
         return {
@@ -129,14 +129,14 @@ export function validatePlayerAction(
         };
       }
       break;
-      
+
     default:
       return {
         isValid: false,
         error: 'Unknown action'
       };
   }
-  
+
   return { isValid: true };
 }
 
@@ -151,16 +151,16 @@ export function validateGameState(gameState: GameState): ValidationResult {
       error: 'Game must have at least one player'
     };
   }
-  
+
   // Check current player index
-  if (gameState.currentPlayerIndex < 0 || 
-      gameState.currentPlayerIndex >= gameState.players.length) {
+  if (gameState.currentPlayerIndex < 0 ||
+    gameState.currentPlayerIndex >= gameState.players.length) {
     return {
       isValid: false,
       error: 'Invalid current player index'
     };
   }
-  
+
   // Check game map
   if (!gameState.gameMap || !gameState.gameMap.cells) {
     return {
@@ -168,7 +168,7 @@ export function validateGameState(gameState: GameState): ValidationResult {
       error: 'Invalid game map'
     };
   }
-  
+
   return { isValid: true };
 }
 
@@ -182,7 +182,7 @@ export function validateWalletConnection(publicKey: string | null): ValidationRe
       error: ERROR_MESSAGES.WALLET_NOT_CONNECTED
     };
   }
-  
+
   return { isValid: true };
 }
 
@@ -196,7 +196,7 @@ export function validateBalance(balance: number, entryFee: number): ValidationRe
       error: ERROR_MESSAGES.INSUFFICIENT_FUNDS
     };
   }
-  
+
   return { isValid: true };
 }
 
@@ -216,16 +216,16 @@ export function validateAttack(
       error: ERROR_MESSAGES.GAME_NOT_ACTIVE
     };
   }
-  
+
   // Check if it's player's turn
   const currentPlayer = gameState.players[gameState.currentPlayerIndex];
-  if (currentPlayer.publicKey !== playerId) {
+  if (!currentPlayer || currentPlayer.publicKey !== playerId) {
     return {
       isValid: false,
       error: ERROR_MESSAGES.NOT_YOUR_TURN
     };
   }
-  
+
   // Find attacker ship
   const attackerShip = currentPlayer.ships.find(s => s.id === attackerShipId);
   if (!attackerShip || attackerShip.health <= 0) {
@@ -234,7 +234,7 @@ export function validateAttack(
       error: 'Attacker ship not found or destroyed'
     };
   }
-  
+
   // Find target ship
   let targetShip: Ship | undefined;
   for (const player of gameState.players) {
@@ -243,22 +243,22 @@ export function validateAttack(
       if (targetShip) break;
     }
   }
-  
+
   if (!targetShip || targetShip.health <= 0) {
     return {
       isValid: false,
       error: 'Target ship not found or already destroyed'
     };
   }
-  
+
   // Check range
-  const distance = PirateGameEngine.calculateDistance(attackerShip.position, targetShip.position);
+  const distance = PirateGameManager.calculateDistance(attackerShip.position, targetShip.position);
   if (distance > 1.5) {
     return {
       isValid: false,
       error: 'Target out of attack range'
     };
   }
-  
+
   return { isValid: true };
 }

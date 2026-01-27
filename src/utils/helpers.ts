@@ -41,7 +41,7 @@ export function generateRandomCoordinate(excludeList: string[] = []): string {
     throw new Error('No coordinates available');
   }
   
-  return allCoords[Math.floor(Math.random() * allCoords.length)];
+  return allCoords[Math.floor(Math.random() * allCoords.length)]!;
 }
 
 /**
@@ -74,16 +74,20 @@ export function validateCoordinate(
  * Convert coordinate string to grid indices
  */
 export function coordToIndices(coordinate: string): [number, number] {
+  if (coordinate.length < 2) {
+    throw new Error('Invalid coordinate format');
+  }
+
   const letter = coordinate[0].toUpperCase();
   const number = coordinate[1];
-  
+
   const col = LETTERS_TO_INDEX[letter];
   const row = parseInt(number) - 1;
-  
-  if (col === undefined || row < 0 || row > 6) {
+
+  if (col === undefined || isNaN(row) || row < 0 || row > 6) {
     throw new Error('Invalid coordinate');
   }
-  
+
   return [row, col];
 }
 

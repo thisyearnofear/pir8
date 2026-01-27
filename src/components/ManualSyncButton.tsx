@@ -1,7 +1,7 @@
 'use client';
 
 import { usePirateGameState } from '@/hooks/usePirateGameState';
-import { useOnChainSync } from '@/hooks/useOnChainSync';
+import { useGameSync } from '@/hooks/useGameSync';
 import { useState } from 'react';
 
 /**
@@ -10,7 +10,7 @@ import { useState } from 'react';
  */
 export function ManualSyncButton() {
   const { gameState } = usePirateGameState();
-  const { forceSync } = useOnChainSync(gameState?.gameId);
+  const { forceSync } = useGameSync(gameState?.gameId);
   const [isSyncing, setIsSyncing] = useState(false);
 
   const handleManualSync = async () => {
@@ -21,7 +21,7 @@ export function ManualSyncButton() {
 
     setIsSyncing(true);
     console.log(`🔄 Manual sync triggered for game: ${gameState.gameId}`);
-    
+
     try {
       await forceSync();
       console.log('✅ Manual sync completed');
@@ -44,11 +44,10 @@ export function ManualSyncButton() {
       <button
         onClick={handleManualSync}
         disabled={isSyncing}
-        className={`mt-2 px-3 py-1 rounded text-xs ${
-          isSyncing 
-            ? 'bg-gray-600 cursor-not-allowed' 
-            : 'bg-blue-600 hover:bg-blue-700'
-        }`}
+        className={`mt-2 px-3 py-1 rounded text-xs ${isSyncing
+          ? 'bg-gray-600 cursor-not-allowed'
+          : 'bg-blue-600 hover:bg-blue-700'
+          }`}
       >
         {isSyncing ? 'Syncing...' : 'Manual Sync'}
       </button>

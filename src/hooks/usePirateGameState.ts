@@ -1,7 +1,6 @@
 import { create } from 'zustand';
 import { useEffect } from 'react';
 import { GameState, Player, GameAction, Ship, Coordinate } from '../types/game';
-import { PirateGameEngine } from '../lib/gameLogic';
 import { PirateGameManager } from '../lib/pirateGameEngine';
 import { GameBalance } from '../lib/gameBalance';
 import { initializeGlobalGame, joinGlobalGame } from '../lib/server/anchorActions';
@@ -34,11 +33,11 @@ interface PirateGameStore {
   startGame: (wallet: any) => Promise<boolean>; // Added startGame
   processAction: (action: GameAction) => Promise<boolean>;
   selectShip: (shipId: string | null) => void;
-  moveShip: (shipId: string, toCoordinate: string, wallet: any) => Promise<boolean>;
+  moveShip: (shipId: string, toX: number, toY: number, wallet: any, decisionTimeMs?: number) => Promise<boolean>;
   attackWithShip: (shipId: string, targetShipId: string, wallet: any) => Promise<boolean>;
-  claimTerritory: (shipId: string, coordinate: string, wallet: any) => Promise<boolean>;
-  collectResources: (shipId: string, wallet: any) => Promise<boolean>;
-  buildShip: (shipType: string, coordinate: string, wallet: any) => Promise<boolean>;
+  claimTerritory: (shipId: string, wallet: any) => Promise<boolean>;
+  collectResources: (wallet: any) => Promise<boolean>;
+  buildShip: (shipType: string, portX: number, portY: number, wallet: any) => Promise<boolean>;
   endTurn: () => void;
   setMessage: (message: string | null) => void;
   setError: (error: string | null) => void;
@@ -49,7 +48,7 @@ interface PirateGameStore {
   startTurn: () => void;
   stopTurnTimer: () => void;
   scanCoordinate: (coordinateX: number, coordinateY: number) => Promise<boolean>;
-  moveShipTimed: (shipId: string, toCoordinate: string) => Promise<boolean>;
+  moveShipTimed: (shipId: string, toX: number, toY: number) => Promise<boolean>;
   getScannedCoordinates: () => string[];
   isCoordinateScanned: (coordinate: string) => boolean;
 
@@ -272,7 +271,7 @@ export const usePirateGameState = create<PirateGameStore>((set, get) => ({
         // Add player to existing game
         const enhancedPlayer: Player = {
           ...player,
-          resources: PirateGameEngine.generateStartingResources(),
+          resources: PirateGameManager.generateStartingResources(),
           ships: [],
           controlledTerritories: [],
           totalScore: 0,
@@ -288,9 +287,9 @@ export const usePirateGameState = create<PirateGameStore>((set, get) => ({
         );
 
         if (startingPositions[updatedPlayers.length - 1]) {
-          enhancedPlayer.ships = PirateGameEngine.createStartingFleet(
+          enhancedPlayer.ships = PirateGameManager.createStartingFleet(
             player.publicKey,
-            startingPositions[updatedPlayers.length - 1]
+            startingPositions[updatedPlayers.length - 1][0] // Take the first position
           );
         }
 
@@ -306,7 +305,7 @@ export const usePirateGameState = create<PirateGameStore>((set, get) => ({
         // Create new game if not found
         const enhancedPlayer: Player = {
           ...player,
-          resources: PirateGameEngine.generateStartingResources(),
+          resources: PirateGameManager.generateStartingResources(),
           ships: [],
           controlledTerritories: [],
           totalScore: 0,
@@ -371,21 +370,16 @@ export const usePirateGameState = create<PirateGameStore>((set, get) => ({
   },
 
   // Move a ship
-  moveShip: async (shipId: string, toCoordinate: string): Promise<boolean> => {
+  moveShip: async (shipId: string, toX: number, toY: number, wallet: any, decisionTimeMs?: number): Promise<boolean> => {
     const { gameState } = get();
     if (!gameState) return false;
 
     try {
       set({ isLoading: true, error: null });
 
-      // Parse coordinate "x,y"
-      const [xStr, yStr] = toCoordinate.split(',');
-      const toX = parseInt(xStr, 10);
-      const toY = parseInt(yStr, 10);
-
       // Call on-chain instruction
       const { moveShip: moveShipOnChain } = await import('../lib/server/anchorActions');
-      await moveShipOnChain(shipId, toX, toY);
+      await moveShipOnChain(shipId, toX, toY, decisionTimeMs);
 
       // Also update local state for immediate feedback
       const currentPlayer = gameState.players[gameState.currentPlayerIndex];
@@ -394,8 +388,9 @@ export const usePirateGameState = create<PirateGameStore>((set, get) => ({
         gameId: gameState.gameId,
         player: currentPlayer.publicKey,
         type: 'move_ship',
-        data: { shipId, toCoordinate },
-        timestamp: Date.now()
+        data: { shipId, toCoordinate: `${toX},${toY}` },
+        timestamp: Date.now(),
+        decisionTimeMs
       };
 
       const result = await get().processAction(action);
@@ -412,7 +407,7 @@ export const usePirateGameState = create<PirateGameStore>((set, get) => ({
   },
 
   // Attack with a ship
-  attackWithShip: async (shipId: string, targetShipId: string): Promise<boolean> => {
+  attackWithShip: async (shipId: string, targetShipId: string, wallet: any): Promise<boolean> => {
     const { gameState } = get();
     if (!gameState) return false;
 
@@ -448,7 +443,7 @@ export const usePirateGameState = create<PirateGameStore>((set, get) => ({
   },
 
   // Claim territory
-  claimTerritory: async (shipId: string, coordinate: string): Promise<boolean> => {
+  claimTerritory: async (shipId: string, wallet: any): Promise<boolean> => {
     const { gameState } = get();
     if (!gameState) return false;
 
@@ -466,7 +461,7 @@ export const usePirateGameState = create<PirateGameStore>((set, get) => ({
         gameId: gameState.gameId,
         player: currentPlayer.publicKey,
         type: 'claim_territory',
-        data: { shipId, toCoordinate: coordinate },
+        data: { shipId },
         timestamp: Date.now()
       };
 
@@ -484,7 +479,7 @@ export const usePirateGameState = create<PirateGameStore>((set, get) => ({
   },
 
   // Collect resources
-  collectResources: async (shipId: string): Promise<boolean> => {
+  collectResources: async (wallet: any): Promise<boolean> => {
     const { gameState } = get();
     if (!gameState) return false;
 
@@ -502,7 +497,7 @@ export const usePirateGameState = create<PirateGameStore>((set, get) => ({
         gameId: gameState.gameId,
         player: currentPlayer.publicKey,
         type: 'collect_resources',
-        data: { shipId },
+        data: {},
         timestamp: Date.now()
       };
 
@@ -520,17 +515,12 @@ export const usePirateGameState = create<PirateGameStore>((set, get) => ({
   },
 
   // Build ship
-  buildShip: async (shipType: string, coordinate: string): Promise<boolean> => {
+  buildShip: async (shipType: string, portX: number, portY: number, wallet: any): Promise<boolean> => {
     const { gameState } = get();
     if (!gameState) return false;
 
     try {
       set({ isLoading: true, error: null });
-
-      // Parse coordinate "x,y"
-      const [xStr, yStr] = coordinate.split(',');
-      const portX = parseInt(xStr, 10);
-      const portY = parseInt(yStr, 10);
 
       const validShipType = shipType as 'sloop' | 'frigate' | 'galleon' | 'flagship';
 
@@ -547,7 +537,7 @@ export const usePirateGameState = create<PirateGameStore>((set, get) => ({
         type: 'build_ship',
         data: {
           shipType: validShipType,
-          toCoordinate: coordinate
+          toCoordinate: `${portX},${portY}`
         },
         timestamp: Date.now()
       };

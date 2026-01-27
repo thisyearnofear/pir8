@@ -4,7 +4,7 @@ import { useWallet, useAnchorWallet } from "@solana/wallet-adapter-react";
 import { usePirateGameState } from "@/hooks/usePirateGameState";
 import { useErrorHandler } from "@/hooks/useErrorHandler";
 import { useShowOnboarding } from "@/hooks/useShowOnboarding";
-import { useOnChainSync } from "@/hooks/useOnChainSync";
+import { useGameSync } from "@/hooks/useGameSync";
 import { ErrorBoundary } from "@/components/ErrorBoundary";
 import { ErrorToast, SuccessToast } from "@/components/Toast";
 import PirateMap from "@/components/PirateMap";
@@ -14,9 +14,12 @@ import BattleInfoPanel from "@/components/BattleInfoPanel";
 import TurnBanner from "@/components/TurnBanner";
 import OnboardingModal from "@/components/OnboardingModal";
 import ShipActionModal from "@/components/ShipActionModal";
+import ResourceCollectionPanel from "@/components/ResourceCollectionPanel";
+import ShipBuildingPanel from "@/components/ShipBuildingPanel";
+import VictoryScreen from "@/components/VictoryScreen";
 import { ManualSyncButton } from "@/components/ManualSyncButton";
-import { SyncTestPanel } from "@/components/SyncTestPanel";
 import { GameSyncStatus } from "@/components/GameSyncRecovery";
+import PrivacyStatusIndicator from "@/components/PrivacyStatusIndicator";
 import { useState, useEffect } from "react";
 import dynamic from "next/dynamic";
 import { createPlayerFromWallet, createAIPlayer } from "@/lib/playerHelper";
@@ -70,14 +73,67 @@ export default function Home() {
   const { handleGameError } = useErrorHandler();
   const { shown: showOnboarding, dismiss: dismissOnboarding } = useShowOnboarding();
 
-  // Set up on-chain synchronization for real-time updates
-  const { heliusConnected, lastSync } = useOnChainSync(gameState?.gameId);
+  // Set up consolidated game synchronization
+  const { heliusConnected, lastSync } = useGameSync(gameState?.gameId);
+
+  // Get current player
+  const getCurrentPlayer = () => {
+    if (!gameState || !publicKey) return null;
+    return gameState.players.find(p => p.publicKey === publicKey.toString()) || null;
+  };
 
   // Get current player name for TurnBanner
   const getCurrentPlayerName = () => {
     if (!gameState) return 'opponent';
     const currentPlayer = gameState.players[gameState.currentPlayerIndex];
     return currentPlayer?.username || currentPlayer?.publicKey?.slice(0, 8) || 'opponent';
+  };
+
+  // Handle resource collection
+  const handleCollectResources = async () => {
+    if (!wallet) return false;
+    try {
+      const success = await collectResources(wallet);
+      if (success) {
+        handleGameEvent('💰 Resources collected from territories!');
+      }
+      return success;
+    } catch (error) {
+      console.error('Resource collection failed:', error);
+      return false;
+    }
+  };
+
+  // Handle ship building
+  const handleBuildShip = async (shipType: string, portX: number, portY: number) => {
+    if (!wallet) return false;
+    try {
+      const success = await buildShip(shipType, portX, portY, wallet);
+      if (success) {
+        handleGameEvent(`🛠️ ${shipType.charAt(0).toUpperCase() + shipType.slice(1)} built successfully!`);
+      }
+      return success;
+    } catch (error) {
+      console.error('Ship building failed:', error);
+      return false;
+    }
+  };
+
+  // Handle victory screen actions
+  const handleNewGame = async () => {
+    if (!publicKey || !wallet) return;
+    try {
+      const player = createPlayerFromWallet(publicKey);
+      await createGame([player], 0.1, wallet);
+      handleGameEvent('🏴‍☠️ New battle begins!');
+    } catch (error) {
+      handleGameError(error, "create new game");
+    }
+  };
+
+  const handleReturnToLobby = () => {
+    // Reset game state - this would typically navigate to a lobby
+    handleGameEvent('Returning to lobby...');
   };
 
   // Start turn timer when it becomes player's turn
@@ -241,7 +297,7 @@ export default function Home() {
         }
         break;
       case 'collect':
-        const success = await collectResources(shipId, wallet); // Pass wallet
+        const success = await handleCollectResources();
         if (success) {
           handleGameEvent('💎 Resources collected!');
         }
@@ -276,6 +332,14 @@ export default function Home() {
           onAction={(action) => handleShipAction(shipActionModalShip.id, action)}
         />
       )}
+      {gameState?.gameStatus === 'completed' && (
+        <VictoryScreen
+          gameState={gameState}
+          currentPlayerPK={publicKey?.toString()}
+          onNewGame={handleNewGame}
+          onReturnToLobby={handleReturnToLobby}
+        />
+      )}
 
       <ErrorToast error={error} onClose={clearError} />
       <SuccessToast message={showMessage} onClose={() => setMessage(null)} />
@@ -286,7 +350,6 @@ export default function Home() {
       {/* Additional debug components in development mode */}
       {process.env.NODE_ENV !== 'production' && (
         <>
-          <SyncTestPanel />
           <GameSyncStatus />
         </>
       )}
@@ -304,7 +367,8 @@ export default function Home() {
                   Strategic naval warfare on the blockchain
                 </p>
               </div>
-              <div className="flex-1 flex justify-end">
+              <div className="flex-1 flex justify-end items-center gap-4">
+                <PrivacyStatusIndicator />
                 <WalletButtonWrapper />
               </div>
             </div>
@@ -367,6 +431,23 @@ export default function Home() {
             {/* Controls Panel with Battle Info */}
             <div className="lg:col-span-1 space-y-4">
               <BattleInfoPanel gameState={gameState} />
+
+              {/* Resource Collection Panel */}
+              <ResourceCollectionPanel
+                gameState={gameState}
+                currentPlayer={getCurrentPlayer()}
+                onCollectResources={handleCollectResources}
+                isMyTurn={isMyTurn(publicKey?.toString())}
+              />
+
+              {/* Ship Building Panel */}
+              <ShipBuildingPanel
+                gameState={gameState}
+                currentPlayer={getCurrentPlayer()}
+                onBuildShip={handleBuildShip}
+                isMyTurn={isMyTurn(publicKey?.toString())}
+              />
+
               <PirateControls
                 gameState={gameState}
                 onCreateGame={handleCreateGame}
