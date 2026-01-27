@@ -253,7 +253,7 @@ export default function PirateControls({
         /* Wallet Connection Prompt - Enhanced */
         <div className="wallet-prompt bg-gradient-to-br from-slate-800/90 to-slate-700/90 
                         border-2 border-neon-magenta/50 rounded-xl p-6 text-center backdrop-blur-sm">
-          <div className="text-5xl mb-4 animate-pulse filter drop-shadow-2xl">👛</div>
+          <div className="text-5xl mb-4 animate-subtle-bounce filter drop-shadow-2xl">👛</div>
           <h4 className="text-xl font-bold text-neon-magenta mb-2">Connect Your Wallet</h4>
           <p className="text-sm text-gray-300 leading-relaxed">
             Connect your Solana wallet to create or join pirate battles and earn real rewards

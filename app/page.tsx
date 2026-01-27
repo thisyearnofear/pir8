@@ -393,7 +393,7 @@ export default function Home() {
                                   shadow-2xl shadow-neon-cyan/20">
                     <h1 className="text-5xl font-black text-transparent bg-clip-text 
                                    bg-gradient-to-r from-neon-cyan via-neon-gold to-neon-cyan mb-3
-                                   animate-pulse drop-shadow-2xl">
+                                   animate-subtle-glow drop-shadow-2xl">
                       🏴‍☠️ PIR8 BATTLE ARENA
                     </h1>
                     <p className="text-lg text-gray-300 font-semibold tracking-wide">
@@ -521,7 +521,7 @@ export default function Home() {
                     {/* Dynamic title */}
                     <h3 className="text-4xl font-black text-transparent bg-clip-text 
                                    bg-gradient-to-r from-neon-cyan via-neon-gold to-neon-cyan mb-4
-                                   animate-pulse">
+                                   animate-subtle-glow">
                       Prepare for Battle!
                     </h3>
 

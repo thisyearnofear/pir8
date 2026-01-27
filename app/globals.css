@@ -1107,9 +1107,35 @@ h3 {
   }
 }
 
-/* ================================================
-   MODAL OVERLAY SYSTEM
-   ================================================ */
+/* Custom animations to replace annoying pulse effects */
+
+@keyframes subtle-glow {
+  0%, 100% {
+    text-shadow: 0 0 10px rgba(0, 217, 255, 0.3);
+    filter: brightness(1);
+  }
+  50% {
+    text-shadow: 0 0 15px rgba(0, 217, 255, 0.5);
+    filter: brightness(1.1);
+  }
+}
+
+@keyframes subtle-bounce {
+  0%, 100% {
+    transform: translateY(0);
+  }
+  50% {
+    transform: translateY(-5px);
+  }
+}
+
+.animate-subtle-glow {
+  animation: subtle-glow 3s ease-in-out infinite;
+}
+
+.animate-subtle-bounce {
+  animation: subtle-bounce 2s ease-in-out infinite;
+}
 
 /* Ensure modals appear above all content */
 .modal-overlay {

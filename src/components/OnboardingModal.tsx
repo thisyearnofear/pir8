@@ -77,19 +77,16 @@ export default function OnboardingModal({ isOpen, onDismiss }: OnboardingModalPr
   useEffect(() => {
     if (isOpen) {
       document.body.style.overflow = 'hidden';
-      document.body.classList.add('modal-open');
       return () => {
         document.body.style.overflow = '';
-        document.body.classList.remove('modal-open');
       };
     }
-    return undefined; // Explicit return for when condition is false
   }, [isOpen]);
 
   if (!isOpen) return null;
 
   const slide = SLIDES[currentSlide];
-  if (!slide) return null; // Safety check for undefined slide
+  if (!slide) return null;
 
   const isLastSlide = currentSlide === SLIDES.length - 1;
 
@@ -108,88 +105,77 @@ export default function OnboardingModal({ isOpen, onDismiss }: OnboardingModalPr
   };
 
   return (
-    <div className="fixed inset-0 bg-black/95 backdrop-blur-lg flex items-center justify-center z-[99999] 
-                    animate-in fade-in duration-300">
-      <div className={`relative bg-gradient-to-br from-slate-900/98 via-slate-800/98 to-slate-900/98 
-                      border-2 border-neon-cyan rounded-3xl p-8 w-full max-w-2xl mx-4 
-                      shadow-2xl shadow-neon-cyan/30 backdrop-blur-xl
-                      before:absolute before:inset-0 before:rounded-3xl before:bg-gradient-to-br 
-                      before:${slide.bgGradient} before:pointer-events-none
-                      animate-in slide-in-from-bottom-4 duration-500`}>
-
-        {/* Animated background elements */}
-        <div className="absolute inset-0 overflow-hidden rounded-3xl pointer-events-none">
-          <div className="absolute -top-20 -right-20 w-40 h-40 bg-neon-cyan/5 rounded-full blur-3xl animate-pulse"></div>
-          <div className="absolute -bottom-20 -left-20 w-40 h-40 bg-neon-gold/5 rounded-full blur-3xl animate-pulse delay-1000"></div>
+    <div 
+      className="fixed inset-0 bg-black/40 backdrop-blur-md flex items-center justify-center z-[99999] w-screen h-screen"
+      onClick={onDismiss}
+    >
+      <div 
+        className="bg-gradient-to-br from-slate-900 via-slate-800 to-slate-900 
+                   rounded-3xl border-2 border-neon-cyan p-6 sm:p-8 w-full max-w-2xl mx-4 
+                   shadow-2xl shadow-neon-cyan/30 max-h-[85vh] overflow-y-auto"
+        onClick={e => e.stopPropagation()}
+      >
+        {/* Header with close button */}
+        <div className="flex items-start justify-between mb-6">
+          <div className="flex-1 pr-8">
+            <div className="text-5xl sm:text-6xl mb-3">{slide.emoji}</div>
+            <h2 className="text-xl sm:text-2xl font-black text-neon-cyan mb-1">
+              {slide.title}
+            </h2>
+            <h3 className="text-base sm:text-lg font-semibold text-neon-gold mb-2">
+              {slide.subtitle}
+            </h3>
+            <p className="text-sm sm:text-base text-gray-200 leading-relaxed">
+              {slide.content}
+            </p>
+          </div>
+          <button
+            onClick={onDismiss}
+            className="text-gray-400 hover:text-white text-2xl font-bold leading-none"
+          >
+            ✕
+          </button>
         </div>
 
-        {/* Skip button */}
-        <button
-          onClick={onDismiss}
-          className="absolute top-6 right-6 text-gray-400 hover:text-neon-gold hover:bg-slate-700/50 
-                     rounded-xl px-4 py-2 transition-all text-sm font-bold z-10 group
-                     hover:scale-105 active:scale-95"
-        >
-          <span className="group-hover:animate-pulse">✕</span> Skip Tutorial
-        </button>
-
-        {/* Slide content */}
-        <div className="text-center mb-8 pt-4 relative z-10">
-          <div className="text-8xl mb-6 animate-bounce filter drop-shadow-2xl">{slide.emoji}</div>
-          <h2 className="text-3xl font-black text-neon-cyan mb-2 drop-shadow-lg leading-tight">
-            {slide.title}
-          </h2>
-          <h3 className="text-lg font-semibold text-neon-gold mb-4 drop-shadow-sm">
-            {slide.subtitle}
-          </h3>
-          <p className="text-base text-gray-200 font-medium leading-relaxed drop-shadow-sm max-w-lg mx-auto">
-            {slide.content}
-          </p>
-        </div>
-
-        {/* Enhanced Details */}
-        <div className="space-y-4 mb-8 relative z-10">
+        {/* Details */}
+        <div className="space-y-3 mb-6">
           {slide.details.map((detail: any, i: number) => (
-            <div key={i} className="group bg-slate-800/80 hover:bg-slate-700/90 
-                                     rounded-2xl px-6 py-5 transition-all duration-300 
-                                     border border-slate-600/60 hover:border-neon-cyan/50 
-                                     shadow-lg backdrop-blur-sm hover:shadow-xl hover:shadow-neon-cyan/10
-                                     hover:scale-[1.02] hover:-translate-y-1">
+            <div key={i} className="bg-slate-800/80 rounded-xl px-4 py-3 border border-slate-600/60">
               {'time' in detail ? (
                 <div className="flex items-center justify-between">
-                  <div className="flex items-center gap-4">
-                    <div className="bg-slate-700/80 rounded-xl px-4 py-2 border border-slate-600">
-                      <span className="font-mono text-gray-300 text-lg font-bold tracking-wider">
+                  <div className="flex items-center gap-3">
+                    <div className="bg-slate-700/80 rounded-lg px-3 py-1 border border-slate-600">
+                      <span className="font-mono text-gray-300 text-sm font-bold">
                         {detail.time}
                       </span>
                     </div>
                     <div>
-                      <span className={`font-black text-xl tracking-wide drop-shadow-sm ${detail.color}`}>
+                      <span className={`font-bold text-lg ${detail.color}`}>
                         {detail.bonus}
                       </span>
-                      <p className="text-gray-400 text-sm mt-1">{detail.desc}</p>
+                      <p className="text-gray-400 text-xs">{detail.desc}</p>
                     </div>
                   </div>
-                  <div className="text-2xl opacity-50 group-hover:opacity-100 transition-opacity">⚡</div>
+                  <div className="text-xl">⚡</div>
                 </div>
               ) : (
-                <div className="flex items-start gap-4">
-                  <div className="text-3xl filter drop-shadow-lg flex-shrink-0 mt-1">{detail.icon}</div>
-                  <div className="flex-1">
-                    <div className="flex items-center gap-3 mb-2">
-                      <span className="text-neon-cyan font-bold text-lg">{detail.text}</span>
+                <div className="flex items-start gap-3">
+                  <div className="text-2xl">{detail.icon}</div>
+                  <div className="flex-1 min-w-0">
+                    <div className="flex flex-wrap items-center gap-2 mb-1">
+                      <span className="text-neon-cyan font-bold">{detail.text}</span>
                       {detail.value && (
-                        <span className="bg-neon-gold/20 text-neon-gold px-3 py-1 rounded-full text-xs font-bold">
+                        <span className="bg-neon-gold/20 text-neon-gold px-2 py-0.5 rounded-full text-xs">
                           {detail.value}
                         </span>
                       )}
                       {detail.stats && (
-                        <span className="bg-slate-600/60 text-gray-300 px-3 py-1 rounded-full text-xs font-mono">
+                        <span className="bg-slate-600/60 text-gray-300 px-2 py-0.5 rounded-full text-xs font-mono">
                           {detail.stats}
                         </span>
                       )}
                     </div>
-                    <p className="text-gray-300 text-sm leading-relaxed">{detail.desc}</p>
+                    <p className="text-gray-300 text-sm">{detail.desc}</p>
                   </div>
                 </div>
               )}
@@ -197,28 +183,27 @@ export default function OnboardingModal({ isOpen, onDismiss }: OnboardingModalPr
           ))}
         </div>
 
-        {/* Enhanced Navigation */}
-        <div className="flex items-center justify-between gap-6 pt-6 border-t border-slate-600/60 relative z-10">
+        {/* Navigation */}
+        <div className="flex items-center justify-between gap-4 pt-4 border-t border-slate-600/60">
           <button
             onClick={handlePrev}
             disabled={currentSlide === 0}
-            className="px-6 py-3 text-gray-300 hover:text-neon-cyan hover:bg-slate-700/60 
-                       disabled:opacity-30 disabled:cursor-not-allowed rounded-xl transition-all 
-                       font-semibold border border-transparent hover:border-neon-cyan/30
-                       hover:scale-105 active:scale-95 disabled:hover:scale-100"
+            className="px-4 py-2 text-gray-300 hover:text-neon-cyan hover:bg-slate-700/60 
+                       disabled:opacity-30 disabled:cursor-not-allowed rounded-lg transition-all 
+                       font-semibold text-sm sm:text-base"
           >
             ← Previous
           </button>
 
-          {/* Enhanced Dots */}
-          <div className="flex gap-3">
+          {/* Dots */}
+          <div className="flex gap-2">
             {SLIDES.map((_, i) => (
               <button
                 key={i}
                 onClick={() => setCurrentSlide(i)}
                 className={`rounded-full transition-all duration-300 ${i === currentSlide
-                  ? 'bg-neon-cyan w-5 h-5 shadow-lg shadow-neon-cyan/50 scale-110'
-                  : 'bg-gray-500 hover:bg-gray-400 w-3 h-3 hover:scale-125'
+                  ? 'bg-neon-cyan w-4 h-4'
+                  : 'bg-gray-500 hover:bg-gray-400 w-3 h-3'
                   }`}
                 aria-label={`Go to slide ${i + 1}`}
               />
@@ -227,10 +212,9 @@ export default function OnboardingModal({ isOpen, onDismiss }: OnboardingModalPr
 
           <button
             onClick={handleNext}
-            className="px-8 py-3 bg-gradient-to-r from-neon-cyan via-neon-blue to-neon-cyan 
-                       text-black font-bold rounded-xl hover:shadow-xl hover:shadow-neon-cyan/50 
-                       hover:scale-105 active:scale-95 transition-all tracking-wide 
-                       border border-neon-cyan/20 bg-size-200 hover:bg-pos-100"
+            className="px-6 sm:px-8 py-2 sm:py-3 bg-gradient-to-r from-neon-cyan via-neon-blue to-neon-cyan 
+                       text-black font-bold rounded-lg hover:shadow-lg hover:shadow-neon-cyan/50 
+                       transition-all tracking-wide text-sm sm:text-base"
             style={{ backgroundSize: '200% 100%' }}
           >
             {isLastSlide ? '🚀 Set Sail!' : 'Next →'}
