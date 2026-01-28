@@ -1,0 +1,358 @@
+{
+  "version": "0.1.0",
+  "name": "pir8_game",
+  "instructions": [
+    {
+      "name": "initializeGame",
+      "accounts": [
+        {
+          "name": "game",
+          "isMut": true,
+          "isSigner": false
+        },
+        {
+          "name": "authority",
+          "isMut": true,
+          "isSigner": true
+        },
+        {
+          "name": "systemProgram",
+          "isMut": false,
+          "isSigner": false
+        }
+      ],
+      "args": [
+        {
+          "name": "timestamp",
+          "type": "i64"
+        }
+      ]
+    },
+    {
+      "name": "joinGame",
+      "accounts": [
+        {
+          "name": "game",
+          "isMut": true,
+          "isSigner": false
+        },
+        {
+          "name": "player",
+          "isMut": true,
+          "isSigner": true
+        }
+      ],
+      "args": []
+    },
+    {
+      "name": "startGame",
+      "accounts": [
+        {
+          "name": "game",
+          "isMut": true,
+          "isSigner": false
+        },
+        {
+          "name": "authority",
+          "isMut": false,
+          "isSigner": true
+        }
+      ],
+      "args": []
+    },
+    {
+      "name": "moveShip",
+      "accounts": [
+        {
+          "name": "game",
+          "isMut": true,
+          "isSigner": false
+        },
+        {
+          "name": "player",
+          "isMut": false,
+          "isSigner": true
+        }
+      ],
+      "args": [
+        {
+          "name": "shipId",
+          "type": "string"
+        },
+        {
+          "name": "toX",
+          "type": "i32"
+        },
+        {
+          "name": "toY",
+          "type": "i32"
+        }
+      ]
+    },
+    {
+      "name": "attackShip",
+      "accounts": [
+        {
+          "name": "game",
+          "isMut": true,
+          "isSigner": false
+        },
+        {
+          "name": "player",
+          "isMut": false,
+          "isSigner": true
+        }
+      ],
+      "args": [
+        {
+          "name": "attackerShipId",
+          "type": "string"
+        },
+        {
+          "name": "targetShipId",
+          "type": "string"
+        }
+      ]
+    },
+    {
+      "name": "claimTerritory",
+      "accounts": [
+        {
+          "name": "game",
+          "isMut": true,
+          "isSigner": false
+        },
+        {
+          "name": "player",
+          "isMut": false,
+          "isSigner": true
+        }
+      ],
+      "args": [
+        {
+          "name": "x",
+          "type": "i32"
+        },
+        {
+          "name": "y",
+          "type": "i32"
+        }
+      ]
+    },
+    {
+      "name": "collectResources",
+      "accounts": [
+        {
+          "name": "game",
+          "isMut": true,
+          "isSigner": false
+        },
+        {
+          "name": "player",
+          "isMut": false,
+          "isSigner": true
+        }
+      ],
+      "args": [
+        {
+          "name": "x",
+          "type": "i32"
+        },
+        {
+          "name": "y",
+          "type": "i32"
+        }
+      ]
+    },
+    {
+      "name": "buildShip",
+      "accounts": [
+        {
+          "name": "game",
+          "isMut": true,
+          "isSigner": false
+        },
+        {
+          "name": "player",
+          "isMut": false,
+          "isSigner": true
+        }
+      ],
+      "args": [
+        {
+          "name": "shipType",
+          "type": "string"
+        }
+      ]
+    }
+  ],
+  "accounts": [
+    {
+      "name": "PirateGame",
+      "type": {
+        "kind": "struct",
+        "fields": [
+          {
+            "name": "authority",
+            "type": "publicKey"
+          },
+          {
+            "name": "players",
+            "type": {
+              "vec": "publicKey"
+            }
+          },
+          {
+            "name": "gameState",
+            "type": "u8"
+          },
+          {
+            "name": "boardSize",
+            "type": "u16"
+          },
+          {
+            "name": "createdAt",
+            "type": "i64"
+          },
+          {
+            "name": "startedAt",
+            "type": "i64"
+          },
+          {
+            "name": "endedAt",
+            "type": "i64"
+          }
+        ]
+      }
+    }
+  ],
+  "events": [
+    {
+      "name": "GameCreated",
+      "fields": [
+        {
+          "name": "gameId",
+          "type": "publicKey",
+          "index": false
+        },
+        {
+          "name": "creator",
+          "type": "publicKey",
+          "index": false
+        },
+        {
+          "name": "timestamp",
+          "type": "i64",
+          "index": false
+        }
+      ]
+    },
+    {
+      "name": "PlayerJoined",
+      "fields": [
+        {
+          "name": "gameId",
+          "type": "publicKey",
+          "index": false
+        },
+        {
+          "name": "player",
+          "type": "publicKey",
+          "index": false
+        },
+        {
+          "name": "timestamp",
+          "type": "i64",
+          "index": false
+        }
+      ]
+    },
+    {
+      "name": "GameStarted",
+      "fields": [
+        {
+          "name": "gameId",
+          "type": "publicKey",
+          "index": false
+        },
+        {
+          "name": "timestamp",
+          "type": "i64",
+          "index": false
+        }
+      ]
+    },
+    {
+      "name": "MoveMade",
+      "fields": [
+        {
+          "name": "gameId",
+          "type": "publicKey",
+          "index": false
+        },
+        {
+          "name": "player",
+          "type": "publicKey",
+          "index": false
+        },
+        {
+          "name": "shipId",
+          "type": "string",
+          "index": false
+        },
+        {
+          "name": "fromX",
+          "type": "i32",
+          "index": false
+        },
+        {
+          "name": "fromY",
+          "type": "i32",
+          "index": false
+        },
+        {
+          "name": "toX",
+          "type": "i32",
+          "index": false
+        },
+        {
+          "name": "toY",
+          "type": "i32",
+          "index": false
+        },
+        {
+          "name": "timestamp",
+          "type": "i64",
+          "index": false
+        }
+      ]
+    }
+  ],
+  "errors": [
+    {
+      "code": 6000,
+      "name": "GameNotStarted",
+      "msg": "Game has not started yet"
+    },
+    {
+      "code": 6001,
+      "name": "GameAlreadyStarted",
+      "msg": "Game has already started"
+    },
+    {
+      "code": 6002,
+      "name": "GameFull",
+      "msg": "Game is already full"
+    },
+    {
+      "code": 6003,
+      "name": "InvalidMove",
+      "msg": "Invalid move attempted"
+    },
+    {
+      "code": 6004,
+      "name": "PlayerNotFound",
+      "msg": "Player not found in game"
+    }
+  ]
+}
