@@ -610,39 +610,40 @@ export default function Home() {
       <div className="min-h-screen bg-gradient-to-b from-slate-900 to-slate-800 text-white">
         <div className="container mx-auto px-4 py-6">
           <header className="mb-6">
-            <div className="flex items-center justify-between mb-6">
-              <div className="flex-1" />
-              <div className="text-center flex-1">
-                <div className="relative">
+            {/* Mobile-First Header Layout */}
+            <div className="space-y-4">
+              {/* Title Section - Always Full Width */}
+              <div className="text-center">
+                <div className="relative inline-block">
                   {/* Animated background glow */}
                   <div className="absolute inset-0 bg-gradient-to-r from-neon-cyan/20 via-neon-gold/20 to-neon-cyan/20 
                                   rounded-2xl blur-xl animate-pulse"></div>
 
                   {/* Main title */}
                   <div className="relative bg-gradient-to-br from-slate-900/90 to-slate-800/90 
-                                  border-2 border-neon-cyan/50 rounded-2xl p-6 backdrop-blur-sm
+                                  border-2 border-neon-cyan/50 rounded-2xl p-4 sm:p-6 backdrop-blur-sm
                                   shadow-2xl shadow-neon-cyan/20">
-                    <h1 className="text-5xl font-black text-transparent bg-clip-text 
-                                   bg-gradient-to-r from-neon-cyan via-neon-gold to-neon-cyan mb-3
+                    <h1 className="text-3xl sm:text-4xl lg:text-5xl font-black text-transparent bg-clip-text 
+                                   bg-gradient-to-r from-neon-cyan via-neon-gold to-neon-cyan mb-2 sm:mb-3
                                    animate-subtle-glow drop-shadow-2xl">
                       🏴‍☠️ PIR8 BATTLE ARENA
                     </h1>
-                    <p className="text-lg text-gray-300 font-semibold tracking-wide">
+                    <p className="text-sm sm:text-base lg:text-lg text-gray-300 font-semibold tracking-wide">
                       Strategic naval warfare on the blockchain
                     </p>
 
                     {/* Dynamic status indicators */}
-                    <div className="flex items-center justify-center gap-4 mt-4">
-                      <div className="flex items-center gap-2 bg-slate-700/60 rounded-full px-4 py-2 border border-neon-cyan/30">
+                    <div className="flex flex-wrap items-center justify-center gap-2 sm:gap-4 mt-3 sm:mt-4">
+                      <div className="flex items-center gap-2 bg-slate-700/60 rounded-full px-3 py-1.5 border border-neon-cyan/30">
                         <div className="w-2 h-2 bg-green-400 rounded-full animate-pulse"></div>
-                        <span className="text-sm font-mono text-green-400">LIVE</span>
+                        <span className="text-xs sm:text-sm font-mono text-green-400">LIVE</span>
                       </div>
-                      <div className="flex items-center gap-2 bg-slate-700/60 rounded-full px-4 py-2 border border-neon-gold/30">
-                        <span className="text-sm font-mono text-neon-gold">DEVNET</span>
+                      <div className="flex items-center gap-2 bg-slate-700/60 rounded-full px-3 py-1.5 border border-neon-gold/30">
+                        <span className="text-xs sm:text-sm font-mono text-neon-gold">DEVNET</span>
                       </div>
                       {gameState?.players && gameState.players.length > 0 && (
-                        <div className="flex items-center gap-2 bg-slate-700/60 rounded-full px-4 py-2 border border-neon-magenta/30">
-                          <span className="text-sm font-mono text-neon-magenta">
+                        <div className="flex items-center gap-2 bg-slate-700/60 rounded-full px-3 py-1.5 border border-neon-magenta/30">
+                          <span className="text-xs sm:text-sm font-mono text-neon-magenta">
                             {gameState.players.length} PIRATES
                           </span>
                         </div>
@@ -651,51 +652,67 @@ export default function Home() {
                   </div>
                 </div>
               </div>
-              <div className="flex-1 flex justify-end items-center gap-4">
+
+              {/* Action Buttons - Responsive Grid */}
+              <div className="flex flex-wrap items-center justify-center gap-2 sm:gap-3">
                 {/* Spectator Mode Button */}
                 <button
                   onClick={() => setShowSpectatorMode(true)}
                   className="relative group"
+                  aria-label="Watch battles"
                 >
                   <div className="absolute inset-0 bg-neon-purple/20 rounded-xl blur-md group-hover:blur-lg transition-all"></div>
                   <div className="relative bg-gradient-to-r from-neon-purple/80 to-neon-cyan/80 
                                   hover:from-neon-purple hover:to-neon-cyan
-                                  text-black font-bold py-2 px-4 rounded-xl
+                                  text-black font-bold py-2 px-3 sm:px-4 rounded-xl
                                   hover:shadow-lg hover:shadow-neon-purple/50 hover:scale-105 
-                                  active:scale-95 transition-all duration-300 flex items-center gap-2">
-                    <span className="text-lg">👁️</span>
+                                  active:scale-95 transition-all duration-300 flex items-center gap-2
+                                  text-sm sm:text-base">
+                    <span className="text-base sm:text-lg">👁️</span>
                     <span className="hidden sm:inline">Watch</span>
                   </div>
                 </button>
+
+                {/* Invite Button */}
                 <button
                   onClick={() => setSocialModal({ type: 'referral', isOpen: true })}
                   className="relative group"
+                  aria-label="Invite friends"
                 >
                   <div className="absolute inset-0 bg-neon-gold/20 rounded-xl blur-md group-hover:blur-lg transition-all"></div>
                   <div className="relative bg-gradient-to-r from-neon-gold/80 to-neon-orange/80 
                                   hover:from-neon-gold hover:to-neon-orange
-                                  text-black font-bold py-2 px-4 rounded-xl
+                                  text-black font-bold py-2 px-3 sm:px-4 rounded-xl
                                   hover:shadow-lg hover:shadow-neon-gold/50 hover:scale-105 
-                                  active:scale-95 transition-all duration-300 flex items-center gap-2">
-                    <span className="text-lg">🚀</span>
+                                  active:scale-95 transition-all duration-300 flex items-center gap-2
+                                  text-sm sm:text-base">
+                    <span className="text-base sm:text-lg">🚀</span>
                     <span className="hidden sm:inline">Invite</span>
                   </div>
                 </button>
+
+                {/* Leaderboard Button */}
                 <button
                   onClick={() => setSocialModal({ type: 'leaderboard', isOpen: true })}
                   className="relative group"
+                  aria-label="View leaderboard"
                 >
                   <div className="absolute inset-0 bg-neon-magenta/20 rounded-xl blur-md group-hover:blur-lg transition-all"></div>
                   <div className="relative bg-gradient-to-r from-neon-magenta/80 to-neon-orange/80 
                                   hover:from-neon-magenta hover:to-neon-orange
-                                  text-black font-bold py-2 px-4 rounded-xl
+                                  text-black font-bold py-2 px-3 sm:px-4 rounded-xl
                                   hover:shadow-lg hover:shadow-neon-magenta/50 hover:scale-105 
-                                  active:scale-95 transition-all duration-300 flex items-center gap-2">
-                    <span className="text-lg">🏆</span>
+                                  active:scale-95 transition-all duration-300 flex items-center gap-2
+                                  text-sm sm:text-base">
+                    <span className="text-base sm:text-lg">🏆</span>
                     <span className="hidden sm:inline">Leaderboard</span>
                   </div>
                 </button>
+
+                {/* Privacy Indicator */}
                 <PrivacyStatusIndicator />
+
+                {/* Wallet Button */}
                 <div className="relative">
                   <div className="absolute inset-0 bg-neon-cyan/20 rounded-xl blur-md"></div>
                   <div className="relative">
@@ -758,19 +775,110 @@ export default function Home() {
               onOpenReferral={() => setSocialModal({ type: 'referral', isOpen: true })}
             />
           ) : (
-            /* Game Placeholder when no game active */
-            <div className="flex-1 flex items-center justify-center min-h-[600px]">
-              <div className="text-center p-12 max-w-2xl">
-                <div className="mb-8">
-                  <div className="text-9xl animate-bounce filter drop-shadow-2xl">🗺️</div>
-                </div>
-                <h3 className="text-4xl font-black text-transparent bg-clip-text 
-                               bg-gradient-to-r from-neon-cyan via-neon-gold to-neon-cyan mb-4">
-                  Prepare for Battle!
-                </h3>
-                <p className="text-xl text-gray-300 mb-8">
-                  Use the controls panel to start a practice match or connect your wallet for real battles!
-                </p>
+            /* Enhanced Empty State with Wallet CTA */
+            <div className="flex-1 flex items-center justify-center min-h-[600px] px-4">
+              <div className="text-center max-w-4xl w-full">
+                {!publicKey ? (
+                  /* Not Connected - Wallet CTA */
+                  <div className="space-y-8">
+                    <div className="relative inline-block">
+                      <div className="text-8xl sm:text-9xl animate-bounce-slow filter drop-shadow-2xl">🔐</div>
+                      <div className="absolute -top-4 -right-4 text-4xl animate-spin-slow">⚓</div>
+                    </div>
+                    
+                    <div>
+                      <h3 className="text-3xl sm:text-4xl lg:text-5xl font-black text-transparent bg-clip-text 
+                                     bg-gradient-to-r from-neon-cyan via-neon-gold to-neon-cyan mb-4
+                                     animate-subtle-glow">
+                        Connect Your Wallet to Begin
+                      </h3>
+                      <p className="text-lg sm:text-xl text-gray-300 mb-2">
+                        Join the battle on Solana blockchain
+                      </p>
+                      <p className="text-base text-gray-400 mb-8">
+                        Or start a practice match without connecting - no wallet needed!
+                      </p>
+                    </div>
+
+                    {/* Action Cards */}
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-6 max-w-2xl mx-auto">
+                      <div className="bg-gradient-to-br from-slate-800/60 to-slate-900/60 border-2 border-neon-cyan/50 
+                                     rounded-2xl p-6 hover:scale-105 transition-all duration-300
+                                     hover:shadow-lg hover:shadow-neon-cyan/30">
+                        <div className="text-5xl mb-4">💎</div>
+                        <h4 className="text-xl font-bold text-neon-cyan mb-2">Real Battles</h4>
+                        <p className="text-sm text-gray-400 mb-4">
+                          Connect wallet to play on-chain, earn rewards, and climb the leaderboard
+                        </p>
+                        <div className="inline-flex items-center gap-2 text-neon-cyan text-sm font-semibold">
+                          <span>Click "Connect Wallet" above</span>
+                          <span>↑</span>
+                        </div>
+                      </div>
+
+                      <button
+                        onClick={() => setShowPracticeMenu(true)}
+                        className="bg-gradient-to-br from-slate-800/60 to-slate-900/60 border-2 border-neon-gold/50 
+                                   rounded-2xl p-6 hover:scale-105 transition-all duration-300
+                                   hover:shadow-lg hover:shadow-neon-gold/30 text-left"
+                      >
+                        <div className="text-5xl mb-4">🎮</div>
+                        <h4 className="text-xl font-bold text-neon-gold mb-2">Practice Mode</h4>
+                        <p className="text-sm text-gray-400 mb-4">
+                          Play offline vs AI opponents - perfect for learning the game!
+                        </p>
+                        <div className="inline-flex items-center gap-2 text-neon-gold text-sm font-semibold">
+                          <span>Click to Start</span>
+                          <span>→</span>
+                        </div>
+                      </button>
+                    </div>
+
+                    {/* Features Preview */}
+                    <div className="mt-12 pt-8 border-t border-slate-700/50">
+                      <p className="text-sm text-gray-500 uppercase tracking-wider mb-4">What Awaits You</p>
+                      <div className="flex flex-wrap justify-center gap-4 text-sm">
+                        <span className="bg-slate-800/40 px-4 py-2 rounded-full text-gray-300 border border-slate-700/50">
+                          ⚔️ Strategic Combat
+                        </span>
+                        <span className="bg-slate-800/40 px-4 py-2 rounded-full text-gray-300 border border-slate-700/50">
+                          💰 Treasure Hunting
+                        </span>
+                        <span className="bg-slate-800/40 px-4 py-2 rounded-full text-gray-300 border border-slate-700/50">
+                          🚢 Fleet Building
+                        </span>
+                        <span className="bg-slate-800/40 px-4 py-2 rounded-full text-gray-300 border border-slate-700/50">
+                          ⚡ Speed Bonuses
+                        </span>
+                      </div>
+                    </div>
+                  </div>
+                ) : (
+                  /* Connected but No Game - Use Control Panel */
+                  <div className="space-y-6">
+                    <div className="text-7xl sm:text-8xl animate-bounce-slow filter drop-shadow-2xl">⚓</div>
+                    <h3 className="text-3xl sm:text-4xl font-black text-transparent bg-clip-text 
+                                   bg-gradient-to-r from-neon-cyan via-neon-gold to-neon-cyan mb-4">
+                      Ready to Sail, Captain!
+                    </h3>
+                    <p className="text-lg sm:text-xl text-gray-300 mb-2">
+                      Your wallet is connected
+                    </p>
+                    <p className="text-base text-gray-400 mb-8">
+                      Use the controls panel on the right to create or join a battle →
+                    </p>
+
+                    {/* Quick Start Hint */}
+                    <div className="inline-flex items-center gap-3 bg-gradient-to-r from-neon-cyan/10 to-neon-gold/10 
+                                   border border-neon-cyan/30 rounded-xl px-6 py-4 backdrop-blur-sm">
+                      <span className="text-2xl">💡</span>
+                      <div className="text-left">
+                        <div className="text-sm font-semibold text-neon-cyan">Pro Tip</div>
+                        <div className="text-xs text-gray-400">Create a game and add AI for instant solo play</div>
+                      </div>
+                    </div>
+                  </div>
+                )}
               </div>
             </div>
           )}

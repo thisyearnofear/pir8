@@ -65,7 +65,8 @@ export default function SocialModal({ type, gameId, isOpen, onClose }: SocialMod
     if (!isOpen) return null;
 
     return (
-        <div className="fixed inset-0 bg-black/95 backdrop-blur-lg flex items-center justify-center z-[99999]">
+        <div className="fixed inset-0 bg-black/95 backdrop-blur-lg flex items-center justify-center z-modal"
+             role="dialog" aria-modal="true">
             <div className="bg-gradient-to-br from-slate-900 via-slate-800 to-slate-900 
                       rounded-3xl border-2 border-neon-cyan p-8 max-w-2xl w-full mx-4 
                       shadow-2xl shadow-neon-cyan/30 max-h-[90vh] overflow-y-auto">

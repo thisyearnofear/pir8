@@ -143,7 +143,8 @@ export default function VictoryScreen({
     const playerRank = finalStats.findIndex(p => p.publicKey === currentPlayerPK) + 1;
 
     return (
-        <div className="fixed inset-0 bg-black/95 backdrop-blur-lg flex items-center justify-center z-[99999]">
+        <div className="fixed inset-0 bg-black/95 backdrop-blur-lg flex items-center justify-center z-modal"
+             role="dialog" aria-modal="true">
             {/* Epic Confetti & Particle Effects */}
             {showConfetti && (
                 <div className="absolute inset-0 pointer-events-none overflow-hidden">

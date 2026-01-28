@@ -53,7 +53,7 @@ export function Toast({ message, type = 'info', duration = 5000, onClose }: Toas
 
   const getToastStyles = () => {
     const baseStyles = `
-      fixed top-6 left-1/2 transform -translate-x-1/2 z-[9999]
+      fixed top-6 left-1/2 transform -translate-x-1/2 z-toast
       max-w-md w-full mx-4 p-4 rounded-lg backdrop-filter backdrop-blur-lg
       transition-all duration-300 ease-in-out font-mono border-2
       ${isLeaving ? 'opacity-0 translate-y-[-20px]' : 'opacity-100 translate-y-0'}

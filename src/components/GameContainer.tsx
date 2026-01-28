@@ -254,61 +254,141 @@ interface GamePlaceholderProps {
 
 function GamePlaceholder({ onPracticeMode, onOpenLeaderboard }: GamePlaceholderProps) {
   return (
-    <div className="flex-1 flex items-center justify-center relative overflow-hidden">
-      {/* Animated background */}
-      <div className="absolute inset-0 bg-gradient-to-br from-slate-900 via-slate-800 to-slate-900 rounded-2xl">
-        <div className="absolute inset-0 bg-[url('/images/ocean-pattern.svg')] opacity-5"></div>
-        <div className="absolute top-10 left-10 w-32 h-32 bg-neon-cyan/5 rounded-full blur-3xl animate-pulse"></div>
-        <div className="absolute bottom-10 right-10 w-40 h-40 bg-neon-gold/5 rounded-full blur-3xl animate-pulse delay-1000"></div>
+    <div className="flex-1 relative overflow-hidden">
+      {/* Animated background with floating elements */}
+      <div className="absolute inset-0 bg-gradient-to-br from-slate-900 via-slate-800 to-slate-900">
+        <div className="absolute top-20 left-20 w-32 h-32 bg-neon-cyan/10 rounded-full blur-3xl animate-float"></div>
+        <div className="absolute bottom-20 right-20 w-40 h-40 bg-neon-gold/10 rounded-full blur-3xl animate-float-delayed"></div>
+        <div className="absolute top-1/2 left-1/4 w-24 h-24 bg-neon-purple/10 rounded-full blur-2xl animate-pulse"></div>
       </div>
 
-      {/* Content */}
-      <div className="relative z-10 text-center p-12 max-w-2xl">
-        <div className="mb-8 relative">
-          <div className="text-9xl animate-bounce filter drop-shadow-2xl">🗺️</div>
-          <div className="absolute -top-4 -right-4 text-4xl animate-spin-slow">⚓</div>
-          <div className="absolute -bottom-4 -left-4 text-3xl animate-pulse">💰</div>
+      {/* Hero Content */}
+      <div className="relative z-10 max-w-6xl mx-auto px-4 py-12">
+        {/* Hero Section */}
+        <div className="text-center mb-16">
+          <div className="mb-6 relative inline-block">
+            <div className="text-8xl sm:text-9xl animate-bounce-slow filter drop-shadow-2xl">🏴‍☠️</div>
+            <div className="absolute -top-2 -right-8 text-3xl sm:text-4xl animate-spin-slow">⚓</div>
+            <div className="absolute -bottom-2 -left-8 text-2xl sm:text-3xl animate-float">💎</div>
+          </div>
+
+          <h2 className="text-4xl sm:text-5xl lg:text-6xl font-black text-transparent bg-clip-text 
+                         bg-gradient-to-r from-neon-cyan via-neon-gold to-neon-cyan mb-6
+                         animate-subtle-glow leading-tight">
+            Command Your Pirate Fleet
+          </h2>
+
+          <p className="text-lg sm:text-xl text-gray-300 font-semibold mb-4 max-w-2xl mx-auto">
+            Strategic naval warfare meets blockchain gaming
+          </p>
+          
+          <p className="text-base text-gray-400 max-w-xl mx-auto mb-8">
+            Fast battles, private moves, viral wins. Every decision matters in this skill-based conquest for treasure and glory!
+          </p>
+
+          {/* CTA Buttons */}
+          <div className="flex flex-col sm:flex-row gap-4 justify-center items-center mb-12">
+            <button
+              onClick={onPracticeMode}
+              className="group relative w-full sm:w-auto"
+            >
+              <div className="absolute inset-0 bg-neon-cyan/20 rounded-xl blur-md group-hover:blur-lg transition-all"></div>
+              <div className="relative bg-gradient-to-r from-neon-cyan to-neon-blue
+                             hover:from-neon-cyan hover:to-neon-cyan
+                             text-black font-bold py-4 px-8 rounded-xl
+                             hover:shadow-lg hover:shadow-neon-cyan/50 hover:scale-105 
+                             active:scale-95 transition-all duration-300 flex items-center justify-center gap-3">
+                <span className="text-2xl">⚔️</span>
+                <span className="text-lg">Start Practice Battle</span>
+              </div>
+            </button>
+
+            <button
+              onClick={onOpenLeaderboard}
+              className="group relative w-full sm:w-auto"
+            >
+              <div className="absolute inset-0 bg-neon-gold/20 rounded-xl blur-md group-hover:blur-lg transition-all"></div>
+              <div className="relative bg-gradient-to-r from-slate-700 to-slate-800
+                             hover:from-slate-600 hover:to-slate-700
+                             text-white font-bold py-4 px-8 rounded-xl border border-neon-gold/50
+                             hover:shadow-lg hover:shadow-neon-gold/30 hover:scale-105 
+                             active:scale-95 transition-all duration-300 flex items-center justify-center gap-3">
+                <span className="text-2xl">🏆</span>
+                <span className="text-lg">View Leaderboard</span>
+              </div>
+            </button>
+          </div>
         </div>
 
-        <h3 className="text-4xl font-black text-transparent bg-clip-text 
-                       bg-gradient-to-r from-neon-cyan via-neon-gold to-neon-cyan mb-4
-                       animate-subtle-glow">
-          Prepare for Battle!
-        </h3>
+        {/* Feature Grid */}
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 mb-12">
+          {/* Feature 1 */}
+          <div className="group bg-slate-800/40 backdrop-blur-sm border border-neon-cyan/30 rounded-xl p-5 
+                         hover:bg-slate-800/60 hover:border-neon-cyan/50 hover:scale-105 transition-all duration-300
+                         hover:shadow-lg hover:shadow-neon-cyan/20">
+            <div className="text-4xl mb-3 group-hover:animate-bounce">⚡</div>
+            <h3 className="text-lg font-bold text-neon-cyan mb-2">Speed Rewards</h3>
+            <p className="text-sm text-gray-400">Quick decisions earn bonus points. Lightning reflexes dominate!</p>
+          </div>
 
-        <p className="text-xl text-gray-300 font-semibold mb-8">
-          Ready to command your pirate fleet?
-        </p>
+          {/* Feature 2 */}
+          <div className="group bg-slate-800/40 backdrop-blur-sm border border-neon-gold/30 rounded-xl p-5 
+                         hover:bg-slate-800/60 hover:border-neon-gold/50 hover:scale-105 transition-all duration-300
+                         hover:shadow-lg hover:shadow-neon-gold/20">
+            <div className="text-4xl mb-3 group-hover:animate-bounce">🔍</div>
+            <h3 className="text-lg font-bold text-neon-gold mb-2">Strategic Scouting</h3>
+            <p className="text-sm text-gray-400">Use 3 scans wisely to reveal hidden treasures and plan your conquest.</p>
+          </div>
 
-        {/* Quick Actions */}
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-8">
-          <button
-            onClick={onPracticeMode}
-            className="bg-slate-800/60 border border-neon-cyan/30 rounded-xl p-4 
-                       hover:bg-slate-700/60 hover:border-neon-cyan/50 transition-all
-                       hover:scale-105 hover:shadow-lg hover:shadow-neon-cyan/20"
-          >
-            <div className="text-3xl mb-2">🎮</div>
-            <div className="text-sm font-semibold text-neon-cyan">Practice Mode</div>
-            <div className="text-xs text-gray-400 mt-1">Play vs AI, no wallet needed</div>
-          </button>
+          {/* Feature 3 */}
+          <div className="group bg-slate-800/40 backdrop-blur-sm border border-neon-purple/30 rounded-xl p-5 
+                         hover:bg-slate-800/60 hover:border-neon-purple/50 hover:scale-105 transition-all duration-300
+                         hover:shadow-lg hover:shadow-neon-purple/20">
+            <div className="text-4xl mb-3 group-hover:animate-bounce">🚢</div>
+            <h3 className="text-lg font-bold text-neon-purple mb-2">Fleet Command</h3>
+            <p className="text-sm text-gray-400">Build balanced armadas. Each ship serves a unique tactical role.</p>
+          </div>
 
-          <button
-            onClick={onOpenLeaderboard}
-            className="bg-slate-800/60 border border-neon-gold/30 rounded-xl p-4 
-                       hover:bg-slate-700/60 hover:border-neon-gold/50 transition-all
-                       hover:scale-105 hover:shadow-lg hover:shadow-neon-gold/20"
-          >
-            <div className="text-3xl mb-2">🏆</div>
-            <div className="text-sm font-semibold text-neon-gold">Leaderboard</div>
-            <div className="text-xs text-gray-400 mt-1">View top pirates</div>
-          </button>
+          {/* Feature 4 */}
+          <div className="group bg-slate-800/40 backdrop-blur-sm border border-neon-orange/30 rounded-xl p-5 
+                         hover:bg-slate-800/60 hover:border-neon-orange/50 hover:scale-105 transition-all duration-300
+                         hover:shadow-lg hover:shadow-neon-orange/20">
+            <div className="text-4xl mb-3 group-hover:animate-bounce">🔒</div>
+            <h3 className="text-lg font-bold text-neon-orange mb-2">Privacy First</h3>
+            <p className="text-sm text-gray-400">Hidden moves via Zcash integration. Outsmart your enemies!</p>
+          </div>
         </div>
 
-        <div className="inline-flex items-center gap-2 bg-gradient-to-r from-neon-cyan/20 to-neon-gold/20 
-                        border border-neon-cyan/50 rounded-full px-6 py-3 backdrop-blur-sm">
-          <span className="text-neon-cyan font-bold">🏴‍☠️</span>
-          <span className="text-gray-300 font-semibold">Use the controls panel to begin →</span>
+        {/* Stats Bar */}
+        <div className="bg-gradient-to-r from-slate-800/60 to-slate-900/60 backdrop-blur-sm 
+                       border border-neon-cyan/20 rounded-xl p-6">
+          <div className="grid grid-cols-2 md:grid-cols-4 gap-6 text-center">
+            <div>
+              <div className="text-3xl font-black text-neon-cyan mb-1">3</div>
+              <div className="text-sm text-gray-400">Victory Paths</div>
+            </div>
+            <div>
+              <div className="text-3xl font-black text-neon-gold mb-1">&lt;5s</div>
+              <div className="text-sm text-gray-400">Speed Bonus</div>
+            </div>
+            <div>
+              <div className="text-3xl font-black text-neon-purple mb-1">∞</div>
+              <div className="text-sm text-gray-400">Strategies</div>
+            </div>
+            <div>
+              <div className="text-3xl font-black text-neon-orange mb-1">100%</div>
+              <div className="text-sm text-gray-400">On-Chain</div>
+            </div>
+          </div>
+        </div>
+
+        {/* Helper Text */}
+        <div className="text-center mt-8">
+          <div className="inline-flex items-center gap-2 bg-gradient-to-r from-neon-cyan/10 to-neon-gold/10 
+                         border border-neon-cyan/30 rounded-full px-6 py-3 backdrop-blur-sm">
+            <span className="text-neon-cyan font-bold text-lg">👆</span>
+            <span className="text-gray-300 font-medium">Connect wallet or use controls panel to begin</span>
+          </div>
         </div>
       </div>
     </div>

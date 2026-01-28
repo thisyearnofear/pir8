@@ -40,7 +40,8 @@ export default function ViralEventModal({ event, onShare, onDismiss }: ViralEven
     const isLegendary = event.rarity === 'legendary';
 
     return (
-        <div className="fixed inset-0 bg-black/80 backdrop-blur-sm flex items-center justify-center z-[99999]">
+        <div className="fixed inset-0 bg-black/80 backdrop-blur-sm flex items-center justify-center z-modal"
+             role="dialog" aria-modal="true">
             <div className={`relative bg-gradient-to-br from-slate-900 via-slate-800 to-slate-900 
                       rounded-2xl border-2 ${styles.border} p-6 max-w-md mx-4 
                       shadow-2xl backdrop-blur-lg animate-in zoom-in duration-500

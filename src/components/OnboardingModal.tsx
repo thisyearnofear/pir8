@@ -107,20 +107,24 @@ export default function OnboardingModal({ isOpen, onDismiss }: OnboardingModalPr
 
   return (
     <div 
-      className="fixed inset-0 bg-black/40 backdrop-blur-md flex items-center justify-center z-[99999] w-screen h-screen"
+      className="fixed inset-0 bg-black/40 backdrop-blur-md flex items-center justify-center z-modal w-screen h-screen"
       onClick={onDismiss}
+      role="dialog"
+      aria-modal="true"
+      aria-labelledby="onboarding-title"
     >
       <div 
-        className="bg-gradient-to-br from-slate-900 via-slate-800 to-slate-900 
+        className="relative bg-gradient-to-br from-slate-900 via-slate-800 to-slate-900 
                    rounded-3xl border-2 border-neon-cyan p-6 sm:p-8 w-full max-w-2xl mx-4 
-                   shadow-2xl shadow-neon-cyan/30 max-h-[85vh] overflow-y-auto"
+                   shadow-2xl shadow-neon-cyan/30 max-h-[85vh] overflow-y-auto
+                   animate-in fade-in zoom-in-95 duration-300"
         onClick={e => e.stopPropagation()}
       >
         {/* Header with close button */}
         <div className="flex items-start justify-between mb-6">
           <div className="flex-1 pr-8">
             <div className="text-5xl sm:text-6xl mb-3">{slide.emoji}</div>
-            <h2 className="text-xl sm:text-2xl font-black text-neon-cyan mb-1">
+            <h2 id="onboarding-title" className="text-xl sm:text-2xl font-black text-neon-cyan mb-1">
               {slide.title}
             </h2>
             <h3 className="text-base sm:text-lg font-semibold text-neon-gold mb-2">
@@ -132,7 +136,9 @@ export default function OnboardingModal({ isOpen, onDismiss }: OnboardingModalPr
           </div>
           <button
             onClick={onDismiss}
-            className="text-gray-400 hover:text-white text-2xl font-bold leading-none"
+            className="text-gray-400 hover:text-white text-2xl font-bold leading-none
+                       hover:bg-slate-700/50 rounded-lg p-2 transition-all"
+            aria-label="Close onboarding"
           >
             ✕
           </button>
