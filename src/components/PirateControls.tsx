@@ -54,6 +54,18 @@ export default function PirateControls({
   const [showJoinForm, setShowJoinForm] = useState(false);
   const [selectedCoordinate, setSelectedCoordinate] = useState<{ x: number; y: number } | null>(null);
   const [isScanning, setIsScanning] = useState(false);
+  
+  // Progressive disclosure state - collapse less critical sections by default
+  const [expandedSections, setExpandedSections] = useState({
+    gameInfo: false,
+    shipSelection: true,  // Keep ships visible by default
+    scanning: false,
+    building: false,
+  });
+
+  const toggleSection = (section: keyof typeof expandedSections) => {
+    setExpandedSections(prev => ({ ...prev, [section]: !prev[section] }));
+  };
 
   const getCurrentPlayer = (): Player | null => {
     if (!gameState || !publicKey) return null;
@@ -115,6 +127,48 @@ export default function PirateControls({
     if (ms < 15000) return '+25 points!';
     return 'No bonus';
   };
+
+  // Collapsible Section Component
+  const CollapsibleSection = ({ 
+    title, 
+    icon, 
+    isExpanded, 
+    onToggle, 
+    children,
+    badge
+  }: { 
+    title: string; 
+    icon: string; 
+    isExpanded: boolean; 
+    onToggle: () => void; 
+    children: React.ReactNode;
+    badge?: string;
+  }) => (
+    <div className="collapsible-section border border-slate-700 rounded-lg overflow-hidden transition-all">
+      <button
+        onClick={onToggle}
+        className="w-full flex items-center justify-between p-3 bg-slate-800/50 hover:bg-slate-700/50 transition-all"
+      >
+        <div className="flex items-center gap-2">
+          <span className="text-lg">{icon}</span>
+          <span className="font-bold text-sm text-white">{title}</span>
+          {badge && (
+            <span className="text-xs px-2 py-0.5 rounded-full bg-neon-cyan/20 text-neon-cyan border border-neon-cyan/30">
+              {badge}
+            </span>
+          )}
+        </div>
+        <span className={`text-neon-cyan transition-transform duration-200 ${isExpanded ? 'rotate-180' : ''}`}>
+          ▼
+        </span>
+      </button>
+      <div className={`overflow-hidden transition-all duration-300 ${isExpanded ? 'max-h-[2000px] opacity-100' : 'max-h-0 opacity-0'}`}>
+        <div className="p-3 bg-slate-900/30">
+          {children}
+        </div>
+      </div>
+    </div>
+  );
 
   const renderPreGameControls = () => (
     <div className="pre-game-controls space-y-6 w-full max-w-sm">
@@ -712,20 +766,21 @@ export default function PirateControls({
               </div>
             </div>
 
-            {/* Scan Section */}
+            {/* Collapsible Scan Section */}
             {scanChargesRemaining > 0 && (
-              <div className="scan-section bg-gradient-to-r from-gray-800 to-gray-900 border border-neon-magenta border-opacity-50 rounded-lg p-4 space-y-3">
-                <div className="flex items-center justify-between">
-                  <h4 className="text-sm font-bold text-neon-magenta">🔍 SCAN COORDINATE</h4>
-                  <span className="text-xs text-neon-cyan">{scanChargesRemaining} scans remaining</span>
-                </div>
-
-                <p className="text-xs text-gray-300">
+              <CollapsibleSection
+                title="Scan Coordinate"
+                icon="🔍"
+                isExpanded={expandedSections.scanning}
+                onToggle={() => toggleSection('scanning')}
+                badge={`${scanChargesRemaining} left`}
+              >
+                <p className="text-xs text-gray-300 mb-3">
                   Select a coordinate to reveal its territory type without claiming it:
                 </p>
 
                 <div
-                  className="grid gap-2 p-3 bg-black bg-opacity-30 rounded"
+                  className="grid gap-2 p-3 bg-black bg-opacity-30 rounded mb-3"
                   style={{
                     gridTemplateColumns: `repeat(${gameState?.gameMap.size || 7}, minmax(2rem, 1fr))`,
                   }}
@@ -749,7 +804,7 @@ export default function PirateControls({
                 </div>
 
                 {selectedCoordinate && (
-                  <div className="text-center text-xs text-neon-cyan font-mono">
+                  <div className="text-center text-xs text-neon-cyan font-mono mb-3">
                     Selected: ({selectedCoordinate.x}, {selectedCoordinate.y})
                   </div>
                 )}
@@ -761,15 +816,19 @@ export default function PirateControls({
                 >
                   {isScanning ? '🔍 Scanning...' : `🔍 Execute Scan (${scanChargesRemaining})`}
                 </button>
-              </div>
+              </CollapsibleSection>
             )}
 
             {renderShipSelection()}
             {renderActionControls()}
 
-            {/* Ship Building Section */}
-            <div className="ship-building space-y-3">
-              <h4 className="text-sm font-bold text-neon-cyan">🛠️ BUILD SHIPS</h4>
+            {/* Collapsible Ship Building Section */}
+            <CollapsibleSection
+              title="Build Ships"
+              icon="🛠️"
+              isExpanded={expandedSections.building}
+              onToggle={() => toggleSection('building')}
+            >
               <div className="build-options grid grid-cols-2 gap-2">
                 <button
                   onClick={() => onShipAction('build', 'build')}
@@ -790,7 +849,7 @@ export default function PirateControls({
                   <div className="text-xs text-gray-400">1.2k💰</div>
                 </button>
               </div>
-            </div>
+            </CollapsibleSection>
 
             <button
               onClick={onEndTurn}

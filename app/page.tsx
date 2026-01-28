@@ -173,7 +173,8 @@ export default function Home() {
     if (isMyTurn(playerKey) && gameState?.gameStatus === 'active') {
       startTurn();
     }
-  }, [isMyTurn(getCurrentPlayerKey()), gameState?.currentPlayerIndex, gameState?.gameStatus]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [gameState?.currentPlayerIndex, gameState?.gameStatus]);
 
   // Practice mode handlers
   const handleStartPractice = (difficulty: 'novice' | 'pirate' | 'captain' | 'admiral') => {
