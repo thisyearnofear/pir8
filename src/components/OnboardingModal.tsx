@@ -81,6 +81,7 @@ export default function OnboardingModal({ isOpen, onDismiss }: OnboardingModalPr
         document.body.style.overflow = '';
       };
     }
+    return undefined;
   }, [isOpen]);
 
   if (!isOpen) return null;

@@ -1,3 +1,12 @@
+/**
+ * Main Page Component - PIR8 Battle Arena
+ * 
+ * Following Core Principles:
+ * - CLEAN: Thin page shell, logic extracted to GameContainer
+ * - MODULAR: Composable components with single responsibilities
+ * - DRY: Uses consolidated hooks and shared logic
+ */
+
 "use client";
 
 import { useWallet } from "@solana/wallet-adapter-react";
@@ -7,16 +16,9 @@ import { useShowOnboarding } from "@/hooks/useShowOnboarding";
 import { useViralSystem } from "@/hooks/useViralSystem";
 import { ErrorBoundary } from "@/components/ErrorBoundary";
 import { ErrorToast, SuccessToast } from "@/components/Toast";
-import PirateMap from "@/components/PirateMap";
-import PirateControls from "@/components/PirateControls";
-import PlayerStats from "@/components/PlayerStats";
-import BattleInfoPanel from "@/components/BattleInfoPanel";
-import TurnBanner from "@/components/TurnBanner";
+import GameContainer from "@/components/GameContainer";
+import SpectatorView from "@/components/SpectatorView";
 import OnboardingModal from "@/components/OnboardingModal";
-import ShipActionModal from "@/components/ShipActionModal";
-import ResourceCollectionPanel from "@/components/ResourceCollectionPanel";
-import ShipBuildingPanel from "@/components/ShipBuildingPanel";
-import VictoryScreen from "@/components/VictoryScreen";
 import { ManualSyncButton } from "@/components/ManualSyncButton";
 import { GameSyncStatus } from "@/components/GameSyncRecovery";
 import PrivacyStatusIndicator from "@/components/PrivacyStatusIndicator";
@@ -25,7 +27,7 @@ import SocialModal from "@/components/SocialModal";
 import { useState, useEffect } from "react";
 import dynamic from "next/dynamic";
 import { createPlayerFromWallet, createAIPlayer } from "@/lib/playerHelper";
-import { Ship } from "@/types/game";
+import { Ship, Player } from "@/types/game";
 
 const WalletButtonWrapper = dynamic(
   () => import("@solana/wallet-adapter-react-ui").then(mod => ({
@@ -60,8 +62,14 @@ export default function Home() {
     isMyTurn,
     getAllShips,
     startTurn,
-    scanCoordinate,
-    getScannedCoordinates
+    getScannedCoordinates,
+    // Practice mode actions
+    startPracticeGame,
+    makePracticeMove,
+    makePracticeAttack,
+    makePracticeClaim,
+    exitPracticeMode,
+    isPracticeMode
   } = usePirateGameState();
 
   const [isCreatingGame, setIsCreatingGame] = useState(false);
@@ -72,14 +80,34 @@ export default function Home() {
     type: 'leaderboard',
     isOpen: false
   });
+  // Practice mode state
+  const [showPracticeMenu, setShowPracticeMenu] = useState(false);
+  const [selectedDifficulty, setSelectedDifficulty] = useState<'novice' | 'pirate' | 'captain' | 'admiral'>('pirate');
+  
+  // Spectator mode state
+  const [showSpectatorMode, setShowSpectatorMode] = useState(false);
 
   const { handleGameError } = useErrorHandler();
   const { shown: showOnboarding, dismiss: dismissOnboarding } = useShowOnboarding();
 
   // Get current player - moved up before viral system
   const getCurrentPlayer = () => {
-    if (!gameState || !publicKey) return null;
+    if (!gameState) return null;
+    // In practice mode, find human player (not AI)
+    if (isPracticeMode()) {
+      return gameState.players.find((p: any) => !p.publicKey.startsWith('AI_')) || null;
+    }
+    if (!publicKey) return null;
     return gameState.players.find((p: any) => p.publicKey === publicKey.toString()) || null;
+  };
+
+  // Get current player key for turn checking
+  const getCurrentPlayerKey = () => {
+    if (isPracticeMode()) {
+      const humanPlayer = gameState?.players.find((p: any) => !p.publicKey.startsWith('AI_'));
+      return humanPlayer?.publicKey;
+    }
+    return publicKey?.toString();
   };
 
   // Consolidated viral system
@@ -141,10 +169,61 @@ export default function Home() {
 
   // Start turn timer when it becomes player's turn
   useEffect(() => {
-    if (isMyTurn(publicKey?.toString()) && gameState?.gameStatus === 'active') {
+    const playerKey = getCurrentPlayerKey();
+    if (isMyTurn(playerKey) && gameState?.gameStatus === 'active') {
       startTurn();
     }
-  }, [isMyTurn(publicKey?.toString()), gameState?.currentPlayerIndex, gameState?.gameStatus]);
+  }, [isMyTurn(getCurrentPlayerKey()), gameState?.currentPlayerIndex, gameState?.gameStatus]);
+
+  // Practice mode handlers
+  const handleStartPractice = (difficulty: 'novice' | 'pirate' | 'captain' | 'admiral') => {
+    // Create a temporary player for practice mode
+    const practicePlayer: Player = {
+      publicKey: publicKey?.toString() || `guest_${Date.now()}`,
+      username: publicKey ? undefined : 'Guest Pirate',
+      resources: { gold: 1000, crew: 50, cannons: 10, supplies: 100, wood: 0, rum: 0 },
+      ships: [],
+      controlledTerritories: [],
+      totalScore: 0,
+      isActive: true,
+      scanCharges: 3,
+      scannedCoordinates: [],
+      speedBonusAccumulated: 0,
+      averageDecisionTimeMs: 0,
+      totalMoves: 0,
+    };
+    
+    const success = startPracticeGame(practicePlayer, difficulty);
+    if (success) {
+      setShowPracticeMenu(false);
+      handleGameEvent(`⚔️ Practice mode: ${difficulty} AI opponent!`);
+    }
+  };
+
+  const handlePracticeMove = async (shipId: string, coordinate: string) => {
+    const [x, y] = coordinate.split(',').map(Number);
+    const success = makePracticeMove(shipId, x, y);
+    if (success) {
+      handleGameEvent('Ship moved!');
+    }
+    return success;
+  };
+
+  const handlePracticeAttack = async (shipId: string, targetShipId: string) => {
+    const success = makePracticeAttack(shipId, targetShipId);
+    if (success) {
+      handleGameEvent('⚔️ Attack launched!');
+    }
+    return success;
+  };
+
+  const handlePracticeClaim = async (shipId: string) => {
+    const success = makePracticeClaim(shipId);
+    if (success) {
+      handleGameEvent('🏴‍☠️ Territory claimed!');
+    }
+    return success;
+  };
 
   // Simplified game event handling with viral moments
   const handleGameEvent = (message: string) => {
@@ -230,7 +309,33 @@ export default function Home() {
   };
 
   const handleCellSelect = async (coordinate: string) => {
-    if (!publicKey || !gameState || !isMyTurn(publicKey.toString()) || !wallet) return;
+    const playerKey = getCurrentPlayerKey();
+    if (!playerKey || !gameState || !isMyTurn(playerKey)) return;
+
+    // Practice mode handling
+    if (isPracticeMode()) {
+      if (selectedShipId) {
+        const success = await handlePracticeMove(selectedShipId, coordinate);
+        if (success) {
+          handleGameEvent('Ship moved successfully!');
+        }
+      } else {
+        // Try to select a ship at this coordinate
+        const humanPlayer = gameState.players.find((p: any) => !p.publicKey.startsWith('AI_'));
+        const myShips = humanPlayer?.ships.filter((ship: any) =>
+          ship.position.x + ',' + ship.position.y === coordinate
+        ) || [];
+
+        if (myShips.length > 0) {
+          selectShip(myShips[0].id);
+          handleGameEvent(`${myShips[0].type} selected`);
+        }
+      }
+      return;
+    }
+
+    // On-chain mode handling
+    if (!publicKey || !wallet) return;
 
     if (selectedShipId) {
       // Move selected ship to coordinate
@@ -252,19 +357,60 @@ export default function Home() {
     }
   };
 
-  const handleScanCoordinate = async (x: number, y: number) => {
-    if (!publicKey || !gameState || !isMyTurn(publicKey.toString())) return;
-
-    try {
-      await scanCoordinate(x, y);
-    } catch (error) {
-      console.error('Scan failed:', error);
-      handleGameError(error, 'scan coordinate');
-    }
-  };
-
   const handleShipAction = async (shipId: string, action: 'move' | 'attack' | 'claim' | 'collect' | 'build') => {
-    if (!publicKey || !gameState || !isMyTurn(publicKey.toString()) || !wallet) return;
+    const playerKey = getCurrentPlayerKey();
+    if (!playerKey || !gameState || !isMyTurn(playerKey)) return;
+
+    // Practice mode handling
+    if (isPracticeMode()) {
+      switch (action) {
+        case 'move':
+          handleGameEvent('Select a destination for your ship on the map');
+          setShipActionModalShip(null);
+          break;
+        case 'attack':
+          const humanPlayer = gameState.players.find((p: any) => !p.publicKey.startsWith('AI_'));
+          const myShips = humanPlayer?.ships || [];
+          const selectedShip = myShips.find((s: any) => s.id === shipId);
+          if (selectedShip) {
+            const nearbyEnemies = getAllShips().filter((ship: any) =>
+              ship.id.startsWith('AI_') &&
+              ship.health > 0 &&
+              Math.sqrt(
+                Math.pow(ship.position.x - selectedShip.position.x, 2) +
+                Math.pow(ship.position.y - selectedShip.position.y, 2)
+              ) <= 1.5
+            );
+
+            if (nearbyEnemies.length > 0) {
+              const success = await handlePracticeAttack(shipId, nearbyEnemies[0].id);
+              if (success) {
+                handleGameEvent('⚔️ Attack launched!');
+              }
+            } else {
+              handleGameEvent('No enemy ships in range. Move closer to attack.');
+            }
+          }
+          break;
+        case 'claim':
+          const success = await handlePracticeClaim(shipId);
+          if (success) {
+            handleGameEvent('🏴‍☠️ Territory claimed!');
+          }
+          break;
+        case 'collect':
+          handleGameEvent('💎 Resources auto-collected at turn end in practice mode');
+          break;
+        case 'build':
+          handleGameEvent('🛠️ Ship building: Select water near controlled port');
+          break;
+      }
+      setShipActionModalShip(null);
+      return;
+    }
+
+    // On-chain mode handling
+    if (!wallet) return;
 
     switch (action) {
       case 'move':
@@ -273,15 +419,15 @@ export default function Home() {
         break;
       case 'attack':
         // Find nearby enemy ships and attack
-        const myShips = getAllShips().filter((s: any) => s.id.startsWith(publicKey.toString()));
-        const selectedShip = myShips.find((s: any) => s.id === shipId);
-        if (selectedShip) {
+        const myShipsOnChain = getAllShips().filter((s: any) => s.id.startsWith(publicKey!.toString()));
+        const selectedShipOnChain = myShipsOnChain.find((s: any) => s.id === shipId);
+        if (selectedShipOnChain) {
           const nearbyEnemies = getAllShips().filter((ship: any) =>
-            !ship.id.startsWith(publicKey.toString()) &&
+            !ship.id.startsWith(publicKey!.toString()) &&
             ship.health > 0 &&
             Math.sqrt(
-              Math.pow(ship.position.x - selectedShip.position.x, 2) +
-              Math.pow(ship.position.y - selectedShip.position.y, 2)
+              Math.pow(ship.position.x - selectedShipOnChain.position.x, 2) +
+              Math.pow(ship.position.y - selectedShipOnChain.position.y, 2)
             ) <= 1.5
           );
 
@@ -306,8 +452,8 @@ export default function Home() {
         }
         break;
       case 'collect':
-        const success = await handleCollectResources();
-        if (success) {
+        const collectSuccess = await handleCollectResources();
+        if (collectSuccess) {
           handleGameEvent('💎 Resources collected!');
         }
         break;
@@ -320,8 +466,20 @@ export default function Home() {
 
   // Handle ship click to open action modal
   const handleShipClick = (ship: Ship) => {
-    if (!publicKey || !isMyTurn(publicKey.toString())) return;
-    if (!ship.id.startsWith(publicKey.toString())) return; // Only my ships
+    const playerKey = getCurrentPlayerKey();
+    if (!playerKey || !isMyTurn(playerKey)) return;
+
+    // Practice mode: only allow selecting human ships
+    if (isPracticeMode()) {
+      if (ship.id.startsWith('AI_')) return;
+      selectShip(ship.id);
+      setShipActionModalShip(ship);
+      return;
+    }
+
+    // On-chain mode
+    if (!publicKey) return;
+    if (!ship.id.startsWith(publicKey.toString())) return;
 
     selectShip(ship.id);
     setShipActionModalShip(ship);
@@ -333,22 +491,6 @@ export default function Home() {
     <ErrorBoundary>
       {/* Modals - rendered outside main content for proper overlay */}
       <OnboardingModal isOpen={showOnboarding} onDismiss={dismissOnboarding} />
-      {shipActionModalShip && (
-        <ShipActionModal
-          ship={shipActionModalShip}
-          isOpen={true}
-          onClose={() => setShipActionModalShip(null)}
-          onAction={(action) => handleShipAction(shipActionModalShip.id, action)}
-        />
-      )}
-      {gameState?.gameStatus === 'completed' && (
-        <VictoryScreen
-          gameState={gameState}
-          currentPlayerPK={publicKey?.toString()}
-          onNewGame={handleNewGame}
-          onReturnToLobby={handleReturnToLobby}
-        />
-      )}
 
       {/* Consolidated Viral System */}
       <ViralEventModal
@@ -365,6 +507,95 @@ export default function Home() {
 
       <ErrorToast error={error} onClose={clearError} />
       <SuccessToast message={showMessage} onClose={() => setMessage(null)} />
+
+      {/* Spectator Mode Modal */}
+      {showSpectatorMode && (
+        <div className="fixed inset-0 z-50 bg-slate-900">
+          <SpectatorView
+            onClose={() => setShowSpectatorMode(false)}
+            onJoinGame={(id) => {
+              setShowSpectatorMode(false);
+              handleJoinGame(id);
+            }}
+          />
+        </div>
+      )}
+
+      {/* Practice Mode Menu Modal */}
+      {showPracticeMenu && !gameState && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/80 backdrop-blur-sm">
+          <div className="bg-slate-900 border-2 border-neon-cyan/50 rounded-2xl p-8 max-w-md w-full mx-4 shadow-2xl shadow-neon-cyan/20">
+            <h2 className="text-3xl font-black text-transparent bg-clip-text bg-gradient-to-r from-neon-cyan to-neon-gold mb-4">
+              ⚔️ Practice Mode
+            </h2>
+            <p className="text-gray-300 mb-6">
+              Hone your skills against AI opponents before entering real battles. 
+              No wallet required - just pure strategy!
+            </p>
+            
+            <div className="space-y-3 mb-6">
+              {(['novice', 'pirate', 'captain', 'admiral'] as const).map((diff) => (
+                <button
+                  key={diff}
+                  onClick={() => setSelectedDifficulty(diff)}
+                  className={`w-full p-4 rounded-xl border-2 transition-all text-left ${
+                    selectedDifficulty === diff
+                      ? 'border-neon-cyan bg-neon-cyan/20'
+                      : 'border-slate-600 hover:border-neon-cyan/50'
+                  }`}
+                >
+                  <div className="flex items-center justify-between">
+                    <span className="font-bold capitalize">{diff}</span>
+                    <span className="text-2xl">
+                      {diff === 'novice' && '🐣'}
+                      {diff === 'pirate' && '⚔️'}
+                      {diff === 'captain' && '🏴‍☠️'}
+                      {diff === 'admiral' && '👑'}
+                    </span>
+                  </div>
+                  <p className="text-sm text-gray-400 mt-1">
+                    {diff === 'novice' && 'Perfect for learning the basics'}
+                    {diff === 'pirate' && 'Balanced challenge for new players'}
+                    {diff === 'captain' && 'Experienced AI with smart tactics'}
+                    {diff === 'admiral' && 'Master-level strategic opponent'}
+                  </p>
+                </button>
+              ))}
+            </div>
+
+            <div className="flex gap-3">
+              <button
+                onClick={() => setShowPracticeMenu(false)}
+                className="flex-1 py-3 px-4 rounded-xl border border-slate-600 text-gray-300 hover:bg-slate-800 transition-all"
+              >
+                Cancel
+              </button>
+              <button
+                onClick={() => handleStartPractice(selectedDifficulty)}
+                className="flex-1 py-3 px-4 rounded-xl bg-gradient-to-r from-neon-cyan to-neon-gold text-black font-bold hover:shadow-lg hover:shadow-neon-cyan/50 transition-all"
+              >
+                Start Practice
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Practice Mode Indicator */}
+      {isPracticeMode() && (
+        <div className="fixed top-4 left-4 z-40">
+          <div className="bg-gradient-to-r from-neon-magenta/80 to-neon-purple/80 text-white px-4 py-2 rounded-xl font-bold shadow-lg flex items-center gap-2">
+            <span>🎯</span>
+            <span>PRACTICE MODE</span>
+            <button
+              onClick={exitPracticeMode}
+              className="ml-2 text-xs bg-black/30 px-2 py-1 rounded hover:bg-black/50 transition-all"
+            >
+              Exit
+            </button>
+          </div>
+        </div>
+      )}
 
       {/* Manual sync button for testing blockchain synchronization */}
       <ManualSyncButton />
@@ -421,6 +652,21 @@ export default function Home() {
                 </div>
               </div>
               <div className="flex-1 flex justify-end items-center gap-4">
+                {/* Spectator Mode Button */}
+                <button
+                  onClick={() => setShowSpectatorMode(true)}
+                  className="relative group"
+                >
+                  <div className="absolute inset-0 bg-neon-purple/20 rounded-xl blur-md group-hover:blur-lg transition-all"></div>
+                  <div className="relative bg-gradient-to-r from-neon-purple/80 to-neon-cyan/80 
+                                  hover:from-neon-purple hover:to-neon-cyan
+                                  text-black font-bold py-2 px-4 rounded-xl
+                                  hover:shadow-lg hover:shadow-neon-purple/50 hover:scale-105 
+                                  active:scale-95 transition-all duration-300 flex items-center gap-2">
+                    <span className="text-lg">👁️</span>
+                    <span className="hidden sm:inline">Watch</span>
+                  </div>
+                </button>
                 <button
                   onClick={() => setSocialModal({ type: 'referral', isOpen: true })}
                   className="relative group"
@@ -460,189 +706,74 @@ export default function Home() {
             </div>
           </header>
 
-          {/* Turn Banner - shown when game is active */}
-          {gameState?.gameStatus === 'active' && (
-            <div className="mb-4">
-              <TurnBanner
-                isMyTurn={isMyTurn(publicKey?.toString())}
-                decisionTimeMs={decisionTime}
-                currentPlayerName={getCurrentPlayerName()}
-              />
+          {/* Main Game Container - Extracted for cleaner architecture */}
+          {gameState ? (
+            <GameContainer
+              gameState={gameState}
+              currentPlayerPK={isPracticeMode() 
+                ? gameState.players.find((p: any) => !p.publicKey.startsWith('AI_'))?.publicKey 
+                : publicKey?.toString()
+              }
+              isPracticeMode={isPracticeMode()}
+              isMyTurn={isMyTurn(getCurrentPlayerKey())}
+              decisionTimeMs={decisionTime}
+              currentPlayerName={getCurrentPlayerName()}
+              scanChargesRemaining={scanChargesRemaining}
+              speedBonusAccumulated={speedBonusAccumulated}
+              averageDecisionTimeMs={averageDecisionTimeMs}
+              scannedCoordinates={getScannedCoordinates()}
+              selectedShipId={selectedShipId}
+              shipActionModalShip={shipActionModalShip}
+              onCellSelect={handleCellSelect}
+              onShipClick={handleShipClick}
+              onShipSelect={selectShip}
+              onShipAction={handleShipAction}
+              onCloseShipActionModal={() => setShipActionModalShip(null)}
+              onCreateGame={handleCreateGame}
+              onQuickStart={handleQuickStart}
+              onStartGame={async () => {
+                if (!wallet) return;
+                setIsCreatingGame(true);
+                try {
+                  const success = await startGame(wallet);
+                  if (success) handleGameEvent("🏴‍☠️ Battle Started! Hoist the colors!");
+                } catch (error) {
+                  handleGameError(error, "start game");
+                } finally {
+                  setIsCreatingGame(false);
+                }
+              }}
+              onJoinGame={handleJoinGame}
+              onEndTurn={endTurn}
+              onPracticeMode={() => setShowPracticeMenu(true)}
+              onCollectResources={handleCollectResources}
+              onBuildShip={handleBuildShip}
+              onNewGame={handleNewGame}
+              onReturnToLobby={handleReturnToLobby}
+              isCreatingGame={isCreatingGame}
+              isJoining={isJoining}
+              joinError={joinError}
+              onClearJoinError={clearJoinError}
+              onOpenLeaderboard={() => setSocialModal({ type: 'leaderboard', isOpen: true })}
+              onOpenReferral={() => setSocialModal({ type: 'referral', isOpen: true })}
+            />
+          ) : (
+            /* Game Placeholder when no game active */
+            <div className="flex-1 flex items-center justify-center min-h-[600px]">
+              <div className="text-center p-12 max-w-2xl">
+                <div className="mb-8">
+                  <div className="text-9xl animate-bounce filter drop-shadow-2xl">🗺️</div>
+                </div>
+                <h3 className="text-4xl font-black text-transparent bg-clip-text 
+                               bg-gradient-to-r from-neon-cyan via-neon-gold to-neon-cyan mb-4">
+                  Prepare for Battle!
+                </h3>
+                <p className="text-xl text-gray-300 mb-8">
+                  Use the controls panel to start a practice match or connect your wallet for real battles!
+                </p>
+              </div>
             </div>
           )}
-
-          <div className="grid grid-cols-1 lg:grid-cols-4 gap-6 h-screen max-h-[800px]">
-            {/* Left Panel: Player Stats Only */}
-            <div className="lg:col-span-1">
-              <PlayerStats
-                players={gameState?.players || []}
-                currentPlayerIndex={gameState?.currentPlayerIndex || 0}
-                gameStatus={gameState?.gameStatus || 'waiting'}
-                decisionTimeMs={decisionTime}
-                scanChargesRemaining={scanChargesRemaining}
-                speedBonusAccumulated={speedBonusAccumulated}
-                averageDecisionTimeMs={averageDecisionTimeMs}
-                scannedCoordinates={getScannedCoordinates()}
-              />
-            </div>
-
-            {/* Main Game Area */}
-            <div className="lg:col-span-2 flex flex-col">
-              {gameState?.gameStatus === 'active' && gameState.gameMap ? (
-                <PirateMap
-                  gameMap={gameState.gameMap}
-                  ships={getAllShips()}
-                  onCellSelect={handleCellSelect}
-                  onShipClick={handleShipClick}
-                  isMyTurn={isMyTurn(publicKey?.toString())}
-                  selectedShipId={selectedShipId || undefined}
-                  currentPlayerPK={publicKey?.toString()}
-                  scannedCoordinates={getScannedCoordinates()}
-                />
-              ) : (
-                <div className="flex-1 flex items-center justify-center relative overflow-hidden">
-                  {/* Animated background */}
-                  <div className="absolute inset-0 bg-gradient-to-br from-slate-900 via-slate-800 to-slate-900 rounded-2xl">
-                    <div className="absolute inset-0 bg-[url('/images/ocean-pattern.svg')] opacity-5"></div>
-                    <div className="absolute top-10 left-10 w-32 h-32 bg-neon-cyan/5 rounded-full blur-3xl animate-pulse"></div>
-                    <div className="absolute bottom-10 right-10 w-40 h-40 bg-neon-gold/5 rounded-full blur-3xl animate-pulse delay-1000"></div>
-                    <div className="absolute top-1/2 left-1/3 w-24 h-24 bg-neon-magenta/5 rounded-full blur-2xl animate-pulse delay-500"></div>
-                  </div>
-
-                  {/* Main content */}
-                  <div className="relative z-10 text-center p-12 max-w-2xl">
-                    {/* Animated ship icon */}
-                    <div className="mb-8 relative">
-                      <div className="text-9xl animate-bounce filter drop-shadow-2xl">🗺️</div>
-                      <div className="absolute -top-4 -right-4 text-4xl animate-spin-slow">⚓</div>
-                      <div className="absolute -bottom-4 -left-4 text-3xl animate-pulse">💰</div>
-                    </div>
-
-                    {/* Dynamic title */}
-                    <h3 className="text-4xl font-black text-transparent bg-clip-text 
-                                   bg-gradient-to-r from-neon-cyan via-neon-gold to-neon-cyan mb-4
-                                   animate-subtle-glow">
-                      Prepare for Battle!
-                    </h3>
-
-                    {/* Status message */}
-                    <div className="mb-8">
-                      {!gameState ? (
-                        <div className="space-y-3">
-                          <p className="text-xl text-gray-300 font-semibold">
-                            Ready to command your pirate fleet?
-                          </p>
-                          <p className="text-gray-400 leading-relaxed">
-                            Create a new battle arena or join an existing crew.
-                            Strategic naval warfare awaits!
-                          </p>
-                        </div>
-                      ) : (
-                        <div className="space-y-3">
-                          <p className="text-xl text-neon-gold font-semibold">
-                            Battle Arena Initializing...
-                          </p>
-                          <p className="text-gray-400">
-                            Preparing the seven seas for epic naval combat
-                          </p>
-                        </div>
-                      )}
-                    </div>
-
-                    {/* Action indicators */}
-                    <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-8">
-                      <div className="bg-slate-800/60 border border-neon-cyan/30 rounded-xl p-4 
-                                      hover:bg-slate-700/60 hover:border-neon-cyan/50 transition-all
-                                      hover:scale-105 hover:shadow-lg hover:shadow-neon-cyan/20">
-                        <div className="text-3xl mb-2">⚔️</div>
-                        <div className="text-sm font-semibold text-neon-cyan">Strategic Combat</div>
-                        <div className="text-xs text-gray-400 mt-1">Skill-based warfare</div>
-                      </div>
-
-                      <div className="bg-slate-800/60 border border-neon-gold/30 rounded-xl p-4 
-                                      hover:bg-slate-700/60 hover:border-neon-gold/50 transition-all
-                                      hover:scale-105 hover:shadow-lg hover:shadow-neon-gold/20">
-                        <div className="text-3xl mb-2">💰</div>
-                        <div className="text-sm font-semibold text-neon-gold">Real Rewards</div>
-                        <div className="text-xs text-gray-400 mt-1">Earn while you play</div>
-                      </div>
-
-                      <div className="bg-slate-800/60 border border-neon-magenta/30 rounded-xl p-4 
-                                      hover:bg-slate-700/60 hover:border-neon-magenta/50 transition-all
-                                      hover:scale-105 hover:shadow-lg hover:shadow-neon-magenta/20">
-                        <div className="text-3xl mb-2">🔒</div>
-                        <div className="text-sm font-semibold text-neon-magenta">Privacy First</div>
-                        <div className="text-xs text-gray-400 mt-1">Zcash integration</div>
-                      </div>
-                    </div>
-
-                    {/* Call to action */}
-                    <div className="text-center">
-                      <div className="inline-flex items-center gap-2 bg-gradient-to-r from-neon-cyan/20 to-neon-gold/20 
-                                      border border-neon-cyan/50 rounded-full px-6 py-3 backdrop-blur-sm">
-                        <span className="text-neon-cyan font-bold">🏴‍☠️</span>
-                        <span className="text-gray-300 font-semibold">Use the controls panel to begin →</span>
-                      </div>
-                    </div>
-                  </div>
-                </div>
-              )}
-            </div>
-
-            {/* Controls Panel with Battle Info */}
-            <div className="lg:col-span-1 space-y-4">
-              <BattleInfoPanel gameState={gameState} />
-
-              {/* Resource Collection Panel */}
-              <ResourceCollectionPanel
-                gameState={gameState}
-                currentPlayer={getCurrentPlayer()}
-                onCollectResources={handleCollectResources}
-                isMyTurn={isMyTurn(publicKey?.toString())}
-              />
-
-              {/* Ship Building Panel */}
-              <ShipBuildingPanel
-                gameState={gameState}
-                currentPlayer={getCurrentPlayer()}
-                onBuildShip={handleBuildShip}
-                isMyTurn={isMyTurn(publicKey?.toString())}
-              />
-
-              <PirateControls
-                gameState={gameState}
-                onCreateGame={handleCreateGame}
-                onQuickStart={handleQuickStart}
-                onStartGame={async () => {
-                  if (!wallet) return;
-                  setIsCreatingGame(true);
-                  try {
-                    const success = await startGame(wallet); // Pass wallet
-                    if (success) {
-                      handleGameEvent("🏴‍☠️ Battle Started! Hoist the colors!");
-                    }
-                  } catch (error) {
-                    handleGameError(error, "start game");
-                  } finally {
-                    setIsCreatingGame(false);
-                  }
-                }}
-                onJoinGame={handleJoinGame}
-                onShipAction={handleShipAction}
-                onEndTurn={endTurn}
-                isCreating={isCreatingGame}
-                isJoining={isJoining}
-                joinError={joinError}
-                onClearJoinError={clearJoinError}
-                selectedShipId={selectedShipId || undefined}
-                onShipSelect={selectShip}
-                onScanCoordinate={handleScanCoordinate}
-                decisionTimeMs={decisionTime}
-                scanChargesRemaining={scanChargesRemaining}
-                speedBonusAccumulated={speedBonusAccumulated}
-              />
-            </div>
-          </div>
         </div>
       </div>
     </ErrorBoundary>

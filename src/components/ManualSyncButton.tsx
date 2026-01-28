@@ -1,16 +1,17 @@
 'use client';
 
 import { usePirateGameState } from '@/hooks/usePirateGameState';
-import { useGameSync } from '@/hooks/useGameSync';
+import { useGameLifecycle } from '@/hooks/useGameLifecycle';
 import { useState } from 'react';
 
 /**
  * ManualSyncButton - Simple manual sync trigger
  * Use this to test if blockchain sync is working
+ * Updated to use consolidated useGameLifecycle hook
  */
 export function ManualSyncButton() {
   const { gameState } = usePirateGameState();
-  const { forceSync } = useGameSync(gameState?.gameId);
+  const { forceSync } = useGameLifecycle({ gameId: gameState?.gameId });
   const [isSyncing, setIsSyncing] = useState(false);
 
   const handleManualSync = async () => {

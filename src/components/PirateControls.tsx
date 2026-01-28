@@ -9,7 +9,7 @@ interface PirateControlsProps {
   gameState: GameState | null;
   onCreateGame: () => void;
   onQuickStart: () => void;
-  onStartGame?: () => void; // Added onStartGame
+  onStartGame?: () => void;
   onJoinGame: (gameId: string) => Promise<boolean>;
   onShipAction: (shipId: string, action: 'move' | 'attack' | 'claim' | 'collect' | 'build') => void;
   onEndTurn: () => void;
@@ -23,6 +23,9 @@ interface PirateControlsProps {
   decisionTimeMs?: number;
   scanChargesRemaining?: number;
   speedBonusAccumulated?: number;
+  // Practice mode
+  onPracticeMode?: () => void;
+  isPracticeMode?: boolean;
 }
 
 export default function PirateControls({
@@ -42,7 +45,8 @@ export default function PirateControls({
   onScanCoordinate,
   decisionTimeMs = 0,
   scanChargesRemaining = 3,
-  speedBonusAccumulated = 0
+  speedBonusAccumulated = 0,
+  onPracticeMode
 }: PirateControlsProps) {
 
   const { publicKey } = useWallet();
@@ -248,19 +252,59 @@ export default function PirateControls({
               </div>
             </div>
           )}
+
+          {/* Practice Mode Button - No Wallet Required */}
+          <div className="relative">
+            <div className="absolute inset-0 bg-gradient-to-r from-neon-magenta/20 to-neon-purple/20 rounded-xl blur-md"></div>
+            <button
+              onClick={onPracticeMode}
+              className="w-full relative overflow-hidden bg-gradient-to-r from-neon-magenta via-neon-purple to-neon-magenta 
+                         text-white font-black py-4 px-6 rounded-xl border-2 border-neon-magenta
+                         hover:shadow-2xl hover:shadow-neon-magenta/50 hover:scale-105 
+                         active:scale-95 transition-all duration-300"
+            >
+              <div className="absolute inset-0 bg-gradient-to-r from-transparent via-white/10 to-transparent 
+                              translate-x-[-100%] group-hover:translate-x-[100%] transition-transform duration-700"></div>
+              <div className="relative flex items-center justify-center gap-3">
+                <span className="text-2xl">🎯</span>
+                <div className="text-left">
+                  <div className="text-lg font-black drop-shadow">Practice Mode</div>
+                  <div className="text-sm font-bold opacity-80">No Wallet Required</div>
+                </div>
+              </div>
+            </button>
+          </div>
         </div>
       ) : (
-        /* Wallet Connection Prompt - Enhanced */
-        <div className="wallet-prompt bg-gradient-to-br from-slate-800/90 to-slate-700/90 
-                        border-2 border-neon-magenta/50 rounded-xl p-6 text-center backdrop-blur-sm">
-          <div className="text-5xl mb-4 animate-subtle-bounce filter drop-shadow-2xl">👛</div>
-          <h4 className="text-xl font-bold text-neon-magenta mb-2">Connect Your Wallet</h4>
-          <p className="text-sm text-gray-300 leading-relaxed">
-            Connect your Solana wallet to create or join pirate battles and earn real rewards
-          </p>
-          <div className="mt-4 flex items-center justify-center gap-2 text-xs text-gray-400">
-            <span>🔒</span>
-            <span>Secure • Decentralized • Rewarding</span>
+        /* Wallet Not Connected - Enhanced with Practice Mode */
+        <div className="space-y-4">
+          {/* Practice Mode - Primary CTA when no wallet */}
+          <button
+            onClick={onPracticeMode}
+            className="w-full group relative overflow-hidden bg-gradient-to-r from-neon-cyan via-neon-blue to-neon-cyan 
+                       text-black font-black py-5 px-6 rounded-xl border-2 border-neon-cyan
+                       hover:shadow-2xl hover:shadow-neon-cyan/50 hover:scale-105 
+                       active:scale-95 transition-all duration-300"
+          >
+            <div className="absolute inset-0 bg-gradient-to-r from-transparent via-white/20 to-transparent 
+                            translate-x-[-100%] group-hover:translate-x-[100%] transition-transform duration-700"></div>
+            <div className="relative flex items-center justify-center gap-3">
+              <span className="text-3xl">🎮</span>
+              <div className="text-left">
+                <div className="text-xl font-black drop-shadow">Try Practice Mode</div>
+                <div className="text-sm font-bold opacity-80">Play vs AI • No Wallet Needed</div>
+              </div>
+            </div>
+          </button>
+
+          {/* Wallet Connection Prompt */}
+          <div className="wallet-prompt bg-gradient-to-br from-slate-800/90 to-slate-700/90 
+                          border-2 border-neon-gold/30 rounded-xl p-5 text-center backdrop-blur-sm">
+            <div className="text-3xl mb-2 filter drop-shadow-lg">👛</div>
+            <h4 className="text-lg font-bold text-neon-gold mb-1">Ready for Real Battles?</h4>
+            <p className="text-xs text-gray-400">
+              Connect wallet to compete for SOL rewards
+            </p>
           </div>
         </div>
       )}

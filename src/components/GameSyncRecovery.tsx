@@ -1,19 +1,22 @@
 'use client';
 
-import { useGameIdRecovery } from '@/hooks/useGameIdRecovery';
+import { useGameLifecycle } from '@/hooks/useGameLifecycle';
 import { usePirateGameState } from '@/hooks/usePirateGameState';
 
 /**
  * GameSyncRecovery - Automatically handles game ID mismatches
  * When a memo creates a new game instead of joining, this component
  * detects the mismatch and switches to the correct game
+ * 
+ * Updated to use consolidated useGameLifecycle hook
  */
 export function GameSyncRecovery() {
   const { gameState } = usePirateGameState();
 
-  const { attemptRecovery: _attemptRecovery, currentPlayerCount: _currentPlayerCount, expectedPlayerCount: _expectedPlayerCount } = useGameIdRecovery({
-    currentGameId: gameState?.gameId,
-    expectedPlayerCount: 2, // We expect 2 players for a full game
+  // Use consolidated hook - recovery runs silently in background
+  useGameLifecycle({
+    gameId: gameState?.gameId,
+    expectedPlayerCount: 2,
     onGameIdChanged: (newGameId) => {
       console.log(`🎮 Game ID recovered: switched to ${newGameId}`);
     },
@@ -28,8 +31,8 @@ export function GameSyncRecovery() {
  */
 export function GameSyncStatus() {
   const { gameState } = usePirateGameState();
-  const { currentPlayerCount, expectedPlayerCount, attemptRecovery } = useGameIdRecovery({
-    currentGameId: gameState?.gameId,
+  const { currentPlayerCount, attemptRecovery, isRecovering } = useGameLifecycle({
+    gameId: gameState?.gameId,
     expectedPlayerCount: 2,
   });
 
@@ -37,16 +40,16 @@ export function GameSyncStatus() {
     return null;
   }
 
-  const needsRecovery = currentPlayerCount < expectedPlayerCount;
+
 
   return (
     <div className="fixed bottom-4 right-4 bg-black bg-opacity-80 text-white p-3 rounded text-xs font-mono max-w-sm z-50">
       <div className="text-yellow-400 font-bold mb-2">🔧 Sync Status</div>
       <div>Game ID: {gameState.gameId}</div>
-      <div>Players: {currentPlayerCount}/{expectedPlayerCount}</div>
-      <div>Status: {needsRecovery ? '⚠️ Needs Recovery' : '✅ Synced'}</div>
+      <div>Players: {currentPlayerCount}</div>
+      <div>Status: {isRecovering ? '🔄 Recovering...' : '✅ Synced'}</div>
 
-      {needsRecovery && (
+      {!isRecovering && (
         <button
           onClick={attemptRecovery}
           className="mt-2 px-2 py-1 bg-orange-600 hover:bg-orange-700 rounded text-xs"

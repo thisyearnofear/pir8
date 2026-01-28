@@ -3,9 +3,18 @@ import { GameState, Player, GameAction, Ship } from "../types/game";
 import { PirateGameManager } from "../lib/pirateGameEngine";
 import { GameBalance } from "../lib/gameBalance";
 
+/**
+ * Game Mode Types - Progressive Onboarding Architecture
+ * - 'on-chain': Full blockchain game (requires wallet)
+ * - 'practice': Local AI opponent (no wallet required)
+ * - 'spectator': Read-only view of live games (no wallet required)
+ */
+export type GameMode = 'on-chain' | 'practice' | 'spectator';
+
 interface PirateGameStore {
   // Game State
   gameState: GameState | null;
+  gameMode: GameMode;
 
   // UI State
   isLoading: boolean;
@@ -25,14 +34,14 @@ interface PirateGameStore {
   scannedCoordinates: Set<string>;
   scanChargesRemaining: number;
 
-  // Actions
+  // Actions - On-chain (require wallet)
   createGame: (
     players: Player[],
     _entryFee: number,
     wallet: any,
   ) => Promise<boolean>;
   joinGame: (gameId: string, player: Player, wallet: any) => Promise<boolean>;
-  startGame: (wallet: any) => Promise<boolean>; // Added startGame
+  startGame: (wallet: any) => Promise<boolean>;
   processAction: (action: GameAction) => Promise<boolean>;
   selectShip: (shipId: string | null) => void;
   moveShip: (
@@ -61,6 +70,17 @@ interface PirateGameStore {
   clearError: () => void;
   setGameState: (gameState: GameState) => void;
 
+  // Actions - Practice Mode (no wallet required)
+  startPracticeGame: (humanPlayer: Player, difficulty?: 'novice' | 'pirate' | 'captain' | 'admiral') => boolean;
+  makePracticeMove: (shipId: string, toX: number, toY: number) => boolean;
+  makePracticeAttack: (shipId: string, targetShipId: string) => boolean;
+  makePracticeClaim: (shipId: string) => boolean;
+  processAITurn: () => void;
+  exitPracticeMode: () => void;
+
+  // Actions - Mode Management
+  setGameMode: (mode: GameMode) => void;
+
   // Skill Mechanics
   startTurn: () => void;
   stopTurnTimer: () => void;
@@ -77,11 +97,44 @@ interface PirateGameStore {
   getMyShips: (playerPK: string) => Ship[];
   isMyTurn: (walletPk?: string) => boolean;
   getAllShips: () => Ship[];
+  isPracticeMode: () => boolean;
 }
+
+// localStorage key for practice game persistence
+const PRACTICE_GAME_STORAGE_KEY = 'pir8_practice_game';
+
+// Load saved practice game from localStorage
+const loadSavedPracticeGame = (): GameState | null => {
+  if (typeof window === 'undefined') return null;
+  try {
+    const saved = localStorage.getItem(PRACTICE_GAME_STORAGE_KEY);
+    if (saved) {
+      return JSON.parse(saved) as GameState;
+    }
+  } catch (error) {
+    console.error('Failed to load saved practice game:', error);
+  }
+  return null;
+};
+
+// Save practice game to localStorage
+const savePracticeGame = (gameState: GameState | null) => {
+  if (typeof window === 'undefined') return;
+  try {
+    if (gameState) {
+      localStorage.setItem(PRACTICE_GAME_STORAGE_KEY, JSON.stringify(gameState));
+    } else {
+      localStorage.removeItem(PRACTICE_GAME_STORAGE_KEY);
+    }
+  } catch (error) {
+    console.error('Failed to save practice game:', error);
+  }
+};
 
 export const usePirateGameState = create<PirateGameStore>((set, get) => ({
   // Initial state
   gameState: null,
+  gameMode: 'on-chain' as GameMode,
   isLoading: false,
   error: null,
   showMessage: null,
@@ -941,6 +994,161 @@ export const usePirateGameState = create<PirateGameStore>((set, get) => ({
     return gameState.players
       .flatMap((player) => player.ships)
       .filter((ship) => ship.health > 0);
+  },
+
+  isPracticeMode: () => {
+    const { gameMode } = get();
+    return gameMode === 'practice';
+  },
+
+  // ===== PRACTICE MODE METHODS =====
+
+  setGameMode: (mode: GameMode) => {
+    set({ gameMode: mode });
+  },
+
+  startPracticeGame: (humanPlayer: Player, difficulty: 'novice' | 'pirate' | 'captain' | 'admiral' = 'pirate') => {
+    try {
+      // Check for saved game
+      const savedGame = loadSavedPracticeGame();
+      if (savedGame && savedGame.gameStatus !== 'completed') {
+        set({
+          gameState: savedGame,
+          gameMode: 'practice',
+          selectedShipId: null,
+          scannedCoordinates: new Set(),
+          scanChargesRemaining: 3,
+          showMessage: '⚔️ Resumed your practice battle!',
+        });
+        setTimeout(() => set({ showMessage: null }), 3000);
+        return true;
+      }
+
+      const practiceGame = PirateGameManager.createPracticeGame(humanPlayer, difficulty);
+      savePracticeGame(practiceGame);
+      set({
+        gameState: practiceGame,
+        gameMode: 'practice',
+        selectedShipId: null,
+        scannedCoordinates: new Set(),
+        scanChargesRemaining: 3,
+        showMessage: `⚔️ Practice mode started! Defeat ${difficulty} AI opponent!`,
+      });
+      setTimeout(() => set({ showMessage: null }), 3000);
+      return true;
+    } catch (error) {
+      console.error('Failed to start practice game:', error);
+      set({ error: 'Failed to start practice game' });
+      return false;
+    }
+  },
+
+  makePracticeMove: (shipId: string, toX: number, toY: number) => {
+    const { gameState } = get();
+    if (!gameState) return false;
+
+    const action: GameAction = {
+      id: `practice_${Date.now()}`,
+      gameId: gameState.gameId,
+      player: gameState.players[gameState.currentPlayerIndex]?.publicKey || '',
+      type: 'move_ship',
+      data: { shipId, toCoordinate: `${toX},${toY}` },
+      timestamp: Date.now(),
+    };
+
+    const result = PirateGameManager.processTurnAction(gameState, action);
+    if (result.success) {
+      const advancedState = PirateGameManager.advanceTurn(result.updatedGameState);
+      savePracticeGame(advancedState);
+      set({ gameState: advancedState, selectedShipId: null });
+      
+      // Process AI turn after a delay
+      setTimeout(() => get().processAITurn(), 1000);
+      return true;
+    }
+    return false;
+  },
+
+  makePracticeAttack: (shipId: string, targetShipId: string) => {
+    const { gameState } = get();
+    if (!gameState) return false;
+
+    const action: GameAction = {
+      id: `practice_${Date.now()}`,
+      gameId: gameState.gameId,
+      player: gameState.players[gameState.currentPlayerIndex]?.publicKey || '',
+      type: 'attack',
+      data: { shipId, targetShipId },
+      timestamp: Date.now(),
+    };
+
+    const result = PirateGameManager.processTurnAction(gameState, action);
+    if (result.success) {
+      const advancedState = PirateGameManager.advanceTurn(result.updatedGameState);
+      savePracticeGame(advancedState);
+      set({ gameState: advancedState });
+      
+      setTimeout(() => get().processAITurn(), 1000);
+      return true;
+    }
+    return false;
+  },
+
+  makePracticeClaim: (shipId: string) => {
+    const { gameState } = get();
+    if (!gameState) return false;
+
+    const action: GameAction = {
+      id: `practice_${Date.now()}`,
+      gameId: gameState.gameId,
+      player: gameState.players[gameState.currentPlayerIndex]?.publicKey || '',
+      type: 'claim_territory',
+      data: { shipId },
+      timestamp: Date.now(),
+    };
+
+    const result = PirateGameManager.processTurnAction(gameState, action);
+    if (result.success) {
+      const advancedState = PirateGameManager.advanceTurn(result.updatedGameState);
+      savePracticeGame(advancedState);
+      set({ gameState: advancedState });
+      
+      setTimeout(() => get().processAITurn(), 1000);
+      return true;
+    }
+    return false;
+  },
+
+  processAITurn: () => {
+    const { gameState, gameMode } = get();
+    if (!gameState || gameMode !== 'practice') return;
+
+    const currentPlayer = gameState.players[gameState.currentPlayerIndex];
+    if (!currentPlayer?.publicKey.startsWith('AI_')) return;
+
+    // Process AI turn
+    const updatedState = PirateGameManager.processAITurn(gameState);
+    savePracticeGame(updatedState);
+    set({ gameState: updatedState });
+
+    // Continue processing if still AI's turn
+    const nextPlayer = updatedState.players[updatedState.currentPlayerIndex];
+    if (nextPlayer?.publicKey.startsWith('AI_')) {
+      setTimeout(() => get().processAITurn(), 1500);
+    }
+  },
+
+  exitPracticeMode: () => {
+    savePracticeGame(null); // Clear saved practice game
+    set({
+      gameState: null,
+      gameMode: 'on-chain',
+      selectedShipId: null,
+      scannedCoordinates: new Set(),
+      scanChargesRemaining: 3,
+      showMessage: 'Practice session ended. Ready for real battles!',
+    });
+    setTimeout(() => set({ showMessage: null }), 3000);
   },
 })) as any;
 

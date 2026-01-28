@@ -1,36 +1,44 @@
-import { ShipType, Resources } from '../types/game';
+import { ShipType, Resources, Ship } from '../types/game';
+import { SHIP_CONFIGS } from '../types/game';
 
 /**
- * Game balance configurations and calculations
+ * Consolidated game balance configurations and calculations
+ * Merged from GameBalance and PirateGameManager to eliminate duplication
  */
 export class GameBalance {
   
   /**
-   * Ship combat balance
+   * Ship configurations - Single source of truth
+   * Combines stats from SHIP_CONFIGS with economy data
    */
-  static readonly SHIP_BALANCE = {
+  static readonly SHIP_BALANCE: Record<ShipType, {
+    stats: Omit<Ship, 'id' | 'position' | 'resources'>;
+    cost: Resources;
+    strength: number;
+    resourceBonus: number;
+  }> = {
     sloop: {
+      stats: SHIP_CONFIGS.sloop,
       cost: { gold: 500, crew: 10, cannons: 5, supplies: 20, wood: 0, rum: 0 },
       strength: 1.0,
-      speed: 3,
       resourceBonus: 1.0
     },
     frigate: {
+      stats: SHIP_CONFIGS.frigate,
       cost: { gold: 1200, crew: 25, cannons: 15, supplies: 40, wood: 0, rum: 0 },
       strength: 2.0,
-      speed: 2,
       resourceBonus: 1.2
     },
     galleon: {
+      stats: SHIP_CONFIGS.galleon,
       cost: { gold: 2500, crew: 50, cannons: 30, supplies: 80, wood: 0, rum: 0 },
       strength: 3.5,
-      speed: 1,
       resourceBonus: 1.5
     },
     flagship: {
+      stats: SHIP_CONFIGS.flagship,
       cost: { gold: 5000, crew: 100, cannons: 60, supplies: 150, wood: 0, rum: 0 },
       strength: 5.0,
-      speed: 1,
       resourceBonus: 1.3
     }
   };
@@ -110,14 +118,30 @@ export class GameBalance {
   /**
    * Calculate fleet power
    */
-  static calculateFleetPower(ships: any[]): number {
+  static calculateFleetPower(ships: Ship[]): number {
     return ships
       .filter(ship => ship.health > 0)
       .reduce((power, ship) => {
-        const shipBalance = this.SHIP_BALANCE[ship.type as keyof typeof this.SHIP_BALANCE];
+        const shipBalance = this.SHIP_BALANCE[ship.type];
         const healthRatio = ship.health / ship.maxHealth;
         return power + (shipBalance.strength * healthRatio);
       }, 0);
+  }
+
+  /**
+   * Get ship building costs - Single source of truth
+   * Replaces duplicate in PirateGameManager
+   */
+  static getShipBuildingCosts(shipType: ShipType): Resources {
+    return this.SHIP_BALANCE[shipType].cost;
+  }
+
+  /**
+   * Get resource collection multiplier based on ship type
+   * Replaces duplicate in PirateGameManager
+   */
+  static getResourceCollectionMultiplier(shipType: ShipType): number {
+    return this.SHIP_BALANCE[shipType].resourceBonus;
   }
 
   /**
