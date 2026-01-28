@@ -56,15 +56,58 @@ export default function PirateControls({
   const [isScanning, setIsScanning] = useState(false);
   
   // Progressive disclosure state - collapse less critical sections by default
-  const [expandedSections, setExpandedSections] = useState({
-    gameInfo: false,
-    shipSelection: true,  // Keep ships visible by default
-    scanning: false,
-    building: false,
+  const [expandedSections, setExpandedSections] = useState(() => {
+    // Try to load saved preferences from localStorage
+    if (typeof window !== 'undefined') {
+      try {
+        const saved = localStorage.getItem('pir8_collapsible_sections');
+        if (saved) {
+          return JSON.parse(saved);
+        }
+      } catch (error) {
+        console.error('Failed to load collapsible sections preferences:', error);
+      }
+    }
+    // Default state if no saved preferences
+    return {
+      gameInfo: false,
+      shipSelection: true,  // Keep ships visible by default
+      scanning: false,
+      building: false,
+    };
   });
 
   const toggleSection = (section: keyof typeof expandedSections) => {
-    setExpandedSections(prev => ({ ...prev, [section]: !prev[section] }));
+    setExpandedSections((prev: typeof expandedSections) => {
+      const newState = { ...prev, [section]: !prev[section] };
+      // Save to localStorage
+      if (typeof window !== 'undefined') {
+        try {
+          localStorage.setItem('pir8_collapsible_sections', JSON.stringify(newState));
+        } catch (error) {
+          console.error('Failed to save collapsible sections preferences:', error);
+        }
+      }
+      return newState;
+    });
+  };
+
+  // Function to reset layout to defaults
+  const resetLayout = () => {
+    const defaultState = {
+      gameInfo: false,
+      shipSelection: true,
+      scanning: false,
+      building: false,
+    };
+    setExpandedSections(defaultState);
+    if (typeof window !== 'undefined') {
+      try {
+        localStorage.setItem('pir8_collapsible_sections', JSON.stringify(defaultState));
+      } catch (error) {
+        console.error('Failed to reset collapsible sections preferences:', error);
+      }
+    }
   };
 
   const getCurrentPlayer = (): Player | null => {
@@ -821,6 +864,18 @@ export default function PirateControls({
 
             {renderShipSelection()}
             {renderActionControls()}
+
+            {/* Layout Reset Button */}
+            <div className="flex justify-end mt-2">
+              <button
+                onClick={resetLayout}
+                title="Reset all sections to default layout"
+                className="text-xs text-gray-400 hover:text-neon-cyan transition-colors duration-200 flex items-center gap-1"
+              >
+                <span>🔄</span>
+                <span>Reset Layout</span>
+              </button>
+            </div>
 
             {/* Collapsible Ship Building Section */}
             <CollapsibleSection
