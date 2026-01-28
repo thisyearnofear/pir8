@@ -279,14 +279,28 @@ function GamePlaceholder({ onPracticeMode, onOpenLeaderboard }: GamePlaceholderP
           </h2>
 
           <p className="text-lg sm:text-xl text-gray-300 font-semibold mb-4 max-w-2xl mx-auto">
-            Strategic naval warfare meets blockchain gaming
+            Strategic naval warfare on <span className="text-neon-cyan font-bold">Solana</span> with <span className="text-neon-purple font-bold">Zcash</span> privacy
           </p>
           
-          <p className="text-base text-gray-400 max-w-xl mx-auto mb-8">
+          <p className="text-base text-gray-400 max-w-xl mx-auto mb-4">
             Fast battles, private moves, viral wins. Every decision matters in this skill-based conquest for treasure and glory!
           </p>
 
-          {/* CTA Buttons */}
+          {/* Dual-Chain Badge */}
+          <div className="flex flex-wrap items-center justify-center gap-3 mb-8">
+            <div className="flex items-center gap-2 bg-gradient-to-r from-neon-cyan/20 to-neon-blue/20 
+                           border border-neon-cyan/50 rounded-full px-4 py-2 backdrop-blur-sm">
+              <span className="text-lg">⚡</span>
+              <span className="text-sm font-semibold text-neon-cyan">Powered by Solana</span>
+            </div>
+            <div className="flex items-center gap-2 bg-gradient-to-r from-neon-purple/20 to-neon-magenta/20 
+                           border border-neon-purple/50 rounded-full px-4 py-2 backdrop-blur-sm">
+              <span className="text-lg">🔒</span>
+              <span className="text-sm font-semibold text-neon-purple">Secured by Zcash</span>
+            </div>
+          </div>
+
+          {/* CTA Buttons - Practice First (No Wallet Required) */}
           <div className="flex flex-col sm:flex-row gap-4 justify-center items-center mb-12">
             <button
               onClick={onPracticeMode}
@@ -299,7 +313,10 @@ function GamePlaceholder({ onPracticeMode, onOpenLeaderboard }: GamePlaceholderP
                              hover:shadow-lg hover:shadow-neon-cyan/50 hover:scale-105 
                              active:scale-95 transition-all duration-300 flex items-center justify-center gap-3">
                 <span className="text-2xl">⚔️</span>
-                <span className="text-lg">Start Practice Battle</span>
+                <div className="flex flex-col items-start">
+                  <span className="text-lg">Play Now (Free)</span>
+                  <span className="text-xs opacity-80">No wallet needed</span>
+                </div>
               </div>
             </button>
 
@@ -314,7 +331,7 @@ function GamePlaceholder({ onPracticeMode, onOpenLeaderboard }: GamePlaceholderP
                              hover:shadow-lg hover:shadow-neon-gold/30 hover:scale-105 
                              active:scale-95 transition-all duration-300 flex items-center justify-center gap-3">
                 <span className="text-2xl">🏆</span>
-                <span className="text-lg">View Leaderboard</span>
+                <span className="text-lg">Leaderboard</span>
               </div>
             </button>
           </div>
@@ -350,12 +367,12 @@ function GamePlaceholder({ onPracticeMode, onOpenLeaderboard }: GamePlaceholderP
           </div>
 
           {/* Feature 4 */}
-          <div className="group bg-slate-800/40 backdrop-blur-sm border border-neon-orange/30 rounded-xl p-5 
-                         hover:bg-slate-800/60 hover:border-neon-orange/50 hover:scale-105 transition-all duration-300
-                         hover:shadow-lg hover:shadow-neon-orange/20">
+          <div className="group bg-slate-800/40 backdrop-blur-sm border border-neon-purple/30 rounded-xl p-5 
+                         hover:bg-slate-800/60 hover:border-neon-purple/50 hover:scale-105 transition-all duration-300
+                         hover:shadow-lg hover:shadow-neon-purple/20">
             <div className="text-4xl mb-3 group-hover:animate-bounce">🔒</div>
-            <h3 className="text-lg font-bold text-neon-orange mb-2">Privacy First</h3>
-            <p className="text-sm text-gray-400">Hidden moves via Zcash integration. Outsmart your enemies!</p>
+            <h3 className="text-lg font-bold text-neon-purple mb-2">Zcash Privacy</h3>
+            <p className="text-sm text-gray-400">Shielded memos for private moves. Solana speed with Zcash security!</p>
           </div>
         </div>
 

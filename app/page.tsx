@@ -581,18 +581,43 @@ export default function Home() {
         </div>
       )}
 
-      {/* Practice Mode Indicator */}
+      {/* Practice Mode Indicator with Upgrade Prompt */}
       {isPracticeMode() && (
         <div className="fixed top-4 left-4 z-40">
-          <div className="bg-gradient-to-r from-neon-magenta/80 to-neon-purple/80 text-white px-4 py-2 rounded-xl font-bold shadow-lg flex items-center gap-2">
-            <span>🎯</span>
-            <span>PRACTICE MODE</span>
-            <button
-              onClick={exitPracticeMode}
-              className="ml-2 text-xs bg-black/30 px-2 py-1 rounded hover:bg-black/50 transition-all"
-            >
-              Exit
-            </button>
+          <div className="bg-gradient-to-r from-neon-magenta/90 to-neon-purple/90 text-white rounded-xl font-bold shadow-lg overflow-hidden">
+            {/* Top Bar */}
+            <div className="flex items-center justify-between px-4 py-2 border-b border-white/20">
+              <div className="flex items-center gap-2">
+                <span>🎯</span>
+                <span>PRACTICE MODE</span>
+              </div>
+              <button
+                onClick={exitPracticeMode}
+                className="text-xs bg-black/30 px-2 py-1 rounded hover:bg-black/50 transition-all"
+              >
+                Exit
+              </button>
+            </div>
+            
+            {/* Upgrade Prompt (if not connected) */}
+            {!publicKey && (
+              <div className="px-4 py-3 bg-black/20 space-y-2">
+                <p className="text-xs text-white/90">
+                  🏆 Ready for real battles with stakes?
+                </p>
+                <button
+                  onClick={() => {
+                    exitPracticeMode();
+                    // Wallet button will be visible on main page
+                    handleGameEvent('Connect your wallet to play on-chain battles!');
+                  }}
+                  className="w-full text-xs bg-gradient-to-r from-neon-cyan to-neon-gold text-black font-bold py-2 px-3 rounded-lg
+                             hover:shadow-lg hover:scale-105 transition-all"
+                >
+                  Connect Wallet & Play On-Chain
+                </button>
+              </div>
+            )}
           </div>
         </div>
       )}
@@ -854,27 +879,95 @@ export default function Home() {
                     </div>
                   </div>
                 ) : (
-                  /* Connected but No Game - Use Control Panel */
-                  <div className="space-y-6">
-                    <div className="text-7xl sm:text-8xl animate-bounce-slow filter drop-shadow-2xl">⚓</div>
-                    <h3 className="text-3xl sm:text-4xl font-black text-transparent bg-clip-text 
-                                   bg-gradient-to-r from-neon-cyan via-neon-gold to-neon-cyan mb-4">
-                      Ready to Sail, Captain!
-                    </h3>
-                    <p className="text-lg sm:text-xl text-gray-300 mb-2">
-                      Your wallet is connected
-                    </p>
-                    <p className="text-base text-gray-400 mb-8">
-                      Use the controls panel on the right to create or join a battle →
-                    </p>
+                  /* Connected but No Game - Clear CTAs */
+                  <div className="space-y-8">
+                    <div className="text-7xl sm:text-8xl animate-bounce-slow filter drop-shadow-2xl">🏴‍☠️</div>
+                    <div>
+                      <h3 className="text-3xl sm:text-4xl font-black text-transparent bg-clip-text 
+                                     bg-gradient-to-r from-neon-cyan via-neon-gold to-neon-cyan mb-4">
+                        Ready for Battle, Captain!
+                      </h3>
+                      <p className="text-lg sm:text-xl text-gray-300 mb-2">
+                        Your wallet is connected
+                      </p>
+                      <p className="text-base text-gray-400 mb-8">
+                        Choose your path to glory
+                      </p>
+                    </div>
 
-                    {/* Quick Start Hint */}
-                    <div className="inline-flex items-center gap-3 bg-gradient-to-r from-neon-cyan/10 to-neon-gold/10 
-                                   border border-neon-cyan/30 rounded-xl px-6 py-4 backdrop-blur-sm">
-                      <span className="text-2xl">💡</span>
-                      <div className="text-left">
-                        <div className="text-sm font-semibold text-neon-cyan">Pro Tip</div>
-                        <div className="text-xs text-gray-400">Create a game and add AI for instant solo play</div>
+                    {/* Action Cards for Connected Users */}
+                    <div className="grid grid-cols-1 md:grid-cols-3 gap-6 max-w-4xl mx-auto">
+                      {/* Create Game */}
+                      <button
+                        onClick={handleCreateGame}
+                        disabled={isCreatingGame}
+                        className="group bg-gradient-to-br from-slate-800/60 to-slate-900/60 border-2 border-neon-cyan/50 
+                                   rounded-2xl p-6 hover:scale-105 transition-all duration-300
+                                   hover:shadow-lg hover:shadow-neon-cyan/30 text-left disabled:opacity-50 disabled:cursor-not-allowed"
+                      >
+                        <div className="text-5xl mb-4">🎮</div>
+                        <h4 className="text-xl font-bold text-neon-cyan mb-2">Create Battle</h4>
+                        <p className="text-sm text-gray-400 mb-4">
+                          Start a new on-chain game. Invite friends or add AI opponents.
+                        </p>
+                        <div className="flex items-center gap-2 text-neon-cyan text-sm font-semibold">
+                          <span>{isCreatingGame ? 'Creating...' : 'Start Now'}</span>
+                          <span>→</span>
+                        </div>
+                      </button>
+
+                      {/* Practice Mode */}
+                      <button
+                        onClick={() => setShowPracticeMenu(true)}
+                        className="group bg-gradient-to-br from-slate-800/60 to-slate-900/60 border-2 border-neon-gold/50 
+                                   rounded-2xl p-6 hover:scale-105 transition-all duration-300
+                                   hover:shadow-lg hover:shadow-neon-gold/30 text-left"
+                      >
+                        <div className="text-5xl mb-4">⚔️</div>
+                        <h4 className="text-xl font-bold text-neon-gold mb-2">Practice Mode</h4>
+                        <p className="text-sm text-gray-400 mb-4">
+                          Sharpen your skills vs AI. No on-chain fees or gas costs.
+                        </p>
+                        <div className="flex items-center gap-2 text-neon-gold text-sm font-semibold">
+                          <span>Train Now</span>
+                          <span>→</span>
+                        </div>
+                      </button>
+
+                      {/* Watch / Join */}
+                      <button
+                        onClick={() => setShowSpectatorMode(true)}
+                        className="group bg-gradient-to-br from-slate-800/60 to-slate-900/60 border-2 border-neon-purple/50 
+                                   rounded-2xl p-6 hover:scale-105 transition-all duration-300
+                                   hover:shadow-lg hover:shadow-neon-purple/30 text-left"
+                      >
+                        <div className="text-5xl mb-4">👁️</div>
+                        <h4 className="text-xl font-bold text-neon-purple mb-2">Watch & Join</h4>
+                        <p className="text-sm text-gray-400 mb-4">
+                          Spectate live battles or join an existing game.
+                        </p>
+                        <div className="flex items-center gap-2 text-neon-purple text-sm font-semibold">
+                          <span>Explore</span>
+                          <span>→</span>
+                        </div>
+                      </button>
+                    </div>
+
+                    {/* Quick Tips */}
+                    <div className="max-w-2xl mx-auto">
+                      <div className="bg-gradient-to-r from-neon-cyan/10 to-neon-gold/10 
+                                     border border-neon-cyan/30 rounded-xl p-6 backdrop-blur-sm">
+                        <div className="flex items-start gap-4">
+                          <span className="text-3xl">💡</span>
+                          <div className="flex-1 text-left">
+                            <div className="text-sm font-semibold text-neon-cyan mb-2">Getting Started</div>
+                            <ul className="text-xs text-gray-400 space-y-1">
+                              <li>• <strong className="text-gray-300">Create Battle:</strong> Start on-chain game with real stakes</li>
+                              <li>• <strong className="text-gray-300">Practice Mode:</strong> Learn mechanics without gas fees</li>
+                              <li>• <strong className="text-gray-300">Zcash Privacy:</strong> Use shielded memos for private moves</li>
+                            </ul>
+                          </div>
+                        </div>
                       </div>
                     </div>
                   </div>
