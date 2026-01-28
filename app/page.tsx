@@ -24,16 +24,17 @@ import { GameSyncStatus } from "@/components/GameSyncRecovery";
 import PrivacyStatusIndicator from "@/components/PrivacyStatusIndicator";
 import ViralEventModal from "@/components/ViralEventModal";
 import SocialModal from "@/components/SocialModal";
-import { useState, useEffect } from "react";
+import { useState, useEffect, useMemo, useCallback } from "react";
 import dynamic from "next/dynamic";
 import { createPlayerFromWallet, createAIPlayer } from "@/lib/playerHelper";
 import { Ship, Player } from "@/types/game";
 
 const WalletButtonWrapper = dynamic(
-  () => import("@solana/wallet-adapter-react-ui").then(mod => ({
-    default: () => <mod.WalletMultiButton />
-  })),
-  { ssr: false, loading: () => <div className="px-4 py-2 text-gray-400">Loading...</div> }
+  () => import("@solana/wallet-adapter-react-ui").then(mod => mod.WalletMultiButton),
+  {
+    ssr: false,
+    loading: () => <div className="px-4 py-2 text-gray-400">Loading...</div>
+  }
 );
 
 export default function Home() {
@@ -101,14 +102,14 @@ export default function Home() {
     return gameState.players.find((p: any) => p.publicKey === publicKey.toString()) || null;
   };
 
-  // Get current player key for turn checking
-  const getCurrentPlayerKey = () => {
+  // Get current player key for turn checking - memoized to prevent recalculations
+  const getCurrentPlayerKey = useMemo(() => {
     if (isPracticeMode()) {
       const humanPlayer = gameState?.players.find((p: any) => !p.publicKey.startsWith('AI_'));
       return humanPlayer?.publicKey;
     }
     return publicKey?.toString();
-  };
+  }, [gameState?.players, publicKey, isPracticeMode]);
 
   // Consolidated viral system
   const viralSystem = useViralSystem(gameState, getCurrentPlayer());
@@ -170,14 +171,15 @@ export default function Home() {
   // Start turn timer when it becomes player's turn
   useEffect(() => {
     const playerKey = getCurrentPlayerKey();
-    if (isMyTurn(playerKey) && gameState?.gameStatus === 'active') {
+    const isTurn = isMyTurn(playerKey);
+    if (isTurn && gameState?.gameStatus === 'active') {
       startTurn();
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [gameState?.currentPlayerIndex, gameState?.gameStatus]);
+  }, [gameState?.currentPlayerIndex, gameState?.gameStatus, publicKey]);
 
-  // Practice mode handlers
-  const handleStartPractice = (difficulty: 'novice' | 'pirate' | 'captain' | 'admiral') => {
+  // Practice mode handlers - memoized with useCallback to prevent re-creations
+  const handleStartPractice = useCallback((difficulty: 'novice' | 'pirate' | 'captain' | 'admiral') => {
     // Create a temporary player for practice mode
     const practicePlayer: Player = {
       publicKey: publicKey?.toString() || `guest_${Date.now()}`,
@@ -199,13 +201,14 @@ export default function Home() {
       setShowPracticeMenu(false);
       handleGameEvent(`⚔️ Practice mode: ${difficulty} AI opponent!`);
     }
-  };
+  }, [publicKey, startPracticeGame]);
 
   const handlePracticeMove = async (shipId: string, coordinate: string) => {
     const [x, y] = coordinate.split(',').map(Number);
     const success = makePracticeMove(shipId, x, y);
     if (success) {
-      handleGameEvent('Ship moved!');
+      // Debounce game events to prevent rapid updates
+      setTimeout(() => handleGameEvent('Ship moved!'), 50);
     }
     return success;
   };
@@ -228,8 +231,12 @@ export default function Home() {
 
   // Simplified game event handling with viral moments
   const handleGameEvent = (message: string) => {
-    setMessage(message);
-    setTimeout(() => setMessage(null), 3000);
+    // Clear any existing message first to prevent queue buildup
+    setMessage(null);
+    setTimeout(() => {
+      setMessage(message);
+      setTimeout(() => setMessage(null), 3000);
+    }, 50);
   };
 
   // Handle viral sharing - now consolidated
@@ -522,10 +529,10 @@ export default function Home() {
         </div>
       )}
 
-      {/* Practice Mode Menu Modal */}
+      {/* Practice Mode Menu Modal - Performance Optimized */}
       {showPracticeMenu && !gameState && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/80 backdrop-blur-sm">
-          <div className="bg-slate-900 border-2 border-neon-cyan/50 rounded-2xl p-8 max-w-md w-full mx-4 shadow-2xl shadow-neon-cyan/20">
+          <div className="bg-slate-900 border-2 border-neon-cyan/50 rounded-2xl p-8 max-w-md w-full mx-4 shadow-2xl shadow-neon-cyan/20 transform transition-all duration-300">
             <h2 className="text-3xl font-black text-transparent bg-clip-text bg-gradient-to-r from-neon-cyan to-neon-gold mb-4">
               ⚔️ Practice Mode
             </h2>
@@ -582,28 +589,36 @@ export default function Home() {
         </div>
       )}
 
-      {/* Practice Mode Indicator with Upgrade Prompt */}
+      {/* Practice Mode Indicator with Upgrade Prompt - Enhanced Readability */}
       {isPracticeMode() && (
         <div className="fixed top-4 left-4 z-40">
-          <div className="bg-gradient-to-r from-neon-magenta/90 to-neon-purple/90 text-white rounded-xl font-bold shadow-lg overflow-hidden">
+          <div className="bg-gradient-to-r from-neon-magenta/90 to-neon-purple/90 text-white rounded-xl font-bold shadow-lg overflow-hidden animate-fade-in">
             {/* Top Bar */}
-            <div className="flex items-center justify-between px-4 py-2 border-b border-white/20">
+            <div className="flex items-center justify-between px-4 py-3 border-b border-white/20">
               <div className="flex items-center gap-2">
-                <span>🎯</span>
-                <span>PRACTICE MODE</span>
+                <span className="text-lg">🎯</span>
+                <span className="text-sm font-black">PRACTICE MODE</span>
               </div>
               <button
                 onClick={exitPracticeMode}
-                className="text-xs bg-black/30 px-2 py-1 rounded hover:bg-black/50 transition-all"
+                className="text-xs bg-black/30 px-3 py-1.5 rounded hover:bg-black/50 transition-all"
+                title="Exit practice mode"
               >
                 Exit
               </button>
             </div>
             
+            {/* Status Info */}
+            <div className="px-4 py-2 bg-black/20">
+              <p className="text-xs text-white/90">
+                🛡️ Safe environment - no blockchain fees
+              </p>
+            </div>
+            
             {/* Upgrade Prompt (if not connected) */}
             {!publicKey && (
-              <div className="px-4 py-3 bg-black/20 space-y-2">
-                <p className="text-xs text-white/90">
+              <div className="px-4 py-3 bg-black/20 space-y-2 border-t border-white/10">
+                <p className="text-xs text-white/90 font-semibold">
                   🏆 Ready for real battles with stakes?
                 </p>
                 <button
