@@ -268,12 +268,14 @@ export default function GameContainer({
                 {isMyTurn ? '⚔️ Your Turn' : `⏳ ${currentPlayerName}'s Turn`}
               </div>
               {isMyTurn && (
-                <div className={`text-sm font-mono ${
-                  decisionTimeMs < 5000 ? 'text-green-400' :
-                  decisionTimeMs < 10000 ? 'text-yellow-400' : 'text-red-400'
-                }`}>
-                  {formatTime(decisionTimeMs)}
-                </div>
+                <Tooltip content="Speed bonus: <5s = +100 | <10s = +50 | <15s = +25" position="bottom">
+                  <div className={`text-sm font-mono cursor-help ${
+                    decisionTimeMs < 5000 ? 'text-green-400' :
+                    decisionTimeMs < 10000 ? 'text-yellow-400' : 'text-red-400'
+                  }`}>
+                    ⏱️ {formatTime(decisionTimeMs)}
+                  </div>
+                </Tooltip>
               )}
             </div>
 
@@ -289,16 +291,18 @@ export default function GameContainer({
             </div>
 
             {/* Menu Toggle */}
-            <button
-              onClick={() => setMenuOpen(!menuOpen)}
-              className={`p-2 rounded-lg transition-all ${
-                menuOpen 
-                  ? 'bg-neon-cyan text-black' 
-                  : 'bg-slate-700 text-white hover:bg-slate-600'
-              }`}
-            >
-              {menuOpen ? '✕' : '☰'}
-            </button>
+            <Tooltip content="Game Menu (M)" position="bottom">
+              <button
+                onClick={() => setMenuOpen(!menuOpen)}
+                className={`p-2 rounded-lg transition-all min-w-[40px] min-h-[40px] ${
+                  menuOpen 
+                    ? 'bg-neon-cyan text-black' 
+                    : 'bg-slate-700 text-white hover:bg-slate-600'
+                }`}
+              >
+                {menuOpen ? '✕' : '☰'}
+              </button>
+            </Tooltip>
           </div>
 
           {/* Main Content - Map as Hero */}
@@ -410,22 +414,28 @@ export default function GameContainer({
               )}
             </button>
 
-            {/* Quick Stats - Compact */}
+            {/* Quick Stats - Compact with Tooltips */}
             <div className="flex items-center gap-3 text-sm flex-shrink-0">
               {currentPlayer && (
                 <>
-                  <div className="flex flex-col items-center">
-                    <span className="text-lg">💰</span>
-                    <span className="text-xs text-neon-gold font-bold">{currentPlayer.resources.gold}</span>
-                  </div>
-                  <div className="flex flex-col items-center">
-                    <span className="text-lg">🚢</span>
-                    <span className="text-xs text-neon-cyan font-bold">{currentPlayer.ships.filter(s => s.health > 0).length}</span>
-                  </div>
-                  <div className="flex flex-col items-center">
-                    <span className="text-lg">🏴‍☠️</span>
-                    <span className="text-xs text-neon-magenta font-bold">{currentPlayer.controlledTerritories.length}</span>
-                  </div>
+                  <Tooltip content="Gold - Collect from treasure & territories">
+                    <div className="flex flex-col items-center cursor-help">
+                      <span className="text-lg">💰</span>
+                      <span className="text-xs text-neon-gold font-bold">{currentPlayer.resources.gold}</span>
+                    </div>
+                  </Tooltip>
+                  <Tooltip content="Active ships in your fleet">
+                    <div className="flex flex-col items-center cursor-help">
+                      <span className="text-lg">🚢</span>
+                      <span className="text-xs text-neon-cyan font-bold">{currentPlayer.ships.filter(s => s.health > 0).length}</span>
+                    </div>
+                  </Tooltip>
+                  <Tooltip content="Territories you control">
+                    <div className="flex flex-col items-center cursor-help">
+                      <span className="text-lg">🏴‍☠️</span>
+                      <span className="text-xs text-neon-magenta font-bold">{currentPlayer.controlledTerritories.length}</span>
+                    </div>
+                  </Tooltip>
                 </>
               )}
             </div>
@@ -691,9 +701,9 @@ const TUTORIAL_STEPS = [
   },
   {
     title: "Speed Bonus ⚡",
-    content: "Decide fast! Under 5 seconds = bonus points. Over 30 seconds = penalty.",
+    content: "Each turn, a timer tracks how fast you decide. Faster = more bonus points!",
     icon: "⏱️",
-    tip: "The timer in the top bar shows your decision time."
+    tip: "< 5s = +100 pts | < 10s = +50 pts | < 15s = +25 pts"
   },
   {
     title: "Quick Actions",
@@ -708,6 +718,33 @@ interface PracticeTutorialProps {
   onNext: () => void;
   onSkip: () => void;
   onComplete: () => void;
+}
+
+// =============================================================================
+// SUB-COMPONENT: Tooltip
+// =============================================================================
+
+interface TooltipProps {
+  children: React.ReactNode;
+  content: string;
+  position?: 'top' | 'bottom';
+}
+
+function Tooltip({ children, content, position = 'top' }: TooltipProps) {
+  return (
+    <div className="relative group">
+      {children}
+      <div className={`absolute ${position === 'top' ? 'bottom-full mb-2' : 'top-full mt-2'} 
+                       left-1/2 -translate-x-1/2 px-3 py-2 bg-slate-800 border border-slate-600 
+                       rounded-lg text-xs text-gray-200 whitespace-nowrap opacity-0 
+                       group-hover:opacity-100 transition-opacity pointer-events-none z-50
+                       shadow-lg`}>
+        {content}
+        <div className={`absolute left-1/2 -translate-x-1/2 w-2 h-2 bg-slate-800 border-slate-600 
+                        rotate-45 ${position === 'top' ? 'top-full -mt-1 border-b border-r' : 'bottom-full -mb-1 border-t border-l'}`} />
+      </div>
+    </div>
+  );
 }
 
 function PracticeTutorial({ step, onNext, onSkip, onComplete }: PracticeTutorialProps) {
