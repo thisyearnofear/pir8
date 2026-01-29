@@ -58,13 +58,13 @@ export function useZcashBridge(options: UseZcashBridgeOptions = {}) {
     // Check if Zcash integration is explicitly enabled
     const zcashEnabled = process.env['NEXT_PUBLIC_ZCASH_ENABLED'] === 'true';
 
-    if (!zcashEnabled) {
-      // Zcash Bridge disabled - silent in production
+    // Skip if not explicitly enabled or missing config
+    if (!zcashEnabled || !enabled || !ZCASH_CONFIG.SHIELDED_ADDRESS) {
       return;
     }
-
-    if (!enabled || !ZCASH_CONFIG.SHIELDED_ADDRESS) {
-      console.log('[Zcash Bridge] Disabled or shielded address not configured');
+    
+    // Skip if using placeholder address
+    if (ZCASH_CONFIG.SHIELDED_ADDRESS.includes('your_shielded_address')) {
       return;
     }
 

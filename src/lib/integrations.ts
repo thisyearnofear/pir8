@@ -330,9 +330,10 @@ export class PumpFunCreator {
 
 // Game Integration Helpers
 export function setupGameIntegrations() {
-  // Only connect if Helius RPC is configured
-  if (!API_ENDPOINTS.HELIUS_RPC) {
-    // Helius WebSocket disabled - silent
+  // Only connect if Helius RPC is properly configured (not placeholder)
+  if (!API_ENDPOINTS.HELIUS_RPC || 
+      API_ENDPOINTS.HELIUS_RPC.includes('YOUR_API_KEY') ||
+      API_ENDPOINTS.HELIUS_RPC.includes('your_helius')) {
     return {
       heliusMonitor: null,
       cleanup: () => { },
