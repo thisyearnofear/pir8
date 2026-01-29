@@ -304,7 +304,7 @@ const { heliusConnected, lastSync } = useOnChainSync(gameState?.gameId);
    - `validateMemoFreshness()`: Ensures memo <5 minutes old (prevents replay)
    - `handleIncomingShieldedMemo()`: Processes incoming Zcash transactions from watcher
    - `createMemo()`: Static helper for CLI/frontend memo construction
-   - `getPrivateEntryInstructions()`: User-facing guide for private entry
+   - `getPrivateEntryInstructions()`: Async user-facing guide for private entry
 
 2. **LightwalletdWatcher** (`src/lib/integrations.ts`):
    - WebSocket connection to Lightwalletd server

@@ -124,7 +124,7 @@ export function useZcashBridge(options: UseZcashBridgeOptions = {}) {
 /**
  * Helper to construct private entry instructions for display to user
  */
-export function getPrivateEntryInstructions(gameId: string, playerPubkey: string): string {
-  const { ZcashMemoBridge } = require('@/lib/integrations');
+export async function getPrivateEntryInstructions(gameId: string, playerPubkey: string): Promise<string> {
+  const { ZcashMemoBridge } = await import('@/lib/integrations');
   return ZcashMemoBridge.getPrivateEntryInstructions(gameId, playerPubkey);
 }
