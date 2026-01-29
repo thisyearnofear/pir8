@@ -31,7 +31,17 @@ interface ViralSystemState {
     shareCount: number;
 }
 
-export function useViralSystem(gameState: GameState | null, currentPlayer: Player | null) {
+interface UseViralSystemOptions {
+    disableAutoDismiss?: boolean;
+}
+
+export function useViralSystem(
+    gameState: GameState | null, 
+    currentPlayer: Player | null,
+    options: UseViralSystemOptions = {}
+) {
+    const { disableAutoDismiss = false } = options;
+    
     const [state, setState] = useState<ViralSystemState>({
         currentEvent: null,
         eventQueue: [],
@@ -132,15 +142,15 @@ export function useViralSystem(gameState: GameState | null, currentPlayer: Playe
         return undefined; // Explicit return for when condition is false
     }, [state.eventQueue.length, state.currentEvent, showNextEvent]);
 
-    // Auto-dismiss events
+    // Auto-dismiss events (disabled in practice mode)
     useEffect(() => {
-        if (state.currentEvent) {
+        if (state.currentEvent && !disableAutoDismiss) {
             const dismissTime = state.currentEvent.rarity === 'legendary' ? 8000 : 5000;
             const timer = setTimeout(dismissCurrentEvent, dismissTime);
             return () => clearTimeout(timer);
         }
         return undefined; // Explicit return for when condition is false
-    }, [state.currentEvent, dismissCurrentEvent]);
+    }, [state.currentEvent, dismissCurrentEvent, disableAutoDismiss]);
 
     // Main detection effect
     useEffect(() => {

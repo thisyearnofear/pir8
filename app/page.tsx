@@ -113,8 +113,10 @@ export default function Home() {
     return publicKey?.toString();
   }, [gameState?.players, publicKey, isPracticeMode]);
 
-  // Consolidated viral system
-  const viralSystem = useViralSystem(gameState, getCurrentPlayer());
+  // Consolidated viral system (auto-dismiss disabled in practice mode)
+  const viralSystem = useViralSystem(gameState, getCurrentPlayer(), { 
+    disableAutoDismiss: isPracticeMode() 
+  });
 
   // Privacy simulation for practice mode
   const privacySim = usePrivacySimulation({ enabled: isPracticeMode() });
@@ -523,6 +525,7 @@ export default function Home() {
         event={viralSystem.currentEvent}
         onShare={handleViralShare}
         onDismiss={viralSystem.dismissCurrentEvent}
+        isPracticeMode={isPracticeMode()}
       />
       <SocialModal
         type={socialModal.type}

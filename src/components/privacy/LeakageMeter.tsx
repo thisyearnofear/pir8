@@ -99,7 +99,7 @@ export function LeakageMeter({
         </div>
         
         <div className="flex items-center gap-3">
-          <div className={`px-3 py-1 rounded-full ${getScoreBg(totalLeakageScore)} text-white text-sm font-bold animate-leakage-pulse`}>
+          <div className={`px-3 py-1 rounded-full ${getScoreBg(totalLeakageScore)} text-white text-sm font-bold`}>
             {totalLeakageScore}%
           </div>
           
@@ -171,7 +171,7 @@ export function LeakageMeter({
 
           {/* Ghost Fleet Status */}
           {isGhostFleetActive && (
-            <div className="mt-4 p-3 bg-green-900/30 border border-green-500/30 rounded-lg animate-ghost-fleet-shimmer bg-gradient-to-r from-green-900/30 via-green-800/30 to-green-900/30 bg-[length:200%_100%]">
+            <div className="mt-4 p-3 bg-green-900/30 border border-green-500/30 rounded-lg">
               <div className="flex items-center gap-2">
                 <span className="text-lg">👻</span>
                 <div>

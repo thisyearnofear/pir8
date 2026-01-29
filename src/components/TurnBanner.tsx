@@ -4,12 +4,14 @@ interface TurnBannerProps {
   isMyTurn: boolean;
   decisionTimeMs: number;
   currentPlayerName?: string;
+  isPracticeMode?: boolean;
 }
 
 export default function TurnBanner({ 
   isMyTurn, 
   decisionTimeMs, 
-  currentPlayerName = 'opponent' 
+  currentPlayerName = 'opponent',
+  isPracticeMode = false 
 }: TurnBannerProps) {
   
   const formatTime = (ms: number) => {
@@ -36,7 +38,7 @@ export default function TurnBanner({
     return (
       <div className="turn-banner bg-slate-700/80 backdrop-blur-sm text-center py-3 px-4 rounded-lg border border-gray-600">
         <p className="text-gray-300 flex items-center justify-center gap-2">
-          <span className="animate-pulse">⏳</span>
+          <span className={isPracticeMode ? '' : 'animate-pulse'}>⏳</span>
           Waiting for {currentPlayerName}&apos;s turn...
         </p>
       </div>
@@ -46,8 +48,8 @@ export default function TurnBanner({
   const bonus = getSpeedBonusLabel(decisionTimeMs);
 
   return (
-    <div className="turn-banner bg-gradient-to-r from-neon-cyan/20 to-neon-magenta/20 
-                    p-4 rounded-lg border-2 border-neon-cyan animate-pulse text-center">
+    <div className={`turn-banner bg-gradient-to-r from-neon-cyan/20 to-neon-magenta/20 
+                    p-4 rounded-lg border-2 border-neon-cyan text-center ${isPracticeMode ? '' : 'animate-pulse'}`}>
       <div className="flex items-center justify-center gap-3">
         <span className="text-2xl">🏴‍☠️</span>
         <span className="text-xl font-bold text-white">YOUR TURN</span>

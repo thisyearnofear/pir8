@@ -167,24 +167,11 @@ export function usePrivacySimulation(
     }, [syncState]);
 
     // Check for lessons when turn changes
+    // NOTE: Auto-showing lessons is disabled to avoid interrupting gameplay.
+    // Users can still view lessons manually through the privacy education panel.
     useEffect(() => {
-        if (!simulatorRef.current || !autoShowLessons) return;
-
-        // Check for lessons at specific turns
-        const lessonTurns = [3, 5, 7, 9, 12];
-        if (lessonTurns.includes(turnNumber)) {
-            // Get human player from game state (simplified)
-            const mockPlayer = {} as Player;
-            const mockGameState = {} as GameState;
-
-            simulatorRef.current.generateLesson(turnNumber, mockGameState, mockPlayer)
-                .then(lesson => {
-                    if (lesson) {
-                        setCurrentLesson(lesson);
-                        setIsLessonVisible(true);
-                    }
-                });
-        }
+        // Lessons are no longer auto-displayed to prevent UI interruptions
+        // This was requested by users who found the modal popups disruptive
     }, [turnNumber, autoShowLessons]);
 
     // Initialize on mount

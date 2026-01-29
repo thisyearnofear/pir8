@@ -6,9 +6,10 @@ interface ViralEventModalProps {
     event: ViralEvent | null;
     onShare: (event: ViralEvent, platform?: 'twitter' | 'discord' | 'copy') => void;
     onDismiss: () => void;
+    isPracticeMode?: boolean;
 }
 
-export default function ViralEventModal({ event, onShare, onDismiss }: ViralEventModalProps) {
+export default function ViralEventModal({ event, onShare, onDismiss, isPracticeMode = false }: ViralEventModalProps) {
     if (!event) return null;
 
     const getRarityStyles = (rarity?: string) => {
@@ -45,10 +46,10 @@ export default function ViralEventModal({ event, onShare, onDismiss }: ViralEven
             <div className={`relative bg-gradient-to-br from-slate-900 via-slate-800 to-slate-900 
                       rounded-2xl border-2 ${styles.border} p-6 max-w-md mx-4 
                       shadow-2xl backdrop-blur-lg animate-in zoom-in duration-500
-                      ${isLegendary ? 'animate-pulse' : ''}`}>
+                      ${isLegendary && !isPracticeMode ? 'animate-pulse' : ''}`}>
 
                 {/* Legendary Sparkles */}
-                {isLegendary && (
+                {isLegendary && !isPracticeMode && (
                     <div className="absolute inset-0 pointer-events-none overflow-hidden rounded-2xl">
                         {[...Array(20)].map((_, i) => (
                             <div
@@ -67,7 +68,7 @@ export default function ViralEventModal({ event, onShare, onDismiss }: ViralEven
 
                 {/* Header */}
                 <div className="text-center mb-6 relative z-10">
-                    <div className="text-6xl mb-3 animate-bounce filter drop-shadow-2xl">
+                    <div className={`text-6xl mb-3 filter drop-shadow-2xl ${isPracticeMode ? '' : 'animate-bounce'}`}>
                         {event.emoji}
                     </div>
 

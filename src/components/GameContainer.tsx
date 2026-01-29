@@ -158,6 +158,7 @@ export default function GameContainer({
             isMyTurn={isMyTurn}
             decisionTimeMs={decisionTimeMs}
             currentPlayerName={currentPlayerName}
+            isPracticeMode={isPracticeMode}
           />
         </div>
       )}
