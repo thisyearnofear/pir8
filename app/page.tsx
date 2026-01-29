@@ -129,7 +129,8 @@ export default function Home() {
         privacySim.updateLeakage(gameState, humanPlayer, recentActions);
       }
     }
-  }, [gameState, isPracticeMode, privacySim]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [gameState, isPracticeMode]);
 
   // Get current player name for TurnBanner
   const getCurrentPlayerName = () => {
