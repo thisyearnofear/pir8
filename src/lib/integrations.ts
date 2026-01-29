@@ -332,7 +332,7 @@ export class PumpFunCreator {
 export function setupGameIntegrations() {
   // Only connect if Helius RPC is configured
   if (!API_ENDPOINTS.HELIUS_RPC) {
-    console.log('[Helius] WebSocket monitoring disabled - no RPC URL configured');
+    // Helius WebSocket disabled - silent
     return {
       heliusMonitor: null,
       cleanup: () => { },

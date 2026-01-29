@@ -59,7 +59,7 @@ export function useZcashBridge(options: UseZcashBridgeOptions = {}) {
     const zcashEnabled = process.env['NEXT_PUBLIC_ZCASH_ENABLED'] === 'true';
 
     if (!zcashEnabled) {
-      console.log('[Zcash Bridge] Disabled via NEXT_PUBLIC_ZCASH_ENABLED');
+      // Zcash Bridge disabled - silent in production
       return;
     }
 

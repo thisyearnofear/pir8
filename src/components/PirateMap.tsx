@@ -115,16 +115,16 @@ export default function PirateMap({
             className += 'bg-yellow-600 bg-opacity-70 hover:bg-yellow-500 pirate-glow ';
             break;
           case 'treasure':
-            className += 'bg-amber-500 bg-opacity-70 hover:bg-amber-400 pirate-glow animate-pulse ';
+            className += 'bg-amber-500 bg-opacity-70 hover:bg-amber-400 pirate-glow ';
             break;
           case 'storm':
-            className += 'bg-purple-600 bg-opacity-70 animate-pulse battle-pulse ';
+            className += 'bg-purple-600 bg-opacity-70 battle-pulse ';
             break;
           case 'reef':
             className += 'bg-gray-600 bg-opacity-70 hover:bg-gray-500 ';
             break;
           case 'whirlpool':
-            className += 'bg-indigo-700 bg-opacity-70 hover:bg-indigo-600 animate-spin ';
+            className += 'bg-indigo-700 bg-opacity-70 hover:bg-indigo-600 ';
             break;
         }
       }
@@ -146,7 +146,7 @@ export default function PirateMap({
 
     // Selected ship highlighting
     if (ship?.id === selectedShipId) {
-      className += 'ring-4 ring-neon-gold animate-pulse ';
+      className += 'ring-4 ring-neon-gold ';
     }
 
     // Movement target highlighting

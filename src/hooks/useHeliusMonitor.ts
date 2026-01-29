@@ -37,7 +37,7 @@ export const useHeliusMonitor = ({ gameId, onGameEvent }: UseHeliusMonitorProps 
         onGameEvent?.(event);
 
         if (LOG_LEVEL === 'debug') {
-          console.log('PIR8 Game Event', event);
+          // PIR8 Game Event received - silent
         }
       }
     } catch (error) {
@@ -58,7 +58,7 @@ export const useHeliusMonitor = ({ gameId, onGameEvent }: UseHeliusMonitorProps 
       isConnectedRef.current = true;
 
       if (LOG_LEVEL === 'debug' || LOG_LEVEL === 'info') {
-        console.log('Helius monitor connected');
+        // Helius monitor connected - silent
       }
       clearError();
     } catch (error) {
@@ -77,7 +77,7 @@ export const useHeliusMonitor = ({ gameId, onGameEvent }: UseHeliusMonitorProps 
       isConnectedRef.current = false;
 
       if (LOG_LEVEL === 'debug' || LOG_LEVEL === 'info') {
-        console.log('Helius monitor disconnected');
+        // Helius monitor disconnected - silent
       }
     }
   }, [LOG_LEVEL]);
