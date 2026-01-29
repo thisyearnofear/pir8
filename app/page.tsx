@@ -188,13 +188,13 @@ export default function Home() {
 
   // Start turn timer when it becomes player's turn
   useEffect(() => {
-    const playerKey = getCurrentPlayerKey();
+    const playerKey = getCurrentPlayerKey;
     const isTurn = isMyTurn(playerKey);
     if (isTurn && gameState?.gameStatus === 'active') {
       startTurn();
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [gameState?.currentPlayerIndex, gameState?.gameStatus, publicKey]);
+  }, [gameState?.currentPlayerIndex, gameState?.gameStatus, publicKey, getCurrentPlayerKey]);
 
   // Practice mode handlers - memoized with useCallback to prevent re-creations
   const handleStartPractice = useCallback((difficulty: 'novice' | 'pirate' | 'captain' | 'admiral') => {
@@ -335,7 +335,7 @@ export default function Home() {
   };
 
   const handleCellSelect = async (coordinate: string) => {
-    const playerKey = getCurrentPlayerKey();
+    const playerKey = getCurrentPlayerKey;
     if (!playerKey || !gameState || !isMyTurn(playerKey)) return;
 
     // Practice mode handling
@@ -384,7 +384,7 @@ export default function Home() {
   };
 
   const handleShipAction = async (shipId: string, action: 'move' | 'attack' | 'claim' | 'collect' | 'build') => {
-    const playerKey = getCurrentPlayerKey();
+    const playerKey = getCurrentPlayerKey;
     if (!playerKey || !gameState || !isMyTurn(playerKey)) return;
 
     // Practice mode handling
@@ -492,7 +492,7 @@ export default function Home() {
 
   // Handle ship click to open action modal
   const handleShipClick = (ship: Ship) => {
-    const playerKey = getCurrentPlayerKey();
+    const playerKey = getCurrentPlayerKey;
     if (!playerKey || !isMyTurn(playerKey)) return;
 
     // Practice mode: only allow selecting human ships
@@ -838,7 +838,7 @@ export default function Home() {
                 : publicKey?.toString()
               }
               isPracticeMode={isPracticeMode()}
-              isMyTurn={isMyTurn(getCurrentPlayerKey())}
+              isMyTurn={isMyTurn(getCurrentPlayerKey)}
               decisionTimeMs={decisionTime}
               currentPlayerName={getCurrentPlayerName()}
               scanChargesRemaining={scanChargesRemaining}
