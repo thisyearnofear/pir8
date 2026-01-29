@@ -31,6 +31,15 @@ module.exports = {
         'modal': '99999',
         'dropdown': '1000',
         'header': '100',
+        'privacy-panel': '50',
+      },
+      // Privacy-specific colors for leakage visualization
+      privacy: {
+        'safe': '#22c55e',      // green-500
+        'low': '#eab308',       // yellow-500
+        'medium': '#f97316',    // orange-500
+        'high': '#ef4444',      // red-500
+        'critical': '#dc2626',  // red-600
       },
       animation: {
         'treasure-glow': 'treasure-glow 2s ease-in-out infinite alternate',
@@ -45,6 +54,8 @@ module.exports = {
         'subtle-glow': 'subtle-glow 3s ease-in-out infinite',
         'spin-slow': 'spin 8s linear infinite',
         'bounce-slow': 'bounce 3s ease-in-out infinite',
+        'leakage-pulse': 'leakage-pulse 2s ease-in-out infinite',
+        'ghost-fleet-shimmer': 'ghost-fleet-shimmer 3s ease-in-out infinite',
       },
       keyframes: {
         'treasure-glow': {
@@ -70,6 +81,14 @@ module.exports = {
         'float-smooth': {
           '0%, 100%': { transform: 'translateY(0px)' },
           '50%': { transform: 'translateY(-8px)' },
+        },
+        'leakage-pulse': {
+          '0%, 100%': { opacity: '0.6', transform: 'scale(1)' },
+          '50%': { opacity: '1', transform: 'scale(1.02)' },
+        },
+        'ghost-fleet-shimmer': {
+          '0%': { backgroundPosition: '-200% 0' },
+          '100%': { backgroundPosition: '200% 0' },
         },
       },
     },

@@ -14,6 +14,7 @@ import { usePirateGameState } from "@/hooks/usePirateGameState";
 import { useErrorHandler } from "@/hooks/useErrorHandler";
 import { useShowOnboarding } from "@/hooks/useShowOnboarding";
 import { useViralSystem } from "@/hooks/useViralSystem";
+import { usePrivacySimulation } from "@/hooks/usePrivacySimulation";
 import { ErrorBoundary } from "@/components/ErrorBoundary";
 import { ErrorToast, SuccessToast } from "@/components/Toast";
 import GameContainer from "@/components/GameContainer";
@@ -24,6 +25,7 @@ import { GameSyncStatus } from "@/components/GameSyncRecovery";
 import PrivacyStatusIndicator from "@/components/PrivacyStatusIndicator";
 import ViralEventModal from "@/components/ViralEventModal";
 import SocialModal from "@/components/SocialModal";
+import { LeakageMeter, BountyBoard, PrivacyLessonModal } from "@/components/privacy";
 import { useState, useEffect, useMemo, useCallback } from "react";
 import dynamic from "next/dynamic";
 import { createPlayerFromWallet, createAIPlayer } from "@/lib/playerHelper";
@@ -113,6 +115,21 @@ export default function Home() {
 
   // Consolidated viral system
   const viralSystem = useViralSystem(gameState, getCurrentPlayer());
+
+  // Privacy simulation for practice mode
+  const privacySim = usePrivacySimulation({ enabled: isPracticeMode() });
+
+  // Update privacy simulation when game state changes in practice mode
+  useEffect(() => {
+    if (isPracticeMode() && gameState) {
+      const humanPlayer = gameState.players.find((p: any) => !p.publicKey.startsWith('AI_'));
+      if (humanPlayer) {
+        // Get recent actions from game state (or empty array if not available)
+        const recentActions = (gameState as any).recentActions || [];
+        privacySim.updateLeakage(gameState, humanPlayer, recentActions);
+      }
+    }
+  }, [gameState, isPracticeMode, privacySim]);
 
   // Get current player name for TurnBanner
   const getCurrentPlayerName = () => {
@@ -516,6 +533,39 @@ export default function Home() {
       <ErrorToast error={error} onClose={clearError} />
       <SuccessToast message={showMessage} onClose={() => setMessage(null)} />
 
+      {/* Privacy Simulation Components - Practice Mode Only */}
+      {isPracticeMode() && privacySim.leakageReport && (
+        <>
+          <div className="fixed top-20 right-4 z-privacy-panel w-72">
+            <LeakageMeter
+              report={privacySim.leakageReport}
+              isGhostFleetActive={privacySim.ghostFleetStatus?.isActive || false}
+              ghostFleetCharges={privacySim.ghostFleetStatus?.chargesRemaining || 0}
+            />
+          </div>
+
+          <PrivacyLessonModal
+            lesson={privacySim.currentLesson}
+            isVisible={privacySim.isLessonVisible}
+            onDismiss={privacySim.dismissLesson}
+            onActivateGhostFleet={privacySim.activateGhostFleet}
+          />
+
+          <BountyBoard
+            dossier={privacySim.dossier || {
+              playerId: '',
+              movesAnalyzed: 0,
+              patternsIdentified: [],
+              predictabilityScore: 0,
+              typicalPlayStyle: 'balanced',
+              lastUpdated: new Date(),
+            }}
+            isVisible={privacySim.isDossierVisible}
+            onClose={privacySim.hideDossier}
+          />
+        </>
+      )}
+
       {/* Spectator Mode Modal */}
       {showSpectatorMode && (
         <div className="fixed inset-0 z-50 bg-slate-900">
@@ -612,6 +662,20 @@ export default function Home() {
             <div className="px-4 py-2 bg-black/20">
               <p className="text-xs text-white/90">
                 🛡️ Safe environment - no blockchain fees
+              </p>
+            </div>
+
+            {/* Privacy Education Button */}
+            <div className="px-4 py-2 bg-black/20 border-t border-white/10">
+              <button
+                onClick={privacySim.showDossier}
+                className="w-full text-xs bg-red-500/20 hover:bg-red-500/30 text-red-300 py-2 px-3 rounded-lg transition-all flex items-center justify-center gap-2"
+              >
+                <span>📋</span>
+                <span>View AI Dossier on You</span>
+              </button>
+              <p className="text-[10px] text-white/50 mt-1 text-center">
+                See what opponents learn from visible data
               </p>
             </div>
             
