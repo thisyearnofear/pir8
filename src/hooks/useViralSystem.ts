@@ -103,7 +103,7 @@ export function useViralSystem(gameState: GameState | null, currentPlayer: Playe
             shareCount: prev.shareCount + 1,
             currentEvent: null
         }));
-    }, []);
+    }, [setState]);
 
     // Queue management
     const showNextEvent = useCallback(() => {
@@ -117,11 +117,11 @@ export function useViralSystem(gameState: GameState | null, currentPlayer: Playe
                 eventQueue: remainingQueue
             };
         });
-    }, []);
+    }, [setState]);
 
     const dismissCurrentEvent = useCallback(() => {
         setState(prev => ({ ...prev, currentEvent: null }));
-    }, []);
+    }, [setState]);
 
     // Auto-show events from queue
     useEffect(() => {

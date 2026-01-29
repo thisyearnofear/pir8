@@ -114,9 +114,9 @@ const generateMockGameState = (gameId: string): GameState => {
 // =============================================================================
 
 export function useSpectatorMode(options: SpectatorOptions = {}): SpectatorState & SpectatorActions {
-  const { 
-    gameId: initialGameId, 
-    autoRefresh = true, 
+  const {
+    gameId: initialGameId,
+    autoRefresh = true,
     refreshInterval = 10000 // 10 seconds
   } = options;
 
@@ -126,7 +126,7 @@ export function useSpectatorMode(options: SpectatorOptions = {}): SpectatorState
   const [error, setError] = useState<string | null>(null);
   const [lastUpdate, setLastUpdate] = useState(0);
   const [isLive, setIsLive] = useState(false);
-  
+
   const intervalRef = useRef<NodeJS.Timeout | null>(null);
 
   // Fetch game state (mock implementation - replace with real API)
@@ -134,7 +134,7 @@ export function useSpectatorMode(options: SpectatorOptions = {}): SpectatorState
     // TODO: Replace with actual API call
     // const response = await fetch(`/api/game/${targetGameId}/state`);
     // return response.json();
-    
+
     // Mock: Simulate network delay
     await new Promise(resolve => setTimeout(resolve, 500));
     return generateMockGameState(targetGameId);
@@ -169,7 +169,7 @@ export function useSpectatorMode(options: SpectatorOptions = {}): SpectatorState
   }, [gameId, fetchGameState]);
 
   // Clear error
-  const clearError = useCallback(() => setError(null), []);
+  const clearError = useCallback(() => setError(null), [setError]);
 
   // Auto-refresh setup
   useEffect(() => {
@@ -201,7 +201,7 @@ export function useSpectatorMode(options: SpectatorOptions = {}): SpectatorState
     error,
     lastUpdate,
     isLive,
-    
+
     // Actions
     refresh,
     clearError,

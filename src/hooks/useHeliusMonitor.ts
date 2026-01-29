@@ -32,10 +32,10 @@ export const useHeliusMonitor = ({ gameId, onGameEvent }: UseHeliusMonitorProps 
       if (event) {
         // Show real-time feedback in UI
         setMessage(`🔥 ${event.type}: ${event.data.description || 'Event occurred'}`);
-        
+
         // Call custom handler
         onGameEvent?.(event);
-        
+
         if (LOG_LEVEL === 'debug') {
           console.log('PIR8 Game Event', event);
         }
@@ -56,7 +56,7 @@ export const useHeliusMonitor = ({ gameId, onGameEvent }: UseHeliusMonitorProps 
       monitorRef.current = new HeliusMonitor(handleTransaction, gameId);
       monitorRef.current.connect();
       isConnectedRef.current = true;
-      
+
       if (LOG_LEVEL === 'debug' || LOG_LEVEL === 'info') {
         console.log('Helius monitor connected');
       }
@@ -65,6 +65,8 @@ export const useHeliusMonitor = ({ gameId, onGameEvent }: UseHeliusMonitorProps 
       if (LOG_LEVEL === 'debug') {
         console.error('Failed to connect Helius monitor');
       }
+      // Mark as not connected so we can retry later
+      isConnectedRef.current = false;
     }
   }, [handleTransaction, gameId, clearError, LOG_LEVEL]);
 
@@ -73,7 +75,7 @@ export const useHeliusMonitor = ({ gameId, onGameEvent }: UseHeliusMonitorProps 
       monitorRef.current.disconnect();
       monitorRef.current = null;
       isConnectedRef.current = false;
-      
+
       if (LOG_LEVEL === 'debug' || LOG_LEVEL === 'info') {
         console.log('Helius monitor disconnected');
       }
@@ -82,20 +84,26 @@ export const useHeliusMonitor = ({ gameId, onGameEvent }: UseHeliusMonitorProps 
 
   // Auto-connect when component mounts
   useEffect(() => {
-    connect();
-    
+    // Defer connection to avoid blocking initial render
+    const timer = setTimeout(() => {
+      connect();
+    }, 2000);
+
     return () => {
+      clearTimeout(timer);
       disconnect();
     };
-  }, []);
+  }, [connect, disconnect]);
 
   // Reconnect when gameId changes
   useEffect(() => {
     if (gameId && isConnectedRef.current) {
       disconnect();
-      setTimeout(() => connect(), 100);
+      const timer = setTimeout(() => connect(), 100);
+      return () => clearTimeout(timer);
     }
-  }, [gameId]);
+    return undefined;
+  }, [gameId, connect, disconnect]);
 
   return {
     isConnected: isConnectedRef.current,
@@ -110,16 +118,16 @@ function parseGameEvent(data: any): GameEvent | null {
   try {
     const logs = data?.result?.value?.meta?.logMessages || [];
     const signature = data?.result?.value?.signature;
-    
+
     for (const log of logs) {
       if (log.includes('Program log: GameCreated')) {
         return {
           type: 'gameCreated',
           gameId: extractGameIdFromLog(log),
-          data: { 
+          data: {
             description: 'New game created',
             signature,
-            log 
+            log
           },
           timestamp: Date.now(),
         };
@@ -127,10 +135,10 @@ function parseGameEvent(data: any): GameEvent | null {
         return {
           type: 'playerJoined',
           gameId: extractGameIdFromLog(log),
-          data: { 
+          data: {
             description: 'Player joined game',
             signature,
-            log 
+            log
           },
           timestamp: Date.now(),
         };
@@ -138,10 +146,10 @@ function parseGameEvent(data: any): GameEvent | null {
         return {
           type: 'gameStarted',
           gameId: extractGameIdFromLog(log),
-          data: { 
+          data: {
             description: 'Game battle has begun!',
             signature,
-            log 
+            log
           },
           timestamp: Date.now(),
         };
@@ -149,10 +157,10 @@ function parseGameEvent(data: any): GameEvent | null {
         return {
           type: 'moveMade',
           gameId: extractGameIdFromLog(log),
-          data: { 
+          data: {
             description: 'Player made a move',
             signature,
-            log 
+            log
           },
           timestamp: Date.now(),
         };
@@ -160,16 +168,16 @@ function parseGameEvent(data: any): GameEvent | null {
         return {
           type: 'gameCompleted',
           gameId: extractGameIdFromLog(log),
-          data: { 
+          data: {
             description: 'Game completed! Winner determined',
             signature,
-            log 
+            log
           },
           timestamp: Date.now(),
         };
       }
     }
-    
+
     return null;
   } catch (error) {
     if (process.env.NEXT_PUBLIC_LOG_LEVEL === 'debug') {

@@ -26,12 +26,12 @@ export interface GameLifecycleState {
   // Join state
   isJoining: boolean;
   joinError: string | null;
-  
+
   // Sync state
   isSyncing: boolean;
   heliusConnected: boolean;
   lastSync: number;
-  
+
   // Recovery state
   isRecovering: boolean;
   currentPlayerCount: number;
@@ -96,28 +96,28 @@ async function findCorrectGameId(expectedCount: number): Promise<string | null> 
 
 export function useGameLifecycle(options: GameLifecycleOptions = {}): GameLifecycleState & GameLifecycleActions {
   const { gameId, expectedPlayerCount = 2, onGameIdChanged, enableSync = true } = options;
-  
+
   // Get store actions
   const { joinGame: joinGameStore, setGameState, setMessage, gameState } = usePirateGameState();
-  
+
   // Join state
   const [isJoining, setIsJoining] = useState(false);
   const [joinError, setJoinError] = useState<string | null>(null);
-  
+
   // Sync state
   const [isSyncing, setIsSyncing] = useState(false);
   const [lastSync, setLastSync] = useState(0);
   const lastVersionRef = useRef<number>(0);
   const syncTimeoutRef = useRef<NodeJS.Timeout | null>(null);
   const pollIntervalRef = useRef<NodeJS.Timeout | null>(null);
-  
+
   // Recovery state
   const [isRecovering, setIsRecovering] = useState(false);
 
   // ===========================================================================
   // JOIN FUNCTIONALITY (from useGameJoin)
   // ===========================================================================
-  
+
   const joinGame = useCallback(async (targetGameId: string, player: Player): Promise<boolean> => {
     if (!targetGameId || !targetGameId.trim()) {
       setJoinError('Game ID is required');
@@ -141,12 +141,12 @@ export function useGameLifecycle(options: GameLifecycleOptions = {}): GameLifecy
     }
   }, [joinGameStore]);
 
-  const clearJoinError = useCallback(() => setJoinError(null), []);
+  const clearJoinError = useCallback(() => setJoinError(null), [setJoinError]);
 
   // ===========================================================================
   // SYNC FUNCTIONALITY (from useGameSync)
   // ===========================================================================
-  
+
   const performSync = useCallback(async () => {
     if (!gameId || isSyncing) return;
 
@@ -267,10 +267,10 @@ export function useGameLifecycle(options: GameLifecycleOptions = {}): GameLifecy
   // ===========================================================================
   // RECOVERY FUNCTIONALITY (from useGameIdRecovery)
   // ===========================================================================
-  
+
   const attemptRecovery = useCallback(async () => {
     if (!gameId || expectedPlayerCount <= 1 || isRecovering) return;
-    
+
     setIsRecovering(true);
 
     try {
@@ -312,7 +312,7 @@ export function useGameLifecycle(options: GameLifecycleOptions = {}): GameLifecy
   // ===========================================================================
   // RETURN CONSOLIDATED INTERFACE
   // ===========================================================================
-  
+
   return {
     // State
     isJoining,
@@ -322,7 +322,7 @@ export function useGameLifecycle(options: GameLifecycleOptions = {}): GameLifecy
     lastSync,
     isRecovering,
     currentPlayerCount: gameState?.players.length || 0,
-    
+
     // Actions
     joinGame,
     clearJoinError,

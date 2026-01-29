@@ -19,7 +19,7 @@ export class HeliusMonitor {
   constructor(
     private onTransaction: (data: any) => void,
     _gameId?: string,
-  ) {}
+  ) { }
 
   connect() {
     if (
@@ -56,7 +56,7 @@ export class HeliusMonitor {
                   method: "ping",
                 }),
               );
-            } catch {}
+            } catch { }
           }
         }, 60000);
       }
@@ -125,7 +125,7 @@ export class HeliusMonitor {
 
     try {
       this.ws.send(JSON.stringify(subscribeMessage));
-    } catch {}
+    } catch { }
     this.log("debug", "Subscribed to PIR8 game transactions");
   }
 
@@ -330,13 +330,27 @@ export class PumpFunCreator {
 
 // Game Integration Helpers
 export function setupGameIntegrations() {
-  const heliusMonitor = new HeliusMonitor(() => {});
+  // Only connect if Helius RPC is configured
+  if (!API_ENDPOINTS.HELIUS_RPC) {
+    console.log('[Helius] WebSocket monitoring disabled - no RPC URL configured');
+    return {
+      heliusMonitor: null,
+      cleanup: () => { },
+    };
+  }
 
-  heliusMonitor.connect();
+  const heliusMonitor = new HeliusMonitor(() => { });
+
+  // Use try-catch to prevent connection errors from crashing the app
+  try {
+    heliusMonitor.connect();
+  } catch (error) {
+    console.warn('[Helius] Failed to connect, continuing without WebSocket monitoring:', error);
+  }
 
   return {
     heliusMonitor,
-    cleanup: () => heliusMonitor.disconnect(),
+    cleanup: () => heliusMonitor?.disconnect(),
   };
 }
 
@@ -358,7 +372,7 @@ export class ZcashMemoBridge {
   private static readonly MEMO_MAX_SIZE = 512; // Zcash memo limit in bytes
   private static readonly MEMO_STALE_THRESHOLD = 5 * 60 * 1000; // 5 minutes
 
-  constructor(private onEntry: (payload: MemoPayload) => void) {}
+  constructor(private onEntry: (payload: MemoPayload) => void) { }
 
   /**
    * Parse Zcash shielded memo containing tournament entry data
@@ -695,7 +709,7 @@ export class LightwalletdWatcher {
           this.ws.send(
             JSON.stringify({ jsonrpc: "2.0", id: Date.now(), method: "ping" }),
           );
-        } catch {}
+        } catch { }
       }
     }, 60000); // Ping every 60 seconds
   }
