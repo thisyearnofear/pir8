@@ -246,7 +246,7 @@ export default function PirateMap({
           gap: '2px',
           aspectRatio: '1',
           width: '100%',
-          maxWidth: 'min(90vw, 90vh)',
+          maxWidth: 'min(85vw, 60vh)',
           margin: '0 auto'
         }}
       >

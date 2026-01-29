@@ -142,6 +142,8 @@ export default function GameContainer({
   const [menuOpen, setMenuOpen] = useState(false);
   const [activeTab, setActiveTab] = useState<'stats' | 'actions' | 'build'>('stats');
   const [showQuickActions, setShowQuickActions] = useState(false);
+  const [showTutorial, setShowTutorial] = useState(isPracticeMode);
+  const [tutorialStep, setTutorialStep] = useState(0);
   
   // =============================================================================
   // KEYBOARD SHORTCUTS
@@ -454,6 +456,16 @@ export default function GameContainer({
           </div>
         </div>
 
+        {/* ===== PRACTICE MODE TUTORIAL ===== */}
+        {showTutorial && isPracticeMode && (
+          <PracticeTutorial 
+            step={tutorialStep}
+            onNext={() => setTutorialStep(s => s + 1)}
+            onSkip={() => setShowTutorial(false)}
+            onComplete={() => setShowTutorial(false)}
+          />
+        )}
+
         {/* ===== SLIDE-IN MENU PANEL ===== */}
         {menuOpen && (
           <div className="fixed inset-0 z-50 flex">
@@ -642,6 +654,129 @@ function GamePlaceholder({ onPracticeMode, onOpenLeaderboard }: GamePlaceholderP
             <div className="text-neon-orange font-bold">Conquer Territory</div>
             <div className="text-gray-400 text-xs">Dominate the seas</div>
           </div>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+// =============================================================================
+// SUB-COMPONENT: Practice Tutorial Overlay
+// =============================================================================
+
+const TUTORIAL_STEPS = [
+  {
+    title: "Welcome, Captain! 🏴‍☠️",
+    content: "This is Practice Mode - learn the ropes before battling for real treasure on Solana.",
+    icon: "⚓",
+    tip: "No wallet needed. Just pure pirate strategy!"
+  },
+  {
+    title: "The Map 🗺️",
+    content: "The grid shows your battlefield. Each cell is hidden (?) until you scout it.",
+    icon: "❓",
+    tip: "Tap cells to reveal terrain: islands, ports, treasure, storms..."
+  },
+  {
+    title: "Your Ship 🚢",
+    content: "Tap your ship (cyan border) to select it, then tap a cell to move.",
+    icon: "🚢", 
+    tip: "Ships can move based on their speed stat each turn."
+  },
+  {
+    title: "Win Conditions 🏆",
+    content: "Capture territory, collect gold, or destroy enemy ships to score points!",
+    icon: "💰",
+    tip: "First to 1000 points or last pirate standing wins."
+  },
+  {
+    title: "Speed Bonus ⚡",
+    content: "Decide fast! Under 5 seconds = bonus points. Over 30 seconds = penalty.",
+    icon: "⏱️",
+    tip: "The timer in the top bar shows your decision time."
+  },
+  {
+    title: "Quick Actions",
+    content: "Use the + button for fast access to Collect 💰 and Build 🔨 actions.",
+    icon: "➕",
+    tip: "Or press Q on keyboard. Menu (☰) has full stats."
+  }
+];
+
+interface PracticeTutorialProps {
+  step: number;
+  onNext: () => void;
+  onSkip: () => void;
+  onComplete: () => void;
+}
+
+function PracticeTutorial({ step, onNext, onSkip, onComplete }: PracticeTutorialProps) {
+  const currentStep = TUTORIAL_STEPS[step];
+  const isLastStep = step >= TUTORIAL_STEPS.length - 1;
+  
+  if (!currentStep) {
+    onComplete();
+    return null;
+  }
+
+  return (
+    <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
+      {/* Backdrop */}
+      <div className="absolute inset-0 bg-black/70 backdrop-blur-sm" />
+      
+      {/* Tutorial Card */}
+      <div className="relative bg-gradient-to-br from-slate-800 to-slate-900 rounded-2xl 
+                      border-2 border-neon-cyan/50 p-6 max-w-sm w-full shadow-2xl
+                      animate-in zoom-in-95 duration-300">
+        {/* Step indicator */}
+        <div className="flex justify-center gap-1 mb-4">
+          {TUTORIAL_STEPS.map((_, i) => (
+            <div 
+              key={i}
+              className={`w-2 h-2 rounded-full transition-all ${
+                i === step ? 'bg-neon-cyan w-6' : 
+                i < step ? 'bg-neon-cyan/50' : 'bg-slate-600'
+              }`}
+            />
+          ))}
+        </div>
+        
+        {/* Icon */}
+        <div className="text-5xl text-center mb-4">{currentStep.icon}</div>
+        
+        {/* Title */}
+        <h3 className="text-xl font-bold text-neon-cyan text-center mb-2">
+          {currentStep.title}
+        </h3>
+        
+        {/* Content */}
+        <p className="text-gray-300 text-center mb-3">
+          {currentStep.content}
+        </p>
+        
+        {/* Tip */}
+        <div className="bg-slate-700/50 rounded-lg px-3 py-2 mb-6">
+          <p className="text-sm text-neon-gold text-center">
+            💡 {currentStep.tip}
+          </p>
+        </div>
+        
+        {/* Buttons */}
+        <div className="flex gap-3">
+          <button
+            onClick={onSkip}
+            className="flex-1 py-3 px-4 rounded-xl bg-slate-700 text-gray-300 
+                       font-bold hover:bg-slate-600 transition-all"
+          >
+            Skip
+          </button>
+          <button
+            onClick={isLastStep ? onComplete : onNext}
+            className="flex-1 py-3 px-4 rounded-xl bg-gradient-to-r from-neon-cyan to-neon-blue 
+                       text-black font-bold hover:scale-105 active:scale-95 transition-all"
+          >
+            {isLastStep ? "Let's Go! ⚔️" : "Next →"}
+          </button>
         </div>
       </div>
     </div>
