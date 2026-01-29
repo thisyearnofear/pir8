@@ -1,16 +1,38 @@
 /**
- * GameContainer - Extracted from page.tsx to reduce complexity
- * Encapsulates the main game UI: map, controls, stats panels
- * Following: CLEAN separation of concerns, MODULAR architecture
+ * GameContainer - Main game UI with focused, minimal HUD design
+ * Map is the hero. Panels accessible via menu toggle.
+ * Following: CLEAN separation, MODULAR architecture, PREVENT BLOAT
  */
 
 'use client';
 
+import { useState, useEffect, useCallback } from 'react';
 import PirateMap from './PirateMap';
+
+// =============================================================================
+// HAPTIC FEEDBACK UTILITY
+// =============================================================================
+
+const haptic = {
+  light: () => {
+    if (typeof navigator !== 'undefined' && 'vibrate' in navigator) {
+      navigator.vibrate(10);
+    }
+  },
+  medium: () => {
+    if (typeof navigator !== 'undefined' && 'vibrate' in navigator) {
+      navigator.vibrate(25);
+    }
+  },
+  heavy: () => {
+    if (typeof navigator !== 'undefined' && 'vibrate' in navigator) {
+      navigator.vibrate([50, 30, 50]);
+    }
+  }
+};
 import PirateControls from './PirateControls';
 import PlayerStats from './PlayerStats';
 import BattleInfoPanel from './BattleInfoPanel';
-import TurnBanner from './TurnBanner';
 import ShipActionModal from './ShipActionModal';
 import ResourceCollectionPanel from './ResourceCollectionPanel';
 import ShipBuildingPanel from './ShipBuildingPanel';
@@ -117,6 +139,74 @@ export default function GameContainer({
   onOpenLeaderboard,
 }: GameContainerProps) {
   
+  const [menuOpen, setMenuOpen] = useState(false);
+  const [activeTab, setActiveTab] = useState<'stats' | 'actions' | 'build'>('stats');
+  const [showQuickActions, setShowQuickActions] = useState(false);
+  
+  // =============================================================================
+  // KEYBOARD SHORTCUTS
+  // =============================================================================
+  
+  const handleKeyDown = useCallback((e: KeyboardEvent) => {
+    // Don't trigger if typing in input
+    if (e.target instanceof HTMLInputElement || e.target instanceof HTMLTextAreaElement) return;
+    
+    switch (e.key.toLowerCase()) {
+      case 'e':
+        // End turn
+        if (isMyTurn) {
+          haptic.medium();
+          onEndTurn();
+        }
+        break;
+      case 'm':
+        // Toggle menu
+        haptic.light();
+        setMenuOpen(prev => !prev);
+        break;
+      case 'escape':
+        // Close menu or deselect
+        if (menuOpen) {
+          setMenuOpen(false);
+        } else if (selectedShipId) {
+          onShipSelect(null);
+        }
+        break;
+      case 'c':
+        // Collect resources
+        if (isMyTurn) {
+          haptic.light();
+          onCollectResources();
+        }
+        break;
+      case 'q':
+        // Toggle quick actions
+        setShowQuickActions(prev => !prev);
+        break;
+      case '1':
+        setActiveTab('stats');
+        if (!menuOpen) setMenuOpen(true);
+        break;
+      case '2':
+        setActiveTab('actions');
+        if (!menuOpen) setMenuOpen(true);
+        break;
+      case '3':
+        setActiveTab('build');
+        if (!menuOpen) setMenuOpen(true);
+        break;
+    }
+  }, [isMyTurn, menuOpen, selectedShipId, onEndTurn, onShipSelect, onCollectResources]);
+  
+  useEffect(() => {
+    window.addEventListener('keydown', handleKeyDown);
+    return () => window.removeEventListener('keydown', handleKeyDown);
+  }, [handleKeyDown]);
+  
+  // =============================================================================
+  // HELPERS
+  // =============================================================================
+  
   // Get current player from game state
   const getCurrentPlayer = (): Player | null => {
     if (isPracticeMode) {
@@ -128,60 +218,89 @@ export default function GameContainer({
 
   const currentPlayer = getCurrentPlayer();
   const allShips = gameState.players.flatMap((p) => p.ships).filter((s) => s.health > 0);
+  const selectedShip = selectedShipId ? allShips.find(s => s.id === selectedShipId) : null;
+  
+  const formatTime = (ms: number) => {
+    const seconds = Math.floor(ms / 1000);
+    return `${seconds}s`;
+  };
 
-  return (
-    <>
-      {/* Ship Action Modal */}
-      {shipActionModalShip && (
-        <ShipActionModal
-          ship={shipActionModalShip}
-          isOpen={true}
-          onClose={onCloseShipActionModal}
-          onAction={(action) => onShipAction(shipActionModalShip.id, action)}
-        />
-      )}
+  // Victory Screen - show on top of everything when game completed
+  if (gameState.gameStatus === 'completed') {
+    return (
+      <VictoryScreen
+        gameState={gameState}
+        currentPlayerPK={currentPlayerPK}
+        onNewGame={onNewGame}
+        onReturnToLobby={onReturnToLobby}
+      />
+    );
+  }
 
-      {/* Victory Screen */}
-      {gameState.gameStatus === 'completed' && (
-        <VictoryScreen
-          gameState={gameState}
-          currentPlayerPK={currentPlayerPK}
-          onNewGame={onNewGame}
-          onReturnToLobby={onReturnToLobby}
-        />
-      )}
-
-      {/* Turn Banner */}
-      {gameState.gameStatus === 'active' && (
-        <div className="mb-4">
-          <TurnBanner
-            isMyTurn={isMyTurn}
-            decisionTimeMs={decisionTimeMs}
-            currentPlayerName={currentPlayerName}
-            isPracticeMode={isPracticeMode}
+  // Active game - focused layout with map as hero
+  if (gameState.gameStatus === 'active' && gameState.gameMap) {
+    return (
+      <>
+        {/* Ship Action Modal */}
+        {shipActionModalShip && (
+          <ShipActionModal
+            ship={shipActionModalShip}
+            isOpen={true}
+            onClose={onCloseShipActionModal}
+            onAction={(action) => onShipAction(shipActionModalShip.id, action)}
           />
-        </div>
-      )}
+        )}
 
-      {/* Main Game Grid */}
-      <div className="grid grid-cols-1 lg:grid-cols-4 gap-6 h-screen max-h-[800px]">
-        {/* Left Panel: Player Stats */}
-        <div className="lg:col-span-1">
-          <PlayerStats
-            players={gameState.players}
-            currentPlayerIndex={gameState.currentPlayerIndex}
-            gameStatus={gameState.gameStatus}
-            decisionTimeMs={decisionTimeMs}
-            scanChargesRemaining={scanChargesRemaining}
-            speedBonusAccumulated={speedBonusAccumulated}
-            averageDecisionTimeMs={averageDecisionTimeMs}
-            scannedCoordinates={scannedCoordinates}
-          />
-        </div>
+        {/* ===== FOCUSED GAME LAYOUT ===== */}
+        <div className="h-screen flex flex-col bg-gradient-to-br from-slate-900 via-slate-800 to-slate-900">
+          
+          {/* Top HUD Bar - Minimal */}
+          <div className="flex items-center justify-between px-4 py-2 bg-slate-900/80 border-b border-neon-cyan/30">
+            {/* Turn Indicator */}
+            <div className="flex items-center gap-3">
+              <div className={`px-3 py-1 rounded-full font-bold text-sm ${
+                isMyTurn 
+                  ? 'bg-neon-cyan text-black' 
+                  : 'bg-slate-700 text-gray-300'
+              }`}>
+                {isMyTurn ? '⚔️ Your Turn' : `⏳ ${currentPlayerName}'s Turn`}
+              </div>
+              {isMyTurn && (
+                <div className={`text-sm font-mono ${
+                  decisionTimeMs < 5000 ? 'text-green-400' :
+                  decisionTimeMs < 10000 ? 'text-yellow-400' : 'text-red-400'
+                }`}>
+                  {formatTime(decisionTimeMs)}
+                </div>
+              )}
+            </div>
 
-        {/* Main Game Area */}
-        <div className="lg:col-span-2 flex flex-col">
-          {gameState.gameStatus === 'active' && gameState.gameMap ? (
+            {/* Game Info */}
+            <div className="flex items-center gap-4 text-sm">
+              <span className="text-gray-400">Turn {gameState.turnNumber}</span>
+              <span className="text-neon-gold">🏴‍☠️ {gameState.players.length} Pirates</span>
+              {isPracticeMode && (
+                <span className="bg-neon-purple/20 text-neon-purple px-2 py-1 rounded text-xs">
+                  Practice
+                </span>
+              )}
+            </div>
+
+            {/* Menu Toggle */}
+            <button
+              onClick={() => setMenuOpen(!menuOpen)}
+              className={`p-2 rounded-lg transition-all ${
+                menuOpen 
+                  ? 'bg-neon-cyan text-black' 
+                  : 'bg-slate-700 text-white hover:bg-slate-600'
+              }`}
+            >
+              {menuOpen ? '✕' : '☰'}
+            </button>
+          </div>
+
+          {/* Main Content - Map as Hero */}
+          <div className="flex-1 flex items-center justify-center p-4 relative overflow-hidden">
             <PirateMap
               gameMap={gameState.gameMap}
               ships={allShips}
@@ -192,55 +311,262 @@ export default function GameContainer({
               currentPlayerPK={currentPlayerPK}
               scannedCoordinates={scannedCoordinates}
             />
-          ) : (
-            <GamePlaceholder 
-              onPracticeMode={onPracticeMode}
-              onOpenLeaderboard={onOpenLeaderboard}
+            
+            {/* ===== FLOATING QUICK ACTIONS ===== */}
+            {isMyTurn && (
+              <div className="absolute bottom-20 right-4 flex flex-col gap-2">
+                {/* Quick Action Toggle */}
+                <button
+                  onClick={() => {
+                    haptic.light();
+                    setShowQuickActions(!showQuickActions);
+                  }}
+                  className={`w-14 h-14 rounded-full shadow-lg transition-all flex items-center justify-center text-2xl
+                             ${showQuickActions 
+                               ? 'bg-neon-cyan text-black rotate-45' 
+                               : 'bg-slate-800 text-white border border-neon-cyan/50 hover:bg-slate-700'}`}
+                  title="Quick Actions (Q)"
+                >
+                  +
+                </button>
+                
+                {/* Expanded Quick Actions */}
+                {showQuickActions && (
+                  <div className="flex flex-col gap-2 animate-in slide-in-from-bottom duration-200">
+                    {/* Collect Resources */}
+                    <button
+                      onClick={() => {
+                        haptic.medium();
+                        onCollectResources();
+                        setShowQuickActions(false);
+                      }}
+                      className="w-14 h-14 rounded-full bg-neon-gold text-black shadow-lg 
+                                 hover:scale-110 active:scale-95 transition-all flex items-center justify-center text-2xl"
+                      title="Collect Resources (C)"
+                    >
+                      💰
+                    </button>
+                    
+                    {/* Build Ship */}
+                    <button
+                      onClick={() => {
+                        haptic.light();
+                        setActiveTab('build');
+                        setMenuOpen(true);
+                        setShowQuickActions(false);
+                      }}
+                      className="w-14 h-14 rounded-full bg-neon-purple text-white shadow-lg 
+                                 hover:scale-110 active:scale-95 transition-all flex items-center justify-center text-2xl"
+                      title="Build Ship (3)"
+                    >
+                      🔨
+                    </button>
+                    
+                    {/* View Stats */}
+                    <button
+                      onClick={() => {
+                        haptic.light();
+                        setActiveTab('stats');
+                        setMenuOpen(true);
+                        setShowQuickActions(false);
+                      }}
+                      className="w-14 h-14 rounded-full bg-slate-700 text-white shadow-lg border border-slate-600
+                                 hover:scale-110 active:scale-95 transition-all flex items-center justify-center text-2xl"
+                      title="View Stats (1)"
+                    >
+                      📊
+                    </button>
+                  </div>
+                )}
+              </div>
+            )}
+          </div>
+
+          {/* Bottom Action Bar - Mobile Optimized */}
+          <div className="flex items-center justify-between px-3 py-2 bg-slate-900/90 border-t border-neon-cyan/30 gap-2">
+            {/* Selected Ship Info - Tappable */}
+            <button
+              onClick={() => {
+                if (selectedShip) {
+                  haptic.light();
+                  onShipClick(selectedShip);
+                }
+              }}
+              className="flex items-center gap-2 bg-slate-800 px-3 py-2 rounded-xl border border-neon-cyan/50 
+                         min-h-[48px] active:scale-95 transition-all flex-shrink-0"
+            >
+              {selectedShip ? (
+                <>
+                  <span className="text-xl">🚢</span>
+                  <div className="text-left">
+                    <div className="text-sm font-bold text-neon-cyan">{selectedShip.type}</div>
+                    <div className="text-xs text-gray-400">{selectedShip.health}/{selectedShip.maxHealth} HP</div>
+                  </div>
+                </>
+              ) : (
+                <span className="text-sm text-gray-400">Tap ship to select</span>
+              )}
+            </button>
+
+            {/* Quick Stats - Compact */}
+            <div className="flex items-center gap-3 text-sm flex-shrink-0">
+              {currentPlayer && (
+                <>
+                  <div className="flex flex-col items-center">
+                    <span className="text-lg">💰</span>
+                    <span className="text-xs text-neon-gold font-bold">{currentPlayer.resources.gold}</span>
+                  </div>
+                  <div className="flex flex-col items-center">
+                    <span className="text-lg">🚢</span>
+                    <span className="text-xs text-neon-cyan font-bold">{currentPlayer.ships.filter(s => s.health > 0).length}</span>
+                  </div>
+                  <div className="flex flex-col items-center">
+                    <span className="text-lg">🏴‍☠️</span>
+                    <span className="text-xs text-neon-magenta font-bold">{currentPlayer.controlledTerritories.length}</span>
+                  </div>
+                </>
+              )}
+            </div>
+
+            {/* End Turn Button - Large Touch Target */}
+            {isMyTurn && (
+              <button
+                onClick={() => {
+                  haptic.heavy();
+                  onEndTurn();
+                }}
+                className="bg-gradient-to-r from-neon-cyan to-neon-blue text-black font-bold 
+                           px-5 py-3 rounded-xl hover:scale-105 active:scale-95 transition-all
+                           shadow-lg shadow-neon-cyan/30 min-h-[48px] min-w-[120px] text-sm"
+              >
+                End Turn ⏭️
+              </button>
+            )}
+          </div>
+          
+          {/* Keyboard Shortcuts Hint */}
+          <div className="hidden sm:flex justify-center gap-4 py-1 bg-slate-900/50 text-xs text-gray-500">
+            <span><kbd className="bg-slate-700 px-1 rounded">E</kbd> End Turn</span>
+            <span><kbd className="bg-slate-700 px-1 rounded">M</kbd> Menu</span>
+            <span><kbd className="bg-slate-700 px-1 rounded">Q</kbd> Quick Actions</span>
+            <span><kbd className="bg-slate-700 px-1 rounded">C</kbd> Collect</span>
+            <span><kbd className="bg-slate-700 px-1 rounded">Esc</kbd> Deselect</span>
+          </div>
+        </div>
+
+        {/* ===== SLIDE-IN MENU PANEL ===== */}
+        {menuOpen && (
+          <div className="fixed inset-0 z-50 flex">
+            {/* Backdrop */}
+            <div 
+              className="absolute inset-0 bg-black/60 backdrop-blur-sm"
+              onClick={() => setMenuOpen(false)}
             />
-          )}
-        </div>
+            
+            {/* Panel */}
+            <div className="relative ml-auto w-full max-w-md bg-slate-900 border-l border-neon-cyan/30 
+                            overflow-y-auto animate-in slide-in-from-right duration-300">
+              {/* Panel Header */}
+              <div className="sticky top-0 bg-slate-900 border-b border-slate-700 p-4 flex items-center justify-between">
+                <h2 className="text-xl font-bold text-neon-cyan">Game Menu</h2>
+                <button
+                  onClick={() => setMenuOpen(false)}
+                  className="p-2 rounded-lg bg-slate-800 hover:bg-slate-700 text-white"
+                >
+                  ✕
+                </button>
+              </div>
 
-        {/* Controls Panel */}
-        <div className="lg:col-span-1 space-y-4">
-          <BattleInfoPanel gameState={gameState} />
+              {/* Tab Navigation */}
+              <div className="flex border-b border-slate-700">
+                {(['stats', 'actions', 'build'] as const).map((tab) => (
+                  <button
+                    key={tab}
+                    onClick={() => setActiveTab(tab)}
+                    className={`flex-1 py-3 text-sm font-bold transition-all ${
+                      activeTab === tab
+                        ? 'text-neon-cyan border-b-2 border-neon-cyan bg-slate-800/50'
+                        : 'text-gray-400 hover:text-white'
+                    }`}
+                  >
+                    {tab === 'stats' && '📊 Stats'}
+                    {tab === 'actions' && '⚔️ Actions'}
+                    {tab === 'build' && '🔨 Build'}
+                  </button>
+                ))}
+              </div>
 
-          <ResourceCollectionPanel
-            gameState={gameState}
-            currentPlayer={currentPlayer}
-            onCollectResources={onCollectResources}
-            isMyTurn={isMyTurn}
-          />
+              {/* Tab Content */}
+              <div className="p-4 space-y-4">
+                {activeTab === 'stats' && (
+                  <>
+                    <PlayerStats
+                      players={gameState.players}
+                      currentPlayerIndex={gameState.currentPlayerIndex}
+                      gameStatus={gameState.gameStatus}
+                      decisionTimeMs={decisionTimeMs}
+                      scanChargesRemaining={scanChargesRemaining}
+                      speedBonusAccumulated={speedBonusAccumulated}
+                      averageDecisionTimeMs={averageDecisionTimeMs}
+                      scannedCoordinates={scannedCoordinates}
+                    />
+                    <BattleInfoPanel gameState={gameState} />
+                  </>
+                )}
 
-          <ShipBuildingPanel
-            gameState={gameState}
-            currentPlayer={currentPlayer}
-            onBuildShip={onBuildShip}
-            isMyTurn={isMyTurn}
-          />
+                {activeTab === 'actions' && (
+                  <>
+                    <ResourceCollectionPanel
+                      gameState={gameState}
+                      currentPlayer={currentPlayer}
+                      onCollectResources={onCollectResources}
+                      isMyTurn={isMyTurn}
+                    />
+                    <PirateControls
+                      gameState={gameState}
+                      onCreateGame={onCreateGame}
+                      onQuickStart={onQuickStart}
+                      onStartGame={onStartGame}
+                      onJoinGame={onJoinGame}
+                      onShipAction={onShipAction}
+                      onEndTurn={onEndTurn}
+                      isCreating={isCreatingGame}
+                      isJoining={isJoining}
+                      joinError={joinError}
+                      onClearJoinError={onClearJoinError}
+                      selectedShipId={selectedShipId || undefined}
+                      onShipSelect={onShipSelect}
+                      onScanCoordinate={async () => {}}
+                      decisionTimeMs={decisionTimeMs}
+                      scanChargesRemaining={scanChargesRemaining}
+                      speedBonusAccumulated={speedBonusAccumulated}
+                      onPracticeMode={onPracticeMode}
+                    />
+                  </>
+                )}
 
-          <PirateControls
-            gameState={gameState}
-            onCreateGame={onCreateGame}
-            onQuickStart={onQuickStart}
-            onStartGame={onStartGame}
-            onJoinGame={onJoinGame}
-            onShipAction={onShipAction}
-            onEndTurn={onEndTurn}
-            isCreating={isCreatingGame}
-            isJoining={isJoining}
-            joinError={joinError}
-            onClearJoinError={onClearJoinError}
-            selectedShipId={selectedShipId || undefined}
-            onShipSelect={onShipSelect}
-            onScanCoordinate={async () => {}} // TODO: Implement scanning
-            decisionTimeMs={decisionTimeMs}
-            scanChargesRemaining={scanChargesRemaining}
-            speedBonusAccumulated={speedBonusAccumulated}
-            onPracticeMode={onPracticeMode}
-          />
-        </div>
-      </div>
-    </>
+                {activeTab === 'build' && (
+                  <ShipBuildingPanel
+                    gameState={gameState}
+                    currentPlayer={currentPlayer}
+                    onBuildShip={onBuildShip}
+                    isMyTurn={isMyTurn}
+                  />
+                )}
+              </div>
+            </div>
+          </div>
+        )}
+      </>
+    );
+  }
+
+  // Pre-game / Waiting state - Show placeholder with controls
+  return (
+    <GamePlaceholder 
+      onPracticeMode={onPracticeMode}
+      onOpenLeaderboard={onOpenLeaderboard}
+    />
   );
 }
 
@@ -255,157 +581,66 @@ interface GamePlaceholderProps {
 
 function GamePlaceholder({ onPracticeMode, onOpenLeaderboard }: GamePlaceholderProps) {
   return (
-    <div className="flex-1 relative overflow-hidden">
-      {/* Animated background with floating elements */}
-      <div className="absolute inset-0 bg-gradient-to-br from-slate-900 via-slate-800 to-slate-900">
-        <div className="absolute top-20 left-20 w-32 h-32 bg-neon-cyan/10 rounded-full blur-3xl animate-float"></div>
-        <div className="absolute bottom-20 right-20 w-40 h-40 bg-neon-gold/10 rounded-full blur-3xl animate-float-delayed"></div>
-        <div className="absolute top-1/2 left-1/4 w-24 h-24 bg-neon-purple/10 rounded-full blur-2xl animate-pulse"></div>
-      </div>
-
-      {/* Hero Content */}
-      <div className="relative z-10 max-w-6xl mx-auto px-4 py-12">
-        {/* Hero Section */}
-        <div className="text-center mb-16">
-          <div className="mb-6 relative inline-block">
-            <div className="text-8xl sm:text-9xl animate-bounce-slow filter drop-shadow-2xl">🏴‍☠️</div>
-            <div className="absolute -top-2 -right-8 text-3xl sm:text-4xl animate-spin-slow">⚓</div>
-            <div className="absolute -bottom-2 -left-8 text-2xl sm:text-3xl animate-float">💎</div>
-          </div>
-
-          <h2 className="text-4xl sm:text-5xl lg:text-6xl font-black text-transparent bg-clip-text 
-                         bg-gradient-to-r from-neon-cyan via-neon-gold to-neon-cyan mb-6
-                         animate-subtle-glow leading-tight">
-            Command Your Pirate Fleet
-          </h2>
-
-          <p className="text-lg sm:text-xl text-gray-300 font-semibold mb-4 max-w-2xl mx-auto">
-            Strategic naval warfare on <span className="text-neon-cyan font-bold">Solana</span> with <span className="text-neon-purple font-bold">Zcash</span> privacy
+    <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-slate-900 via-slate-800 to-slate-900">
+      <div className="max-w-2xl mx-auto px-6 py-12 text-center">
+        {/* Hero */}
+        <div className="mb-8">
+          <div className="text-8xl mb-4 filter drop-shadow-2xl">🏴‍☠️</div>
+          <h1 className="text-4xl sm:text-5xl font-black text-transparent bg-clip-text 
+                         bg-gradient-to-r from-neon-cyan via-neon-gold to-neon-cyan mb-4">
+            Pir8
+          </h1>
+          <p className="text-lg text-gray-300 mb-2">
+            Strategic naval warfare on <span className="text-neon-cyan font-bold">Solana</span>
           </p>
+          <p className="text-sm text-gray-400">
+            Fast battles, tactical decisions, pirate glory
+          </p>
+        </div>
+
+        {/* CTA Buttons */}
+        <div className="flex flex-col sm:flex-row gap-4 justify-center mb-8">
+          <button
+            onClick={onPracticeMode}
+            className="bg-gradient-to-r from-neon-cyan to-neon-blue text-black font-bold 
+                       py-4 px-8 rounded-xl hover:scale-105 active:scale-95 transition-all
+                       shadow-lg shadow-neon-cyan/30"
+          >
+            <span className="text-xl mr-2">⚔️</span>
+            Play Now (Free)
+          </button>
           
-          <p className="text-base text-gray-400 max-w-xl mx-auto mb-4">
-            Fast battles, private moves, viral wins. Every decision matters in this skill-based conquest for treasure and glory!
-          </p>
-
-          {/* Dual-Chain Badge */}
-          <div className="flex flex-wrap items-center justify-center gap-3 mb-8">
-            <div className="flex items-center gap-2 bg-gradient-to-r from-neon-cyan/20 to-neon-blue/20 
-                           border border-neon-cyan/50 rounded-full px-4 py-2 backdrop-blur-sm">
-              <span className="text-lg">⚡</span>
-              <span className="text-sm font-semibold text-neon-cyan">Powered by Solana</span>
-            </div>
-            <div className="flex items-center gap-2 bg-gradient-to-r from-neon-purple/20 to-neon-magenta/20 
-                           border border-neon-purple/50 rounded-full px-4 py-2 backdrop-blur-sm">
-              <span className="text-lg">🔒</span>
-              <span className="text-sm font-semibold text-neon-purple">Secured by Zcash</span>
-            </div>
-          </div>
-
-          {/* CTA Buttons - Practice First (No Wallet Required) */}
-          <div className="flex flex-col sm:flex-row gap-4 justify-center items-center mb-12">
-            <button
-              onClick={onPracticeMode}
-              className="group relative w-full sm:w-auto"
-            >
-              <div className="absolute inset-0 bg-neon-cyan/20 rounded-xl blur-md group-hover:blur-lg transition-all"></div>
-              <div className="relative bg-gradient-to-r from-neon-cyan to-neon-blue
-                             hover:from-neon-cyan hover:to-neon-cyan
-                             text-black font-bold py-4 px-8 rounded-xl
-                             hover:shadow-lg hover:shadow-neon-cyan/50 hover:scale-105 
-                             active:scale-95 transition-all duration-300 flex items-center justify-center gap-3">
-                <span className="text-2xl">⚔️</span>
-                <div className="flex flex-col items-start">
-                  <span className="text-lg">Play Now (Free)</span>
-                  <span className="text-xs opacity-80">No wallet needed</span>
-                </div>
-              </div>
-            </button>
-
-            <button
-              onClick={onOpenLeaderboard}
-              className="group relative w-full sm:w-auto"
-            >
-              <div className="absolute inset-0 bg-neon-gold/20 rounded-xl blur-md group-hover:blur-lg transition-all"></div>
-              <div className="relative bg-gradient-to-r from-slate-700 to-slate-800
-                             hover:from-slate-600 hover:to-slate-700
-                             text-white font-bold py-4 px-8 rounded-xl border border-neon-gold/50
-                             hover:shadow-lg hover:shadow-neon-gold/30 hover:scale-105 
-                             active:scale-95 transition-all duration-300 flex items-center justify-center gap-3">
-                <span className="text-2xl">🏆</span>
-                <span className="text-lg">Leaderboard</span>
-              </div>
-            </button>
-          </div>
+          <button
+            onClick={onOpenLeaderboard}
+            className="bg-slate-700 text-white font-bold py-4 px-8 rounded-xl 
+                       border border-neon-gold/50 hover:bg-slate-600 transition-all"
+          >
+            <span className="text-xl mr-2">🏆</span>
+            Leaderboard
+          </button>
         </div>
 
-        {/* Feature Grid */}
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 mb-12">
-          {/* Feature 1 */}
-          <div className="group bg-slate-800/40 backdrop-blur-sm border border-neon-cyan/30 rounded-xl p-5 
-                         hover:bg-slate-800/60 hover:border-neon-cyan/50 hover:scale-105 transition-all duration-300
-                         hover:shadow-lg hover:shadow-neon-cyan/20">
-            <div className="text-4xl mb-3 group-hover:animate-bounce">⚡</div>
-            <h3 className="text-lg font-bold text-neon-cyan mb-2">Speed Rewards</h3>
-            <p className="text-sm text-gray-400">Quick decisions earn bonus points. Lightning reflexes dominate!</p>
+        {/* Quick Features */}
+        <div className="grid grid-cols-2 gap-4 text-sm">
+          <div className="bg-slate-800/50 rounded-lg p-4 border border-slate-700">
+            <div className="text-2xl mb-2">⚡</div>
+            <div className="text-neon-cyan font-bold">Speed Rewards</div>
+            <div className="text-gray-400 text-xs">Fast decisions = bonus points</div>
           </div>
-
-          {/* Feature 2 */}
-          <div className="group bg-slate-800/40 backdrop-blur-sm border border-neon-gold/30 rounded-xl p-5 
-                         hover:bg-slate-800/60 hover:border-neon-gold/50 hover:scale-105 transition-all duration-300
-                         hover:shadow-lg hover:shadow-neon-gold/20">
-            <div className="text-4xl mb-3 group-hover:animate-bounce">🔍</div>
-            <h3 className="text-lg font-bold text-neon-gold mb-2">Strategic Scouting</h3>
-            <p className="text-sm text-gray-400">Use 3 scans wisely to reveal hidden treasures and plan your conquest.</p>
+          <div className="bg-slate-800/50 rounded-lg p-4 border border-slate-700">
+            <div className="text-2xl mb-2">🔍</div>
+            <div className="text-neon-gold font-bold">Strategic Scouting</div>
+            <div className="text-gray-400 text-xs">3 scans to reveal the map</div>
           </div>
-
-          {/* Feature 3 */}
-          <div className="group bg-slate-800/40 backdrop-blur-sm border border-neon-purple/30 rounded-xl p-5 
-                         hover:bg-slate-800/60 hover:border-neon-purple/50 hover:scale-105 transition-all duration-300
-                         hover:shadow-lg hover:shadow-neon-purple/20">
-            <div className="text-4xl mb-3 group-hover:animate-bounce">🚢</div>
-            <h3 className="text-lg font-bold text-neon-purple mb-2">Fleet Command</h3>
-            <p className="text-sm text-gray-400">Build balanced armadas. Each ship serves a unique tactical role.</p>
+          <div className="bg-slate-800/50 rounded-lg p-4 border border-slate-700">
+            <div className="text-2xl mb-2">🚢</div>
+            <div className="text-neon-purple font-bold">Fleet Command</div>
+            <div className="text-gray-400 text-xs">Build your armada</div>
           </div>
-
-          {/* Feature 4 */}
-          <div className="group bg-slate-800/40 backdrop-blur-sm border border-neon-purple/30 rounded-xl p-5 
-                         hover:bg-slate-800/60 hover:border-neon-purple/50 hover:scale-105 transition-all duration-300
-                         hover:shadow-lg hover:shadow-neon-purple/20">
-            <div className="text-4xl mb-3 group-hover:animate-bounce">🔒</div>
-            <h3 className="text-lg font-bold text-neon-purple mb-2">Zcash Privacy</h3>
-            <p className="text-sm text-gray-400">Shielded memos for private moves. Solana speed with Zcash security!</p>
-          </div>
-        </div>
-
-        {/* Stats Bar */}
-        <div className="bg-gradient-to-r from-slate-800/60 to-slate-900/60 backdrop-blur-sm 
-                       border border-neon-cyan/20 rounded-xl p-6">
-          <div className="grid grid-cols-2 md:grid-cols-4 gap-6 text-center">
-            <div>
-              <div className="text-3xl font-black text-neon-cyan mb-1">3</div>
-              <div className="text-sm text-gray-400">Victory Paths</div>
-            </div>
-            <div>
-              <div className="text-3xl font-black text-neon-gold mb-1">&lt;5s</div>
-              <div className="text-sm text-gray-400">Speed Bonus</div>
-            </div>
-            <div>
-              <div className="text-3xl font-black text-neon-purple mb-1">∞</div>
-              <div className="text-sm text-gray-400">Strategies</div>
-            </div>
-            <div>
-              <div className="text-3xl font-black text-neon-orange mb-1">100%</div>
-              <div className="text-sm text-gray-400">On-Chain</div>
-            </div>
-          </div>
-        </div>
-
-        {/* Helper Text */}
-        <div className="text-center mt-8">
-          <div className="inline-flex items-center gap-2 bg-gradient-to-r from-neon-cyan/10 to-neon-gold/10 
-                         border border-neon-cyan/30 rounded-full px-6 py-3 backdrop-blur-sm">
-            <span className="text-neon-cyan font-bold text-lg">👆</span>
-            <span className="text-gray-300 font-medium">Connect wallet or use controls panel to begin</span>
+          <div className="bg-slate-800/50 rounded-lg p-4 border border-slate-700">
+            <div className="text-2xl mb-2">🏴‍☠️</div>
+            <div className="text-neon-orange font-bold">Conquer Territory</div>
+            <div className="text-gray-400 text-xs">Dominate the seas</div>
           </div>
         </div>
       </div>

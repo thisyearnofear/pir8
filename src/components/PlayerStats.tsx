@@ -14,6 +14,7 @@ interface PlayerStatsProps {
   speedBonusAccumulated?: number;
   averageDecisionTimeMs?: number;
   scannedCoordinates?: string[];
+  isPracticeMode?: boolean;
 }
 
 export default function PlayerStats({
@@ -25,7 +26,8 @@ export default function PlayerStats({
   scanChargesRemaining = 3,
   speedBonusAccumulated = 0,
   averageDecisionTimeMs: _averageDecisionTimeMs = 0,
-  scannedCoordinates: _scannedCoordinates = []
+  scannedCoordinates: _scannedCoordinates = [],
+  isPracticeMode: _isPracticeMode = false
 }: PlayerStatsProps) {
   const { publicKey } = useWallet();
 
@@ -103,20 +105,20 @@ export default function PlayerStats({
                     rounded-2xl border-2 border-neon-cyan/50 p-6 relative overflow-hidden
                     shadow-2xl shadow-neon-cyan/20">
 
-      {/* Animated background elements */}
-      <div className="absolute top-4 right-4 w-20 h-20 bg-neon-cyan/10 rounded-full blur-xl animate-pulse"></div>
-      <div className="absolute bottom-4 left-4 w-16 h-16 bg-neon-gold/10 rounded-full blur-lg animate-pulse delay-1000"></div>
-      <div className="absolute top-1/2 left-1/3 w-12 h-12 bg-neon-magenta/10 rounded-full blur-md animate-pulse delay-500"></div>
+      {/* Background elements */}
+      <div className="absolute top-4 right-4 w-20 h-20 bg-neon-cyan/10 rounded-full blur-xl"></div>
+      <div className="absolute bottom-4 left-4 w-16 h-16 bg-neon-gold/10 rounded-full blur-lg"></div>
+      <div className="absolute top-1/2 left-1/3 w-12 h-12 bg-neon-magenta/10 rounded-full blur-md"></div>
 
       {/* Header Section - Enhanced */}
       <div className="relative mb-6 text-center border-b border-neon-cyan/30 pb-6">
         <div className="flex items-center justify-center gap-3 mb-3">
-          <div className="text-4xl animate-pulse filter drop-shadow-2xl">⚓</div>
+          <div className="text-4xl filter drop-shadow-2xl">⚓</div>
           <h3 className="text-2xl font-black text-transparent bg-clip-text 
                          bg-gradient-to-r from-neon-cyan via-neon-gold to-neon-cyan">
             CAPTAIN STATUS
           </h3>
-          <div className="text-4xl animate-pulse filter drop-shadow-2xl">⚓</div>
+          <div className="text-4xl filter drop-shadow-2xl">⚓</div>
         </div>
 
         {gameStatus === 'active' && (
@@ -124,7 +126,7 @@ export default function PlayerStats({
             <div className="bg-gradient-to-r from-neon-cyan/20 to-neon-gold/20 
                             rounded-xl p-4 border border-neon-cyan/30 backdrop-blur-sm">
               <p className="text-lg font-bold text-neon-cyan mb-2 flex items-center justify-center gap-2">
-                <span className="animate-pulse">🏴‍☠️</span>
+                <span>🏴‍☠️</span>
                 ACTIVE CAPTAIN: {players[currentPlayerIndex] ? getPlayerDisplayName(players[currentPlayerIndex]) : 'Unknown'}
               </p>
 
@@ -134,7 +136,7 @@ export default function PlayerStats({
                   <div className="flex items-center justify-between text-xs mb-1">
                     <span className="text-neon-cyan font-mono font-bold">DECISION TIME:</span>
                     <div className="flex items-center gap-1">
-                      <div className={`w-2 h-2 rounded-full animate-pulse ${decisionTimeMs < 5000 ? 'bg-green-400' :
+                      <div className={`w-2 h-2 rounded-full ${decisionTimeMs < 5000 ? 'bg-green-400' :
                         decisionTimeMs < 10000 ? 'bg-yellow-400' : 'bg-red-500'
                         }`}></div>
                       <span className="text-neon-gold font-bold">{formatDecisionTime(decisionTimeMs)}</span>
@@ -183,7 +185,7 @@ export default function PlayerStats({
               key={player.publicKey}
               className={`player-card relative bg-gradient-to-br from-slate-800/90 to-slate-700/90 
                          rounded-xl p-5 border-2 transition-all duration-300 hover:scale-[1.02]
-                         ${isActive ? 'border-neon-cyan shadow-lg shadow-neon-cyan/30 animate-pulse' :
+                         ${isActive ? 'border-neon-cyan shadow-lg shadow-neon-cyan/30' :
                   winner === player.publicKey ? 'border-neon-gold shadow-lg shadow-neon-gold/30' :
                     isMe ? 'border-neon-orange shadow-lg shadow-neon-orange/20' :
                       'border-slate-600 hover:border-slate-500'}`}
@@ -197,7 +199,7 @@ export default function PlayerStats({
               {/* Player Header */}
               <div className="flex items-center justify-between mb-4">
                 <div className="flex items-center gap-3">
-                  <div className={`text-2xl ${isMe ? 'animate-pulse' : ''}`}>
+                  <div className="text-2xl">
                     {isMe ? '👑' : '🏴‍☠️'}
                   </div>
                   <div>
@@ -213,7 +215,7 @@ export default function PlayerStats({
                     </div>
                     {winner === player.publicKey && (
                       <div className="flex items-center gap-2 mt-1">
-                        <span className="text-neon-gold text-sm font-black animate-pulse">
+                        <span className="text-neon-gold text-sm font-black">
                           ⭐ PIRATE KING ⭐
                         </span>
                       </div>
@@ -223,7 +225,7 @@ export default function PlayerStats({
 
                 {isActive && (
                   <div className="flex items-center gap-2 bg-neon-cyan/20 rounded-full px-3 py-1 border border-neon-cyan/50">
-                    <div className="w-2 h-2 bg-neon-cyan rounded-full animate-pulse"></div>
+                    <div className="w-2 h-2 bg-neon-cyan rounded-full"></div>
                     <span className="text-xs text-neon-cyan font-bold">ACTIVE</span>
                   </div>
                 )}
@@ -311,7 +313,7 @@ export default function PlayerStats({
                     }}
                   >
                     <div className="absolute inset-0 bg-gradient-to-r from-transparent via-white/30 to-transparent 
-                                    animate-pulse"></div>
+                                    "></div>
                   </div>
                 </div>
               </div>
@@ -333,26 +335,22 @@ export default function PlayerStats({
               'border-neon-magenta bg-gradient-to-r from-neon-magenta to-purple-600 text-white'
             }`}>
 
-            {/* Animated background shimmer */}
-            <div className="absolute inset-0 bg-gradient-to-r from-transparent via-white/20 to-transparent 
-                            translate-x-[-100%] animate-pulse"></div>
-
             <div className="relative text-lg drop-shadow-lg">
               {gameStatus === 'waiting' && (
                 <div className="flex items-center justify-center gap-2">
-                  <span className="animate-spin">⚓</span>
+                  <span>⚓</span>
                   ASSEMBLING CREW
                 </div>
               )}
               {gameStatus === 'active' && (
                 <div className="flex items-center justify-center gap-2">
-                  <span className="animate-pulse">⚔️</span>
+                  <span>⚔️</span>
                   BATTLE IN PROGRESS
                 </div>
               )}
               {gameStatus === 'completed' && (
                 <div className="flex items-center justify-center gap-2">
-                  <span className="animate-bounce">👑</span>
+                  <span>👑</span>
                   PIRATE KING CROWNED
                 </div>
               )}

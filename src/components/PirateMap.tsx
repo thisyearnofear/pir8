@@ -235,21 +235,7 @@ export default function PirateMap({
   const hoveredCell = hoveredCoordinate ? getCellAtCoordinate(hoveredCoordinate) : null;
 
   return (
-    <div className="pirate-map-container relative" ref={mapRef}>
-      <div className="map-header mb-4 text-center">
-        <h3 className="text-xl font-bold font-tech text-neon-cyan">
-          🗺️ BATTLE MAP
-        </h3>
-        <div className="map-legend flex justify-center gap-4 mt-2 text-xs">
-          <span>🌊 Water</span>
-          <span>🏝️ Island</span>
-          <span>⚓ Port</span>
-          <span>💰 Treasure</span>
-          <span>⛈️ Storm</span>
-          <span>🪨 Reef</span>
-          <span>🌀 Whirlpool</span>
-        </div>
-      </div>
+    <div className="pirate-map-container relative w-full h-full flex flex-col items-center justify-center" ref={mapRef}>
 
       <div
         className="game-map-grid relative"
@@ -259,7 +245,8 @@ export default function PirateMap({
           gridTemplateRows: `repeat(${gameMap.size}, 1fr)`,
           gap: '2px',
           aspectRatio: '1',
-          maxWidth: '600px',
+          width: '100%',
+          maxWidth: 'min(90vw, 90vh)',
           margin: '0 auto'
         }}
       >

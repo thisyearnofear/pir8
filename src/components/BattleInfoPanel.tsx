@@ -60,13 +60,13 @@ export default function BattleInfoPanel({ gameState }: BattleInfoPanelProps) {
     return (
       <div className="battle-info-panel bg-gradient-to-br from-slate-900 via-slate-800 to-slate-900 
                       rounded-2xl border-2 border-neon-cyan/30 p-6 relative overflow-hidden">
-        {/* Animated background elements */}
+        {/* Background elements */}
         <div className="absolute inset-0 bg-gradient-to-br from-neon-cyan/5 to-neon-gold/5 rounded-2xl"></div>
-        <div className="absolute top-4 right-4 w-16 h-16 bg-neon-cyan/10 rounded-full blur-xl animate-pulse"></div>
-        <div className="absolute bottom-4 left-4 w-12 h-12 bg-neon-gold/10 rounded-full blur-lg animate-pulse delay-1000"></div>
+        <div className="absolute top-4 right-4 w-16 h-16 bg-neon-cyan/10 rounded-full blur-xl"></div>
+        <div className="absolute bottom-4 left-4 w-12 h-12 bg-neon-gold/10 rounded-full blur-lg"></div>
 
         <div className="relative text-center">
-          <div className="text-6xl mb-4 animate-bounce filter drop-shadow-2xl">⚓</div>
+          <div className="text-6xl mb-4 filter drop-shadow-2xl">⚓</div>
           <h3 className="text-xl font-black text-transparent bg-clip-text 
                          bg-gradient-to-r from-neon-cyan to-neon-gold mb-2">
             BATTLE COMMAND CENTER
@@ -76,7 +76,7 @@ export default function BattleInfoPanel({ gameState }: BattleInfoPanelProps) {
           {/* Status indicators */}
           <div className="mt-6 space-y-3">
             <div className="flex items-center justify-center gap-2 bg-slate-700/60 rounded-full px-4 py-2">
-              <div className="w-2 h-2 bg-orange-400 rounded-full animate-pulse"></div>
+              <div className="w-2 h-2 bg-orange-400 rounded-full"></div>
               <span className="text-sm font-mono text-orange-400">STANDBY</span>
             </div>
           </div>
@@ -90,10 +90,10 @@ export default function BattleInfoPanel({ gameState }: BattleInfoPanelProps) {
                     rounded-2xl border-2 border-neon-cyan/50 p-6 space-y-6 relative overflow-hidden
                     shadow-2xl shadow-neon-cyan/20">
 
-      {/* Animated background elements */}
+      {/* Background elements */}
       <div className="absolute inset-0 bg-gradient-to-br from-neon-cyan/5 to-neon-gold/5 rounded-2xl"></div>
-      <div className="absolute top-4 right-4 w-20 h-20 bg-neon-cyan/10 rounded-full blur-xl animate-pulse"></div>
-      <div className="absolute bottom-4 left-4 w-16 h-16 bg-neon-gold/10 rounded-full blur-lg animate-pulse delay-1000"></div>
+      <div className="absolute top-4 right-4 w-20 h-20 bg-neon-cyan/10 rounded-full blur-xl"></div>
+      <div className="absolute bottom-4 left-4 w-16 h-16 bg-neon-gold/10 rounded-full blur-lg"></div>
 
       {/* Battle Status - Enhanced */}
       <div className="relative bg-gradient-to-r from-neon-cyan via-neon-blue to-neon-cyan 
@@ -103,7 +103,7 @@ export default function BattleInfoPanel({ gameState }: BattleInfoPanelProps) {
             ⚔️ BATTLE COMMAND
           </h3>
           <div className="flex items-center gap-2 bg-black/20 rounded-full px-3 py-1">
-            <div className="w-2 h-2 bg-green-400 rounded-full animate-pulse"></div>
+            <div className="w-2 h-2 bg-green-400 rounded-full"></div>
             <span className="text-xs font-bold text-black">ACTIVE</span>
           </div>
         </div>
@@ -144,7 +144,7 @@ export default function BattleInfoPanel({ gameState }: BattleInfoPanelProps) {
           </h4>
 
           <div className="flex items-center gap-4 mb-3">
-            <div className="text-4xl filter drop-shadow-lg animate-pulse">
+            <div className="text-4xl filter drop-shadow-lg">
               {getWeatherEmoji(gameState.globalWeather)}
             </div>
             <div className="flex-1">
