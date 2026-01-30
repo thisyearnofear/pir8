@@ -17,6 +17,42 @@ import { GAME_CONFIG } from '../utils/constants';
 import { GameBalance } from './gameBalance';
 
 /**
+ * AI Decision-Making Types
+ * ENHANCEMENT: Add reasoning transparency for educational purposes
+ */
+export interface AIOption {
+  type: 'claim_territory' | 'attack' | 'move_ship' | 'build_ship' | 'pass';
+  target?: string;
+  shipId?: string;
+  score: number;
+  reason: string;
+  details?: any;
+}
+
+export interface AIReasoning {
+  optionsConsidered: AIOption[];
+  chosenOption: AIOption | null;
+  gameAnalysis: {
+    isWinning: boolean;
+    isLosing: boolean;
+    territoriesControlled: number;
+    totalShips: number;
+    resourceAdvantage: boolean;
+  };
+  difficulty: {
+    level: 'novice' | 'pirate' | 'captain' | 'admiral';
+    name: string;
+    aggressiveness: number;
+  };
+  thinkingTime: number; // ms
+}
+
+export interface AIDecision {
+  action: GameAction | null;
+  reasoning: AIReasoning;
+}
+
+/**
  * High-level game engine that manages game flow and player actions
  */
 export class PirateGameManager {
@@ -958,10 +994,20 @@ export class PirateGameManager {
   }
 
   /**
-   * Generate AI decision for current turn
-   * ENHANCEMENT: Improved priority system with debug logging and smarter decisions
+   * Generate AI decision for current turn with reasoning transparency
+   * ENHANCEMENT: Returns structured reasoning for educational purposes
    */
   static generateAIMove(gameState: GameState, aiPlayer: Player): GameAction | null {
+    const decision = this.generateAIDecision(gameState, aiPlayer);
+    return decision.action;
+  }
+
+  /**
+   * Generate AI decision WITH reasoning (new method for transparency)
+   * ENHANCEMENT: Educational AI that shows its thought process
+   */
+  static generateAIDecision(gameState: GameState, aiPlayer: Player): AIDecision {
+    const startTime = Date.now();
     const difficulty = this.getAIDifficulty(aiPlayer);
     const debugMode = typeof window !== 'undefined' && (window as any).PIR8_DEBUG_AI === true;
     
@@ -972,38 +1018,122 @@ export class PirateGameManager {
     // Evaluate game state for strategic decisions
     const gameAnalysis = this.analyzeGameState(gameState, aiPlayer);
     
-    // Priority 1: Claim valuable territories (high priority when on claimable tile)
-    const claimAction = this.findBestTerritoryClaim(gameState, aiPlayer);
-    if (claimAction && Math.random() < difficulty.claimChance) {
-      if (debugMode) console.log('  ✅ AI Decision: Claim territory');
-      return claimAction;
+    // Collect all options with scores and reasoning
+    const optionsConsidered: AIOption[] = [];
+
+    // Priority 1: Evaluate claiming territories
+    const claimResult = this.evaluateTerritoryClaim(gameState, aiPlayer);
+    if (claimResult) {
+      optionsConsidered.push(claimResult);
     }
 
-    // Priority 2: Attack enemy ships (higher priority if losing or enemy is weak)
-    const attackAction = this.findBestAttack(gameState, aiPlayer, gameAnalysis);
-    const attackPriority = gameAnalysis.isLosing ? difficulty.attackChance * 1.2 : difficulty.attackChance;
-    if (attackAction && Math.random() < attackPriority) {
-      if (debugMode) console.log('  ⚔️ AI Decision: Attack enemy ship');
-      return attackAction;
+    // Priority 2: Evaluate attacks
+    const attackResult = this.evaluateAttack(gameState, aiPlayer, gameAnalysis);
+    if (attackResult) {
+      optionsConsidered.push(attackResult);
     }
 
-    // Priority 3: Move toward objectives (always try to move if possible)
-    const moveAction = this.findBestMove(gameState, aiPlayer, gameAnalysis);
-    if (moveAction && Math.random() < difficulty.moveChance) {
-      if (debugMode) console.log('  🚢 AI Decision: Move toward objective');
-      return moveAction;
+    // Priority 3: Evaluate movements
+    const moveResult = this.evaluateMove(gameState, aiPlayer, gameAnalysis);
+    if (moveResult) {
+      optionsConsidered.push(moveResult);
     }
 
-    // Priority 4: Build ships if resources allow (lower priority if already strong)
-    const buildAction = this.findBestBuild(gameState, aiPlayer);
-    const buildPriority = gameAnalysis.isWinning ? difficulty.buildChance * 0.8 : difficulty.buildChance;
-    if (buildAction && Math.random() < buildPriority) {
-      if (debugMode) console.log('  🛠️ AI Decision: Build ship');
-      return buildAction;
+    // Priority 4: Evaluate building
+    const buildResult = this.evaluateBuild(gameState, aiPlayer, gameAnalysis);
+    if (buildResult) {
+      optionsConsidered.push(buildResult);
     }
 
-    if (debugMode) console.log('  ⏭️ AI Decision: Pass (no valid actions)');
-    return null; // AI passes turn
+    // Choose best option based on score and difficulty-adjusted randomness
+    let chosenOption: AIOption | null = null;
+    let chosenAction: GameAction | null = null;
+
+    if (optionsConsidered.length > 0) {
+      // Sort by score
+      optionsConsidered.sort((a, b) => b.score - a.score);
+
+      // Apply difficulty-based selection
+      for (const option of optionsConsidered) {
+        const selectionChance = this.getSelectionChance(option.type, difficulty, gameAnalysis);
+        if (Math.random() < selectionChance) {
+          chosenOption = option;
+          chosenAction = this.optionToAction(option, gameState, aiPlayer);
+          break;
+        }
+      }
+
+      // Fallback to best option if nothing selected
+      if (!chosenOption && optionsConsidered.length > 0) {
+        chosenOption = optionsConsidered[0] || null;
+        if (chosenOption) {
+          chosenAction = this.optionToAction(chosenOption, gameState, aiPlayer);
+        }
+      }
+    }
+
+    if (debugMode && chosenOption) {
+      console.log(`  ✅ AI Decision: ${chosenOption.type} (score: ${chosenOption.score})`);
+    } else if (debugMode) {
+      console.log('  ⏭️ AI Decision: Pass (no valid actions)');
+    }
+
+    // Build reasoning object
+    const difficultyName = difficulty.debugName || 'Pirate';
+    const reasoning: AIReasoning = {
+      optionsConsidered,
+      chosenOption,
+      gameAnalysis,
+      difficulty: {
+        level: difficultyName.includes('Novice') ? 'novice' :
+               difficultyName.includes('Admiral') ? 'admiral' :
+               difficultyName.includes('Captain') ? 'captain' : 'pirate',
+        name: difficultyName,
+        aggressiveness: difficulty.aggressiveness,
+      },
+      thinkingTime: Date.now() - startTime,
+    };
+
+    return {
+      action: chosenAction,
+      reasoning,
+    };
+  }
+
+  /**
+   * Get selection chance based on option type and difficulty
+   */
+  private static getSelectionChance(
+    optionType: string,
+    difficulty: any,
+    gameAnalysis: any
+  ): number {
+    switch (optionType) {
+      case 'claim_territory':
+        return difficulty.claimChance;
+      case 'attack':
+        return gameAnalysis.isLosing ? difficulty.attackChance * 1.2 : difficulty.attackChance;
+      case 'move_ship':
+        return difficulty.moveChance;
+      case 'build_ship':
+        return gameAnalysis.isWinning ? difficulty.buildChance * 0.8 : difficulty.buildChance;
+      default:
+        return 0.5;
+    }
+  }
+
+  /**
+   * Convert AIOption to GameAction
+   */
+  private static optionToAction(option: AIOption, gameState: GameState, aiPlayer: Player): GameAction {
+    return {
+      id: `ai_action_${Date.now()}`,
+      gameId: gameState.gameId,
+      player: aiPlayer.publicKey,
+      type: option.type as any,
+      data: option.details || {},
+      timestamp: Date.now(),
+    };
   }
 
   /**
@@ -1108,7 +1238,51 @@ export class PirateGameManager {
   }
 
   /**
-   * Find best territory to claim
+   * Evaluate territory claiming option with reasoning
+   * ENHANCEMENT: Returns scored option for transparency
+   */
+  private static evaluateTerritoryClaim(gameState: GameState, aiPlayer: Player): AIOption | null {
+    const result = this.findBestTerritoryClaim(gameState, aiPlayer);
+    if (!result) return null;
+
+    // Extract details from the action
+    const { shipId, toCoordinate } = result.data;
+    if (!toCoordinate) return null;
+    
+    const ship = aiPlayer.ships.find(s => s.id === shipId);
+    if (!ship) return null;
+
+    const coord = this.stringToCoordinate(toCoordinate);
+    const territory = gameState.gameMap.cells[coord.x]?.[coord.y];
+    
+    let score = 70;
+    let reason = 'Claiming territory';
+    
+    if (territory) {
+      if (territory.type === 'treasure') {
+        score = 100;
+        reason = 'High-value treasure - must claim!';
+      } else if (territory.type === 'port') {
+        score = 90;
+        reason = 'Strategic port for ship building';
+      } else if (territory.type === 'island') {
+        score = 75;
+        reason = 'Island provides resources';
+      }
+    }
+
+    return {
+      type: 'claim_territory',
+      target: toCoordinate,
+      shipId,
+      score,
+      reason,
+      details: result.data,
+    };
+  }
+
+  /**
+   * Find best territory to claim (original method)
    */
   private static findBestTerritoryClaim(gameState: GameState, aiPlayer: Player): GameAction | null {
     const activeShips = aiPlayer.ships.filter(s => s.health > 0);
@@ -1135,127 +1309,166 @@ export class PirateGameManager {
   }
 
   /**
-   * Find best attack opportunity
-   * ENHANCEMENT: Smarter target selection based on ship health and value
+   * Evaluate attack option with reasoning
+   * ENHANCEMENT: Returns scored option for transparency
    */
-  private static findBestAttack(gameState: GameState, aiPlayer: Player, gameAnalysis: any): GameAction | null {
+  private static evaluateAttack(gameState: GameState, aiPlayer: Player, gameAnalysis: any): AIOption | null {
+    const result = this.findBestAttackWithScore(gameState, aiPlayer, gameAnalysis);
+    if (!result) return null;
+
+    return {
+      type: 'attack',
+      target: result.targetShipId,
+      shipId: result.shipId,
+      score: result.score,
+      reason: result.reason,
+      details: { shipId: result.shipId, targetShipId: result.targetShipId },
+    };
+  }
+
+  /**
+   * Find best attack with score and reasoning
+   */
+  private static findBestAttackWithScore(gameState: GameState, aiPlayer: Player, gameAnalysis: any): { shipId: string; targetShipId: string; score: number; reason: string } | null {
     const activeShips = aiPlayer.ships.filter(s => s.health > 0);
-    let bestAttack: { action: GameAction; score: number } | null = null;
+    let bestAttack: { shipId: string; targetShipId: string; score: number; reason: string } | null = null;
     
     for (const ship of activeShips) {
-      // Find enemy ships in range (adjacent cells)
       for (const enemy of gameState.players) {
         if (enemy.publicKey === aiPlayer.publicKey) continue;
         
         for (const enemyShip of enemy.ships.filter(s => s.health > 0)) {
-          // Use Manhattan distance for grid-based movement
           const manhattanDist = Math.abs(ship.position.x - enemyShip.position.x) + 
                                 Math.abs(ship.position.y - enemyShip.position.y);
           
-          if (manhattanDist <= 1) { // Adjacent cells only
-            // Score the attack based on multiple factors
+          if (manhattanDist <= 1) {
             let score = 100;
+            let reason = 'Enemy in range';
             
-            // Prefer attacking weak ships (easier to destroy)
+            // Prefer attacking weak ships
             score += (100 - enemyShip.health);
+            if (enemyShip.health < 30) {
+              reason = 'Finish off weakened enemy';
+            }
             
-            // Prefer attacking stronger ship types (bigger threat)
-            if (enemyShip.type === 'flagship') score += 50;
-            else if (enemyShip.type === 'galleon') score += 30;
-            else if (enemyShip.type === 'frigate') score += 20;
+            // Prefer attacking stronger ship types
+            if (enemyShip.type === 'flagship') {
+              score += 50;
+              reason = 'Eliminate flagship threat';
+            } else if (enemyShip.type === 'galleon') {
+              score += 30;
+              reason = 'Take down galleon';
+            } else if (enemyShip.type === 'frigate') {
+              score += 20;
+            }
             
-            // If we're losing, be more aggressive
-            if (gameAnalysis.isLosing) score += 25;
-            
-            const action: GameAction = {
-              id: `ai_action_${Date.now()}`,
-              gameId: gameState.gameId,
-              player: aiPlayer.publicKey,
-              type: 'attack',
-              data: { shipId: ship.id, targetShipId: enemyShip.id },
-              timestamp: Date.now(),
-            };
+            // If losing, be more aggressive
+            if (gameAnalysis.isLosing) {
+              score += 25;
+              reason = 'Aggressive strike - must turn tide';
+            }
             
             if (!bestAttack || score > bestAttack.score) {
-              bestAttack = { action, score };
+              bestAttack = { 
+                shipId: ship.id, 
+                targetShipId: enemyShip.id, 
+                score, 
+                reason 
+              };
             }
           }
         }
       }
     }
     
-    return bestAttack?.action || null;
+    return bestAttack;
+  }
+
+
+  /**
+   * Evaluate movement option with reasoning
+   * ENHANCEMENT: Returns scored option for transparency
+   */
+  private static evaluateMove(gameState: GameState, aiPlayer: Player, gameAnalysis: any): AIOption | null {
+    const result = this.findBestMoveWithScore(gameState, aiPlayer, gameAnalysis);
+    if (!result) return null;
+
+    return {
+      type: 'move_ship',
+      target: result.toCoordinate,
+      shipId: result.shipId,
+      score: result.score,
+      reason: result.reason,
+      details: { shipId: result.shipId, toCoordinate: result.toCoordinate },
+    };
   }
 
   /**
-   * Find best move toward objectives
-   * ENHANCEMENT: Proper validation, Manhattan distance, and smarter pathfinding
+   * Find best move with score and reasoning
    */
-  private static findBestMove(gameState: GameState, aiPlayer: Player, gameAnalysis: any): GameAction | null {
+  private static findBestMoveWithScore(gameState: GameState, aiPlayer: Player, gameAnalysis: any): { shipId: string; toCoordinate: string; score: number; reason: string } | null {
     const activeShips = aiPlayer.ships.filter(s => s.health > 0);
     if (activeShips.length === 0) return null;
 
-    // Select ship strategically (prioritize ships not on valuable tiles)
     let ship = activeShips[0];
     for (const s of activeShips) {
       const currentTile = gameState.gameMap.cells[s.position.x]?.[s.position.y];
       if (currentTile && currentTile.type === 'water') {
         ship = s;
-        break; // Prefer ships on water (nothing to claim here)
+        break;
       }
     }
     if (!ship) return null;
     
     const speed = ship.speed;
-
-    // Find valuable unclaimed territories
-    let bestTarget: Coordinate | null = null;
+    let bestTarget: { x: number; y: number } | null = null;
     let bestScore = -Infinity;
+    let bestReason = '';
 
     for (let x = 0; x < gameState.gameMap.size; x++) {
       for (let y = 0; y < gameState.gameMap.size; y++) {
         const territory = gameState.gameMap.cells[x]?.[y];
         if (!territory) continue;
-        
-        // Skip if we already own it
         if (territory.owner === aiPlayer.publicKey) continue;
-        
-        // Skip if we're already at this position
         if (ship.position.x === x && ship.position.y === y) continue;
 
-        // Use Manhattan distance for grid-based movement
         const manhattanDist = Math.abs(ship.position.x - x) + Math.abs(ship.position.y - y);
         if (manhattanDist > speed) continue;
-
-        // Check if position is navigable
         if (!this.isNavigable(territory.type)) continue;
-        
-        // Check if position is occupied by another ship
         if (this.isPositionOccupied(gameState, { x, y })) continue;
 
         let score = 0;
+        let reason = '';
         
-        // Score based on territory value
-        if (territory.type === 'treasure') score = 100;
-        else if (territory.type === 'port') score = 70;
-        else if (territory.type === 'island') score = 40;
-        else if (territory.type === 'water') score = 15;
-        else score = -50; // Avoid hazards (storm, whirlpool, reef)
+        if (territory.type === 'treasure') {
+          score = 100;
+          reason = 'Move toward treasure';
+        } else if (territory.type === 'port') {
+          score = 70;
+          reason = 'Advance to strategic port';
+        } else if (territory.type === 'island') {
+          score = 40;
+          reason = 'Head to resource island';
+        } else if (territory.type === 'water') {
+          score = 15;
+          reason = 'Navigate toward objective';
+        } else {
+          score = -50;
+          reason = 'Avoid hazard';
+        }
 
-        // Boost score for unclaimed valuable territories
         if (!territory.owner && territory.type !== 'water') {
           score += 30;
+          reason = 'Claim unclaimed territory';
         }
         
-        // Prefer closer targets (Manhattan distance penalty)
         score -= manhattanDist * 3;
         
-        // If losing, prioritize high-value targets more
         if (gameAnalysis.isLosing && (territory.type === 'treasure' || territory.type === 'port')) {
           score += 25;
+          reason = 'Desperate push for valuable tile';
         }
         
-        // If winning, play safer (avoid hazards more)
         if (gameAnalysis.isWinning && (territory.type === 'storm' || territory.type === 'whirlpool')) {
           score -= 50;
         }
@@ -1263,18 +1476,17 @@ export class PirateGameManager {
         if (score > bestScore) {
           bestScore = score;
           bestTarget = { x, y };
+          bestReason = reason;
         }
       }
     }
 
     if (bestTarget) {
       return {
-        id: `ai_action_${Date.now()}`,
-        gameId: gameState.gameId,
-        player: aiPlayer.publicKey,
-        type: 'move_ship',
-        data: { shipId: ship.id, toCoordinate: this.coordinateToString(bestTarget) },
-        timestamp: Date.now(),
+        shipId: ship.id,
+        toCoordinate: this.coordinateToString(bestTarget),
+        score: bestScore,
+        reason: bestReason,
       };
     }
 
@@ -1310,13 +1522,29 @@ export class PirateGameManager {
   }
 
   /**
-   * Find best ship to build
+   * Evaluate ship building option with reasoning
+   * ENHANCEMENT: Returns scored option for transparency
    */
-  private static findBestBuild(gameState: GameState, aiPlayer: Player): GameAction | null {
+  private static evaluateBuild(gameState: GameState, aiPlayer: Player, _gameAnalysis: any): AIOption | null {
+    const result = this.findBestBuildWithScore(gameState, aiPlayer);
+    if (!result) return null;
+
+    return {
+      type: 'build_ship',
+      target: result.toCoordinate,
+      score: result.score,
+      reason: result.reason,
+      details: { shipType: result.shipType, toCoordinate: result.toCoordinate },
+    };
+  }
+
+  /**
+   * Find best ship to build with score and reasoning
+   */
+  private static findBestBuildWithScore(gameState: GameState, aiPlayer: Player): { shipType: ShipType; toCoordinate: string; score: number; reason: string } | null {
     const activeShips = aiPlayer.ships.filter(s => s.health > 0);
     if (activeShips.length >= GAME_CONFIG.MAX_SHIPS_PER_PLAYER) return null;
 
-    // Determine best ship type based on resources
     const shipTypes: ShipType[] = ['flagship', 'galleon', 'frigate', 'sloop'];
     
     for (const shipType of shipTypes) {
@@ -1326,7 +1554,6 @@ export class PirateGameManager {
       );
 
       if (canAfford) {
-        // Find valid build location
         for (const territory of aiPlayer.controlledTerritories) {
           const coords = territory.split(',').map(Number);
           const x = coords[0];
@@ -1335,7 +1562,6 @@ export class PirateGameManager {
           
           const port = gameState.gameMap.cells[x]?.[y];
           if (port?.type === 'port') {
-            // Find adjacent water
             const adjacent: Coordinate[] = [
               { x: x - 1, y }, { x: x + 1, y },
               { x, y: y - 1 }, { x, y: y + 1 }
@@ -1343,13 +1569,28 @@ export class PirateGameManager {
             for (const pos of adjacent) {
               const cell = gameState.gameMap.cells[pos.x]?.[pos.y];
               if (cell?.type === 'water') {
+                let score = 60;
+                let reason = `Build ${shipType}`;
+                
+                if (shipType === 'flagship') {
+                  score = 90;
+                  reason = 'Build powerful flagship';
+                } else if (shipType === 'galleon') {
+                  score = 80;
+                  reason = 'Build strong galleon';
+                } else if (shipType === 'frigate') {
+                  score = 70;
+                  reason = 'Build versatile frigate';
+                } else {
+                  score = 60;
+                  reason = 'Build fast sloop';
+                }
+                
                 return {
-                  id: `ai_action_${Date.now()}`,
-                  gameId: gameState.gameId,
-                  player: aiPlayer.publicKey,
-                  type: 'build_ship',
-                  data: { shipType, toCoordinate: this.coordinateToString(pos) },
-                  timestamp: Date.now(),
+                  shipType,
+                  toCoordinate: this.coordinateToString(pos),
+                  score,
+                  reason,
                 };
               }
             }

@@ -37,7 +37,9 @@ import ShipActionModal from './ShipActionModal';
 import ResourceCollectionPanel from './ResourceCollectionPanel';
 import ShipBuildingPanel from './ShipBuildingPanel';
 import VictoryScreen from './VictoryScreen';
+import AIReasoningPanel from './AIReasoningPanel';
 import { GameState, Ship, Player } from '@/types/game';
+import { AIReasoning } from '@/lib/pirateGameEngine';
 
 // =============================================================================
 // TYPES
@@ -98,6 +100,11 @@ interface GameContainerProps {
   // Viral/Social
   onOpenLeaderboard: () => void;
   onOpenReferral: () => void;
+  
+  // AI Reasoning (for AI vs AI mode and practice hints)
+  aiReasoning?: AIReasoning | null;
+  showAIReasoning?: boolean;
+  onToggleAIReasoning?: () => void;
 }
 
 // =============================================================================
@@ -137,10 +144,13 @@ export default function GameContainer({
   joinError,
   onClearJoinError,
   onOpenLeaderboard,
+  aiReasoning,
+  showAIReasoning,
+  onToggleAIReasoning,
 }: GameContainerProps) {
   
   const [menuOpen, setMenuOpen] = useState(false);
-  const [activeTab, setActiveTab] = useState<'stats' | 'actions' | 'build'>('stats');
+  const [activeTab, setActiveTab] = useState<'stats' | 'actions' | 'build' | 'ai'>('stats');
   const [showQuickActions, setShowQuickActions] = useState(false);
   const [showTutorial, setShowTutorial] = useState(isPracticeMode);
   const [tutorialStep, setTutorialStep] = useState(0);
@@ -321,6 +331,14 @@ export default function GameContainer({
               scannedCoordinates={scannedCoordinates}
             />
             
+            {/* ===== AI REASONING PANEL ===== */}
+            <AIReasoningPanel
+              reasoning={aiReasoning || null}
+              isVisible={!!showAIReasoning}
+              onClose={onToggleAIReasoning}
+              showHints={isPracticeMode}
+            />
+
             {/* ===== FLOATING QUICK ACTIONS ===== */}
             {isMyTurn && (
               <div className="absolute bottom-20 right-4 flex flex-col gap-2">
@@ -504,10 +522,16 @@ export default function GameContainer({
 
               {/* Tab Navigation */}
               <div className="flex border-b border-slate-700">
-                {(['stats', 'actions', 'build'] as const).map((tab) => (
+                {(['stats', 'actions', 'build', 'ai'] as const).map((tab) => (
                   <button
                     key={tab}
-                    onClick={() => setActiveTab(tab)}
+                    onClick={() => {
+                      setActiveTab(tab);
+                      if (tab === 'ai' && onToggleAIReasoning) {
+                        onToggleAIReasoning();
+                        setMenuOpen(false);
+                      }
+                    }}
                     className={`flex-1 py-3 text-sm font-bold transition-all ${
                       activeTab === tab
                         ? 'text-neon-cyan border-b-2 border-neon-cyan bg-slate-800/50'
@@ -517,6 +541,7 @@ export default function GameContainer({
                     {tab === 'stats' && '📊 Stats'}
                     {tab === 'actions' && '⚔️ Actions'}
                     {tab === 'build' && '🔨 Build'}
+                    {tab === 'ai' && '🧠 AI'}
                   </button>
                 ))}
               </div>
