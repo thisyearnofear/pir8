@@ -2,6 +2,7 @@ import { AnchorProvider, Program, Idl, BN } from '@coral-xyz/anchor';
 import { Connection, PublicKey, SystemProgram } from '@solana/web3.js';
 import { SOLANA_CONFIG } from '@/utils/constants';
 import { getGlobalGamePDA } from '../anchorUtils';
+import type { WalletAdapter } from '@coral-xyz/anchor';
 
 // Import IDL - we'll need to generate this after building the contract
 let cachedIdl: Idl | null = null;
@@ -30,7 +31,11 @@ async function getIdl(): Promise<Idl> {
     }
 }
 
-export const getClientProgram = async (wallet: any): Promise<Program> => {
+export const getClientProgram = async (wallet: WalletAdapter): Promise<Program> => {
+    if (!wallet.publicKey) {
+        throw new Error('Wallet not connected');
+    }
+    
     const connection = new Connection(
         SOLANA_CONFIG.RPC_URL || 'https://api.devnet.solana.com',
         'confirmed'
@@ -42,18 +47,18 @@ export const getClientProgram = async (wallet: any): Promise<Program> => {
     return new Program(idl, programId, provider);
 };
 
-export const initializeGameClient = async (wallet: any) => {
-    if (!wallet) throw new Error("Wallet not connected");
+export const initializeGameClient = async (wallet: WalletAdapter) => {
+    if (!wallet.publicKey) throw new Error("Wallet not connected");
 
     const program = await getClientProgram(wallet);
-    const [gamePDA] = getGlobalGamePDA((program as any).programId);
+    const [gamePDA] = getGlobalGamePDA(program.programId);
 
-    const tx = await (program as any).methods
-        .initializeGame()
+    // eslint-disable-next-line @typescript-eslint/no-unnecessary-condition
+    const tx = await (program.methods as any).initializeGame()
         .accounts({
             game: gamePDA,
             authority: wallet.publicKey,
-            systemProgram: (SystemProgram as any).programId,
+            systemProgram: SystemProgram.programId,
         })
         .rpc();
 
@@ -61,18 +66,18 @@ export const initializeGameClient = async (wallet: any) => {
     return tx;
 };
 
-export const joinGameClient = async (wallet: any) => {
-    if (!wallet) throw new Error("Wallet not connected");
+export const joinGameClient = async (wallet: WalletAdapter) => {
+    if (!wallet.publicKey) throw new Error("Wallet not connected");
 
     const program = await getClientProgram(wallet);
-    const [gamePDA] = getGlobalGamePDA((program as any).programId);
+    const [gamePDA] = getGlobalGamePDA(program.programId);
 
-    const tx = await (program as any).methods
-        .joinGame()
+    // eslint-disable-next-line @typescript-eslint/no-unnecessary-condition
+    const tx = await (program.methods as any).joinGame()
         .accounts({
             game: gamePDA,
             player: wallet.publicKey,
-            systemProgram: (SystemProgram as any).programId,
+            systemProgram: SystemProgram.programId,
         })
         .rpc();
 
@@ -80,14 +85,14 @@ export const joinGameClient = async (wallet: any) => {
     return tx;
 };
 
-export const startGameClient = async (wallet: any) => {
-    if (!wallet) throw new Error("Wallet not connected");
+export const startGameClient = async (wallet: WalletAdapter) => {
+    if (!wallet.publicKey) throw new Error("Wallet not connected");
 
     const program = await getClientProgram(wallet);
-    const [gamePDA] = getGlobalGamePDA((program as any).programId);
+    const [gamePDA] = getGlobalGamePDA(program.programId);
 
-    const tx = await (program as any).methods
-        .startGame()
+    // eslint-disable-next-line @typescript-eslint/no-unnecessary-condition
+    const tx = await (program.methods as any).startGame()
         .accounts({
             game: gamePDA,
             authority: wallet.publicKey,

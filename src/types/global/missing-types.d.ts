@@ -15,37 +15,132 @@ declare module 'zustand' {
 }
 
 declare module '@coral-xyz/anchor' {
-  export interface Idl {}
+  import { Connection, PublicKey, Transaction } from '@solana/web3.js';
+  export interface Idl {
+    version: string;
+    name: string;
+    instructions: any[];
+    accounts?: any[];
+    types?: any[];
+    errors?: any[];
+    metadata?: {
+      address: string;
+    };
+  }
+  
+  export interface WalletAdapter {
+    publicKey: PublicKey | null;
+    signTransaction(tx: Transaction): Promise<Transaction>;
+    signAllTransactions(txs: Transaction[]): Promise<Transaction[]>;
+    connect(): Promise<void>;
+    disconnect(): Promise<void>;
+  }
+  
+  export interface ConfirmOptions {
+    commitment?: 'processed' | 'confirmed' | 'finalized';
+    preflightCommitment?: 'processed' | 'confirmed' | 'finalized';
+    skipPreflight?: boolean;
+  }
+  
+  export interface MethodBuilder {
+    accounts: (accounts: Record<string, PublicKey | any>) => MethodBuilder;
+    rpc: (options?: any) => Promise<string>;
+    simulate: (options?: any) => Promise<any>;
+    view: () => Promise<any>;
+  }
+  
+  export interface MethodsNamespace {
+    [key: string]: (...args: any[]) => MethodBuilder;
+  }
+  
   export class Program<T = Idl> {
-    constructor(idl: T, programId: any, provider?: any);
+    constructor(idl: T, programId: PublicKey, provider: AnchorProvider);
+    readonly programId: PublicKey;
+    readonly idl: T;
+    readonly provider: AnchorProvider;
+    methods: MethodsNamespace;
   }
+  
   export class AnchorProvider {
-    constructor(connection: any, wallet: any, opts: any);
+    constructor(
+      connection: Connection, 
+      wallet: WalletAdapter, 
+      opts: ConfirmOptions
+    );
+    readonly connection: Connection;
+    readonly wallet: WalletAdapter;
+    readonly opts: ConfirmOptions;
+    publicKey: PublicKey;
   }
+  
   export class BN {
-    constructor(number: number | string);
+    constructor(number: number | string | BN);
     toNumber(): number;
     toString(): string;
     toArrayLike(buffer: any, endian?: string, length?: number): any;
+    add(other: BN): BN;
+    sub(other: BN): BN;
+    mul(other: BN): BN;
+    div(other: BN): BN;
   }
-  export function web3(): any;
+  
+  export namespace web3 {
+    export { Connection, PublicKey, Transaction };
+  }
+  
+  export namespace utils {
+    export namespace rpc {
+      export function confirmTransaction(
+        connection: Connection,
+        signature: string,
+        commitment?: string
+      ): Promise<any>;
+    }
+  }
 }
 
 declare module '@solana/web3.js' {
+  export type Commitment = 'processed' | 'confirmed' | 'finalized' | 'recent' | 'single' | 'singleGossip' | 'root' | 'max';
+  
   export class Connection {
-    constructor(endpoint: string, commitment?: any);
+    constructor(endpoint: string, commitment?: Commitment);
+    getBalance(publicKey: PublicKey, commitment?: Commitment): Promise<number>;
+    getAccountInfo(publicKey: PublicKey, commitment?: Commitment): Promise<any>;
+    getLatestBlockhash(commitment?: Commitment): Promise<{ blockhash: string; lastValidBlockHeight: number }>;
+    sendTransaction(transaction: Transaction, signers?: any[], options?: any): Promise<string>;
+    confirmTransaction(signature: string, commitment?: Commitment): Promise<any>;
   }
+  
   export class PublicKey {
     constructor(value: string | Uint8Array | number[]);
-    static findProgramAddressSync(seeds: (Uint8Array)[], programId: PublicKey): [PublicKey, number];
+    static findProgramAddressSync(seeds: (Buffer | Uint8Array)[], programId: PublicKey): [PublicKey, number];
     toBase58(): string;
+    toBytes(): Uint8Array;
+    equals(other: PublicKey): boolean;
   }
-  export class SystemProgram {}
-  export class Transaction {}
+  
+  export class SystemProgram {
+    static programId: PublicKey;
+  }
+  
+  export class Transaction {
+    constructor(options?: { feePayer?: PublicKey; recentBlockhash?: string });
+    add(...instructions: TransactionInstruction[]): Transaction;
+    sign(...signers: any[]): void;
+    serialize(): Buffer;
+  }
+  
+  export class TransactionInstruction {
+    constructor(options: { keys: any[]; programId: PublicKey; data?: Buffer });
+  }
+  
   export class Keypair {
     static fromSecretKey(secretKey: Uint8Array): Keypair;
+    publicKey: PublicKey;
+    secretKey: Uint8Array;
   }
-  export function clusterApiUrl(cluster: string): string;
+  
+  export function clusterApiUrl(cluster: 'devnet' | 'testnet' | 'mainnet-beta'): string;
 }
 
 declare module '@solana/wallet-adapter-react' {
