@@ -8,13 +8,15 @@ interface VictoryScreenProps {
     currentPlayerPK?: string;
     onNewGame: () => void;
     onReturnToLobby: () => void;
+    isPracticeMode?: boolean;
 }
 
 export default function VictoryScreen({
     gameState,
     currentPlayerPK,
     onNewGame,
-    onReturnToLobby
+    onReturnToLobby,
+    isPracticeMode = false
 }: VictoryScreenProps) {
     const [showConfetti, setShowConfetti] = useState(false);
     const [showStats, setShowStats] = useState(false);
@@ -378,6 +380,25 @@ export default function VictoryScreen({
                                     </div>
                                 </div>
                             ))}
+                        </div>
+                    </div>
+                )}
+
+                {/* Practice Mode Upsell */}
+                {isPracticeMode && (
+                    <div className={`bg-gradient-to-r from-neon-gold/20 to-neon-orange/20 border border-neon-gold/50 
+                                    rounded-xl p-4 mb-4 ${showEpicAnimation ? 'animate-in slide-in-from-bottom duration-1000 delay-1300' : ''}`}>
+                        <div className="flex items-center gap-3 mb-2">
+                            <span className="text-2xl">⛓️</span>
+                            <h4 className="font-bold text-neon-gold">Ready for Real Battles?</h4>
+                        </div>
+                        <p className="text-sm text-gray-300 mb-3">
+                            Connect a Solana wallet to compete on-chain for real rankings, rewards, and glory!
+                        </p>
+                        <div className="flex flex-wrap gap-2 text-xs">
+                            <span className="bg-slate-700/50 px-2 py-1 rounded">🏆 Leaderboard ranking</span>
+                            <span className="bg-slate-700/50 px-2 py-1 rounded">💰 SOL rewards</span>
+                            <span className="bg-slate-700/50 px-2 py-1 rounded">🔒 Private entry via Zcash</span>
                         </div>
                     </div>
                 )}

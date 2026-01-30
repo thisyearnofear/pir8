@@ -235,6 +235,7 @@ export default function GameContainer({
         currentPlayerPK={currentPlayerPK}
         onNewGame={onNewGame}
         onReturnToLobby={onReturnToLobby}
+        isPracticeMode={isPracticeMode}
       />
     );
   }
@@ -284,9 +285,11 @@ export default function GameContainer({
               <span className="text-gray-400">Turn {gameState.turnNumber}</span>
               <span className="text-neon-gold">🏴‍☠️ {gameState.players.length} Pirates</span>
               {isPracticeMode && (
-                <span className="bg-neon-purple/20 text-neon-purple px-2 py-1 rounded text-xs">
-                  Practice
-                </span>
+                <Tooltip content="Local game - connect wallet for on-chain battles" position="bottom">
+                  <span className="bg-neon-purple/20 text-neon-purple px-2 py-1 rounded text-xs cursor-help border border-neon-purple/30">
+                    ⚡ Practice
+                  </span>
+                </Tooltip>
               )}
             </div>
 
@@ -677,9 +680,9 @@ function GamePlaceholder({ onPracticeMode, onOpenLeaderboard }: GamePlaceholderP
 const TUTORIAL_STEPS = [
   {
     title: "Welcome, Captain! 🏴‍☠️",
-    content: "This is Practice Mode - learn the ropes before battling for real treasure on Solana.",
+    content: "Learn the ropes in Practice Mode before battling for real treasure on Solana.",
     icon: "⚓",
-    tip: "No wallet needed. Just pure pirate strategy!"
+    tip: "This is offline practice - no wallet needed yet!"
   },
   {
     title: "The Map 🗺️",
@@ -710,6 +713,12 @@ const TUTORIAL_STEPS = [
     content: "Use the + button for fast access to Collect 💰 and Build 🔨 actions.",
     icon: "➕",
     tip: "Or press Q on keyboard. Menu (☰) has full stats."
+  },
+  {
+    title: "Ready for Real Battles? ⛓️",
+    content: "Connect a Solana wallet to compete on-chain for real rankings and rewards!",
+    icon: "🔗",
+    tip: "Zcash integration enables private, anonymous entry 🔒"
   }
 ];
 
