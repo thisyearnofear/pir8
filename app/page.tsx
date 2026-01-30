@@ -26,6 +26,8 @@ import PrivacyStatusIndicator from "@/components/PrivacyStatusIndicator";
 import ViralEventModal from "@/components/ViralEventModal";
 import SocialModal from "@/components/SocialModal";
 import { LeakageMeter, BountyBoard, PrivacyLessonModal } from "@/components/privacy";
+import AIBattleModal from "@/components/AIBattleModal";
+import AIBattleControls from "@/components/AIBattleControls";
 import { useState, useEffect, useMemo, useCallback } from "react";
 import dynamic from "next/dynamic";
 import { createPlayerFromWallet, createAIPlayer } from "@/lib/playerHelper";
@@ -72,7 +74,12 @@ export default function Home() {
     makePracticeAttack,
     makePracticeClaim,
     exitPracticeMode,
-    isPracticeMode
+    isPracticeMode,
+    // AI vs AI mode
+    startAIvsAIGame,
+    setPlaybackSpeed,
+    getPlaybackSpeed,
+    isAIvsAIMode
   } = usePirateGameState();
 
   const [isCreatingGame, setIsCreatingGame] = useState(false);
@@ -86,6 +93,9 @@ export default function Home() {
   // Practice mode state
   const [showPracticeMenu, setShowPracticeMenu] = useState(false);
   const [selectedDifficulty, setSelectedDifficulty] = useState<'novice' | 'pirate' | 'captain' | 'admiral'>('pirate');
+  
+  // AI vs AI mode state
+  const [showAIBattleModal, setShowAIBattleModal] = useState(false);
   
   // Spectator mode state
   const [showSpectatorMode, setShowSpectatorMode] = useState(false);
@@ -222,6 +232,18 @@ export default function Home() {
       handleGameEvent(`⚔️ Practice mode: ${difficulty} AI opponent!`);
     }
   }, [publicKey, startPracticeGame]);
+
+  // AI vs AI mode handler
+  const handleStartAIBattle = useCallback((difficulty1: string, difficulty2: string, speed: number) => {
+    const success = startAIvsAIGame(
+      difficulty1 as 'novice' | 'pirate' | 'captain' | 'admiral',
+      difficulty2 as 'novice' | 'pirate' | 'captain' | 'admiral',
+      speed
+    );
+    if (success) {
+      handleGameEvent(`⚔️ AI Battle: ${difficulty1} vs ${difficulty2}!`);
+    }
+  }, [startAIvsAIGame]);
 
   const handlePracticeMove = async (shipId: string, coordinate: string) => {
     const [x, y] = coordinate.split(',').map(Number);
@@ -583,6 +605,13 @@ export default function Home() {
         </div>
       )}
 
+      {/* AI vs AI Battle Modal */}
+      <AIBattleModal
+        isOpen={showAIBattleModal}
+        onClose={() => setShowAIBattleModal(false)}
+        onStartBattle={handleStartAIBattle}
+      />
+
       {/* Practice Mode Menu Modal - Performance Optimized */}
       {showPracticeMenu && !gameState && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/80 backdrop-blur-sm">
@@ -643,8 +672,18 @@ export default function Home() {
         </div>
       )}
 
+      {/* AI vs AI Battle Controls */}
+      {isAIvsAIMode && (
+        <AIBattleControls
+          playbackSpeed={getPlaybackSpeed()}
+          onSpeedChange={setPlaybackSpeed}
+          gameState={gameState}
+          isAIvsAIMode={isAIvsAIMode}
+        />
+      )}
+
       {/* Practice Mode Indicator with Upgrade Prompt - Enhanced Readability */}
-      {isPracticeMode() && (
+      {isPracticeMode() && !isAIvsAIMode && (
         <div className="fixed top-4 left-4 z-40">
           <div className="bg-gradient-to-r from-neon-magenta/90 to-neon-purple/90 text-white rounded-xl font-bold shadow-lg overflow-hidden animate-fade-in">
             {/* Top Bar */}
@@ -910,7 +949,7 @@ export default function Home() {
                     </div>
 
                     {/* Action Cards */}
-                    <div className="grid grid-cols-1 md:grid-cols-2 gap-6 max-w-2xl mx-auto">
+                    <div className="grid grid-cols-1 md:grid-cols-3 gap-6 max-w-4xl mx-auto">
                       <div className="bg-gradient-to-br from-slate-800/60 to-slate-900/60 border-2 border-neon-cyan/50 
                                      rounded-2xl p-6 hover:scale-105 transition-all duration-300
                                      hover:shadow-lg hover:shadow-neon-cyan/30">
@@ -938,6 +977,24 @@ export default function Home() {
                         </p>
                         <div className="inline-flex items-center gap-2 text-neon-gold text-sm font-semibold">
                           <span>Click to Start</span>
+                          <span>→</span>
+                        </div>
+                      </button>
+
+                      {/* NEW: AI vs AI Demo */}
+                      <button
+                        onClick={() => setShowAIBattleModal(true)}
+                        className="bg-gradient-to-br from-slate-800/60 to-slate-900/60 border-2 border-neon-magenta/50 
+                                   rounded-2xl p-6 hover:scale-105 transition-all duration-300
+                                   hover:shadow-lg hover:shadow-neon-magenta/30 text-left"
+                      >
+                        <div className="text-5xl mb-4">⚔️</div>
+                        <h4 className="text-xl font-bold text-neon-magenta mb-2">Watch AI Battle</h4>
+                        <p className="text-sm text-gray-400 mb-4">
+                          See the game in action! Learn by watching AI compete.
+                        </p>
+                        <div className="inline-flex items-center gap-2 text-neon-magenta text-sm font-semibold">
+                          <span>Watch Demo</span>
                           <span>→</span>
                         </div>
                       </button>
@@ -1014,6 +1071,24 @@ export default function Home() {
                         </p>
                         <div className="flex items-center gap-2 text-neon-gold text-sm font-semibold">
                           <span>Train Now</span>
+                          <span>→</span>
+                        </div>
+                      </button>
+
+                      {/* NEW: AI vs AI Demo */}
+                      <button
+                        onClick={() => setShowAIBattleModal(true)}
+                        className="group bg-gradient-to-br from-slate-800/60 to-slate-900/60 border-2 border-neon-magenta/50 
+                                   rounded-2xl p-6 hover:scale-105 transition-all duration-300
+                                   hover:shadow-lg hover:shadow-neon-magenta/30 text-left"
+                      >
+                        <div className="text-5xl mb-4">🤖</div>
+                        <h4 className="text-xl font-bold text-neon-magenta mb-2">Watch AI Battle</h4>
+                        <p className="text-sm text-gray-400 mb-4">
+                          Learn by watching AI opponents compete. No commitment required!
+                        </p>
+                        <div className="flex items-center gap-2 text-neon-magenta text-sm font-semibold">
+                          <span>Watch Demo</span>
                           <span>→</span>
                         </div>
                       </button>

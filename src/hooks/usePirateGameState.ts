@@ -34,6 +34,10 @@ interface PirateGameStore {
   scannedCoordinates: Set<string>;
   scanChargesRemaining: number;
 
+  // AI vs AI Demo Mode
+  playbackSpeed: number;
+  isAIvsAIMode: boolean;
+
   // Actions - On-chain (require wallet)
   createGame: (
     players: Player[],
@@ -77,6 +81,11 @@ interface PirateGameStore {
   makePracticeClaim: (shipId: string) => boolean;
   processAITurn: () => void;
   exitPracticeMode: () => void;
+  
+  // Actions - AI vs AI Demo Mode (no wallet required)
+  startAIvsAIGame: (difficulty1: 'novice' | 'pirate' | 'captain' | 'admiral', difficulty2: 'novice' | 'pirate' | 'captain' | 'admiral', speed?: number) => boolean;
+  setPlaybackSpeed: (speed: number) => void;
+  getPlaybackSpeed: () => number;
 
   // Actions - Mode Management
   setGameMode: (mode: GameMode) => void;
@@ -151,6 +160,10 @@ export const usePirateGameState = create<PirateGameStore>((set, get) => ({
   // Skill Mechanics - Scanning
   scannedCoordinates: new Set(),
   scanChargesRemaining: 3,
+
+  // AI vs AI Demo Mode
+  playbackSpeed: 1,
+  isAIvsAIMode: false,
 
   // Start the game (transition from Waiting to Active)
   startGame: async (wallet: any): Promise<boolean> => {
@@ -1120,7 +1133,7 @@ export const usePirateGameState = create<PirateGameStore>((set, get) => ({
   },
 
   processAITurn: () => {
-    const { gameState, gameMode } = get();
+    const { gameState, gameMode, isAIvsAIMode, playbackSpeed } = get();
     if (!gameState || gameMode !== 'practice') return;
 
     const currentPlayer = gameState.players[gameState.currentPlayerIndex];
@@ -1128,13 +1141,32 @@ export const usePirateGameState = create<PirateGameStore>((set, get) => ({
 
     // Process AI turn
     const updatedState = PirateGameManager.processAITurn(gameState);
-    savePracticeGame(updatedState);
+    
+    // Only save to localStorage if not in AI vs AI mode
+    if (!isAIvsAIMode) {
+      savePracticeGame(updatedState);
+    }
+    
     set({ gameState: updatedState });
+
+    // Check for game end
+    if (updatedState.gameStatus === 'completed') {
+      const winner = updatedState.players.find(p => p.publicKey === updatedState.winner);
+      set({ 
+        showMessage: winner 
+          ? `🏆 ${winner.username || 'AI'} wins the battle!`
+          : '🏴‍☠️ Battle concluded!'
+      });
+      return;
+    }
 
     // Continue processing if still AI's turn
     const nextPlayer = updatedState.players[updatedState.currentPlayerIndex];
     if (nextPlayer?.publicKey.startsWith('AI_')) {
-      setTimeout(() => get().processAITurn(), 1500);
+      // Adjust delay based on playback speed (faster speed = shorter delay)
+      const baseDelay = isAIvsAIMode ? 800 : 1500; // Faster for AI vs AI
+      const adjustedDelay = baseDelay / playbackSpeed;
+      setTimeout(() => get().processAITurn(), adjustedDelay);
     }
   },
 
@@ -1146,9 +1178,65 @@ export const usePirateGameState = create<PirateGameStore>((set, get) => ({
       selectedShipId: null,
       scannedCoordinates: new Set(),
       scanChargesRemaining: 3,
+      isAIvsAIMode: false,
+      playbackSpeed: 1,
       showMessage: 'Practice session ended. Ready for real battles!',
     });
     setTimeout(() => set({ showMessage: null }), 3000);
+  },
+
+  // ===== AI vs AI DEMO MODE =====
+
+  startAIvsAIGame: (difficulty1: 'novice' | 'pirate' | 'captain' | 'admiral', difficulty2: 'novice' | 'pirate' | 'captain' | 'admiral', speed: number = 1) => {
+    try {
+      // Create two AI players
+      const aiPlayer1 = PirateGameManager.createAIPlayer('demo', difficulty1);
+      const aiPlayer2 = PirateGameManager.createAIPlayer('demo', difficulty2);
+
+      // Create game with both AI players
+      const demoGame = PirateGameManager.createNewGame([aiPlayer1, aiPlayer2], `ai_demo_${Date.now()}`);
+      
+      // Set game to active status
+      const activeGame = {
+        ...demoGame,
+        gameStatus: 'active' as const,
+      };
+
+      set({
+        gameState: activeGame,
+        gameMode: 'practice',
+        isAIvsAIMode: true,
+        playbackSpeed: speed,
+        selectedShipId: null,
+        scannedCoordinates: new Set(),
+        scanChargesRemaining: 3,
+        showMessage: `⚔️ AI Battle: ${difficulty1} vs ${difficulty2}!`,
+      });
+
+      setTimeout(() => set({ showMessage: null }), 3000);
+
+      // Start AI turns after a brief delay
+      setTimeout(() => {
+        const currentState = get().gameState;
+        if (currentState && get().isAIvsAIMode) {
+          get().processAITurn();
+        }
+      }, 1000);
+
+      return true;
+    } catch (error) {
+      console.error('Failed to start AI vs AI game:', error);
+      set({ error: 'Failed to start AI vs AI game' });
+      return false;
+    }
+  },
+
+  setPlaybackSpeed: (speed: number) => {
+    set({ playbackSpeed: Math.max(0.5, Math.min(8, speed)) }); // Clamp between 0.5x and 8x
+  },
+
+  getPlaybackSpeed: () => {
+    return get().playbackSpeed;
   },
 })) as any;
 
