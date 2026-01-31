@@ -37,6 +37,8 @@ interface PirateGameStore {
   // AI vs AI Demo Mode
   playbackSpeed: number;
   isAIvsAIMode: boolean;
+  currentAIReasoning: any | null; // AIReasoning from pirateGameEngine
+  aiDecisionCallback: ((reasoning: any) => void) | null;
 
   // Actions - On-chain (require wallet)
   createGame: (
@@ -86,6 +88,7 @@ interface PirateGameStore {
   startAIvsAIGame: (difficulty1: 'novice' | 'pirate' | 'captain' | 'admiral', difficulty2: 'novice' | 'pirate' | 'captain' | 'admiral', speed?: number) => boolean;
   setPlaybackSpeed: (speed: number) => void;
   getPlaybackSpeed: () => number;
+  setAIDecisionCallback: (callback: ((reasoning: any) => void) | null) => void;
 
   // Actions - Mode Management
   setGameMode: (mode: GameMode) => void;
@@ -164,6 +167,8 @@ export const usePirateGameState = create<PirateGameStore>((set, get) => ({
   // AI vs AI Demo Mode
   playbackSpeed: 1,
   isAIvsAIMode: false,
+  currentAIReasoning: null,
+  aiDecisionCallback: null,
 
   // Start the game (transition from Waiting to Active)
   startGame: async (wallet: any): Promise<boolean> => {
@@ -1133,47 +1138,110 @@ export const usePirateGameState = create<PirateGameStore>((set, get) => ({
   },
 
   processAITurn: () => {
-    const { gameState, gameMode, isAIvsAIMode, playbackSpeed } = get();
+    const { gameState, gameMode, isAIvsAIMode, playbackSpeed, aiDecisionCallback } = get();
     if (!gameState || gameMode !== 'practice') return;
 
     const currentPlayer = gameState.players[gameState.currentPlayerIndex];
     if (!currentPlayer?.publicKey.startsWith('AI_')) return;
 
-    // Process AI turn
-    const updatedState = PirateGameManager.processAITurn(gameState);
-    
-    // Only save to localStorage if not in AI vs AI mode
-    if (!isAIvsAIMode) {
-      savePracticeGame(updatedState);
-    }
-    
-    // Force a new object reference to trigger React re-renders
-    const newState = {
-      ...updatedState,
-      players: updatedState.players.map(p => ({ ...p, ships: [...p.ships] })),
-      turnNumber: updatedState.turnNumber, // Ensure turn number is updated
-    };
-    
-    set({ gameState: newState });
+    // Generate AI decision with reasoning (for AI vs AI educational mode)
+    if (isAIvsAIMode && aiDecisionCallback) {
+      const decision = PirateGameManager.generateAIDecision(gameState, currentPlayer);
+      
+      // Notify callback with reasoning
+      aiDecisionCallback(decision.reasoning);
+      
+      // Process the action
+      if (decision.action) {
+        const result = PirateGameManager.processTurnAction(gameState, decision.action);
+        if (result.success) {
+          const advancedState = PirateGameManager.advanceTurn(result.updatedGameState);
+          
+          // Force a new object reference to trigger React re-renders
+          const newState = {
+            ...advancedState,
+            players: advancedState.players.map(p => ({ ...p, ships: [...p.ships] })),
+            turnNumber: advancedState.turnNumber,
+          };
+          
+          set({ gameState: newState, currentAIReasoning: decision.reasoning });
 
-    // Check for game end
-    if (newState.gameStatus === 'completed') {
-      const winner = newState.players.find(p => p.publicKey === newState.winner);
-      set({ 
-        showMessage: winner 
-          ? `🏆 ${winner.username || 'AI'} wins the battle!`
-          : '🏴‍☠️ Battle concluded!'
-      });
-      return;
-    }
+          // Check for game end
+          if (newState.gameStatus === 'completed') {
+            const winner = newState.players.find(p => p.publicKey === newState.winner);
+            set({ 
+              showMessage: winner 
+                ? `🏆 ${winner.username || 'AI'} wins the battle!`
+                : '🏴‍☠️ Battle concluded!'
+            });
+            return;
+          }
 
-    // Continue processing if still AI's turn
-    const nextPlayer = newState.players[newState.currentPlayerIndex];
-    if (nextPlayer?.publicKey.startsWith('AI_')) {
-      // Adjust delay based on playback speed (faster speed = shorter delay)
-      const baseDelay = isAIvsAIMode ? 800 : 1500; // Faster for AI vs AI
-      const adjustedDelay = baseDelay / playbackSpeed;
-      setTimeout(() => get().processAITurn(), adjustedDelay);
+          // Continue processing if still AI's turn
+          const nextPlayer = newState.players[newState.currentPlayerIndex];
+          if (nextPlayer?.publicKey.startsWith('AI_')) {
+            const baseDelay = 2000; // 2 seconds to show decision modal
+            const adjustedDelay = baseDelay / playbackSpeed;
+            setTimeout(() => get().processAITurn(), adjustedDelay);
+          }
+        } else {
+          // Action failed, advance turn anyway
+          const advancedState = PirateGameManager.advanceTurn(gameState);
+          const newState = {
+            ...advancedState,
+            players: advancedState.players.map(p => ({ ...p, ships: [...p.ships] })),
+            turnNumber: advancedState.turnNumber,
+          };
+          set({ gameState: newState });
+          setTimeout(() => get().processAITurn(), 1000 / playbackSpeed);
+        }
+      } else {
+        // No action, just pass turn
+        const advancedState = PirateGameManager.advanceTurn(gameState);
+        const newState = {
+          ...advancedState,
+          players: advancedState.players.map(p => ({ ...p, ships: [...p.ships] })),
+          turnNumber: advancedState.turnNumber,
+        };
+        set({ gameState: newState });
+        setTimeout(() => get().processAITurn(), 1000 / playbackSpeed);
+      }
+    } else {
+      // Original flow for practice mode (no reasoning display)
+      const updatedState = PirateGameManager.processAITurn(gameState);
+      
+      // Only save to localStorage if not in AI vs AI mode
+      if (!isAIvsAIMode) {
+        savePracticeGame(updatedState);
+      }
+      
+      // Force a new object reference to trigger React re-renders
+      const newState = {
+        ...updatedState,
+        players: updatedState.players.map(p => ({ ...p, ships: [...p.ships] })),
+        turnNumber: updatedState.turnNumber,
+      };
+      
+      set({ gameState: newState });
+
+      // Check for game end
+      if (newState.gameStatus === 'completed') {
+        const winner = newState.players.find(p => p.publicKey === newState.winner);
+        set({ 
+          showMessage: winner 
+            ? `🏆 ${winner.username || 'AI'} wins the battle!`
+            : '🏴‍☠️ Battle concluded!'
+        });
+        return;
+      }
+
+      // Continue processing if still AI's turn
+      const nextPlayer = newState.players[newState.currentPlayerIndex];
+      if (nextPlayer?.publicKey.startsWith('AI_')) {
+        const baseDelay = isAIvsAIMode ? 800 : 1500;
+        const adjustedDelay = baseDelay / playbackSpeed;
+        setTimeout(() => get().processAITurn(), adjustedDelay);
+      }
     }
   },
 
@@ -1244,6 +1312,10 @@ export const usePirateGameState = create<PirateGameStore>((set, get) => ({
 
   getPlaybackSpeed: () => {
     return get().playbackSpeed;
+  },
+
+  setAIDecisionCallback: (callback: ((reasoning: any) => void) | null) => {
+    set({ aiDecisionCallback: callback });
   },
 })) as any;
 

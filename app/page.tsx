@@ -28,10 +28,12 @@ import SocialModal from "@/components/SocialModal";
 import { LeakageMeter, BountyBoard, PrivacyLessonModal } from "@/components/privacy";
 import AIBattleModal from "@/components/AIBattleModal";
 import AIBattleControls from "@/components/AIBattleControls";
+import AIDecisionModal from "@/components/AIDecisionModal";
 import { useState, useEffect, useMemo, useCallback } from "react";
 import dynamic from "next/dynamic";
 import { createPlayerFromWallet, createAIPlayer } from "@/lib/playerHelper";
 import { Ship, Player } from "@/types/game";
+import type { AIReasoning } from "@/lib/pirateGameEngine";
 
 const WalletButtonWrapper = dynamic(
   () => import("@solana/wallet-adapter-react-ui").then(mod => mod.WalletMultiButton),
@@ -79,7 +81,8 @@ export default function Home() {
     startAIvsAIGame,
     setPlaybackSpeed,
     getPlaybackSpeed,
-    isAIvsAIMode
+    isAIvsAIMode,
+    setAIDecisionCallback
   } = usePirateGameState();
 
   const [isCreatingGame, setIsCreatingGame] = useState(false);
@@ -96,6 +99,8 @@ export default function Home() {
   
   // AI vs AI mode state
   const [showAIBattleModal, setShowAIBattleModal] = useState(false);
+  const [aiReasoning, setAiReasoning] = useState<AIReasoning | null>(null);
+  const [showAIDecision, setShowAIDecision] = useState(false);
   
   // Spectator mode state
   const [showSpectatorMode, setShowSpectatorMode] = useState(false);
@@ -244,6 +249,25 @@ export default function Home() {
       handleGameEvent(`⚔️ AI Battle: ${difficulty1} vs ${difficulty2}!`);
     }
   }, [startAIvsAIGame]);
+
+  // Set up AI decision callback for AI vs AI mode
+  useEffect(() => {
+    if (isAIvsAIMode) {
+      setAIDecisionCallback((reasoning: AIReasoning) => {
+        setAiReasoning(reasoning);
+        setShowAIDecision(true);
+        // Auto-hide after 2 seconds (or let user close manually)
+        setTimeout(() => {
+          setShowAIDecision(false);
+        }, 2000);
+      });
+    } else {
+      setAIDecisionCallback(null);
+    }
+    return () => {
+      setAIDecisionCallback(null);
+    };
+  }, [isAIvsAIMode, setAIDecisionCallback]);
 
   const handlePracticeMove = async (shipId: string, coordinate: string) => {
     const [x, y] = coordinate.split(',').map(Number);
@@ -611,6 +635,16 @@ export default function Home() {
         onClose={() => setShowAIBattleModal(false)}
         onStartBattle={handleStartAIBattle}
       />
+
+      {/* AI Decision Modal - Shows AI's thought process */}
+      {isAIvsAIMode && (
+        <AIDecisionModal
+          reasoning={aiReasoning}
+          isVisible={showAIDecision}
+          playerName={gameState?.players[gameState.currentPlayerIndex]?.username || 'AI'}
+          onClose={() => setShowAIDecision(false)}
+        />
+      )}
 
       {/* Practice Mode Menu Modal - Performance Optimized */}
       {showPracticeMenu && !gameState && (
