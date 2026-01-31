@@ -1147,11 +1147,18 @@ export const usePirateGameState = create<PirateGameStore>((set, get) => ({
       savePracticeGame(updatedState);
     }
     
-    set({ gameState: updatedState });
+    // Force a new object reference to trigger React re-renders
+    const newState = {
+      ...updatedState,
+      players: updatedState.players.map(p => ({ ...p, ships: [...p.ships] })),
+      turnNumber: updatedState.turnNumber, // Ensure turn number is updated
+    };
+    
+    set({ gameState: newState });
 
     // Check for game end
-    if (updatedState.gameStatus === 'completed') {
-      const winner = updatedState.players.find(p => p.publicKey === updatedState.winner);
+    if (newState.gameStatus === 'completed') {
+      const winner = newState.players.find(p => p.publicKey === newState.winner);
       set({ 
         showMessage: winner 
           ? `🏆 ${winner.username || 'AI'} wins the battle!`
@@ -1161,7 +1168,7 @@ export const usePirateGameState = create<PirateGameStore>((set, get) => ({
     }
 
     // Continue processing if still AI's turn
-    const nextPlayer = updatedState.players[updatedState.currentPlayerIndex];
+    const nextPlayer = newState.players[newState.currentPlayerIndex];
     if (nextPlayer?.publicKey.startsWith('AI_')) {
       // Adjust delay based on playback speed (faster speed = shorter delay)
       const baseDelay = isAIvsAIMode ? 800 : 1500; // Faster for AI vs AI
