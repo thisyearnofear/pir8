@@ -11,6 +11,8 @@ interface ShipActionModalProps {
   canAttack?: boolean;
   canClaim?: boolean;
   canCollect?: boolean;
+  aiMode?: boolean; // True when showing AI decisions
+  aiChosenAction?: 'move' | 'attack' | 'claim' | 'collect' | null; // Which action AI will take
 }
 
 const ACTIONS = [
@@ -56,6 +58,8 @@ export default function ShipActionModal({
   canAttack = true,
   canClaim = true,
   canCollect = true,
+  aiMode = false,
+  aiChosenAction = null,
 }: ShipActionModalProps) {
   if (!isOpen) return null;
 
@@ -120,23 +124,47 @@ export default function ShipActionModal({
 
         {/* Actions Grid */}
         <div className="grid grid-cols-2 gap-3">
-          {ACTIONS.map(action => (
-            <button
-              key={action.id}
-              onClick={() => handleAction(action.id)}
-              disabled={isActionDisabled(action.id)}
-              className={`
-                ${action.bgClass} border rounded-lg p-3 
-                transition-all duration-200
-                disabled:opacity-40 disabled:cursor-not-allowed
-              `}
-            >
-              <div className={`text-2xl mb-1 ${action.textClass}`}>{action.icon}</div>
-              <div className={`text-sm font-bold ${action.textClass}`}>{action.label}</div>
-              <div className="text-xs text-gray-400 mt-1">{action.description}</div>
-            </button>
-          ))}
+          {ACTIONS.map(action => {
+            const isChosen = aiMode && aiChosenAction === action.id;
+            const isDisabled = isActionDisabled(action.id);
+            
+            return (
+              <button
+                key={action.id}
+                onClick={() => !aiMode && handleAction(action.id)}
+                disabled={isDisabled || aiMode}
+                className={`
+                  ${action.bgClass} border rounded-lg p-3 
+                  transition-all duration-200 relative
+                  ${isDisabled ? 'opacity-40 cursor-not-allowed' : ''}
+                  ${aiMode ? 'cursor-default' : ''}
+                  ${isChosen ? 'ring-4 ring-neon-cyan ring-opacity-70 scale-105 animate-pulse' : ''}
+                `}
+              >
+                {isChosen && (
+                  <div className="absolute -top-2 -right-2 bg-neon-cyan text-black text-xs font-bold px-2 py-1 rounded-full animate-bounce">
+                    AI Choice!
+                  </div>
+                )}
+                <div className={`text-2xl mb-1 ${action.textClass}`}>{action.icon}</div>
+                <div className={`text-sm font-bold ${action.textClass}`}>{action.label}</div>
+                <div className="text-xs text-gray-400 mt-1">{action.description}</div>
+              </button>
+            );
+          })}
         </div>
+        
+        {/* AI Mode Indicator */}
+        {aiMode && (
+          <div className="mt-4 text-center">
+            <div className="inline-flex items-center gap-2 bg-neon-cyan/20 border border-neon-cyan px-3 py-2 rounded-lg">
+              <span className="text-lg">🤖</span>
+              <span className="text-sm font-bold text-neon-cyan">
+                AI is deciding...
+              </span>
+            </div>
+          </div>
+        )}
 
         {/* Position Info */}
         <div className="mt-4 text-center text-xs text-gray-500">

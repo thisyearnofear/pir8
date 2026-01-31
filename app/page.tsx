@@ -100,7 +100,8 @@ export default function Home() {
   // AI vs AI mode state
   const [showAIBattleModal, setShowAIBattleModal] = useState(false);
   const [aiReasoning, setAiReasoning] = useState<AIReasoning | null>(null);
-  const [showAIDecision, setShowAIDecision] = useState(false);
+  const [aiDecisionShip, setAiDecisionShip] = useState<Ship | null>(null);
+  const [aiChosenAction, setAiChosenAction] = useState<'move' | 'attack' | 'claim' | 'collect' | null>(null);
   
   // Spectator mode state
   const [showSpectatorMode, setShowSpectatorMode] = useState(false);
@@ -252,14 +253,34 @@ export default function Home() {
 
   // Set up AI decision callback for AI vs AI mode
   useEffect(() => {
-    if (isAIvsAIMode) {
+    if (isAIvsAIMode && gameState) {
       setAIDecisionCallback((reasoning: AIReasoning) => {
         setAiReasoning(reasoning);
-        setShowAIDecision(true);
-        // Auto-hide after 2 seconds (or let user close manually)
-        setTimeout(() => {
-          setShowAIDecision(false);
-        }, 2000);
+        
+        // Find the ship that will perform the action
+        const currentPlayer = gameState.players[gameState.currentPlayerIndex];
+        if (currentPlayer && reasoning.chosenOption) {
+          // Find the ship by ID from the chosen option
+          const ship = currentPlayer.ships.find(s => s.id === reasoning.chosenOption?.shipId);
+          if (ship) {
+            setAiDecisionShip(ship);
+            
+            // Map action type to modal action
+            let actionType: 'move' | 'attack' | 'claim' | 'collect' | null = null;
+            if (reasoning.chosenOption.type === 'move_ship') actionType = 'move';
+            else if (reasoning.chosenOption.type === 'attack') actionType = 'attack';
+            else if (reasoning.chosenOption.type === 'claim_territory') actionType = 'claim';
+            else if (reasoning.chosenOption.type === 'collect_resources') actionType = 'collect';
+            
+            setAiChosenAction(actionType);
+            
+            // Auto-hide after 2.5 seconds
+            setTimeout(() => {
+              setAiDecisionShip(null);
+              setAiChosenAction(null);
+            }, 2500);
+          }
+        }
       });
     } else {
       setAIDecisionCallback(null);
@@ -267,7 +288,7 @@ export default function Home() {
     return () => {
       setAIDecisionCallback(null);
     };
-  }, [isAIvsAIMode, setAIDecisionCallback]);
+  }, [isAIvsAIMode, gameState, setAIDecisionCallback]);
 
   const handlePracticeMove = async (shipId: string, coordinate: string) => {
     const [x, y] = coordinate.split(',').map(Number);
@@ -636,13 +657,18 @@ export default function Home() {
         onStartBattle={handleStartAIBattle}
       />
 
-      {/* AI Decision Modal - Shows AI's thought process */}
-      {isAIvsAIMode && (
-        <AIDecisionModal
-          reasoning={aiReasoning}
-          isVisible={showAIDecision}
-          playerName={gameState?.players[gameState.currentPlayerIndex]?.username || 'AI'}
-          onClose={() => setShowAIDecision(false)}
+      {/* AI Decision - Shows using ShipActionModal just like human players */}
+      {isAIvsAIMode && aiDecisionShip && (
+        <ShipActionModal
+          ship={aiDecisionShip}
+          isOpen={true}
+          onClose={() => {
+            setAiDecisionShip(null);
+            setAiChosenAction(null);
+          }}
+          onAction={() => {}} // No-op in AI mode
+          aiMode={true}
+          aiChosenAction={aiChosenAction}
         />
       )}
 
