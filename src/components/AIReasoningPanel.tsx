@@ -67,13 +67,21 @@ export const AIReasoningPanel: React.FC<AIReasoningPanelProps> = ({
   if (!isExpanded) {
     return (
       <div 
-        className="ai-reasoning-panel-mini fixed left-4 top-32 w-72 bg-slate-900/95 border-2 border-amber-600 rounded-lg shadow-2xl z-40 animate-in slide-in-from-left duration-300"
-        onClick={() => setIsExpanded(true)}
+        className="ai-reasoning-panel-mini fixed left-4 top-32 w-72 bg-slate-900/95 border-2 border-amber-600 rounded-lg shadow-2xl z-40 cursor-pointer hover:border-amber-400 transition-colors"
+        onClick={(e) => {
+          e.stopPropagation();
+          setIsExpanded(true);
+        }}
         role="button"
         tabIndex={0}
-        onKeyDown={(e) => e.key === 'Enter' && setIsExpanded(true)}>
+        onKeyDown={(e) => {
+          if (e.key === 'Enter' || e.key === ' ') {
+            e.preventDefault();
+            setIsExpanded(true);
+          }
+        }}>
         {/* Mini Header */}
-        <div className="panel-header bg-gradient-to-r from-amber-900 to-slate-900 p-3 border-b border-amber-600 cursor-pointer">
+        <div className="panel-header bg-gradient-to-r from-amber-900 to-slate-900 p-3 border-b border-amber-600">
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-2">
               <span className="text-xl">🧠</span>

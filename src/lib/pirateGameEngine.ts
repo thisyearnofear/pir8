@@ -322,9 +322,10 @@ export class PirateGameManager {
     // const moveResult = PirateGameEngine.processShipMovement(ship, toPosition, gameState.gameMap);
 
     // For now, assume move is valid (smart contract will validate)
+    // CRITICAL: Create new position object with new reference for React to detect change
     const moveResult = { 
       success: true, 
-      updatedShip: { ...ship, position: toPosition },
+      updatedShip: { ...ship, position: { x: toPosition.x, y: toPosition.y } },
       message: 'Movement processed'
     };
 
@@ -337,6 +338,7 @@ export class PirateGameManager {
     }
 
     // Update game state with new ship position
+    // CRITICAL: Create completely new ship objects with new position references for React
     const updatedPlayers = [...gameState.players];
     if (!currentPlayer) {
       return {
@@ -346,7 +348,7 @@ export class PirateGameManager {
       };
     }
     const updatedShips = currentPlayer.ships.map(s =>
-      s.id === shipId ? moveResult.updatedShip! : s
+      s.id === shipId ? { ...moveResult.updatedShip!, position: { ...moveResult.updatedShip!.position } } : { ...s, position: { ...s.position } }
     );
     updatedPlayers[playerIndex] = {
       ...currentPlayer,
