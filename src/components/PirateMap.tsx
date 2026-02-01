@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useRef } from 'react';
+import { useState, useRef, useEffect } from 'react';
 import { GameMap, TerritoryCell, Ship } from '../types/game';
 import { TERRITORY_EMOJIS, SHIP_EMOJIS } from '../utils/constants';
 import { PirateGameManager } from '../lib/pirateGameEngine';
@@ -30,6 +30,54 @@ export default function PirateMap({
   const [hoveredCoordinate, setHoveredCoordinate] = useState<string | null>(null);
   const [tooltipPosition, setTooltipPosition] = useState({ x: 0, y: 0 });
   const mapRef = useRef<HTMLDivElement>(null);
+  
+  // Track ship movements for animations
+  const [shipPositions, setShipPositions] = useState<Map<string, string>>(new Map());
+  const [animatingShips, setAnimatingShips] = useState<Set<string>>(new Set());
+  const [recentActions, setRecentActions] = useState<Map<string, 'move' | 'attack' | 'claim'>>(new Map());
+
+  // Detect ship position changes and trigger animations
+  useEffect(() => {
+    const newPositions = new Map<string, string>();
+    const newAnimatingShips = new Set<string>();
+    
+    ships.forEach(ship => {
+      const currentPos = PirateGameManager.coordinateToString(ship.position);
+      const previousPos = shipPositions.get(ship.id);
+      
+      newPositions.set(ship.id, currentPos);
+      
+      // If position changed, trigger animation
+      if (previousPos && previousPos !== currentPos) {
+        newAnimatingShips.add(ship.id);
+        
+        // Clear animation after it completes
+        setTimeout(() => {
+          setAnimatingShips(prev => {
+            const next = new Set(prev);
+            next.delete(ship.id);
+            return next;
+          });
+        }, 600); // Match animation duration
+      }
+    });
+    
+    setShipPositions(newPositions);
+    if (newAnimatingShips.size > 0) {
+      setAnimatingShips(newAnimatingShips);
+    }
+  }, [ships]);
+  
+  // Clear recent action indicators after delay
+  useEffect(() => {
+    if (recentActions.size > 0) {
+      const timer = setTimeout(() => {
+        setRecentActions(new Map());
+      }, 1000);
+      return () => clearTimeout(timer);
+    }
+    return undefined;
+  }, [recentActions]);
 
   const isCoordinateScanned = (coordinate: string): boolean => {
     return scannedCoordinates.includes(coordinate);
@@ -135,18 +183,23 @@ export default function PirateMap({
       className += 'ring-2 ring-neon-orange ';
     }
 
-    // Ship highlighting
+    // Ship highlighting with visual hierarchy
     if (ship) {
       if (isMyShip(ship)) {
-        className += 'ring-4 ring-neon-cyan ';
+        className += 'ring-4 ring-neon-cyan shadow-lg shadow-neon-cyan/50 ';
       } else {
-        className += 'ring-4 ring-red-500 ';
+        className += 'ring-4 ring-red-500 shadow-lg shadow-red-500/50 ';
+      }
+      
+      // Add glow effect for animating ships
+      if (animatingShips.has(ship.id)) {
+        className += 'ring-offset-2 ring-offset-black ';
       }
     }
 
-    // Selected ship highlighting
+    // Selected ship highlighting with enhanced glow
     if (ship?.id === selectedShipId) {
-      className += 'ring-4 ring-neon-gold ';
+      className += 'ring-4 ring-neon-gold shadow-2xl shadow-neon-gold/60 animate-pulse ';
     }
 
     // Movement target highlighting
@@ -190,17 +243,83 @@ export default function PirateMap({
 
         {/* Ship overlay */}
         {ship && (
-          <div className={`ship-icon absolute ${isMyShip(ship) ? 'text-neon-cyan' : 'text-red-400'}`}>
+          <div 
+            className={`ship-icon absolute ${isMyShip(ship) ? 'text-neon-cyan' : 'text-red-400'} ${
+              animatingShips.has(ship.id) ? 'ship-animating' : ''
+            }`}
+            style={{
+              fontSize: ship.id === selectedShipId ? '1.8rem' : '1.5rem',
+              filter: ship.health < 30 ? 'brightness(0.6) saturate(0.5)' : 'brightness(1)',
+              textShadow: isMyShip(ship) 
+                ? '0 0 10px rgba(0, 217, 255, 0.8), 0 0 20px rgba(0, 217, 255, 0.4)' 
+                : '0 0 10px rgba(239, 68, 68, 0.8), 0 0 20px rgba(239, 68, 68, 0.4)'
+            }}
+          >
             {SHIP_EMOJIS[ship.type]}
+            
+            {/* Movement trail effect */}
+            {animatingShips.has(ship.id) && (
+              <>
+                <div 
+                  className="absolute inset-0 rounded-full"
+                  style={{
+                    background: `radial-gradient(circle, ${
+                      isMyShip(ship) ? 'rgba(0, 217, 255, 0.3)' : 'rgba(239, 68, 68, 0.3)'
+                    } 0%, transparent 70%)`,
+                    animation: 'ship-wake 0.6s ease-out'
+                  }}
+                />
+                
+                {/* Ripple effect */}
+                <div 
+                  className="ripple-effect"
+                  style={{
+                    color: isMyShip(ship) ? 'rgba(0, 217, 255, 0.6)' : 'rgba(239, 68, 68, 0.6)'
+                  }}
+                />
+                
+                {/* Particle burst effect */}
+                {[...Array(6)].map((_, i) => {
+                  const angle = (i * 60) * (Math.PI / 180);
+                  const distance = 30;
+                  return (
+                    <div
+                      key={i}
+                      className="absolute w-1 h-1 rounded-full"
+                      style={{
+                        left: '50%',
+                        top: '50%',
+                        background: isMyShip(ship) ? '#00D9FF' : '#ef4444',
+                        boxShadow: `0 0 4px ${isMyShip(ship) ? '#00D9FF' : '#ef4444'}`,
+                        animation: 'particle-burst 0.6s ease-out',
+                        // @ts-ignore
+                        '--tx': `${Math.cos(angle) * distance}px`,
+                        '--ty': `${Math.sin(angle) * distance}px`,
+                      }}
+                    />
+                  );
+                })}
+              </>
+            )}
           </div>
         )}
 
-        {/* Health indicator for damaged ships */}
+        {/* Health indicator for damaged ships with animation */}
         {ship && ship.health < ship.maxHealth && (
-          <div className="health-bar absolute bottom-1 left-1 right-1 h-1 bg-gray-600 rounded">
+          <div className="health-bar absolute bottom-1 left-1 right-1 h-1.5 bg-gray-800 rounded border border-gray-600">
             <div
-              className="h-full bg-gradient-to-r from-red-500 to-green-500 rounded"
-              style={{ width: `${(ship.health / ship.maxHealth) * 100}%` }}
+              className="h-full rounded transition-all duration-500 ease-out"
+              style={{ 
+                width: `${(ship.health / ship.maxHealth) * 100}%`,
+                background: ship.health < 30 
+                  ? 'linear-gradient(90deg, #dc2626, #ef4444)'
+                  : ship.health < 60
+                  ? 'linear-gradient(90deg, #f59e0b, #fbbf24)'
+                  : 'linear-gradient(90deg, #10b981, #34d399)',
+                boxShadow: ship.health < 30 
+                  ? '0 0 8px rgba(220, 38, 38, 0.6)' 
+                  : '0 0 5px rgba(16, 185, 129, 0.4)'
+              }}
             ></div>
           </div>
         )}
