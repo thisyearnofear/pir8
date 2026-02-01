@@ -34,30 +34,40 @@ async function main() {
     process.exit(1);
   }
 
-  const bridge = new ZcashMemoBridge(async ({ gameId, solanaPubkey, amountZEC }) => {
-    let onchain = false;
-    try {
-      const client = await getAnchorClient();
-      const result = await handleShieldedMemo(client.program, client.provider, gameId);
-      
-      if (result.success) {
-        onchain = true;
-        const action = result.action as Action;
-        const resultGameId = typeof result.gameId === 'number' ? `onchain_${result.gameId}` : result.gameId;
-        console.log(JSON.stringify({ action, onchain, gameId: resultGameId, solanaPubkey, amountZEC }));
-        return;
-      }
-    } catch (err) {
-      console.error('On-chain error:', err instanceof Error ? err.message : String(err));
-    }
+  // Test new API route
+  try {
+    const response = await fetch(`${baseUrl}/api/zcash`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        memo: memoArg,
+        zcashTxHash: 'test-tx-hash',
+        blockHeight: 12345,
+      }),
+    });
 
-    // Fallback to API route
-    const action: Action = gameId && gameId.startsWith('onchain_') ? 'join' : 'create';
-    const ok = await postGame(action, gameId, solanaPubkey);
-    console.log(JSON.stringify({ action, ok, gameId, solanaPubkey, amountZEC }));
+    const result = await response.json();
+
+    if (result.success) {
+      console.log('✅ API route test successful:', result);
+    } else {
+      console.log('❌ API route test failed:', result.error);
+    }
+  } catch (error) {
+    console.error('❌ API route test error:', error);
+  }
+
+  // Test direct bridge parsing
+  const bridge = new ZcashMemoBridge(async (payload) => {
+    console.log('📝 Memo parsed successfully:', {
+      gameId: payload.gameId,
+      action: payload.action,
+      solanaPubkey: payload.solanaPubkey,
+      zcashTx: payload.zcashTxHash,
+    });
   });
 
-  await bridge.handleIncomingShieldedMemo(memoArg);
+  await bridge.handleIncomingShieldedMemo(memoArg, 'test-tx-hash', 12345);
 }
 
 main();

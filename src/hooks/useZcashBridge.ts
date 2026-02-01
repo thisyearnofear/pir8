@@ -35,12 +35,32 @@ export function useZcashBridge(options: UseZcashBridgeOptions = {}) {
           zcashTx: payload.zcashTxHash,
         });
 
-        // Execute private join_game instruction via client
-        // const { joinGameClient } = await import('../lib/client/solanaClient');
-        // Note: This would need wallet context - for now just log
-        console.log('[Zcash Bridge] Would execute join game for:', payload.solanaPubkey);
+        // Execute via API route (handles wallet context server-side)
+        const response = await fetch('/api/zcash', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            memo: JSON.stringify({
+              v: payload.version,
+              gameId: payload.gameId,
+              action: payload.action,
+              solanaPubkey: payload.solanaPubkey,
+              timestamp: payload.timestamp,
+              metadata: payload.metadata,
+            }),
+            zcashTxHash: payload.zcashTxHash,
+            blockHeight: payload.blockHeight,
+          }),
+        });
 
-        onEntrySuccess?.(payload, 'mock-tx-hash');
+        const result = await response.json();
+
+        if (result.success) {
+          console.log('[Zcash Bridge] Successfully processed memo:', result);
+          onEntrySuccess?.(payload, result.solanaTx);
+        } else {
+          throw new Error(result.error || 'API request failed');
+        }
       } catch (error) {
         const err = error instanceof Error ? error : new Error('Unknown error');
         console.error('[Zcash Bridge] Entry failed:', err);
@@ -62,7 +82,7 @@ export function useZcashBridge(options: UseZcashBridgeOptions = {}) {
     if (!zcashEnabled || !enabled || !ZCASH_CONFIG.SHIELDED_ADDRESS) {
       return;
     }
-    
+
     // Skip if using placeholder address
     if (ZCASH_CONFIG.SHIELDED_ADDRESS.includes('your_shielded_address')) {
       return;

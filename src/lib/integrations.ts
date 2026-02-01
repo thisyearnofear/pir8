@@ -331,9 +331,9 @@ export class PumpFunCreator {
 // Game Integration Helpers
 export function setupGameIntegrations() {
   // Only connect if Helius RPC is properly configured (not placeholder)
-  if (!API_ENDPOINTS.HELIUS_RPC || 
-      API_ENDPOINTS.HELIUS_RPC.includes('YOUR_API_KEY') ||
-      API_ENDPOINTS.HELIUS_RPC.includes('your_helius')) {
+  if (!API_ENDPOINTS.HELIUS_RPC ||
+    API_ENDPOINTS.HELIUS_RPC.includes('YOUR_API_KEY') ||
+    API_ENDPOINTS.HELIUS_RPC.includes('your_helius')) {
     return {
       heliusMonitor: null,
       cleanup: () => { },
@@ -682,18 +682,39 @@ export class LightwalletdWatcher {
 
   /**
    * Decode hex or base64 memo to JSON string
-   * Supports both binary and text encoding
+   * Supports both binary and text encoding with proper UTF-8 validation
    */
   private decodeMemo(memo: string | Buffer): string {
     try {
+      let decoded: string;
+
       // Try hex decoding first (common in Zcash)
       if (typeof memo === "string") {
         const buffer = Buffer.from(memo, "hex");
-        return buffer.toString().trim();
+        decoded = buffer.toString('utf8');
+      } else {
+        decoded = memo.toString('utf8');
       }
-      return memo.toString().trim();
-    } catch {
-      this.log("warn", "Failed to decode memo");
+
+      // Validate UTF-8 and remove null padding
+      const cleaned = decoded.replace(/\0+$/, '').trim();
+
+      // Verify it's valid JSON by attempting to parse
+      try {
+        JSON.parse(cleaned);
+        return cleaned;
+      } catch {
+        // If not JSON, try base64 decoding as fallback
+        if (typeof memo === "string") {
+          const base64Buffer = Buffer.from(memo, "base64");
+          const base64Decoded = base64Buffer.toString('utf8').replace(/\0+$/, '').trim();
+          JSON.parse(base64Decoded); // Validate JSON
+          return base64Decoded;
+        }
+        throw new Error("Not valid JSON");
+      }
+    } catch (error) {
+      this.log("warn", `Failed to decode memo: ${error instanceof Error ? error.message : 'Unknown error'}`);
       return "";
     }
   }
