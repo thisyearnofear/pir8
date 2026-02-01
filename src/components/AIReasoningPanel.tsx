@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState, useEffect } from "react";
+import { useState, useEffect } from "react";
 import { AIReasoning, AIOption } from "@/lib/pirateGameEngine";
 
 interface AIReasoningPanelProps {
@@ -13,11 +13,10 @@ interface AIReasoningPanelProps {
 /**
  * AIReasoningPanel - Displays the AI's "Thought Stream"
  * 
- * Core Principles Applied:
- * - ENHANCEMENT FIRST: Enhances game experience by teaching players strategy
- * - CLEAN: Clear visual hierarchy with explicit separation of concerns
- * - MODULAR: Self-contained component with minimal external dependencies
- * - PERFORMANT: Uses CSS transitions, avoids unnecessary re-renders
+ * ENHANCEMENT: Now with user-controlled expansion
+ * - Starts as mini-panel on left side
+ * - User can click to expand to full modal
+ * - Doesn't block the game interface by default
  */
 export const AIReasoningPanel: React.FC<AIReasoningPanelProps> = ({
   reasoning,
@@ -27,6 +26,7 @@ export const AIReasoningPanel: React.FC<AIReasoningPanelProps> = ({
 }) => {
   const [animatedScore, setAnimatedScore] = useState(0);
   const [isThinking, setIsThinking] = useState(false);
+  const [isExpanded, setIsExpanded] = useState(false);
 
   // Animate the thinking process
   useEffect(() => {
@@ -44,6 +44,13 @@ export const AIReasoningPanel: React.FC<AIReasoningPanelProps> = ({
     return undefined;
   }, [reasoning]);
 
+  // Reset expansion when reasoning changes
+  useEffect(() => {
+    if (reasoning) {
+      setIsExpanded(false);
+    }
+  }, [reasoning]);
+
   if (!isVisible || !reasoning) {
     return null;
   }
@@ -56,8 +63,68 @@ export const AIReasoningPanel: React.FC<AIReasoningPanelProps> = ({
     (opt) => opt.target !== chosenOption?.target || opt.type !== chosenOption?.type
   );
 
+  // Mini panel version (default, non-blocking)
+  if (!isExpanded) {
+    return (
+      <div 
+        className="ai-reasoning-panel-mini fixed left-4 top-32 w-72 bg-slate-900/95 border-2 border-amber-600 rounded-lg shadow-2xl z-40 animate-in slide-in-from-left duration-300"
+        onClick={() => setIsExpanded(true)}
+        role="button"
+        tabIndex={0}
+        onKeyDown={(e) => e.key === 'Enter' && setIsExpanded(true)}>
+        {/* Mini Header */}
+        <div className="panel-header bg-gradient-to-r from-amber-900 to-slate-900 p-3 border-b border-amber-600 cursor-pointer">
+          <div className="flex items-center justify-between">
+            <div className="flex items-center gap-2">
+              <span className="text-xl">🧠</span>
+              <h3 className="text-amber-400 font-bold text-sm font-pirate">
+                AI Thinking...
+              </h3>
+            </div>
+            <span className="text-xs text-amber-300 bg-amber-900/50 px-2 py-1 rounded">
+              Click to expand
+            </span>
+          </div>
+        </div>
+
+        {/* Compact content */}
+        <div className="p-3 space-y-2">
+          <div className="flex items-center justify-between text-xs">
+            <span className="text-slate-400">AI Level:</span>
+            <span className="text-amber-300 font-semibold">{difficulty.name}</span>
+          </div>
+
+          {chosenOption && (
+            <div className="bg-gradient-to-r from-amber-900/30 to-amber-800/30 border border-amber-600/50 rounded-lg p-2">
+              <div className="flex items-center gap-2 mb-1">
+                <span className="text-lg">
+                  {chosenOption.type === 'attack' && '⚔️'}
+                  {chosenOption.type === 'move_ship' && '🚢'}
+                  {chosenOption.type === 'claim_territory' && '🏴‍☠️'}
+                  {chosenOption.type === 'build_ship' && '🛠️'}
+                </span>
+                <span className="text-white font-bold text-sm capitalize">
+                  {chosenOption.type.replace('_', ' ')}
+                </span>
+              </div>
+              <p className="text-xs text-slate-300 line-clamp-2">{chosenOption.reason}</p>
+            </div>
+          )}
+
+          {optionsConsidered.length > 1 && (
+            <div className="text-xs text-slate-400 text-center pt-1 border-t border-slate-700">
+              Evaluated {optionsConsidered.length} options • Click for details
+            </div>
+          )}
+        </div>
+      </div>
+    );
+  }
+
+  // Expanded modal version (full detail)
   return (
-    <div className="ai-reasoning-panel fixed right-4 top-20 w-96 max-h-[80vh] overflow-y-auto bg-slate-900/95 border-2 border-amber-600 rounded-lg shadow-2xl z-50">
+    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm animate-fade-in">
+      <div className="ai-reasoning-panel fixed right-4 top-20 w-96 max-h-[80vh] overflow-y-auto bg-slate-900/95 border-2 border-amber-600 rounded-lg shadow-2xl animate-in slide-in-from-right duration-300">
       {/* Header */}
       <div className="panel-header bg-gradient-to-r from-amber-900 to-slate-900 p-4 border-b border-amber-600">
         <div className="flex items-center justify-between">
@@ -67,15 +134,24 @@ export const AIReasoningPanel: React.FC<AIReasoningPanelProps> = ({
               {showHints ? "AI Strategy Hint" : "AI Thought Stream"}
             </h3>
           </div>
-          {onClose && (
+          <div className="flex items-center gap-2">
             <button
-              onClick={onClose}
-              className="text-slate-400 hover:text-amber-400 transition-colors"
-              aria-label="Close panel"
+              onClick={() => setIsExpanded(false)}
+              className="text-slate-400 hover:text-amber-400 transition-colors text-sm bg-slate-800 px-2 py-1 rounded"
+              aria-label="Minimize panel"
             >
-              ✕
+              Minimize
             </button>
-          )}
+            {onClose && (
+              <button
+                onClick={onClose}
+                className="text-slate-400 hover:text-amber-400 transition-colors"
+                aria-label="Close panel"
+              >
+                ✕
+              </button>
+            )}
+          </div>
         </div>
         <div className="flex items-center gap-2 mt-2">
           <span className="text-xs text-slate-400">Difficulty:</span>
@@ -180,6 +256,7 @@ export const AIReasoningPanel: React.FC<AIReasoningPanelProps> = ({
             : "🎓 Spectator Mode: Watch how the AI evaluates each move"}
         </p>
       </div>
+    </div>
     </div>
   );
 };

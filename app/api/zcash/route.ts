@@ -5,7 +5,7 @@ import { handleShieldedMemo } from '@/cli/commands/game';
 
 export async function POST(request: NextRequest) {
     try {
-        const { memo, zcashTxHash, blockHeight } = await request.json();
+        const { memo, zcashTxHash } = await request.json();
 
         if (!memo) {
             return NextResponse.json({ error: 'Memo is required' }, { status: 400 });
@@ -28,11 +28,11 @@ export async function POST(request: NextRequest) {
                 success: true,
                 action: result.action,
                 gameId: result.gameId,
-                solanaTx: result.txHash || 'pending',
+                solanaTx: 'pending',
                 zcashTx: zcashTxHash,
             });
         } else {
-            return NextResponse.json({ error: result.error }, { status: 500 });
+            return NextResponse.json({ error: 'Failed to process command' }, { status: 500 });
         }
     } catch (error) {
         console.error('Zcash API error:', error);

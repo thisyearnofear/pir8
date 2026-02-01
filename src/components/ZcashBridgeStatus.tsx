@@ -1,4 +1,3 @@
-import React from 'react';
 import { useZcashBridge } from '@/hooks/useZcashBridge';
 import { ZCASH_CONFIG } from '@/utils/constants';
 

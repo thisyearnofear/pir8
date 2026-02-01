@@ -691,9 +691,9 @@ export class LightwalletdWatcher {
       // Try hex decoding first (common in Zcash)
       if (typeof memo === "string") {
         const buffer = Buffer.from(memo, "hex");
-        decoded = buffer.toString('utf8');
+        decoded = buffer.toString();
       } else {
-        decoded = memo.toString('utf8');
+        decoded = memo.toString();
       }
 
       // Validate UTF-8 and remove null padding
@@ -707,7 +707,7 @@ export class LightwalletdWatcher {
         // If not JSON, try base64 decoding as fallback
         if (typeof memo === "string") {
           const base64Buffer = Buffer.from(memo, "base64");
-          const base64Decoded = base64Buffer.toString('utf8').replace(/\0+$/, '').trim();
+          const base64Decoded = base64Buffer.toString().replace(/\0+$/, '').trim();
           JSON.parse(base64Decoded); // Validate JSON
           return base64Decoded;
         }
