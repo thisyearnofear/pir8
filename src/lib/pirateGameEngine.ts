@@ -466,29 +466,102 @@ export class PirateGameManager {
 
   /**
    * Check if game should end and determine winner
+   * ENHANCEMENT: Proper victory conditions for practice/AI mode
    */
   static checkGameEnd(gameState: GameState): {
     isGameOver: boolean;
     winner: Player | null;
     updatedGameState: GameState;
   } {
-    // NOTE: Game logic moved to smart contract - this is just for local UI feedback
-    // const isGameOver = PirateGameEngine.isGameOver(gameState.players, gameState.gameMap);
-    const isGameOver = false; // Let smart contract determine game end
+    const MAX_TURNS = 100; // Prevent infinite games
+    const activePlayers = gameState.players.filter(p => 
+      p.isActive && p.ships.some(s => s.health > 0)
+    );
 
-    if (isGameOver) {
-      // const winner = PirateGameEngine.determineWinner(gameState.players, gameState.gameMap);
-      const winner = null; // Smart contract will determine winner
+    // Victory Condition 1: Only one player left with ships
+    if (activePlayers.length === 1) {
+      const winner = activePlayers[0] || null;
+      const updatedGameState: GameState = {
+        ...gameState,
+        gameStatus: 'completed' as const,
+        winner: winner?.publicKey,
+      };
+      return { isGameOver: true, winner, updatedGameState };
+    }
+
+    // Victory Condition 2: All other players eliminated (no ships)
+    if (activePlayers.length === 0) {
       const updatedGameState: GameState = {
         ...gameState,
         gameStatus: 'completed' as const,
         winner: undefined,
       };
+      return { isGameOver: true, winner: null, updatedGameState };
+    }
 
+    // Victory Condition 3: Max turns reached - determine winner by score
+    if (gameState.turnNumber >= MAX_TURNS) {
+      const winner = this.determineWinnerByScore(gameState.players);
+      const updatedGameState: GameState = {
+        ...gameState,
+        gameStatus: 'completed' as const,
+        winner: winner?.publicKey,
+      };
       return { isGameOver: true, winner, updatedGameState };
     }
 
+    // Victory Condition 4: Dominant victory (75%+ territories)
+    const totalTerritories = gameState.players.reduce(
+      (sum, p) => sum + p.controlledTerritories.length, 
+      0
+    );
+    
+    if (totalTerritories > 0) {
+      for (const player of gameState.players) {
+        const territoryPercent = player.controlledTerritories.length / totalTerritories;
+        if (territoryPercent >= 0.75 && player.ships.some(s => s.health > 0)) {
+          const updatedGameState: GameState = {
+            ...gameState,
+            gameStatus: 'completed' as const,
+            winner: player.publicKey,
+          };
+          return { isGameOver: true, winner: player, updatedGameState };
+        }
+      }
+    }
+
     return { isGameOver: false, winner: null, updatedGameState: gameState };
+  }
+
+  /**
+   * Determine winner by scoring multiple factors
+   */
+  private static determineWinnerByScore(players: Player[]): Player | null {
+    if (players.length === 0) return null;
+
+    const scoredPlayers = players.map(player => {
+      const activeShips = player.ships.filter(s => s.health > 0).length;
+      const totalShipHealth = player.ships.reduce((sum, s) => sum + s.health, 0);
+      const territories = player.controlledTerritories.length;
+      const resources = player.resources.gold + 
+                       player.resources.crew * 2 + 
+                       player.resources.cannons * 5;
+
+      // Weighted scoring system
+      const score = 
+        activeShips * 100 +          // Ships are most important
+        totalShipHealth * 2 +        // Health matters
+        territories * 150 +          // Territory control is critical
+        resources * 0.5 +            // Resources are a tiebreaker
+        player.totalScore;           // Existing score
+
+      return { player, score };
+    });
+
+    // Sort by score descending
+    scoredPlayers.sort((a, b) => b.score - a.score);
+
+    return scoredPlayers[0]?.player || null;
   }
 
   /**

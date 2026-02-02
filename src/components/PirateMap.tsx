@@ -46,47 +46,58 @@ export default function PirateMap({
     timestamp: number;
   }>>([]);
 
-  // ENHANCED: Detect changes and determine action type (SINGLE SOURCE)
+  // Track previous ship state with refs to avoid dependency loops
+  const prevShipsRef = useRef<Map<string, { position: string; health: number }>>(new Map());
+  
+  // Detect changes and determine action type
   useEffect(() => {
-    const newPositions = new Map<string, string>();
-    const newAnimations = new Map(shipAnimations);
-    const newTrails = new Map(shipTrails);
     const now = Date.now();
+    const prevShips = prevShipsRef.current;
+    let hasChanges = false;
     
     ships.forEach(ship => {
       const currentPos = PirateGameManager.coordinateToString(ship.position);
-      const previousPos = shipPositions.get(ship.id);
-      const previousShip = ships.find(s => s.id === ship.id);
-      
-      newPositions.set(ship.id, currentPos);
+      const prev = prevShips.get(ship.id);
       
       // Position changed = movement
-      if (previousPos && previousPos !== currentPos) {
-        newAnimations.set(ship.id, { type: 'move', timestamp: now });
+      if (prev && prev.position !== currentPos) {
+        hasChanges = true;
+        setShipAnimations(prevAnims => {
+          const next = new Map(prevAnims);
+          next.set(ship.id, { type: 'move', timestamp: now });
+          return next;
+        });
         
         // Track trail (last 3 positions)
-        const trail = shipTrails.get(ship.id) || [];
-        trail.push(previousPos);
-        if (trail.length > 3) trail.shift();
-        newTrails.set(ship.id, trail);
+        setShipTrails(prevTrails => {
+          const next = new Map(prevTrails);
+          const trail = [...(next.get(ship.id) || []), prev.position];
+          if (trail.length > 3) trail.shift();
+          next.set(ship.id, trail);
+          return next;
+        });
         
         // Auto-clear after animation
         setTimeout(() => {
-          setShipAnimations(prev => {
-            const next = new Map(prev);
+          setShipAnimations(prevAnims => {
+            const next = new Map(prevAnims);
             if (next.get(ship.id)?.timestamp === now) next.delete(ship.id);
             return next;
           });
         }, 600);
       }
       
-      // Health decreased = damaged (for damage numbers)
-      if (previousShip && ship.health < previousShip.health) {
-        const damage = previousShip.health - ship.health;
-        newAnimations.set(ship.id, { type: 'damaged', timestamp: now });
+      // Health decreased = damaged
+      if (prev && ship.health < prev.health) {
+        hasChanges = true;
+        const damage = prev.health - ship.health;
+        setShipAnimations(prevAnims => {
+          const next = new Map(prevAnims);
+          next.set(ship.id, { type: 'damaged', timestamp: now });
+          return next;
+        });
         
-        // Add damage number
-        setDamageNumbers(prev => [...prev, {
+        setDamageNumbers(prevDmg => [...prevDmg, {
           id: `dmg-${ship.id}-${now}`,
           shipId: ship.id,
           amount: damage,
@@ -95,8 +106,8 @@ export default function PirateMap({
         }]);
         
         setTimeout(() => {
-          setShipAnimations(prev => {
-            const next = new Map(prev);
+          setShipAnimations(prevAnims => {
+            const next = new Map(prevAnims);
             if (next.get(ship.id)?.timestamp === now) next.delete(ship.id);
             return next;
           });
@@ -104,10 +115,21 @@ export default function PirateMap({
       }
     });
     
-    setShipPositions(newPositions);
-    setShipAnimations(newAnimations);
-    setShipTrails(newTrails);
-  }, [ships, shipPositions, shipTrails, shipAnimations]);
+    // Update positions ref for next comparison
+    const newPositions = new Map<string, { position: string; health: number }>();
+    ships.forEach(ship => {
+      newPositions.set(ship.id, {
+        position: PirateGameManager.coordinateToString(ship.position),
+        health: ship.health
+      });
+    });
+    prevShipsRef.current = newPositions;
+    
+    // Update position state for rendering
+    if (hasChanges || shipPositions.size === 0) {
+      setShipPositions(new Map(ships.map(s => [s.id, PirateGameManager.coordinateToString(s.position)])));
+    }
+  }, [ships]);
   
   // CONSOLIDATED: Auto-cleanup for damage numbers (PERFORMANT)
   useEffect(() => {
@@ -208,7 +230,7 @@ export default function PirateMap({
             className += 'bg-amber-500 bg-opacity-70 hover:bg-amber-400 pirate-glow ';
             break;
           case 'storm':
-            className += 'bg-purple-600 bg-opacity-70 battle-pulse ';
+            className += 'bg-purple-600 bg-opacity-70 hover:bg-purple-500 ';
             break;
           case 'reef':
             className += 'bg-gray-600 bg-opacity-70 hover:bg-gray-500 ';
@@ -242,7 +264,7 @@ export default function PirateMap({
 
     // Selected ship highlighting with enhanced glow
     if (ship?.id === selectedShipId) {
-      className += 'ring-4 ring-neon-gold shadow-2xl shadow-neon-gold/60 animate-pulse ';
+      className += 'ring-4 ring-neon-gold shadow-2xl shadow-neon-gold/60 ';
     }
 
     // Movement target highlighting
