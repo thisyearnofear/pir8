@@ -226,7 +226,7 @@ export default function BattleInfoPanel({ gameState }: BattleInfoPanelProps) {
           </h4>
 
           <div className="space-y-2 max-h-32 overflow-y-auto custom-scrollbar">
-            {gameState.eventLog.slice(-5).reverse().map((event) => (
+            {gameState.eventLog?.slice(-5).reverse().map((event) => (
               <div key={event.id}
                 className="bg-slate-900/60 rounded-lg p-3 border-l-4 border-neon-cyan/50
                               hover:bg-slate-800/60 transition-all duration-200">
@@ -243,7 +243,7 @@ export default function BattleInfoPanel({ gameState }: BattleInfoPanelProps) {
             ))}
           </div>
 
-          {gameState.eventLog.length === 0 && (
+          {gameState.eventLog?.length === 0 && (
             <div className="text-center text-gray-400 py-4">
               <div className="text-2xl mb-2">📝</div>
               <p className="text-sm">No battle events yet...</p>
