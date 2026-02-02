@@ -25,6 +25,7 @@ import { GameSyncStatus } from "@/components/GameSyncRecovery";
 import PrivacyStatusIndicator from "@/components/PrivacyStatusIndicator";
 import ViralEventModal from "@/components/ViralEventModal";
 import SocialModal from "@/components/SocialModal";
+import LobbyBrowser from "@/components/LobbyBrowser";
 import { LeakageMeter, BountyBoard, PrivacyLessonModal } from "@/components/privacy";
 import AIBattleModal from "@/components/AIBattleModal";
 import AIBattleControls from "@/components/AIBattleControls";
@@ -1044,7 +1045,7 @@ export default function Home() {
                   </div>
                 ) : (
                   /* Connected but No Game - Clear CTAs */
-                  <div className="space-y-8">
+                  <div className="space-y-12">
                     <div className="text-7xl sm:text-8xl animate-bounce-slow filter drop-shadow-2xl">🏴‍☠️</div>
                     <div>
                       <h3 className="text-3xl sm:text-4xl font-black text-transparent bg-clip-text 
@@ -1054,32 +1055,13 @@ export default function Home() {
                       <p className="text-lg sm:text-xl text-gray-300 mb-2">
                         Your wallet is connected
                       </p>
-                      <p className="text-base text-gray-400 mb-8">
-                        Choose your path to glory
-                      </p>
                     </div>
 
-                    {/* Action Cards for Connected Users */}
-                    <div className="grid grid-cols-1 md:grid-cols-3 gap-6 max-w-4xl mx-auto">
-                      {/* Create Game */}
-                      <button
-                        onClick={handleCreateGame}
-                        disabled={isCreatingGame}
-                        className="group bg-gradient-to-br from-slate-800/60 to-slate-900/60 border-2 border-neon-cyan/50 
-                                   rounded-2xl p-6 hover:scale-105 transition-all duration-300
-                                   hover:shadow-lg hover:shadow-neon-cyan/30 text-left disabled:opacity-50 disabled:cursor-not-allowed"
-                      >
-                        <div className="text-5xl mb-4">🎮</div>
-                        <h4 className="text-xl font-bold text-neon-cyan mb-2">Create Battle</h4>
-                        <p className="text-sm text-gray-400 mb-4">
-                          Start a new on-chain game. Invite friends or add AI opponents.
-                        </p>
-                        <div className="flex items-center gap-2 text-neon-cyan text-sm font-semibold">
-                          <span>{isCreatingGame ? 'Creating...' : 'Start Now'}</span>
-                          <span>→</span>
-                        </div>
-                      </button>
+                    {/* NEW: Lobby Browser Hero */}
+                    <LobbyBrowser />
 
+                    {/* Action Cards for Connected Users (Secondary) */}
+                    <div className="grid grid-cols-1 md:grid-cols-3 gap-6 max-w-4xl mx-auto pt-8 border-t border-slate-700/30">
                       {/* Practice Mode */}
                       <button
                         onClick={() => setShowPracticeMenu(true)}

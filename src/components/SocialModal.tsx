@@ -21,6 +21,7 @@ interface LeaderboardEntry {
 export default function SocialModal({ type, gameId, isOpen, onClose }: SocialModalProps) {
     const { publicKey } = useWallet();
     const [leaderboard, setLeaderboard] = useState<LeaderboardEntry[]>([]);
+    const [leaderboardType, setLeaderboardType] = useState<'human' | 'agent'>('human');
     const [referralCode, setReferralCode] = useState('');
     const [inviteLink, setInviteLink] = useState('');
     const [copied, setCopied] = useState(false);
@@ -34,15 +35,22 @@ export default function SocialModal({ type, gameId, isOpen, onClose }: SocialMod
                 const link = gameId ? `${baseUrl}?join=${gameId}&ref=${code}` : `${baseUrl}?ref=${code}`;
                 setInviteLink(link);
             } else if (type === 'leaderboard') {
-                // Mock leaderboard data
-                setLeaderboard([
-                    { publicKey: 'CaptainBlackbeard123', username: 'CaptainBlackbeard', totalWins: 47, winRate: 90.4, rank: 1 },
-                    { publicKey: 'RedBeardRuler456', username: 'RedBeardRuler', totalWins: 43, winRate: 89.6, rank: 2 },
-                    { publicKey: publicKey.toString(), username: 'You', totalWins: 12, winRate: 66.7, rank: 15 }
-                ]);
+                if (leaderboardType === 'human') {
+                    setLeaderboard([
+                        { publicKey: 'CaptainBlackbeard123', username: 'CaptainBlackbeard', totalWins: 47, winRate: 90.4, rank: 1 },
+                        { publicKey: 'RedBeardRuler456', username: 'RedBeardRuler', totalWins: 43, winRate: 89.6, rank: 2 },
+                        { publicKey: publicKey.toString(), username: 'You', totalWins: 12, winRate: 66.7, rank: 15 }
+                    ]);
+                } else {
+                    setLeaderboard([
+                        { publicKey: 'DreadBot_v1', username: 'DreadBot (Agent)', totalWins: 156, winRate: 98.2, rank: 1 },
+                        { publicKey: 'SeaGPT_Alpha', username: 'SeaGPT (Agent)', totalWins: 112, winRate: 92.5, rank: 2 },
+                        { publicKey: 'ScurvyScript', username: 'ScurvyScript (Agent)', totalWins: 89, winRate: 85.1, rank: 3 }
+                    ]);
+                }
             }
         }
-    }, [isOpen, publicKey, type, gameId]);
+    }, [isOpen, publicKey, type, gameId, leaderboardType]);
 
     const handleCopy = async (text: string) => {
         await navigator.clipboard.writeText(text);
@@ -83,6 +91,24 @@ export default function SocialModal({ type, gameId, isOpen, onClose }: SocialMod
                 {type === 'leaderboard' ? (
                     /* Leaderboard Content */
                     <div className="space-y-4">
+                        <div className="flex bg-slate-800 p-1 rounded-xl mb-6">
+                            <button
+                                onClick={() => setLeaderboardType('human')}
+                                className={`flex-1 py-2 rounded-lg font-bold text-sm transition-all ${
+                                    leaderboardType === 'human' ? 'bg-neon-cyan text-black shadow-lg shadow-neon-cyan/20' : 'text-gray-400 hover:text-white'
+                                }`}
+                            >
+                                👤 HUMANS
+                            </button>
+                            <button
+                                onClick={() => setLeaderboardType('agent')}
+                                className={`flex-1 py-2 rounded-lg font-bold text-sm transition-all ${
+                                    leaderboardType === 'agent' ? 'bg-neon-magenta text-black shadow-lg shadow-neon-magenta/20' : 'text-gray-400 hover:text-white'
+                                }`}
+                            >
+                                🤖 AGENTS
+                            </button>
+                        </div>
                         {leaderboard.map((entry, index) => (
                             <div key={entry.publicKey}
                                 className={`p-4 rounded-xl border-2 ${entry.publicKey === publicKey?.toString()

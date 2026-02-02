@@ -1,7 +1,7 @@
 import { AnchorProvider, Program, Idl, BN } from '@coral-xyz/anchor';
 import { Connection, PublicKey, SystemProgram } from '@solana/web3.js';
 import { SOLANA_CONFIG } from '@/utils/constants';
-import { getGlobalGamePDA } from '../anchorUtils';
+import { getGamePDA } from '../anchorUtils';
 import type { WalletAdapter } from '@coral-xyz/anchor';
 
 // Import IDL - we'll need to generate this after building the contract
@@ -47,14 +47,13 @@ export const getClientProgram = async (wallet: WalletAdapter): Promise<Program> 
     return new Program(idl, programId, provider);
 };
 
-export const initializeGameClient = async (wallet: WalletAdapter) => {
+export const createGameClient = async (wallet: WalletAdapter, gameId: number) => {
     if (!wallet.publicKey) throw new Error("Wallet not connected");
 
     const program = await getClientProgram(wallet);
-    const [gamePDA] = getGlobalGamePDA(program.programId);
+    const [gamePDA] = getGamePDA(gameId, program.programId);
 
-    // eslint-disable-next-line @typescript-eslint/no-unnecessary-condition
-    const tx = await (program.methods as any).initializeGame()
+    const tx = await (program.methods as any).createGame(new BN(gameId))
         .accounts({
             game: gamePDA,
             authority: wallet.publicKey,
@@ -62,17 +61,16 @@ export const initializeGameClient = async (wallet: WalletAdapter) => {
         })
         .rpc();
 
-    console.log('✅ Game initialized:', tx);
+    console.log(`✅ Game ${gameId} created:`, tx);
     return tx;
 };
 
-export const joinGameClient = async (wallet: WalletAdapter) => {
+export const joinGameClient = async (wallet: WalletAdapter, gameId: number) => {
     if (!wallet.publicKey) throw new Error("Wallet not connected");
 
     const program = await getClientProgram(wallet);
-    const [gamePDA] = getGlobalGamePDA(program.programId);
+    const [gamePDA] = getGamePDA(gameId, program.programId);
 
-    // eslint-disable-next-line @typescript-eslint/no-unnecessary-condition
     const tx = await (program.methods as any).joinGame()
         .accounts({
             game: gamePDA,
@@ -81,17 +79,16 @@ export const joinGameClient = async (wallet: WalletAdapter) => {
         })
         .rpc();
 
-    console.log('✅ Joined game:', tx);
+    console.log(`✅ Joined game ${gameId}:`, tx);
     return tx;
 };
 
-export const startGameClient = async (wallet: WalletAdapter) => {
+export const startGameClient = async (wallet: WalletAdapter, gameId: number) => {
     if (!wallet.publicKey) throw new Error("Wallet not connected");
 
     const program = await getClientProgram(wallet);
-    const [gamePDA] = getGlobalGamePDA(program.programId);
+    const [gamePDA] = getGamePDA(gameId, program.programId);
 
-    // eslint-disable-next-line @typescript-eslint/no-unnecessary-condition
     const tx = await (program.methods as any).startGame()
         .accounts({
             game: gamePDA,
@@ -99,13 +96,13 @@ export const startGameClient = async (wallet: WalletAdapter) => {
         })
         .rpc();
 
-    console.log('✅ Game started:', tx);
+    console.log(`✅ Game ${gameId} started:`, tx);
     return tx;
 };
 
-export const moveShipClient = async (wallet: any, shipId: string, x: number, y: number, decisionTimeMs?: number) => {
+export const moveShipClient = async (wallet: any, gameId: number, shipId: string, x: number, y: number, decisionTimeMs?: number) => {
     const program = await getClientProgram(wallet);
-    const [gamePDA] = getGlobalGamePDA((program as any).programId);
+    const [gamePDA] = getGamePDA(gameId, (program as any).programId);
 
     const tx = await (program as any).methods
         .moveShip(shipId, x, y, decisionTimeMs ? new BN(decisionTimeMs) : null)
@@ -119,9 +116,9 @@ export const moveShipClient = async (wallet: any, shipId: string, x: number, y: 
     return tx;
 };
 
-export const attackShipClient = async (wallet: any, attackerShipId: string, targetShipId: string) => {
+export const attackShipClient = async (wallet: any, gameId: number, attackerShipId: string, targetShipId: string) => {
     const program = await getClientProgram(wallet);
-    const [gamePDA] = getGlobalGamePDA((program as any).programId);
+    const [gamePDA] = getGamePDA(gameId, (program as any).programId);
 
     const tx = await (program as any).methods
         .attackShip(attackerShipId, targetShipId)
@@ -135,9 +132,9 @@ export const attackShipClient = async (wallet: any, attackerShipId: string, targ
     return tx;
 };
 
-export const claimTerritoryClient = async (wallet: any, shipId: string) => {
+export const claimTerritoryClient = async (wallet: any, gameId: number, shipId: string) => {
     const program = await getClientProgram(wallet);
-    const [gamePDA] = getGlobalGamePDA((program as any).programId);
+    const [gamePDA] = getGamePDA(gameId, (program as any).programId);
 
     const tx = await (program as any).methods
         .claimTerritory(shipId)
@@ -151,9 +148,9 @@ export const claimTerritoryClient = async (wallet: any, shipId: string) => {
     return tx;
 };
 
-export const collectResourcesClient = async (wallet: any) => {
+export const collectResourcesClient = async (wallet: any, gameId: number) => {
     const program = await getClientProgram(wallet);
-    const [gamePDA] = getGlobalGamePDA((program as any).programId);
+    const [gamePDA] = getGamePDA(gameId, (program as any).programId);
 
     const tx = await (program as any).methods
         .collectResources()
@@ -167,11 +164,10 @@ export const collectResourcesClient = async (wallet: any) => {
     return tx;
 };
 
-export const buildShipClient = async (wallet: any, shipType: string, portX: number, portY: number) => {
+export const buildShipClient = async (wallet: any, gameId: number, shipType: string, portX: number, portY: number) => {
     const program = await getClientProgram(wallet);
-    const [gamePDA] = getGlobalGamePDA((program as any).programId);
+    const [gamePDA] = getGamePDA(gameId, (program as any).programId);
 
-    // Convert string to enum format expected by Rust
     const shipTypeEnum = { [shipType]: {} };
 
     const tx = await (program as any).methods
@@ -186,9 +182,9 @@ export const buildShipClient = async (wallet: any, shipType: string, portX: numb
     return tx;
 };
 
-export const scanCoordinateClient = async (wallet: any, x: number, y: number) => {
+export const scanCoordinateClient = async (wallet: any, gameId: number, x: number, y: number) => {
     const program = await getClientProgram(wallet);
-    const [gamePDA] = getGlobalGamePDA((program as any).programId);
+    const [gamePDA] = getGamePDA(gameId, (program as any).programId);
 
     const tx = await (program as any).methods
         .scanCoordinate(x, y)
@@ -202,9 +198,9 @@ export const scanCoordinateClient = async (wallet: any, x: number, y: number) =>
     return tx;
 };
 
-export const endTurnClient = async (wallet: any) => {
+export const endTurnClient = async (wallet: any, gameId: number) => {
     const program = await getClientProgram(wallet);
-    const [gamePDA] = getGlobalGamePDA((program as any).programId);
+    const [gamePDA] = getGamePDA(gameId, (program as any).programId);
 
     const tx = await (program as any).methods
         .endTurn()
@@ -218,15 +214,15 @@ export const endTurnClient = async (wallet: any) => {
     return tx;
 };
 
-export const fetchGameStateClient = async (wallet: any) => {
+export const fetchGameStateClient = async (wallet: any, gameId: number) => {
     const program = await getClientProgram(wallet);
-    const [gamePDA] = getGlobalGamePDA((program as any).programId);
+    const [gamePDA] = getGamePDA(gameId, (program as any).programId);
 
     try {
         const gameState = await (program as any).account.pirateGame.fetch(gamePDA);
         return gameState;
     } catch (error) {
-        console.log('Game not initialized yet');
+        console.log(`Game ${gameId} not initialized yet`);
         return null;
     }
 };

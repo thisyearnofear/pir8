@@ -7,7 +7,7 @@
 
 import { Connection, Keypair } from '@solana/web3.js';
 import { Program, AnchorProvider } from '@coral-xyz/anchor';
-import { PIR8AgentPlugin } from '../plugins/PIR8AgentPlugin';
+import { PIR8AgentPlugin } from '../lib/sdk/PIR8AgentPlugin';
 import fs from 'fs';
 import path from 'path';
 

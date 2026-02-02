@@ -33,6 +33,22 @@ export const useHeliusMonitor = ({ gameId, onGameEvent }: UseHeliusMonitorProps 
         // Show real-time feedback in UI
         setMessage(`🔥 ${event.type}: ${event.data.description || 'Event occurred'}`);
 
+        // Turn Notification Logic
+        if (event.type === 'moveMade') {
+          const { gameState, getCurrentPlayer } = usePirateGameState.getState();
+          const me = getCurrentPlayer();
+          if (me && event.data.nextPlayerIndex === gameState?.players.findIndex((p: any) => p.publicKey === me.publicKey)) {
+            // It's my turn next!
+            if ('Notification' in window && Notification.permission === 'granted') {
+              new Notification('⚔️ PIR8: Your Turn!', {
+                body: `An opponent has moved in game ${event.gameId}. Your ships await orders.`,
+                icon: '/favicon.ico'
+              });
+            }
+            setMessage('⚔️ ATTENTION: IT IS YOUR TURN!');
+          }
+        }
+
         // Call custom handler
         onGameEvent?.(event);
 
@@ -154,11 +170,14 @@ function parseGameEvent(data: any): GameEvent | null {
           timestamp: Date.now(),
         };
       } else if (log.includes('Program log: MoveMade')) {
+        const gameId = extractGameIdFromLog(log);
+        const nextPlayerIndex = parseInt(log.match(/next_player_index:\s*(\d+)/)?.[1] || '0', 10);
         return {
           type: 'moveMade',
-          gameId: extractGameIdFromLog(log),
+          gameId,
           data: {
             description: 'Player made a move',
+            nextPlayerIndex,
             signature,
             log
           },

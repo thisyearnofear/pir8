@@ -9,9 +9,9 @@
 
 import { Connection, PublicKey, SystemProgram } from '@solana/web3.js';
 import { Program, BN } from '@coral-xyz/anchor';
-import { PirateGameManager } from '../lib/pirateGameEngine';
-import { getGamePDA } from '../lib/anchor';
-import { GameState } from '../types/game';
+import { PirateGameManager } from '../pirateGameEngine';
+import { getGamePDA } from '../anchor';
+import { GameState } from '../../types/game';
 
 // Define the tool interfaces for agent frameworks
 export interface PIR8AgentTool {
