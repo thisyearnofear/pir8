@@ -272,19 +272,20 @@ export default function GameContainer({
         {/* ===== FOCUSED GAME LAYOUT ===== */}
         <div className="h-screen flex flex-col bg-gradient-to-br from-slate-900 via-slate-800 to-slate-900">
 
-          {/* Top HUD Bar - Minimal */}
-          <div className="flex items-center justify-between px-4 py-2 bg-slate-900/80 border-b border-neon-cyan/30">
+          {/* Top HUD Bar - Minimal, Mobile Responsive */}
+          <div className="flex items-center justify-between px-2 sm:px-4 py-1.5 sm:py-2 bg-slate-900/80 border-b border-neon-cyan/30">
             {/* Turn Indicator */}
-            <div className="flex items-center gap-3">
-              <div className={`px-3 py-1 rounded-full font-bold text-sm ${isMyTurn
+            <div className="flex items-center gap-2 sm:gap-3">
+              <div className={`px-2 sm:px-3 py-1 rounded-full font-bold text-xs sm:text-sm ${isMyTurn
                   ? 'bg-neon-cyan text-black'
                   : 'bg-slate-700 text-gray-300'
                 }`}>
-                {isMyTurn ? '⚔️ Your Turn' : `⏳ ${currentPlayerName}'s Turn`}
+                {isMyTurn ? '⚔️ You' : `⏳ ${currentPlayerName.slice(0, 8)}${currentPlayerName.length > 8 ? '...' : ''}`}
+                <span className="hidden sm:inline">{isMyTurn ? 'r Turn' : "'s Turn"}</span>
               </div>
               {isMyTurn && (
                 <Tooltip content="Speed bonus: <5s = +100 | <10s = +50 | <15s = +25" position="bottom">
-                  <div className={`text-sm font-mono cursor-help ${decisionTimeMs < 5000 ? 'text-green-400' :
+                  <div className={`text-xs sm:text-sm font-mono cursor-help ${decisionTimeMs < 5000 ? 'text-green-400' :
                       decisionTimeMs < 10000 ? 'text-yellow-400' : 'text-red-400'
                     }`}>
                     ⏱️ {formatTime(decisionTimeMs)}
@@ -293,14 +294,14 @@ export default function GameContainer({
               )}
             </div>
 
-            {/* Game Info */}
-            <div className="flex items-center gap-4 text-sm">
-              <span className="text-gray-400">Turn {gameState.turnNumber}</span>
-              <span className="text-neon-gold">🏴‍☠️ {gameState.players.length} Pirates</span>
+            {/* Game Info - Hide less essential on mobile */}
+            <div className="flex items-center gap-2 sm:gap-4 text-xs sm:text-sm">
+              <span className="text-gray-400 hidden sm:inline">Turn {gameState.turnNumber}</span>
+              <span className="text-neon-gold hidden md:inline">🏴‍☠️ {gameState.players.length} Pirates</span>
               {isPracticeMode && (
                 <Tooltip content="Local game - connect wallet for on-chain battles" position="bottom">
-                  <span className="bg-neon-purple/20 text-neon-purple px-2 py-1 rounded text-xs cursor-help border border-neon-purple/30">
-                    ⚡ Practice
+                  <span className="bg-neon-purple/20 text-neon-purple px-1.5 sm:px-2 py-0.5 sm:py-1 rounded text-xs cursor-help border border-neon-purple/30">
+                    ⚡ <span className="hidden sm:inline">Practice</span>
                   </span>
                 </Tooltip>
               )}
@@ -310,7 +311,7 @@ export default function GameContainer({
             <Tooltip content="Game Menu (M)" position="bottom">
               <button
                 onClick={() => setMenuOpen(!menuOpen)}
-                className={`p-2 rounded-lg transition-all min-w-[40px] min-h-[40px] ${menuOpen
+                className={`p-3 rounded-lg transition-all min-w-[48px] min-h-[48px] ${menuOpen
                     ? 'bg-neon-cyan text-black'
                     : 'bg-slate-700 text-white hover:bg-slate-600'
                   }`}
@@ -399,7 +400,7 @@ export default function GameContainer({
                         onCollectResources();
                         setShowQuickActions(false);
                       }}
-                      className="w-14 h-14 rounded-full bg-neon-gold text-black shadow-lg 
+                      className="w-16 h-16 rounded-full bg-neon-gold text-black shadow-lg
                                  hover:scale-110 active:scale-95 transition-all flex items-center justify-center text-2xl"
                       title="Collect Resources (C)"
                     >
@@ -414,7 +415,7 @@ export default function GameContainer({
                         setMenuOpen(true);
                         setShowQuickActions(false);
                       }}
-                      className="w-14 h-14 rounded-full bg-neon-purple text-white shadow-lg 
+                      className="w-16 h-16 rounded-full bg-neon-purple text-white shadow-lg
                                  hover:scale-110 active:scale-95 transition-all flex items-center justify-center text-2xl"
                       title="Build Ship (3)"
                     >
@@ -429,7 +430,7 @@ export default function GameContainer({
                         setMenuOpen(true);
                         setShowQuickActions(false);
                       }}
-                      className="w-14 h-14 rounded-full bg-slate-700 text-white shadow-lg border border-slate-600
+                      className="w-16 h-16 rounded-full bg-slate-700 text-white shadow-lg border border-slate-600
                                  hover:scale-110 active:scale-95 transition-all flex items-center justify-center text-2xl"
                       title="View Stats (1)"
                     >

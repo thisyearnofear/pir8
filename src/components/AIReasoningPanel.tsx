@@ -67,7 +67,7 @@ export const AIReasoningPanel: React.FC<AIReasoningPanelProps> = ({
   if (!isExpanded) {
     return (
       <div
-        className="ai-reasoning-panel-mini fixed left-4 top-32 w-72 bg-slate-900/95 border-2 border-amber-600 rounded-lg shadow-2xl z-40 cursor-pointer hover:border-amber-400 hover:scale-[1.02] transition-all group"
+        className="ai-reasoning-panel-mini fixed left-2 sm:left-4 top-auto sm:top-32 bottom-24 sm:bottom-auto w-[calc(100%-16px)] sm:w-72 max-w-[calc(100%-16px)] bg-slate-900/95 border-2 border-amber-600 rounded-lg shadow-2xl z-40 cursor-pointer hover:border-amber-400 hover:scale-[1.02] transition-all group"
         onClick={(e) => {
           e.stopPropagation();
           setIsExpanded(true);
@@ -81,22 +81,32 @@ export const AIReasoningPanel: React.FC<AIReasoningPanelProps> = ({
           }
         }}>
         {/* Mini Header */}
-        <div className="panel-header bg-gradient-to-r from-amber-900 to-slate-900 p-3 border-b border-amber-600">
+        <div className="panel-header bg-gradient-to-r from-amber-900 to-slate-900 p-2 sm:p-3 border-b border-amber-600">
           <div className="flex items-center justify-between">
-            <div className="flex items-center gap-2">
-              <span className="text-xl">🧠</span>
-              <h3 className="text-amber-400 font-bold text-sm font-pirate">
+            <div className="flex items-center gap-1.5 sm:gap-2">
+              <span className="text-lg sm:text-xl">🧠</span>
+              <h3 className="text-amber-400 font-bold text-xs sm:text-sm font-pirate">
                 AI Thinking...
               </h3>
             </div>
-            <span className="text-xs text-amber-300 bg-amber-900/50 px-2 py-1 rounded flex items-center gap-1 group-hover:bg-amber-700/50 transition-colors">
+            <button
+              onClick={(e) => {
+                e.stopPropagation();
+                onClose?.();
+              }}
+              className="sm:hidden text-slate-400 hover:text-amber-400 p-1 min-w-[32px] min-h-[32px] flex items-center justify-center"
+              aria-label="Close panel"
+            >
+              ✕
+            </button>
+            <span className="hidden sm:flex text-xs text-amber-300 bg-amber-900/50 px-2 py-1 rounded items-center gap-1 group-hover:bg-amber-700/50 transition-colors">
               <span>⬆</span> Expand
             </span>
           </div>
         </div>
 
         {/* Compact content */}
-        <div className="p-3 space-y-2">
+        <div className="p-2 sm:p-3 space-y-2">
           <div className="flex items-center justify-between text-xs">
             <span className="text-slate-400">AI Level:</span>
             <span className="text-amber-300 font-semibold">{difficulty.name}</span>
@@ -105,13 +115,13 @@ export const AIReasoningPanel: React.FC<AIReasoningPanelProps> = ({
           {chosenOption && (
             <div className="bg-gradient-to-r from-amber-900/30 to-amber-800/30 border border-amber-600/50 rounded-lg p-2">
               <div className="flex items-center gap-2 mb-1">
-                <span className="text-lg">
+                <span className="text-base sm:text-lg">
                   {chosenOption.type === 'attack' && '⚔️'}
                   {chosenOption.type === 'move_ship' && '🚢'}
                   {chosenOption.type === 'claim_territory' && '🏴‍☠️'}
                   {chosenOption.type === 'build_ship' && '🛠️'}
                 </span>
-                <span className="text-white font-bold text-sm capitalize">
+                <span className="text-white font-bold text-xs sm:text-sm capitalize">
                   {chosenOption.type.replace('_', ' ')}
                 </span>
               </div>
@@ -120,9 +130,12 @@ export const AIReasoningPanel: React.FC<AIReasoningPanelProps> = ({
           )}
 
           <div className="text-xs text-center pt-2 border-t border-slate-700 text-amber-400/80 group-hover:text-amber-300 transition-colors">
-            {(optionsConsidered || []).length > 1
-              ? `Evaluated ${(optionsConsidered || []).length} options — tap for full analysis ↗`
-              : 'Tap anywhere to see full analysis ↗'}
+            <span className="hidden sm:inline">
+              {(optionsConsidered || []).length > 1
+                ? `Evaluated ${(optionsConsidered || []).length} options — tap for full analysis ↗`
+                : 'Tap anywhere to see full analysis ↗'}
+            </span>
+            <span className="sm:hidden">Tap for details ↗</span>
           </div>
         </div>
       </div>
@@ -131,12 +144,12 @@ export const AIReasoningPanel: React.FC<AIReasoningPanelProps> = ({
 
   // Expanded modal version (full detail)
   return (
-    <div 
+    <div
       className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm animate-fade-in"
       onClick={() => setIsExpanded(false)}
     >
-      <div 
-        className="ai-reasoning-panel fixed right-4 top-20 w-96 max-h-[80vh] overflow-y-auto bg-slate-900/95 border-2 border-amber-600 rounded-lg shadow-2xl animate-in slide-in-from-right duration-300 overscroll-contain"
+      <div
+        className="ai-reasoning-panel w-full max-w-md mx-2 max-h-[90vh] overflow-y-auto bg-slate-900/95 border-2 border-amber-600 rounded-lg shadow-2xl animate-in slide-in-from-right duration-300 overscroll-contain"
         onClick={(e) => e.stopPropagation()}
       >
         {/* Header */}

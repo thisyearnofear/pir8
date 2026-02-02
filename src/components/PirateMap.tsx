@@ -165,7 +165,7 @@ export default function PirateMap({
         ),
       );
     }
-  }, [ships]);
+  }, [ships, shipPositions.size]);
 
   // CONSOLIDATED: Auto-cleanup for damage numbers (PERFORMANT)
   useEffect(() => {
@@ -619,15 +619,14 @@ export default function PirateMap({
       ref={mapRef}
     >
       <div
-        className="game-map-grid relative"
+        className="game-map-grid relative mobile-map-grid"
         style={{
           display: "grid",
           gridTemplateColumns: `repeat(${gameMap.size}, 1fr)`,
           gridTemplateRows: `repeat(${gameMap.size}, 1fr)`,
-          gap: "2px",
           aspectRatio: "1",
           width: "100%",
-          maxWidth: "min(85vw, 60vh)",
+          maxWidth: "min(95vw, 70vh)",
           margin: "0 auto",
         }}
       >
@@ -643,34 +642,34 @@ export default function PirateMap({
         )}
       </div>
 
-      {/* Selection info */}
+      {/* Selection info - Mobile Optimized */}
       {selectedShipId && (
-        <div className="mt-4 p-3 bg-neon-cyan bg-opacity-10 border border-neon-cyan rounded-lg text-center">
-          <div className="text-sm text-neon-cyan font-mono">
-            Ship selected: {ships.find((s) => s.id === selectedShipId)?.type}
+        <div className="mt-2 sm:mt-4 p-2 sm:p-3 bg-neon-cyan bg-opacity-10 border border-neon-cyan rounded-lg text-center w-full max-w-xs">
+          <div className="text-xs sm:text-sm text-neon-cyan font-mono truncate">
+            Ship: {ships.find((s) => s.id === selectedShipId)?.type}
           </div>
           <div className="text-xs text-gray-300 mt-1">
-            Click on a highlighted cell to move
+            Tap highlighted cell to move
           </div>
         </div>
       )}
 
-      {/* Hover info */}
+      {/* Hover info - Mobile Optimized */}
       {hoveredCoordinate && (
-        <div className="mt-2 p-2 bg-black bg-opacity-50 border border-gray-500 rounded text-center">
-          <div className="text-xs text-gray-300">
-            Position: {hoveredCoordinate}
+        <div className="mt-1 sm:mt-2 p-1.5 sm:p-2 bg-black bg-opacity-50 border border-gray-500 rounded text-center w-full max-w-xs">
+          <div className="text-xs text-gray-300 truncate">
+            Pos: {hoveredCoordinate}
           </div>
           {getCellAtCoordinate(hoveredCoordinate) && (
-            <div className="text-xs text-neon-cyan">
+            <div className="text-xs text-neon-cyan truncate">
               {getCellAtCoordinate(hoveredCoordinate)!.type}
               {getCellAtCoordinate(hoveredCoordinate)!.owner && (
-                <span className="text-neon-orange"> (Controlled)</span>
+                <span className="text-neon-orange"> (Ctrl)</span>
               )}
             </div>
           )}
           {getShipAtPosition(hoveredCoordinate) && (
-            <div className="text-xs text-neon-magenta">
+            <div className="text-xs text-neon-magenta truncate">
               {getShipAtPosition(hoveredCoordinate)!.type} -
               {getShipAtPosition(hoveredCoordinate)!.health}HP
             </div>

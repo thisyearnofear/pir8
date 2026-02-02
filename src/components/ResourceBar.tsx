@@ -38,13 +38,13 @@ function ResourceBar({ resources, previousResources, isCompact = false }: Resour
 
   if (isCompact) {
     return (
-      <div className="resource-bar-compact flex items-center gap-3 bg-slate-900/90 border border-slate-700 rounded-lg px-3 py-1.5">
-        {mainResources.map(key => {
+      <div className="resource-bar-compact flex items-center gap-1 sm:gap-1.5 bg-slate-900/90 border border-slate-700 rounded-lg px-2 py-1 max-w-[90vw] overflow-x-auto">
+        {mainResources.slice(0, 4).map(key => {
           const config = RESOURCE_CONFIG[key];
           return (
-            <div key={key} className="flex items-center gap-1" title={config.label}>
-              <span className="text-sm">{config.icon}</span>
-              <span className={`text-sm font-mono font-bold ${config.color}`}>
+            <div key={key} className="flex items-center gap-0.5 sm:gap-1 min-w-max" title={config.label}>
+              <span className="text-xs">{config.icon}</span>
+              <span className={`text-xs font-mono font-bold ${config.color}`}>
                 {formatNumber(resources[key])}
               </span>
             </div>
@@ -55,31 +55,31 @@ function ResourceBar({ resources, previousResources, isCompact = false }: Resour
   }
 
   return (
-    <div className="resource-bar bg-slate-900/95 border-2 border-slate-700 rounded-xl p-3 shadow-2xl backdrop-blur-sm">
+    <div className="resource-bar bg-slate-900/95 border-2 border-slate-700 rounded-xl p-2 sm:p-3 shadow-2xl backdrop-blur-sm">
       <div className="flex items-center justify-between mb-2">
         <h3 className="text-xs font-bold text-gray-400 uppercase">Resources</h3>
       </div>
-      
-      <div className="grid grid-cols-4 gap-2">
+
+      <div className="grid grid-cols-2 sm:grid-cols-4 gap-1.5 sm:gap-2">
         {mainResources.map(key => {
           const config = RESOURCE_CONFIG[key];
           const delta = getDelta(key);
-          
+
           return (
             <div
               key={key}
-              className="bg-slate-800/50 border border-slate-700 rounded-lg p-2 text-center relative overflow-hidden"
+              className="bg-slate-800/50 border border-slate-700 rounded-lg p-1.5 sm:p-2 text-center relative overflow-hidden"
             >
-              <div className="text-xl mb-1">{config.icon}</div>
-              <div className={`text-lg font-mono font-bold ${config.color}`}>
+              <div className="text-lg sm:text-xl mb-0.5 sm:mb-1">{config.icon}</div>
+              <div className={`text-base sm:text-lg font-mono font-bold ${config.color}`}>
                 {formatNumber(resources[key])}
               </div>
               <div className="text-xs text-gray-500">{config.label}</div>
-              
+
               {/* Delta indicator */}
               {delta !== null && (
                 <div
-                  className={`absolute top-1 right-1 text-xs font-bold px-1 rounded ${
+                  className={`absolute top-0.5 right-0.5 text-[0.6rem] sm:text-xs font-bold px-0.5 sm:px-1 rounded ${
                     delta > 0 ? 'text-green-400 bg-green-900/50' : 'text-red-400 bg-red-900/50'
                   } animate-fade-in`}
                 >
@@ -90,22 +90,22 @@ function ResourceBar({ resources, previousResources, isCompact = false }: Resour
           );
         })}
       </div>
-      
+
       {/* Secondary resources (if any) */}
       {(resources.wood > 0 || resources.rum > 0) && (
-        <div className="flex items-center gap-4 mt-2 pt-2 border-t border-slate-700">
+        <div className="flex items-center gap-2 sm:gap-4 mt-1.5 sm:mt-2 pt-1.5 sm:pt-2 border-t border-slate-700">
           {resources.wood > 0 && (
-            <div className="flex items-center gap-1">
-              <span>{RESOURCE_CONFIG.wood.icon}</span>
-              <span className={`text-sm font-mono ${RESOURCE_CONFIG.wood.color}`}>
+            <div className="flex items-center gap-0.5 sm:gap-1">
+              <span className="text-sm">{RESOURCE_CONFIG.wood.icon}</span>
+              <span className={`text-xs sm:text-sm font-mono ${RESOURCE_CONFIG.wood.color}`}>
                 {resources.wood}
               </span>
             </div>
           )}
           {resources.rum > 0 && (
-            <div className="flex items-center gap-1">
-              <span>{RESOURCE_CONFIG.rum.icon}</span>
-              <span className={`text-sm font-mono ${RESOURCE_CONFIG.rum.color}`}>
+            <div className="flex items-center gap-0.5 sm:gap-1">
+              <span className="text-sm">{RESOURCE_CONFIG.rum.icon}</span>
+              <span className={`text-xs sm:text-sm font-mono ${RESOURCE_CONFIG.rum.color}`}>
                 {resources.rum}
               </span>
             </div>

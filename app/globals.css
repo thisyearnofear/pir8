@@ -2888,6 +2888,121 @@ body.modal-open {
   }
 }
 
+/* ===== MOBILE GAME INTERFACE STYLES ===== */
+
+/* Mobile Map Grid - Larger cells, reduced gaps */
+.mobile-map-grid {
+  gap: 2px;
+}
+
+@media (max-width: 640px) {
+  .mobile-map-grid {
+    gap: 1px;
+    max-width: min(98vw, 85vh) !important;
+  }
+  
+  /* Increase touch targets for territory cells */
+  .territory-cell {
+    min-height: 44px;
+    min-width: 44px;
+  }
+  
+  .territory-cell .cell-content {
+    padding: 2px;
+  }
+  
+  .territory-icon {
+    font-size: 1rem;
+  }
+  
+  .ship-icon {
+    font-size: 1.1rem !important;
+  }
+}
+
+@media (max-width: 480px) {
+  .mobile-map-grid {
+    gap: 0.5px;
+  }
+  
+  /* Even larger touch targets for very small screens */
+  .territory-cell {
+    min-height: 40px;
+    min-width: 40px;
+  }
+  
+  .territory-icon {
+    font-size: 0.875rem;
+  }
+  
+  .ship-icon {
+    font-size: 1rem !important;
+  }
+  
+  /* Ensure health bars remain visible */
+  .health-bar {
+    height: 2px;
+  }
+}
+
+/* Mobile Touch Target Sizes */
+@media (max-width: 640px) {
+  /* Ensure all interactive elements have minimum touch targets */
+  button,
+  [role="button"],
+  .clickable {
+    min-height: 44px;
+    min-width: 44px;
+  }
+  
+  /* Quick action buttons */
+  .quick-action-btn {
+    width: 52px;
+    height: 52px;
+  }
+  
+  /* Resource bar mobile adjustments */
+  .resource-bar-compact {
+    max-width: calc(100vw - 100px);
+    overflow-x: auto;
+    -webkit-overflow-scrolling: touch;
+  }
+  
+  /* AI Panel mobile - position at bottom to avoid blocking map */
+  .ai-reasoning-panel-mini {
+    max-height: 180px;
+    overflow-y: auto;
+  }
+}
+
+/* Button spacing on mobile */
+@media (max-width: 640px) {
+  .flex.gap-2 > button,
+  .flex.gap-3 > button,
+  .flex.gap-4 > button {
+    margin: 2px;
+  }
+  
+  /* Floating action buttons - ensure spacing from edges */
+  .absolute.bottom-20.right-4 {
+    right: 8px;
+    bottom: 80px;
+  }
+}
+
+/* Selection info panel mobile */
+@media (max-width: 640px) {
+  .pirate-map-container .mt-4.p-3 {
+    margin-top: 8px;
+    padding: 8px 12px;
+  }
+  
+  .pirate-map-container .mt-2.p-2 {
+    margin-top: 4px;
+    padding: 4px 8px;
+  }
+}
+
 /* Accessibility Enhancements */
 @media (prefers-reduced-motion: reduce) {
 
