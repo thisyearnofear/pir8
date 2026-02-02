@@ -88,7 +88,7 @@ interface PirateGameStore {
   makePracticeClaim: (shipId: string) => boolean;
   processAITurn: () => void;
   exitPracticeMode: () => void;
-  
+
   // Actions - AI vs AI Demo Mode (no wallet required)
   startAIvsAIGame: (difficulty1: 'novice' | 'pirate' | 'captain' | 'admiral', difficulty2: 'novice' | 'pirate' | 'captain' | 'admiral', speed?: number) => boolean;
   setPlaybackSpeed: (speed: number) => void;
@@ -589,7 +589,7 @@ export const usePirateGameState = create<PirateGameStore>((set, get) => ({
       const advancedState = PirateGameManager.advanceTurn(result.updatedGameState);
       savePracticeGame(advancedState);
       set({ gameState: advancedState, selectedShipId: null });
-      
+
       // Process AI turn after a delay
       setTimeout(() => get().processAITurn(), 1000);
       return true;
@@ -615,7 +615,7 @@ export const usePirateGameState = create<PirateGameStore>((set, get) => ({
       const advancedState = PirateGameManager.advanceTurn(result.updatedGameState);
       savePracticeGame(advancedState);
       set({ gameState: advancedState });
-      
+
       setTimeout(() => get().processAITurn(), 1000);
       return true;
     }
@@ -640,7 +640,7 @@ export const usePirateGameState = create<PirateGameStore>((set, get) => ({
       const advancedState = PirateGameManager.advanceTurn(result.updatedGameState);
       savePracticeGame(advancedState);
       set({ gameState: advancedState });
-      
+
       setTimeout(() => get().processAITurn(), 1000);
       return true;
     }
@@ -657,30 +657,30 @@ export const usePirateGameState = create<PirateGameStore>((set, get) => ({
     // Generate AI decision with reasoning (for AI vs AI educational mode)
     if (isAIvsAIMode && aiDecisionCallback) {
       const decision = PirateGameManager.generateAIDecision(gameState, currentPlayer);
-      
+
       // Notify callback with reasoning
       aiDecisionCallback(decision.reasoning);
-      
+
       // Process the action
       if (decision.action) {
         const result = PirateGameManager.processTurnAction(gameState, decision.action);
         if (result.success) {
           const advancedState = PirateGameManager.advanceTurn(result.updatedGameState);
-          
+
           // Force a new object reference to trigger React re-renders
           const newState = {
             ...advancedState,
             players: advancedState.players.map(p => ({ ...p, ships: [...p.ships] })),
             turnNumber: advancedState.turnNumber,
           };
-          
+
           set({ gameState: newState, currentAIReasoning: decision.reasoning });
 
           // Check for game end
           if (newState.gameStatus === 'completed') {
             const winner = newState.players.find(p => p.publicKey === newState.winner);
-            set({ 
-              showMessage: winner 
+            set({
+              showMessage: winner
                 ? `🏆 ${winner.username || 'AI'} wins the battle!`
                 : '🏴‍☠️ Battle concluded!'
             });
@@ -719,26 +719,26 @@ export const usePirateGameState = create<PirateGameStore>((set, get) => ({
     } else {
       // Original flow for practice mode (no reasoning display)
       const updatedState = PirateGameManager.processAITurn(gameState);
-      
+
       // Only save to localStorage if not in AI vs AI mode
       if (!isAIvsAIMode) {
         savePracticeGame(updatedState);
       }
-      
+
       // Force a new object reference to trigger React re-renders
       const newState = {
         ...updatedState,
         players: updatedState.players.map(p => ({ ...p, ships: [...p.ships] })),
         turnNumber: updatedState.turnNumber,
       };
-      
+
       set({ gameState: newState });
 
       // Check for game end
       if (newState.gameStatus === 'completed') {
         const winner = newState.players.find(p => p.publicKey === newState.winner);
-        set({ 
-          showMessage: winner 
+        set({
+          showMessage: winner
             ? `🏆 ${winner.username || 'AI'} wins the battle!`
             : '🏴‍☠️ Battle concluded!'
         });
@@ -778,13 +778,28 @@ export const usePirateGameState = create<PirateGameStore>((set, get) => ({
       const aiPlayer1 = PirateGameManager.createAIPlayer('demo', difficulty1);
       const aiPlayer2 = PirateGameManager.createAIPlayer('demo', difficulty2);
 
+      // Ensure players have required arrays initialized
+      [aiPlayer1, aiPlayer2].forEach(player => {
+        player.ships = player.ships || [];
+        player.controlledTerritories = player.controlledTerritories || [];
+        player.scannedCoordinates = player.scannedCoordinates || [];
+      });
+
       // Create game with both AI players
       const demoGame = PirateGameManager.createNewGame([aiPlayer1, aiPlayer2], `ai_demo_${Date.now()}`);
-      
-      // Set game to active status
+
+      // Ensure game state has required arrays
       const activeGame = {
         ...demoGame,
         gameStatus: 'active' as const,
+        players: demoGame.players.map(player => ({
+          ...player,
+          ships: player.ships || [],
+          controlledTerritories: player.controlledTerritories || [],
+          scannedCoordinates: player.scannedCoordinates || []
+        })),
+        pendingActions: demoGame.pendingActions || [],
+        eventLog: demoGame.eventLog || []
       };
 
       set({

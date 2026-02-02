@@ -14,20 +14,20 @@ interface AIDecisionModalProps {
   onClose: () => void;
 }
 
-export default function AIDecisionModal({ 
-  reasoning, 
-  isVisible, 
+export default function AIDecisionModal({
+  reasoning,
+  isVisible,
   playerName,
-  onClose 
+  onClose
 }: AIDecisionModalProps) {
   if (!isVisible || !reasoning) return null;
 
-  const { chosenOption, optionsConsidered = [], gameAnalysis, difficulty, thinkingTime } = reasoning;
+  const { chosenOption, optionsConsidered = [], gameAnalysis, difficulty, thinkingTime } = reasoning || {};
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm animate-fade-in">
       <div className="bg-gradient-to-br from-slate-900 to-slate-800 border-2 border-neon-cyan/50 rounded-2xl p-6 max-w-2xl w-full mx-4 shadow-2xl shadow-neon-cyan/20 max-h-[80vh] overflow-y-auto">
-        
+
         {/* Header */}
         <div className="flex items-center justify-between mb-4">
           <div>
@@ -85,18 +85,17 @@ export default function AIDecisionModal({
           </h3>
           <div className="space-y-2 max-h-48 overflow-y-auto">
             {(optionsConsidered || []).slice(0, 5).map((option, idx) => {
-              const isChosen = chosenOption?.type === option.type && 
-                              chosenOption?.shipId === option.shipId &&
-                              chosenOption?.target === option.target;
-              
+              const isChosen = chosenOption?.type === option.type &&
+                chosenOption?.shipId === option.shipId &&
+                chosenOption?.target === option.target;
+
               return (
                 <div
                   key={idx}
-                  className={`p-3 rounded-lg border-2 transition-all ${
-                    isChosen
+                  className={`p-3 rounded-lg border-2 transition-all ${isChosen
                       ? 'border-neon-cyan bg-neon-cyan/20 scale-105'
                       : 'border-slate-600 bg-slate-800/50'
-                  }`}
+                    }`}
                 >
                   <div className="flex items-center justify-between mb-1">
                     <div className="flex items-center gap-2">
@@ -118,11 +117,10 @@ export default function AIDecisionModal({
                     </div>
                     <div className="flex items-center gap-2">
                       <span className="text-xs text-gray-400">Score:</span>
-                      <span className={`font-bold ${
-                        option.score >= 80 ? 'text-green-400' :
-                        option.score >= 60 ? 'text-yellow-400' :
-                        'text-gray-400'
-                      }`}>
+                      <span className={`font-bold ${option.score >= 80 ? 'text-green-400' :
+                          option.score >= 60 ? 'text-yellow-400' :
+                            'text-gray-400'
+                        }`}>
                         {option.score}
                       </span>
                     </div>
@@ -172,7 +170,7 @@ export default function AIDecisionModal({
         {/* Educational Note */}
         <div className="bg-slate-800/30 border border-slate-700 rounded-lg p-3 mb-4">
           <p className="text-xs text-gray-400 italic">
-            💡 <strong>Learning Moment:</strong> The AI evaluates multiple options and scores them based on 
+            💡 <strong>Learning Moment:</strong> The AI evaluates multiple options and scores them based on
             the game situation. Higher difficulty AIs consider more factors and make smarter decisions.
             {gameAnalysis.isLosing && " Notice how the AI becomes more aggressive when losing!"}
           </p>

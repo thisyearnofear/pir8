@@ -43,6 +43,28 @@ export default function RootLayout({
         <meta name="theme-color" content="#006994" />
         <meta name="apple-mobile-web-app-capable" content="yes" />
         <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
+        <script
+          dangerouslySetInnerHTML={{
+            __html: `
+              // Prevent ethereum provider conflicts from crashing the app
+              window.addEventListener('error', function(e) {
+                if (e.message && e.message.includes('ethereum')) {
+                  console.warn('Ethereum provider error suppressed:', e.message);
+                  e.preventDefault();
+                  return false;
+                }
+              });
+              
+              window.addEventListener('unhandledrejection', function(e) {
+                if (e.reason && e.reason.message && e.reason.message.includes('ethereum')) {
+                  console.warn('Ethereum provider rejection suppressed:', e.reason.message);
+                  e.preventDefault();
+                  return false;
+                }
+              });
+            `
+          }}
+        />
       </head>
       <body className={`${inter.className} bg-gradient-to-br from-ocean-blue via-blue-900 to-slate-900 min-h-screen safe-area-inset`}>
         <WalletContextProvider>

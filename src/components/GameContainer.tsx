@@ -52,33 +52,33 @@ import { AIReasoning } from '@/lib/pirateGameEngine';
 interface GameContainerProps {
   // Game state
   gameState: GameState;
-  
+
   // Player identification
   currentPlayerPK?: string;
   isPracticeMode: boolean;
-  
+
   // Turn state
   isMyTurn: boolean;
   decisionTimeMs: number;
   currentPlayerName: string;
-  
+
   // Skill mechanics
   scanChargesRemaining: number;
   speedBonusAccumulated: number;
   averageDecisionTimeMs: number;
   scannedCoordinates: string[];
-  
+
   // Ship selection
   selectedShipId: string | null;
   shipActionModalShip: Ship | null;
-  
+
   // Actions
   onCellSelect: (coordinate: string) => void;
   onShipClick: (ship: Ship) => void;
   onShipSelect: (shipId: string | null) => void;
   onShipAction: (shipId: string, action: 'move' | 'attack' | 'claim' | 'collect' | 'build') => void;
   onCloseShipActionModal: () => void;
-  
+
   // Controls
   onCreateGame: () => void;
   onQuickStart: () => void;
@@ -86,25 +86,25 @@ interface GameContainerProps {
   onJoinGame: (gameId: string) => Promise<boolean>;
   onEndTurn: () => void;
   onPracticeMode: () => void;
-  
+
   // Resource/Build
   onCollectResources: () => Promise<boolean>;
   onBuildShip: (shipType: string, portX: number, portY: number) => Promise<boolean>;
-  
+
   // Victory
   onNewGame: () => void;
   onReturnToLobby: () => void;
-  
+
   // Loading states
   isCreatingGame: boolean;
   isJoining: boolean;
   joinError?: string;
   onClearJoinError: () => void;
-  
+
   // Viral/Social
   onOpenLeaderboard: () => void;
   onOpenReferral: () => void;
-  
+
   // AI Reasoning (for AI vs AI mode and practice hints)
   aiReasoning?: AIReasoning | null;
   showAIReasoning?: boolean;
@@ -152,21 +152,21 @@ export default function GameContainer({
   showAIReasoning,
   onToggleAIReasoning,
 }: GameContainerProps) {
-  
+
   const [menuOpen, setMenuOpen] = useState(false);
   const [activeTab, setActiveTab] = useState<'stats' | 'actions' | 'build' | 'ai'>('stats');
   const [showQuickActions, setShowQuickActions] = useState(false);
   const [showTutorial, setShowTutorial] = useState(isPracticeMode);
   const [tutorialStep, setTutorialStep] = useState(0);
-  
+
   // =============================================================================
   // KEYBOARD SHORTCUTS
   // =============================================================================
-  
+
   const handleKeyDown = useCallback((e: KeyboardEvent) => {
     // Don't trigger if typing in input
     if (e.target instanceof HTMLInputElement || e.target instanceof HTMLTextAreaElement) return;
-    
+
     switch (e.key.toLowerCase()) {
       case 'e':
         // End turn
@@ -213,18 +213,19 @@ export default function GameContainer({
         break;
     }
   }, [isMyTurn, menuOpen, selectedShipId, onEndTurn, onShipSelect, onCollectResources]);
-  
+
   useEffect(() => {
     window.addEventListener('keydown', handleKeyDown);
     return () => window.removeEventListener('keydown', handleKeyDown);
   }, [handleKeyDown]);
-  
+
   // =============================================================================
   // HELPERS
   // =============================================================================
-  
+
   // Get current player from game state
   const getCurrentPlayer = (): Player | null => {
+    if (!gameState?.players) return null;
     if (isPracticeMode) {
       return gameState.players.find((p) => !p.publicKey.startsWith('AI_')) || null;
     }
@@ -233,9 +234,9 @@ export default function GameContainer({
   };
 
   const currentPlayer = getCurrentPlayer();
-  const allShips = gameState.players.flatMap((p) => p.ships).filter((s) => s.health > 0);
+  const allShips = gameState?.players ? gameState.players.flatMap((p) => p.ships || []).filter((s) => s.health > 0) : [];
   const selectedShip = selectedShipId ? allShips.find(s => s.id === selectedShipId) : null;
-  
+
   const formatTime = (ms: number) => {
     const seconds = Math.floor(ms / 1000);
     return `${seconds}s`;
@@ -270,24 +271,22 @@ export default function GameContainer({
 
         {/* ===== FOCUSED GAME LAYOUT ===== */}
         <div className="h-screen flex flex-col bg-gradient-to-br from-slate-900 via-slate-800 to-slate-900">
-          
+
           {/* Top HUD Bar - Minimal */}
           <div className="flex items-center justify-between px-4 py-2 bg-slate-900/80 border-b border-neon-cyan/30">
             {/* Turn Indicator */}
             <div className="flex items-center gap-3">
-              <div className={`px-3 py-1 rounded-full font-bold text-sm ${
-                isMyTurn 
-                  ? 'bg-neon-cyan text-black' 
+              <div className={`px-3 py-1 rounded-full font-bold text-sm ${isMyTurn
+                  ? 'bg-neon-cyan text-black'
                   : 'bg-slate-700 text-gray-300'
-              }`}>
+                }`}>
                 {isMyTurn ? '⚔️ Your Turn' : `⏳ ${currentPlayerName}'s Turn`}
               </div>
               {isMyTurn && (
                 <Tooltip content="Speed bonus: <5s = +100 | <10s = +50 | <15s = +25" position="bottom">
-                  <div className={`text-sm font-mono cursor-help ${
-                    decisionTimeMs < 5000 ? 'text-green-400' :
-                    decisionTimeMs < 10000 ? 'text-yellow-400' : 'text-red-400'
-                  }`}>
+                  <div className={`text-sm font-mono cursor-help ${decisionTimeMs < 5000 ? 'text-green-400' :
+                      decisionTimeMs < 10000 ? 'text-yellow-400' : 'text-red-400'
+                    }`}>
                     ⏱️ {formatTime(decisionTimeMs)}
                   </div>
                 </Tooltip>
@@ -311,11 +310,10 @@ export default function GameContainer({
             <Tooltip content="Game Menu (M)" position="bottom">
               <button
                 onClick={() => setMenuOpen(!menuOpen)}
-                className={`p-2 rounded-lg transition-all min-w-[40px] min-h-[40px] ${
-                  menuOpen 
-                    ? 'bg-neon-cyan text-black' 
+                className={`p-2 rounded-lg transition-all min-w-[40px] min-h-[40px] ${menuOpen
+                    ? 'bg-neon-cyan text-black'
                     : 'bg-slate-700 text-white hover:bg-slate-600'
-                }`}
+                  }`}
               >
                 {menuOpen ? '✕' : '☰'}
               </button>
@@ -334,7 +332,7 @@ export default function GameContainer({
               currentPlayerPK={currentPlayerPK}
               scannedCoordinates={scannedCoordinates}
             />
-            
+
             {/* ===== AI REASONING PANEL ===== */}
             <AIReasoningPanel
               reasoning={aiReasoning || null}
@@ -351,7 +349,7 @@ export default function GameContainer({
                   resources={currentPlayer.resources}
                   isCompact={true}
                 />
-                
+
                 {/* Game Event Log */}
                 <GameEventLog
                   events={gameState.eventLog}
@@ -382,14 +380,14 @@ export default function GameContainer({
                     setShowQuickActions(!showQuickActions);
                   }}
                   className={`w-14 h-14 rounded-full shadow-lg transition-all flex items-center justify-center text-2xl
-                             ${showQuickActions 
-                               ? 'bg-neon-cyan text-black rotate-45' 
-                               : 'bg-slate-800 text-white border border-neon-cyan/50 hover:bg-slate-700'}`}
+                             ${showQuickActions
+                      ? 'bg-neon-cyan text-black rotate-45'
+                      : 'bg-slate-800 text-white border border-neon-cyan/50 hover:bg-slate-700'}`}
                   title="Quick Actions (Q)"
                 >
                   +
                 </button>
-                
+
                 {/* Expanded Quick Actions */}
                 {showQuickActions && (
                   <div className="flex flex-col gap-2 animate-in slide-in-from-bottom duration-200">
@@ -406,7 +404,7 @@ export default function GameContainer({
                     >
                       💰
                     </button>
-                    
+
                     {/* Build Ship */}
                     <button
                       onClick={() => {
@@ -421,7 +419,7 @@ export default function GameContainer({
                     >
                       🔨
                     </button>
-                    
+
                     {/* View Stats */}
                     <button
                       onClick={() => {
@@ -517,7 +515,7 @@ export default function GameContainer({
               </button>
             )}
           </div>
-          
+
           {/* Keyboard Shortcuts Hint */}
           <div className="hidden sm:flex justify-center gap-4 py-1 bg-slate-900/50 text-xs text-gray-500">
             <span><kbd className="bg-slate-700 px-1 rounded">E</kbd> End Turn</span>
@@ -530,7 +528,7 @@ export default function GameContainer({
 
         {/* ===== PRACTICE MODE TUTORIAL ===== */}
         {showTutorial && isPracticeMode && (
-          <PracticeTutorial 
+          <PracticeTutorial
             step={tutorialStep}
             onNext={() => setTutorialStep(s => s + 1)}
             onSkip={() => setShowTutorial(false)}
@@ -542,11 +540,11 @@ export default function GameContainer({
         {menuOpen && (
           <div className="fixed inset-0 z-50 flex">
             {/* Backdrop */}
-            <div 
+            <div
               className="absolute inset-0 bg-black/60 backdrop-blur-sm"
               onClick={() => setMenuOpen(false)}
             />
-            
+
             {/* Panel */}
             <div className="relative ml-auto w-full max-w-md bg-slate-900 border-l border-neon-cyan/30 
                             overflow-y-auto animate-in slide-in-from-right duration-300">
@@ -573,11 +571,10 @@ export default function GameContainer({
                         setMenuOpen(false);
                       }
                     }}
-                    className={`flex-1 py-3 text-sm font-bold transition-all ${
-                      activeTab === tab
+                    className={`flex-1 py-3 text-sm font-bold transition-all ${activeTab === tab
                         ? 'text-neon-cyan border-b-2 border-neon-cyan bg-slate-800/50'
                         : 'text-gray-400 hover:text-white'
-                    }`}
+                      }`}
                   >
                     {tab === 'stats' && '📊 Stats'}
                     {tab === 'actions' && '⚔️ Actions'}
@@ -627,7 +624,7 @@ export default function GameContainer({
                       onClearJoinError={onClearJoinError}
                       selectedShipId={selectedShipId || undefined}
                       onShipSelect={onShipSelect}
-                      onScanCoordinate={async () => {}}
+                      onScanCoordinate={async () => { }}
                       decisionTimeMs={decisionTimeMs}
                       scanChargesRemaining={scanChargesRemaining}
                       speedBonusAccumulated={speedBonusAccumulated}
@@ -654,7 +651,7 @@ export default function GameContainer({
 
   // Pre-game / Waiting state - Show placeholder with controls
   return (
-    <GamePlaceholder 
+    <GamePlaceholder
       onPracticeMode={onPracticeMode}
       onOpenLeaderboard={onOpenLeaderboard}
     />
@@ -700,7 +697,7 @@ function GamePlaceholder({ onPracticeMode, onOpenLeaderboard }: GamePlaceholderP
             <span className="text-xl mr-2">⚔️</span>
             Play Now (Free)
           </button>
-          
+
           <button
             onClick={onOpenLeaderboard}
             className="bg-slate-700 text-white font-bold py-4 px-8 rounded-xl 
@@ -759,7 +756,7 @@ const TUTORIAL_STEPS = [
   {
     title: "Your Ship 🚢",
     content: "Tap your ship (cyan border) to select it, then tap a cell to move.",
-    icon: "🚢", 
+    icon: "🚢",
     tip: "Ships can move based on their speed stat each turn."
   },
   {
@@ -825,7 +822,7 @@ function Tooltip({ children, content, position = 'top' }: TooltipProps) {
 function PracticeTutorial({ step, onNext, onSkip, onComplete }: PracticeTutorialProps) {
   const currentStep = TUTORIAL_STEPS[step];
   const isLastStep = step >= TUTORIAL_STEPS.length - 1;
-  
+
   if (!currentStep) {
     onComplete();
     return null;
@@ -835,7 +832,7 @@ function PracticeTutorial({ step, onNext, onSkip, onComplete }: PracticeTutorial
     <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
       {/* Backdrop */}
       <div className="absolute inset-0 bg-black/70 backdrop-blur-sm" />
-      
+
       {/* Tutorial Card */}
       <div className="relative bg-gradient-to-br from-slate-800 to-slate-900 rounded-2xl 
                       border-2 border-neon-cyan/50 p-6 max-w-sm w-full shadow-2xl
@@ -843,36 +840,35 @@ function PracticeTutorial({ step, onNext, onSkip, onComplete }: PracticeTutorial
         {/* Step indicator */}
         <div className="flex justify-center gap-1 mb-4">
           {TUTORIAL_STEPS.map((_, i) => (
-            <div 
+            <div
               key={i}
-              className={`w-2 h-2 rounded-full transition-all ${
-                i === step ? 'bg-neon-cyan w-6' : 
-                i < step ? 'bg-neon-cyan/50' : 'bg-slate-600'
-              }`}
+              className={`w-2 h-2 rounded-full transition-all ${i === step ? 'bg-neon-cyan w-6' :
+                  i < step ? 'bg-neon-cyan/50' : 'bg-slate-600'
+                }`}
             />
           ))}
         </div>
-        
+
         {/* Icon */}
         <div className="text-5xl text-center mb-4">{currentStep.icon}</div>
-        
+
         {/* Title */}
         <h3 className="text-xl font-bold text-neon-cyan text-center mb-2">
           {currentStep.title}
         </h3>
-        
+
         {/* Content */}
         <p className="text-gray-300 text-center mb-3">
           {currentStep.content}
         </p>
-        
+
         {/* Tip */}
         <div className="bg-slate-700/50 rounded-lg px-3 py-2 mb-6">
           <p className="text-sm text-neon-gold text-center">
             💡 {currentStep.tip}
           </p>
         </div>
-        
+
         {/* Buttons */}
         <div className="flex gap-3">
           <button

@@ -1,6 +1,6 @@
-"use client";
+'use client';
 
-import React, { useMemo } from "react";
+import React, { useMemo, useEffect, useState } from "react";
 // @ts-ignore: Exports from @solana/wallet-adapter-react are not resolving correctly in TS
 import { ConnectionProvider, WalletProvider } from "@solana/wallet-adapter-react";
 import { WalletModalProvider } from "@solana/wallet-adapter-react-ui";
@@ -15,6 +15,13 @@ export function WalletContextProvider({
 }: {
   children: React.ReactNode;
 }) {
+  const [isClient, setIsClient] = useState(false);
+
+  // Ensure we're on the client side before initializing wallets
+  useEffect(() => {
+    setIsClient(true);
+  }, []);
+
   // Use Helius RPC if available, otherwise fall back to default
   const endpoint = useMemo(() => {
     return process.env.NEXT_PUBLIC_HELIUS_RPC_URL || clusterApiUrl("devnet");
@@ -31,17 +38,33 @@ export function WalletContextProvider({
   const onError = (error: Error) => {
     console.error("Wallet connection error:", error);
     // Don't throw, just log - allows app to continue
+    // Suppress ethereum provider conflicts in AI vs AI mode
+    if (error.message.includes('ethereum') || error.message.includes('provider')) {
+      console.warn("Ethereum provider conflict detected - continuing without wallet");
+      return;
+    }
   };
 
-  return (
-    <ConnectionProvider endpoint={endpoint}>
-      <WalletProvider 
-        wallets={wallets} 
-        autoConnect={false}
-        onError={onError}
-      >
-        <WalletModalProvider>{children}</WalletModalProvider>
-      </WalletProvider>
-    </ConnectionProvider>
-  );
+  // Prevent SSR issues and ethereum provider conflicts
+  if (!isClient) {
+    return <div>{children}</div>;
+  }
+
+  // Wrap in try-catch to prevent provider conflicts from crashing the app
+  try {
+    return (
+      <ConnectionProvider endpoint={endpoint}>
+        <WalletProvider
+          wallets={wallets}
+          autoConnect={false}
+          onError={onError}
+        >
+          <WalletModalProvider>{children}</WalletModalProvider>
+        </WalletProvider>
+      </ConnectionProvider>
+    );
+  } catch (error) {
+    console.warn("Wallet provider initialization failed, continuing without wallet support:", error);
+    return <div>{children}</div>;
+  }
 }

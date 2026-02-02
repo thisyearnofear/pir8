@@ -161,7 +161,7 @@ export class PirateGameManager {
    */
   static createStartingFleet(playerId: string, startingPosition: Coordinate): Ship[] {
     const { initializeShipAbility } = require('./shipAbilities');
-    
+
     // Create starting fleet: 1 sloop (scout) + 1 frigate (combat)
     return [
       {
@@ -210,11 +210,16 @@ export class PirateGameManager {
         player.publicKey,
         startingPositions[index]?.[0] || { x: 0, y: 0 }
       ),
-      controlledTerritories: [],
-      totalScore: 0,
+      controlledTerritories: player.controlledTerritories || [],
+      totalScore: player.totalScore || 0,
       isActive: true,
-      consecutiveAttacks: 0,
-      lastActionWasAttack: false,
+      consecutiveAttacks: player.consecutiveAttacks || 0,
+      lastActionWasAttack: player.lastActionWasAttack || false,
+      scannedCoordinates: player.scannedCoordinates || [],
+      scanCharges: player.scanCharges || 3,
+      speedBonusAccumulated: player.speedBonusAccumulated || 0,
+      averageDecisionTimeMs: player.averageDecisionTimeMs || 0,
+      totalMoves: player.totalMoves || 0,
     }));
 
     return {
@@ -298,136 +303,136 @@ export class PirateGameManager {
   /**
    * Process ship movement
    */
-   static processShipMovementAction(
-     gameState: GameState,
-     action: GameAction
-   ): { updatedGameState: GameState; success: boolean; message: string } {
-     const { data, player } = action;
-     const { shipId, toCoordinate } = data;
+  static processShipMovementAction(
+    gameState: GameState,
+    action: GameAction
+  ): { updatedGameState: GameState; success: boolean; message: string } {
+    const { data, player } = action;
+    const { shipId, toCoordinate } = data;
 
-     if (!shipId || !toCoordinate) {
-       return {
-         updatedGameState: gameState,
-         success: false,
-         message: 'Missing ship ID or destination'
-       };
-     }
+    if (!shipId || !toCoordinate) {
+      return {
+        updatedGameState: gameState,
+        success: false,
+        message: 'Missing ship ID or destination'
+      };
+    }
 
-     const playerIndex = gameState.players.findIndex(p => p.publicKey === player);
-     if (playerIndex === -1) {
-       return {
-         updatedGameState: gameState,
-         success: false,
-         message: 'Player not found'
-       };
-     }
-     const currentPlayer = gameState.players[playerIndex];
-     if (!currentPlayer) {
-       return {
-         updatedGameState: gameState,
-         success: false,
-         message: 'Current player not found'
-       };
-     }
-     const ship = currentPlayer.ships.find(s => s.id === shipId);
+    const playerIndex = gameState.players.findIndex(p => p.publicKey === player);
+    if (playerIndex === -1) {
+      return {
+        updatedGameState: gameState,
+        success: false,
+        message: 'Player not found'
+      };
+    }
+    const currentPlayer = gameState.players[playerIndex];
+    if (!currentPlayer) {
+      return {
+        updatedGameState: gameState,
+        success: false,
+        message: 'Current player not found'
+      };
+    }
+    const ship = currentPlayer.ships.find(s => s.id === shipId);
 
-     if (!ship) {
-       return {
-         updatedGameState: gameState,
-         success: false,
-         message: 'Ship not found'
-       };
-     }
+    if (!ship) {
+      return {
+        updatedGameState: gameState,
+        success: false,
+        message: 'Ship not found'
+      };
+    }
 
-     const toPosition = this.stringToCoordinate(toCoordinate);
-     // NOTE: Game logic moved to smart contract - this is now just for local UI feedback
-     // const moveResult = PirateGameEngine.processShipMovement(ship, toPosition, gameState.gameMap);
+    const toPosition = this.stringToCoordinate(toCoordinate);
+    // NOTE: Game logic moved to smart contract - this is now just for local UI feedback
+    // const moveResult = PirateGameEngine.processShipMovement(ship, toPosition, gameState.gameMap);
 
-     // For now, assume move is valid (smart contract will validate)
-     // CRITICAL: Create new position object with new reference for React to detect change
-     const moveResult = {
-       success: true,
-       updatedShip: { ...ship, position: { x: toPosition.x, y: toPosition.y } },
-       message: 'Movement processed'
-     };
+    // For now, assume move is valid (smart contract will validate)
+    // CRITICAL: Create new position object with new reference for React to detect change
+    const moveResult = {
+      success: true,
+      updatedShip: { ...ship, position: { x: toPosition.x, y: toPosition.y } },
+      message: 'Movement processed'
+    };
 
-     if (!moveResult.success) {
-       return {
-         updatedGameState: gameState,
-         success: false,
-         message: 'Movement failed'
-       };
-     }
+    if (!moveResult.success) {
+      return {
+        updatedGameState: gameState,
+        success: false,
+        message: 'Movement failed'
+      };
+    }
 
-     // Update game state with new ship position
-     // CRITICAL: Create completely new ship objects with new position references for React
-     const updatedPlayers = [...gameState.players];
-     if (!currentPlayer) {
-       return {
-         updatedGameState: gameState,
-         success: false,
-         message: 'Current player not found'
-       };
-     }
-     const updatedShips = currentPlayer.ships.map(s =>
-       s.id === shipId ? { ...moveResult.updatedShip!, position: { ...moveResult.updatedShip!.position } } : { ...s, position: { ...s.position } }
-     );
-     updatedPlayers[playerIndex] = {
-       ...currentPlayer,
-       ships: updatedShips,
-       publicKey: currentPlayer.publicKey,
-       // Reset momentum on non-attack actions
-       consecutiveAttacks: 0,
-       lastActionWasAttack: false,
-     };
+    // Update game state with new ship position
+    // CRITICAL: Create completely new ship objects with new position references for React
+    const updatedPlayers = [...gameState.players];
+    if (!currentPlayer) {
+      return {
+        updatedGameState: gameState,
+        success: false,
+        message: 'Current player not found'
+      };
+    }
+    const updatedShips = currentPlayer.ships.map(s =>
+      s.id === shipId ? { ...moveResult.updatedShip!, position: { ...moveResult.updatedShip!.position } } : { ...s, position: { ...s.position } }
+    );
+    updatedPlayers[playerIndex] = {
+      ...currentPlayer,
+      ships: updatedShips,
+      publicKey: currentPlayer.publicKey,
+      // Reset momentum on non-attack actions
+      consecutiveAttacks: 0,
+      lastActionWasAttack: false,
+    };
 
-     // Add event to log
-     const moveEvent: GameEvent = {
-       id: `event_${Date.now()}`,
-       type: 'ship_moved',
-       playerId: player,
-       turnNumber: gameState.turnNumber,
-       timestamp: Date.now(),
-       description: `${moveResult.updatedShip!.type} moved to ${toCoordinate}`,
-       data: { shipId, from: this.coordinateToString(ship.position), to: toCoordinate }
-     };
+    // Add event to log
+    const moveEvent: GameEvent = {
+      id: `event_${Date.now()}`,
+      type: 'ship_moved',
+      playerId: player,
+      turnNumber: gameState.turnNumber,
+      timestamp: Date.now(),
+      description: `${moveResult.updatedShip!.type} moved to ${toCoordinate}`,
+      data: { shipId, from: this.coordinateToString(ship.position), to: toCoordinate }
+    };
 
-     const updatedGameState = {
-       ...gameState,
-       players: updatedPlayers,
-       eventLog: [...gameState.eventLog, moveEvent].slice(-10),
-     };
+    const updatedGameState = {
+      ...gameState,
+      players: updatedPlayers,
+      eventLog: [...gameState.eventLog, moveEvent].slice(-10),
+    };
 
-     return {
-       updatedGameState,
-       success: true,
-       message: moveResult.message
-     };
-   }
+    return {
+      updatedGameState,
+      success: true,
+      message: moveResult.message
+    };
+  }
 
   /**
     * Advance to next player's turn
     * ENHANCEMENT: Tick ability cooldowns, effects, and regenerate scan charges
     */
-   static advanceTurn(gameState: GameState): GameState {
-     const { tickAbilityCooldown, tickShipEffects } = require('./shipAbilities');
+  static advanceTurn(gameState: GameState): GameState {
+    const { tickAbilityCooldown, tickShipEffects } = require('./shipAbilities');
 
-     const MAX_SCAN_CHARGES = 5; // Max scan charges per player
+    const MAX_SCAN_CHARGES = 5; // Max scan charges per player
 
-     // ENHANCEMENT: Update all ships' abilities and effects, regenerate scan charges
-     const updatedPlayers = gameState.players.map(player => ({
-       ...player,
-       // Regenerate 1 scan charge per turn (up to max)
-       scanCharges: Math.min((player.scanCharges || 0) + 1, MAX_SCAN_CHARGES),
-       // Reset momentum when turn changes to new player
-       consecutiveAttacks: 0,
-       lastActionWasAttack: false,
-       ships: player.ships.map(ship => {
-         let updated = tickAbilityCooldown(ship);
-         updated = tickShipEffects(updated);
-         return updated;
-       })
-     }));
+    // ENHANCEMENT: Update all ships' abilities and effects, regenerate scan charges
+    const updatedPlayers = gameState.players.map(player => ({
+      ...player,
+      // Regenerate 1 scan charge per turn (up to max)
+      scanCharges: Math.min((player.scanCharges || 0) + 1, MAX_SCAN_CHARGES),
+      // Reset momentum when turn changes to new player
+      consecutiveAttacks: 0,
+      lastActionWasAttack: false,
+      ships: player.ships.map(ship => {
+        let updated = tickAbilityCooldown(ship);
+        updated = tickShipEffects(updated);
+        return updated;
+      })
+    }));
 
     let nextPlayerIndex = (gameState.currentPlayerIndex + 1) % updatedPlayers.length;
     let turnNumber = gameState.turnNumber;
@@ -520,7 +525,7 @@ export class PirateGameManager {
     updatedGameState: GameState;
   } {
     const MAX_TURNS = 50; // Prevent infinite games - was 100
-    const activePlayers = gameState.players.filter(p => 
+    const activePlayers = gameState.players.filter(p =>
       p.isActive && p.ships.some(s => s.health > 0)
     );
 
@@ -558,10 +563,10 @@ export class PirateGameManager {
 
     // Victory Condition 4: Dominant victory (75%+ territories)
     const totalTerritories = gameState.players.reduce(
-      (sum, p) => sum + p.controlledTerritories.length, 
+      (sum, p) => sum + p.controlledTerritories.length,
       0
     );
-    
+
     if (totalTerritories > 0) {
       for (const player of gameState.players) {
         const territoryPercent = player.controlledTerritories.length / totalTerritories;
@@ -595,8 +600,8 @@ export class PirateGameManager {
       const totalShipHealth = player.ships.reduce((sum, s) => sum + s.health, 0);
       const territories = player.controlledTerritories.length;
       const resources = player.resources.gold +
-                       player.resources.crew * 2 +
-                       player.resources.cannons * 5;
+        player.resources.crew * 2 +
+        player.resources.cannons * 5;
 
       // Weighted scoring system
       let score =
@@ -813,8 +818,8 @@ export class PirateGameManager {
 
     // NOTE: Territory logic moved to smart contract
     // const claimResult = PirateGameEngine.processTerritoryClaim(player, toCoordinate, gameState.gameMap);
-    const claimResult = { 
-      success: true, 
+    const claimResult = {
+      success: true,
       message: 'Territory claimed',
       updatedMap: gameState.gameMap // Fallback to current map
     };
@@ -831,7 +836,7 @@ export class PirateGameManager {
     const updatedPlayers = [...gameState.players];
     const targetPlayer = updatedPlayers[playerIndex];
     if (!targetPlayer) {
-        return { updatedGameState: gameState, success: false, message: 'Player not found' };
+      return { updatedGameState: gameState, success: false, message: 'Player not found' };
     }
 
     updatedPlayers[playerIndex] = {
@@ -1212,7 +1217,7 @@ export class PirateGameManager {
    * Create an AI player for practice mode
    * ENHANCEMENT: Store difficulty in publicKey for proper AI behavior
    */
-   static createAIPlayer(_gameId: string, difficulty: 'novice' | 'pirate' | 'captain' | 'admiral' = 'pirate'): Player {
+  static createAIPlayer(_gameId: string, difficulty: 'novice' | 'pirate' | 'captain' | 'admiral' = 'pirate'): Player {
     const aiNames = ['Blackbeard', 'Calico Jack', 'Anne Bonny', 'Bartholomew', 'Mary Read'];
     const randomName = aiNames[Math.floor(Math.random() * aiNames.length)];
 
@@ -1252,14 +1257,14 @@ export class PirateGameManager {
     const startTime = Date.now();
     const difficulty = this.getAIDifficulty(aiPlayer);
     const debugMode = typeof window !== 'undefined' && (window as any).PIR8_DEBUG_AI === true;
-    
+
     if (debugMode) {
       console.log(`🤖 AI Turn: ${difficulty.debugName} evaluating options...`);
     }
 
     // Evaluate game state for strategic decisions
     const gameAnalysis = this.analyzeGameState(gameState, aiPlayer);
-    
+
     // Collect all options with scores and reasoning
     const optionsConsidered: AIOption[] = [];
 
@@ -1328,8 +1333,8 @@ export class PirateGameManager {
       gameAnalysis,
       difficulty: {
         level: difficultyName.includes('Novice') ? 'novice' :
-               difficultyName.includes('Admiral') ? 'admiral' :
-               difficultyName.includes('Captain') ? 'captain' : 'pirate',
+          difficultyName.includes('Admiral') ? 'admiral' :
+            difficultyName.includes('Captain') ? 'captain' : 'pirate',
         name: difficultyName,
         aggressiveness: difficulty.aggressiveness,
       },
@@ -1394,14 +1399,14 @@ export class PirateGameManager {
     const activePlayers = gameState.players.filter(p => p.isActive);
     const totalTerritories = activePlayers.reduce((sum, p) => sum + p.controlledTerritories.length, 0);
     const totalShips = activePlayers.reduce((sum, p) => sum + p.ships.filter(s => s.health > 0).length, 0);
-    
+
     const myTerritories = aiPlayer.controlledTerritories.length;
     const myShips = aiPlayer.ships.filter(s => s.health > 0).length;
     const myResources = aiPlayer.resources.gold + aiPlayer.resources.crew + aiPlayer.resources.cannons;
-    
+
     const avgTerritories = totalTerritories / activePlayers.length;
     const avgShips = totalShips / activePlayers.length;
-    const avgResources = activePlayers.reduce((sum, p) => 
+    const avgResources = activePlayers.reduce((sum, p) =>
       sum + p.resources.gold + p.resources.crew + p.resources.cannons, 0
     ) / activePlayers.length;
 
@@ -1435,41 +1440,41 @@ export class PirateGameManager {
 
     const configs = {
       // Novice: Always acts when action available (100%), defensive
-      novice: { 
-        claimChance: 1.0, 
-        attackChance: 0.4, 
-        moveChance: 1.0, 
-        buildChance: 0.3, 
+      novice: {
+        claimChance: 1.0,
+        attackChance: 0.4,
+        moveChance: 1.0,
+        buildChance: 0.3,
         planningDepth: 1,
         aggressiveness: 0.3,
         debugName: '🐣 Novice'
       },
       // Pirate: Always acts (100%), balanced
-      pirate: { 
-        claimChance: 1.0, 
-        attackChance: 0.7, 
-        moveChance: 1.0, 
-        buildChance: 0.5, 
+      pirate: {
+        claimChance: 1.0,
+        attackChance: 0.7,
+        moveChance: 1.0,
+        buildChance: 0.5,
         planningDepth: 2,
         aggressiveness: 0.6,
         debugName: '⚔️ Pirate'
       },
       // Captain: Always acts, strategic with occasional variation
-      captain: { 
-        claimChance: 1.0, 
-        attackChance: 0.85, 
-        moveChance: 1.0, 
-        buildChance: 0.7, 
+      captain: {
+        claimChance: 1.0,
+        attackChance: 0.85,
+        moveChance: 1.0,
+        buildChance: 0.7,
         planningDepth: 3,
         aggressiveness: 0.75,
         debugName: '🏴‍☠️ Captain'
       },
       // Admiral: Uses randomness for unpredictability
-      admiral: { 
-        claimChance: 0.95, 
-        attackChance: 0.9, 
-        moveChance: 0.95, 
-        buildChance: 0.8, 
+      admiral: {
+        claimChance: 0.95,
+        attackChance: 0.9,
+        moveChance: 0.95,
+        buildChance: 0.8,
         planningDepth: 4,
         aggressiveness: 0.9,
         debugName: '👑 Admiral'
@@ -1490,16 +1495,16 @@ export class PirateGameManager {
     // Extract details from the action
     const { shipId, toCoordinate } = result.data;
     if (!toCoordinate) return null;
-    
+
     const ship = aiPlayer.ships.find(s => s.id === shipId);
     if (!ship) return null;
 
     const coord = this.stringToCoordinate(toCoordinate);
     const territory = gameState.gameMap.cells[coord.x]?.[coord.y];
-    
+
     let score = 70;
     let reason = 'Claiming territory';
-    
+
     if (territory) {
       if (territory.type === 'treasure') {
         score = 100;
@@ -1528,15 +1533,15 @@ export class PirateGameManager {
    */
   private static findBestTerritoryClaim(gameState: GameState, aiPlayer: Player): GameAction | null {
     const activeShips = aiPlayer.ships.filter(s => s.health > 0);
-    
+
     for (const ship of activeShips) {
       const coord = this.coordinateToString(ship.position);
       const territory = gameState.gameMap.cells[ship.position.x]?.[ship.position.y];
-      
+
       // Check if territory is claimable and valuable
-      if (territory && 
-          (territory.type === 'treasure' || territory.type === 'port' || territory.type === 'island') &&
-          territory.owner !== aiPlayer.publicKey) {
+      if (territory &&
+        (territory.type === 'treasure' || territory.type === 'port' || territory.type === 'island') &&
+        territory.owner !== aiPlayer.publicKey) {
         return {
           id: `ai_action_${Date.now()}`,
           gameId: gameState.gameId,
@@ -1571,7 +1576,7 @@ export class PirateGameManager {
   /**
    * Find best attack with score and reasoning
    */
-    private static findBestAttackWithScore(gameState: GameState, aiPlayer: Player, gameAnalysis: any): { shipId: string; targetShipId: string; score: number; reason: string } | null {
+  private static findBestAttackWithScore(gameState: GameState, aiPlayer: Player, gameAnalysis: any): { shipId: string; targetShipId: string; score: number; reason: string } | null {
     const activeShips = aiPlayer.ships.filter(s => s.health > 0);
     let bestAttack: { shipId: string; targetShipId: string; score: number; reason: string } | null = null;
 
@@ -1583,7 +1588,7 @@ export class PirateGameManager {
 
         for (const enemyShip of enemy.ships.filter(s => s.health > 0)) {
           const manhattanDist = Math.abs(ship.position.x - enemyShip.position.x) +
-                                Math.abs(ship.position.y - enemyShip.position.y);
+            Math.abs(ship.position.y - enemyShip.position.y);
 
           if (manhattanDist <= 1) {
             let score = 100;
@@ -1669,7 +1674,7 @@ export class PirateGameManager {
       }
     }
     if (!ship) return null;
-    
+
     const speed = ship.speed;
     let bestTarget: { x: number; y: number } | null = null;
     let bestScore = -Infinity;
@@ -1689,7 +1694,7 @@ export class PirateGameManager {
 
         let score = 0;
         let reason = '';
-        
+
         if (territory.type === 'treasure') {
           score = 100;
           reason = 'Move toward treasure';
@@ -1711,14 +1716,14 @@ export class PirateGameManager {
           score += 30;
           reason = 'Claim unclaimed territory';
         }
-        
+
         score -= manhattanDist * 3;
-        
+
         if (gameAnalysis.isLosing && (territory.type === 'treasure' || territory.type === 'port')) {
           score += 25;
           reason = 'Desperate push for valuable tile';
         }
-        
+
         if (gameAnalysis.isWinning && (territory.type === 'storm' || territory.type === 'whirlpool')) {
           score -= 50;
         }
@@ -1761,9 +1766,9 @@ export class PirateGameManager {
   private static isPositionOccupied(gameState: GameState, position: Coordinate): boolean {
     for (const player of gameState.players) {
       for (const ship of player.ships) {
-        if (ship.health > 0 && 
-            ship.position.x === position.x && 
-            ship.position.y === position.y) {
+        if (ship.health > 0 &&
+          ship.position.x === position.x &&
+          ship.position.y === position.y) {
           return true;
         }
       }
@@ -1796,7 +1801,7 @@ export class PirateGameManager {
     if (activeShips.length >= GAME_CONFIG.MAX_SHIPS_PER_PLAYER) return null;
 
     const shipTypes: ShipType[] = ['flagship', 'galleon', 'frigate', 'sloop'];
-    
+
     for (const shipType of shipTypes) {
       const costs = this.getShipBuildingCosts(shipType);
       const canAfford = Object.entries(costs).every(([resource, cost]) =>
@@ -1809,7 +1814,7 @@ export class PirateGameManager {
           const x = coords[0];
           const y = coords[1];
           if (x === undefined || y === undefined) continue;
-          
+
           const port = gameState.gameMap.cells[x]?.[y];
           if (port?.type === 'port') {
             const adjacent: Coordinate[] = [
@@ -1821,7 +1826,7 @@ export class PirateGameManager {
               if (cell?.type === 'water') {
                 let score = 60;
                 let reason = `Build ${shipType}`;
-                
+
                 if (shipType === 'flagship') {
                   score = 90;
                   reason = 'Build powerful flagship';
@@ -1835,7 +1840,7 @@ export class PirateGameManager {
                   score = 60;
                   reason = 'Build fast sloop';
                 }
-                
+
                 return {
                   shipType,
                   toCoordinate: this.coordinateToString(pos),
@@ -1860,7 +1865,7 @@ export class PirateGameManager {
   static createPracticeGame(humanPlayer: Player, aiDifficulty: 'novice' | 'pirate' | 'captain' | 'admiral' = 'pirate'): GameState {
     const aiPlayer = this.createAIPlayer('practice', aiDifficulty);
     const gameState = this.createNewGame([humanPlayer, aiPlayer], `practice_${Date.now()}`);
-    
+
     // Mark as practice mode
     return {
       ...gameState,
@@ -1881,7 +1886,7 @@ export class PirateGameManager {
     const debugMode = typeof window !== 'undefined' && (window as any).PIR8_DEBUG_AI === true;
 
     const aiAction = this.generateAIMove(gameState, currentPlayer);
-    
+
     if (aiAction) {
       const result = this.processTurnAction(gameState, aiAction);
       if (result.success) {

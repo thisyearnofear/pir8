@@ -55,10 +55,10 @@ export const AIReasoningPanel: React.FC<AIReasoningPanelProps> = ({
     return null;
   }
 
-  const { optionsConsidered = [], chosenOption, gameAnalysis, difficulty, thinkingTime } = reasoning;
+  const { optionsConsidered = [], chosenOption, gameAnalysis, difficulty, thinkingTime } = reasoning || {};
 
   // Sort options by score (highest first)
-  const sortedOptions = [...(optionsConsidered || [])].sort((a, b) => b.score - a.score);
+  const sortedOptions = [...(optionsConsidered || [])].sort((a, b) => (b.score || 0) - (a.score || 0));
   const discardedOptions = sortedOptions.filter(
     (opt) => opt.target !== chosenOption?.target || opt.type !== chosenOption?.type
   );
@@ -66,7 +66,7 @@ export const AIReasoningPanel: React.FC<AIReasoningPanelProps> = ({
   // Mini panel version (default, non-blocking)
   if (!isExpanded) {
     return (
-      <div 
+      <div
         className="ai-reasoning-panel-mini fixed left-4 top-32 w-72 bg-slate-900/95 border-2 border-amber-600 rounded-lg shadow-2xl z-40 cursor-pointer hover:border-amber-400 hover:scale-[1.02] transition-all group"
         onClick={(e) => {
           e.stopPropagation();
@@ -120,7 +120,7 @@ export const AIReasoningPanel: React.FC<AIReasoningPanelProps> = ({
           )}
 
           <div className="text-xs text-center pt-2 border-t border-slate-700 text-amber-400/80 group-hover:text-amber-300 transition-colors">
-            {(optionsConsidered || []).length > 1 
+            {(optionsConsidered || []).length > 1
               ? `Evaluated ${(optionsConsidered || []).length} options — tap for full analysis ↗`
               : 'Tap anywhere to see full analysis ↗'}
           </div>
@@ -133,138 +133,137 @@ export const AIReasoningPanel: React.FC<AIReasoningPanelProps> = ({
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm animate-fade-in">
       <div className="ai-reasoning-panel fixed right-4 top-20 w-96 max-h-[80vh] overflow-y-auto bg-slate-900/95 border-2 border-amber-600 rounded-lg shadow-2xl animate-in slide-in-from-right duration-300">
-      {/* Header */}
-      <div className="panel-header bg-gradient-to-r from-amber-900 to-slate-900 p-4 border-b border-amber-600">
-        <div className="flex items-center justify-between">
-          <div className="flex items-center gap-2">
-            <span className="text-2xl">🧠</span>
-            <h3 className="text-amber-400 font-bold text-lg font-pirate">
-              {showHints ? "AI Strategy Hint" : "AI Thought Stream"}
-            </h3>
-          </div>
-          <div className="flex items-center gap-2">
-            <button
-              onClick={() => setIsExpanded(false)}
-              className="text-slate-400 hover:text-amber-400 transition-colors text-sm bg-slate-800 px-2 py-1 rounded"
-              aria-label="Minimize panel"
-            >
-              Minimize
-            </button>
-            {onClose && (
+        {/* Header */}
+        <div className="panel-header bg-gradient-to-r from-amber-900 to-slate-900 p-4 border-b border-amber-600">
+          <div className="flex items-center justify-between">
+            <div className="flex items-center gap-2">
+              <span className="text-2xl">🧠</span>
+              <h3 className="text-amber-400 font-bold text-lg font-pirate">
+                {showHints ? "AI Strategy Hint" : "AI Thought Stream"}
+              </h3>
+            </div>
+            <div className="flex items-center gap-2">
               <button
-                onClick={onClose}
-                className="text-slate-400 hover:text-amber-400 transition-colors"
-                aria-label="Close panel"
+                onClick={() => setIsExpanded(false)}
+                className="text-slate-400 hover:text-amber-400 transition-colors text-sm bg-slate-800 px-2 py-1 rounded"
+                aria-label="Minimize panel"
               >
-                ✕
+                Minimize
               </button>
-            )}
+              {onClose && (
+                <button
+                  onClick={onClose}
+                  className="text-slate-400 hover:text-amber-400 transition-colors"
+                  aria-label="Close panel"
+                >
+                  ✕
+                </button>
+              )}
+            </div>
+          </div>
+          <div className="flex items-center gap-2 mt-2">
+            <span className="text-xs text-slate-400">Difficulty:</span>
+            <span className="text-xs text-amber-300 font-semibold">{difficulty.name}</span>
+            <span className="text-xs text-slate-500">|</span>
+            <span className="text-xs text-slate-400">Aggression:</span>
+            <div className="w-16 h-2 bg-slate-700 rounded-full overflow-hidden">
+              <div
+                className="h-full bg-red-500 transition-all duration-500"
+                style={{ width: `${difficulty.aggressiveness * 100}%` }}
+              />
+            </div>
           </div>
         </div>
-        <div className="flex items-center gap-2 mt-2">
-          <span className="text-xs text-slate-400">Difficulty:</span>
-          <span className="text-xs text-amber-300 font-semibold">{difficulty.name}</span>
-          <span className="text-xs text-slate-500">|</span>
-          <span className="text-xs text-slate-400">Aggression:</span>
-          <div className="w-16 h-2 bg-slate-700 rounded-full overflow-hidden">
+
+        {/* Thinking Time Indicator */}
+        <div className="thinking-time p-3 bg-slate-800/50 border-b border-slate-700">
+          <div className="flex items-center justify-between text-sm">
+            <span className="text-slate-400">Thinking Time</span>
+            <span className="text-amber-400 font-mono">{thinkingTime}ms</span>
+          </div>
+          <div className="mt-2 h-1 bg-slate-700 rounded-full overflow-hidden">
             <div
-              className="h-full bg-red-500 transition-all duration-500"
-              style={{ width: `${difficulty.aggressiveness * 100}%` }}
+              className={`h-full transition-all duration-300 ${isThinking ? "bg-amber-500 animate-pulse w-full" : "bg-green-500 w-full"
+                }`}
             />
           </div>
         </div>
-      </div>
 
-      {/* Thinking Time Indicator */}
-      <div className="thinking-time p-3 bg-slate-800/50 border-b border-slate-700">
-        <div className="flex items-center justify-between text-sm">
-          <span className="text-slate-400">Thinking Time</span>
-          <span className="text-amber-400 font-mono">{thinkingTime}ms</span>
-        </div>
-        <div className="mt-2 h-1 bg-slate-700 rounded-full overflow-hidden">
-          <div
-            className={`h-full transition-all duration-300 ${
-              isThinking ? "bg-amber-500 animate-pulse w-full" : "bg-green-500 w-full"
-            }`}
-          />
-        </div>
-      </div>
-
-      {/* Game Analysis */}
-      <div className="game-analysis p-3 bg-slate-800/30 border-b border-slate-700">
-        <h4 className="text-xs uppercase text-slate-500 font-semibold mb-2">Strategic Assessment</h4>
-        <div className="grid grid-cols-2 gap-2 text-xs">
-          <div className={`p-2 rounded ${gameAnalysis.isWinning ? "bg-green-900/30 text-green-400" : "bg-slate-800 text-slate-400"}`}>
-            <span className="block text-slate-500">Status</span>
-            {gameAnalysis.isWinning ? "📈 Winning" : gameAnalysis.isLosing ? "📉 Losing" : "⚖️ Balanced"}
-          </div>
-          <div className="p-2 rounded bg-slate-800 text-slate-400">
-            <span className="block text-slate-500">Territories</span>
-            {gameAnalysis.territoriesControlled} controlled
-          </div>
-          <div className="p-2 rounded bg-slate-800 text-slate-400">
-            <span className="block text-slate-500">Fleet Size</span>
-            {gameAnalysis.totalShips} ships
-          </div>
-          <div className={`p-2 rounded ${gameAnalysis.resourceAdvantage ? "bg-green-900/30 text-green-400" : "bg-slate-800 text-slate-400"}`}>
-            <span className="block text-slate-500">Resources</span>
-            {gameAnalysis.resourceAdvantage ? "💰 Advantage" : "⚖️ Normal"}
+        {/* Game Analysis */}
+        <div className="game-analysis p-3 bg-slate-800/30 border-b border-slate-700">
+          <h4 className="text-xs uppercase text-slate-500 font-semibold mb-2">Strategic Assessment</h4>
+          <div className="grid grid-cols-2 gap-2 text-xs">
+            <div className={`p-2 rounded ${gameAnalysis.isWinning ? "bg-green-900/30 text-green-400" : "bg-slate-800 text-slate-400"}`}>
+              <span className="block text-slate-500">Status</span>
+              {gameAnalysis.isWinning ? "📈 Winning" : gameAnalysis.isLosing ? "📉 Losing" : "⚖️ Balanced"}
+            </div>
+            <div className="p-2 rounded bg-slate-800 text-slate-400">
+              <span className="block text-slate-500">Territories</span>
+              {gameAnalysis.territoriesControlled} controlled
+            </div>
+            <div className="p-2 rounded bg-slate-800 text-slate-400">
+              <span className="block text-slate-500">Fleet Size</span>
+              {gameAnalysis.totalShips} ships
+            </div>
+            <div className={`p-2 rounded ${gameAnalysis.resourceAdvantage ? "bg-green-900/30 text-green-400" : "bg-slate-800 text-slate-400"}`}>
+              <span className="block text-slate-500">Resources</span>
+              {gameAnalysis.resourceAdvantage ? "💰 Advantage" : "⚖️ Normal"}
+            </div>
           </div>
         </div>
-      </div>
 
-      {/* Chosen Action */}
-      {chosenOption && (
-        <div className="chosen-action p-4 bg-gradient-to-r from-green-900/30 to-slate-900 border-b border-green-600/30">
-          <h4 className="text-xs uppercase text-green-500 font-semibold mb-2 flex items-center gap-1">
-            <span>✓</span> Selected Action
-          </h4>
-          <div className="flex items-start gap-3">
-            <div className="action-icon text-2xl">{getActionIcon(chosenOption.type)}</div>
-            <div className="flex-1">
-              <div className="text-green-400 font-semibold capitalize">
-                {formatActionType(chosenOption.type)}
+        {/* Chosen Action */}
+        {chosenOption && (
+          <div className="chosen-action p-4 bg-gradient-to-r from-green-900/30 to-slate-900 border-b border-green-600/30">
+            <h4 className="text-xs uppercase text-green-500 font-semibold mb-2 flex items-center gap-1">
+              <span>✓</span> Selected Action
+            </h4>
+            <div className="flex items-start gap-3">
+              <div className="action-icon text-2xl">{getActionIcon(chosenOption.type)}</div>
+              <div className="flex-1">
+                <div className="text-green-400 font-semibold capitalize">
+                  {formatActionType(chosenOption.type)}
+                </div>
+                <div className="text-sm text-slate-300">{chosenOption.reason}</div>
+                {chosenOption.target && (
+                  <div className="text-xs text-slate-500 mt-1">Target: {chosenOption.target}</div>
+                )}
               </div>
-              <div className="text-sm text-slate-300">{chosenOption.reason}</div>
-              {chosenOption.target && (
-                <div className="text-xs text-slate-500 mt-1">Target: {chosenOption.target}</div>
+              <div className="score-badge">
+                <ScoreBadge score={animatedScore} isChosen />
+              </div>
+            </div>
+          </div>
+        )}
+
+        {/* Discarded Options */}
+        {(discardedOptions || []).length > 0 && (
+          <div className="discarded-options p-4">
+            <h4 className="text-xs uppercase text-slate-500 font-semibold mb-2 flex items-center gap-1">
+              <span>✕</span> Discarded Options
+            </h4>
+            <div className="space-y-2">
+              {(discardedOptions || []).slice(0, 3).map((option, index) => (
+                <DiscardedOptionCard key={`${option.type}-${index}`} option={option} index={index} />
+              ))}
+              {(discardedOptions || []).length > 3 && (
+                <div className="text-xs text-slate-500 text-center py-1">
+                  +{(discardedOptions || []).length - 3} more options considered
+                </div>
               )}
             </div>
-            <div className="score-badge">
-              <ScoreBadge score={animatedScore} isChosen />
-            </div>
           </div>
-        </div>
-      )}
+        )}
 
-      {/* Discarded Options */}
-      {(discardedOptions || []).length > 0 && (
-        <div className="discarded-options p-4">
-          <h4 className="text-xs uppercase text-slate-500 font-semibold mb-2 flex items-center gap-1">
-            <span>✕</span> Discarded Options
-          </h4>
-          <div className="space-y-2">
-            {(discardedOptions || []).slice(0, 3).map((option, index) => (
-              <DiscardedOptionCard key={`${option.type}-${index}`} option={option} index={index} />
-            ))}
-            {(discardedOptions || []).length > 3 && (
-              <div className="text-xs text-slate-500 text-center py-1">
-                +{(discardedOptions || []).length - 3} more options considered
-              </div>
-            )}
-          </div>
+        {/* Educational Footer */}
+        <div className="panel-footer p-3 bg-slate-800/50 border-t border-slate-700 text-xs text-slate-400">
+          <p>
+            {showHints
+              ? "💡 Learning AI: Study these decisions to improve your strategy!"
+              : "🎓 Spectator Mode: Watch how the AI evaluates each move"}
+          </p>
         </div>
-      )}
-
-      {/* Educational Footer */}
-      <div className="panel-footer p-3 bg-slate-800/50 border-t border-slate-700 text-xs text-slate-400">
-        <p>
-          {showHints
-            ? "💡 Learning AI: Study these decisions to improve your strategy!"
-            : "🎓 Spectator Mode: Watch how the AI evaluates each move"}
-        </p>
       </div>
-    </div>
     </div>
   );
 };
@@ -282,9 +281,8 @@ const ScoreBadge: React.FC<{ score: number; isChosen?: boolean }> = ({ score, is
 
   return (
     <div
-      className={`score-badge flex flex-col items-center justify-center w-12 h-12 rounded-full ${
-        isChosen ? "ring-2 ring-green-400 ring-offset-2 ring-offset-slate-900" : ""
-      } ${getScoreColor(score)}`}
+      className={`score-badge flex flex-col items-center justify-center w-12 h-12 rounded-full ${isChosen ? "ring-2 ring-green-400 ring-offset-2 ring-offset-slate-900" : ""
+        } ${getScoreColor(score)}`}
     >
       <span className="text-xs text-white/80">Score</span>
       <span className="text-sm font-bold text-white">{score}</span>
@@ -305,9 +303,8 @@ const DiscardedOptionCard: React.FC<{ option: AIOption; index: number }> = ({ op
 
   return (
     <div
-      className={`discarded-option flex items-center gap-3 p-2 rounded bg-slate-800/50 transition-all duration-300 ${
-        isVisible ? "opacity-100 translate-x-0" : "opacity-0 -translate-x-4"
-      }`}
+      className={`discarded-option flex items-center gap-3 p-2 rounded bg-slate-800/50 transition-all duration-300 ${isVisible ? "opacity-100 translate-x-0" : "opacity-0 -translate-x-4"
+        }`}
     >
       <div className="text-lg opacity-50">{getActionIcon(option.type)}</div>
       <div className="flex-1 min-w-0">

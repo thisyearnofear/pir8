@@ -97,11 +97,11 @@ export default function Home() {
   // Practice mode state
   const [showPracticeMenu, setShowPracticeMenu] = useState(false);
   const [selectedDifficulty, setSelectedDifficulty] = useState<'novice' | 'pirate' | 'captain' | 'admiral'>('pirate');
-  
+
   // AI vs AI mode state
   const [showAIBattleModal, setShowAIBattleModal] = useState(false);
   const [expandedPanel, setExpandedPanel] = useState<'leakage' | 'ai' | null>('ai');
-  
+
   // Spectator mode state
   const [showSpectatorMode, setShowSpectatorMode] = useState(false);
 
@@ -110,7 +110,7 @@ export default function Home() {
 
   // Get current player - moved up before viral system
   const getCurrentPlayer = () => {
-    if (!gameState) return null;
+    if (!gameState?.players) return null;
     // In practice mode, find human player (not AI)
     if (isPracticeMode()) {
       return gameState.players.find((p: any) => !p.publicKey.startsWith('AI_')) || null;
@@ -122,15 +122,15 @@ export default function Home() {
   // Get current player key for turn checking - memoized to prevent recalculations
   const getCurrentPlayerKey = useMemo(() => {
     if (isPracticeMode()) {
-      const humanPlayer = gameState?.players.find((p: any) => !p.publicKey.startsWith('AI_'));
+      const humanPlayer = gameState?.players?.find((p: any) => !p.publicKey.startsWith('AI_'));
       return humanPlayer?.publicKey;
     }
     return publicKey?.toString();
   }, [gameState?.players, publicKey, isPracticeMode]);
 
   // Consolidated viral system (auto-dismiss disabled in practice mode)
-  const viralSystem = useViralSystem(gameState, getCurrentPlayer(), { 
-    disableAutoDismiss: isPracticeMode() 
+  const viralSystem = useViralSystem(gameState, getCurrentPlayer(), {
+    disableAutoDismiss: isPracticeMode()
   });
 
   // Privacy simulation for practice mode
@@ -151,7 +151,7 @@ export default function Home() {
 
   // Get current player name for TurnBanner
   const getCurrentPlayerName = () => {
-    if (!gameState) return 'opponent';
+    if (!gameState?.players) return 'opponent';
     const currentPlayer = gameState.players[gameState.currentPlayerIndex];
     return currentPlayer?.username || currentPlayer?.publicKey?.slice(0, 8) || 'opponent';
   };
@@ -232,7 +232,7 @@ export default function Home() {
       consecutiveAttacks: 0,
       lastActionWasAttack: false,
     };
-    
+
     const success = startPracticeGame(practicePlayer, difficulty);
     if (success) {
       setShowPracticeMenu(false);
@@ -257,7 +257,7 @@ export default function Home() {
   useEffect(() => {
     if (isAIvsAIMode) {
       // Set dummy callback to enable reasoning generation in store
-      setAIDecisionCallback(() => {});
+      setAIDecisionCallback(() => { });
     } else {
       setAIDecisionCallback(null);
     }
@@ -657,20 +657,19 @@ export default function Home() {
               ⚔️ Practice Mode
             </h2>
             <p className="text-gray-300 mb-6">
-              Hone your skills against AI opponents before entering real battles. 
+              Hone your skills against AI opponents before entering real battles.
               No wallet required - just pure strategy!
             </p>
-            
+
             <div className="space-y-3 mb-6">
               {(['novice', 'pirate', 'captain', 'admiral'] as const).map((diff) => (
                 <button
                   key={diff}
                   onClick={() => setSelectedDifficulty(diff)}
-                  className={`w-full p-4 rounded-xl border-2 transition-all text-left ${
-                    selectedDifficulty === diff
-                      ? 'border-neon-cyan bg-neon-cyan/20'
-                      : 'border-slate-600 hover:border-neon-cyan/50'
-                  }`}
+                  className={`w-full p-4 rounded-xl border-2 transition-all text-left ${selectedDifficulty === diff
+                    ? 'border-neon-cyan bg-neon-cyan/20'
+                    : 'border-slate-600 hover:border-neon-cyan/50'
+                    }`}
                 >
                   <div className="flex items-center justify-between">
                     <span className="font-bold capitalize">{diff}</span>
@@ -737,7 +736,7 @@ export default function Home() {
                 Exit
               </button>
             </div>
-            
+
             {/* Status Info */}
             <div className="px-4 py-2 bg-black/20">
               <p className="text-xs text-white/90">
@@ -758,7 +757,7 @@ export default function Home() {
                 See what opponents learn from visible data
               </p>
             </div>
-            
+
             {/* Upgrade Prompt (if not connected) */}
             {!publicKey && (
               <div className="px-4 py-3 bg-black/20 space-y-2 border-t border-white/10">
@@ -912,8 +911,8 @@ export default function Home() {
           {gameState ? (
             <GameContainer
               gameState={gameState}
-              currentPlayerPK={isPracticeMode() 
-                ? gameState.players.find((p: any) => !p.publicKey.startsWith('AI_'))?.publicKey 
+              currentPlayerPK={isPracticeMode()
+                ? gameState.players.find((p: any) => !p.publicKey.startsWith('AI_'))?.publicKey
                 : publicKey?.toString()
               }
               isPracticeMode={isPracticeMode()}
@@ -970,7 +969,7 @@ export default function Home() {
                       <div className="text-8xl sm:text-9xl animate-bounce-slow filter drop-shadow-2xl">🔐</div>
                       <div className="absolute -top-4 -right-4 text-4xl animate-spin-slow">⚓</div>
                     </div>
-                    
+
                     <div>
                       <h3 className="text-3xl sm:text-4xl lg:text-5xl font-black text-transparent bg-clip-text 
                                      bg-gradient-to-r from-neon-cyan via-neon-gold to-neon-cyan mb-4
