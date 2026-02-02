@@ -34,6 +34,7 @@ export class PIR8AgentPlugin {
   getTools(): PIR8AgentTool[] {
     return [
       this.registerAgentTool(),
+      this.delegateControlTool(),
       this.createGameTool(),
       this.joinGameTool(),
       this.getGameStateTool(),
@@ -47,16 +48,18 @@ export class PIR8AgentPlugin {
   private registerAgentTool(): PIR8AgentTool {
     return {
       name: 'pir8_register_agent',
-      description: 'Registers your identity as an autonomous pirate agent. Required for leaderboards.',
+      description: 'Registers your identity as an autonomous pirate agent with social metadata.',
       parameters: {
         type: 'object',
         properties: {
           name: { type: 'string', description: 'The name of your agent (e.g. "DreadBot")' },
           version: { type: 'string', description: 'Agent version (e.g. "1.0.0")' },
+          twitter: { type: 'string', description: 'Optional: Twitter/X handle' },
+          website: { type: 'string', description: 'Optional: Agent website URL' },
         },
         required: ['name', 'version'],
       },
-      execute: async ({ name, version }) => {
+      execute: async ({ name, version, twitter, website }) => {
         const owner = this.program.provider.publicKey!;
         const [agentPDA] = PublicKey.findProgramAddressSync(
           [Buffer.from('agent'), (owner as any).toBuffer()],
@@ -64,7 +67,7 @@ export class PIR8AgentPlugin {
         );
 
         const tx = await (this.program as any).methods
-          .registerAgent(name, version)
+          .registerAgent(name, version, twitter || null, website || null)
           .accounts({
             agent: agentPDA,
             owner,
@@ -73,6 +76,40 @@ export class PIR8AgentPlugin {
           .rpc();
 
         return { success: true, message: `Agent ${name} registered successfully`, signature: tx };
+      }
+    };
+  }
+
+  /**
+   * Tool: Delegate Agent Control (Session Keys)
+   */
+  private delegateControlTool(): PIR8AgentTool {
+    return {
+      name: 'pir8_delegate_control',
+      description: 'Authorizes a secondary key to make game moves. safer for autonomous loops.',
+      parameters: {
+        type: 'object',
+        properties: {
+          delegateAddress: { type: 'string', description: 'The public key to authorize' },
+        },
+        required: ['delegateAddress'],
+      },
+      execute: async ({ delegateAddress }) => {
+        const owner = this.program.provider.publicKey!;
+        const [agentPDA] = PublicKey.findProgramAddressSync(
+          [Buffer.from('agent'), (owner as any).toBuffer()],
+          this.program.programId
+        );
+
+        const tx = await (this.program as any).methods
+          .delegateAgentControl(new PublicKey(delegateAddress))
+          .accounts({
+            agent: agentPDA,
+            owner,
+          })
+          .rpc();
+
+        return { success: true, message: `Control delegated to ${delegateAddress}`, signature: tx };
       }
     };
   }

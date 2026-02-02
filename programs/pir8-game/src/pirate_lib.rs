@@ -128,15 +128,18 @@ impl Default for PlayerData {
 #[account]
 pub struct AgentRegistry {
     pub owner: Pubkey,
+    pub delegate: Option<Pubkey>,      // Authorized key for moves (Session Key pattern)
     pub name: String,
     pub version: String,
+    pub twitter: Option<String>,
+    pub website: Option<String>,
     pub games_played: u64,
     pub wins: u64,
     pub last_active: i64,
 }
 
 impl AgentRegistry {
-    pub const SPACE: usize = 8 + 32 + 32 + 16 + 8 + 8 + 8; // Header + Owner + Name (32) + Version (16) + Stats + Timestamp
+    pub const SPACE: usize = 8 + 32 + 33 + 32 + 16 + 32 + 32 + 8 + 8 + 8; // Increased for metadata and Optional Pubkey
 }
 
 #[account]
@@ -332,6 +335,19 @@ pub struct RegisterAgent<'info> {
     pub owner: Signer<'info>,
 
     pub system_program: Program<'info, System>,
+}
+
+#[derive(Accounts)]
+pub struct DelegateAgentControl<'info> {
+    #[account(
+        mut,
+        seeds = [b"agent", owner.key().as_ref()],
+        bump,
+        has_one = owner,
+    )]
+    pub agent: Account<'info, AgentRegistry>,
+
+    pub owner: Signer<'info>,
 }
 
 #[derive(Accounts)]

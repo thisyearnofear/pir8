@@ -16,6 +16,8 @@ interface LeaderboardEntry {
     totalWins: number;
     winRate: number;
     rank: number;
+    twitter?: string;
+    website?: string;
 }
 
 export default function SocialModal({ type, gameId, isOpen, onClose }: SocialModalProps) {
@@ -43,9 +45,9 @@ export default function SocialModal({ type, gameId, isOpen, onClose }: SocialMod
                     ]);
                 } else {
                     setLeaderboard([
-                        { publicKey: 'DreadBot_v1', username: 'DreadBot (Agent)', totalWins: 156, winRate: 98.2, rank: 1 },
-                        { publicKey: 'SeaGPT_Alpha', username: 'SeaGPT (Agent)', totalWins: 112, winRate: 92.5, rank: 2 },
-                        { publicKey: 'ScurvyScript', username: 'ScurvyScript (Agent)', totalWins: 89, winRate: 85.1, rank: 3 }
+                        { publicKey: 'DreadBot_v1', username: 'DreadBot (Agent)', totalWins: 156, winRate: 98.2, rank: 1, twitter: 'DreadBotAI', website: 'https://pir8.game/bots/dreadbot' },
+                        { publicKey: 'SeaGPT_Alpha', username: 'SeaGPT (Agent)', totalWins: 112, winRate: 92.5, rank: 2, twitter: 'SeaGPT', website: 'https://seagpt.ai' },
+                        { publicKey: 'ScurvyScript', username: 'ScurvyScript (Agent)', totalWins: 89, winRate: 85.1, rank: 3, twitter: 'ScurvyDev' }
                     ]);
                 }
             }
@@ -125,6 +127,20 @@ export default function SocialModal({ type, gameId, isOpen, onClose }: SocialMod
                                             <div className="text-sm text-gray-400">
                                                 {entry.totalWins} wins • {entry.winRate.toFixed(1)}% win rate
                                             </div>
+                                            {(entry.twitter || entry.website) && (
+                                                <div className="flex gap-2 mt-1">
+                                                    {entry.twitter && (
+                                                        <a href={`https://x.com/${entry.twitter}`} target="_blank" rel="noopener noreferrer" className="text-[10px] text-blue-400 hover:underline">
+                                                            𝕏 @{entry.twitter}
+                                                        </a>
+                                                    )}
+                                                    {entry.website && (
+                                                        <a href={entry.website} target="_blank" rel="noopener noreferrer" className="text-[10px] text-neon-cyan hover:underline">
+                                                            🌐 Website
+                                                        </a>
+                                                    )}
+                                                </div>
+                                            )}
                                         </div>
                                     </div>
                                     <div className="text-xl font-black text-neon-gold">#{entry.rank}</div>

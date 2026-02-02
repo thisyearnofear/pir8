@@ -10,17 +10,39 @@ pub use pirate_lib::*;
 pub mod pir8_game {
     use super::*;
 
-    /// Register an autonomous agent
-    pub fn register_agent(ctx: Context<RegisterAgent>, name: String, version: String) -> Result<()> {
+    /// Register an autonomous agent with optional social metadata
+    pub fn register_agent(
+        ctx: Context<RegisterAgent>, 
+        name: String, 
+        version: String,
+        twitter: Option<String>,
+        website: Option<String>
+    ) -> Result<()> {
         let agent = &mut ctx.accounts.agent;
         let clock = Clock::get()?;
 
         agent.owner = ctx.accounts.owner.key();
         agent.name = name;
         agent.version = version;
+        agent.twitter = twitter;
+        agent.website = website;
         agent.last_active = clock.unix_timestamp;
         
-        msg!("Agent {} registered", agent.name);
+        msg!("Agent {} registered with metadata", agent.name);
+        Ok(())
+    }
+
+    /// Authorize a delegate key to make moves on behalf of the agent owner (Session Key)
+    pub fn delegate_agent_control(ctx: Context<DelegateAgentControl>, delegate: Option<Pubkey>) -> Result<()> {
+        let agent = &mut ctx.accounts.agent;
+        agent.delegate = delegate;
+        
+        if let Some(key) = delegate {
+            msg!("Agent control delegated to {}", key);
+        } else {
+            msg!("Agent control revoked");
+        }
+        
         Ok(())
     }
 
