@@ -131,8 +131,14 @@ export const AIReasoningPanel: React.FC<AIReasoningPanelProps> = ({
 
   // Expanded modal version (full detail)
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm animate-fade-in">
-      <div className="ai-reasoning-panel fixed right-4 top-20 w-96 max-h-[80vh] overflow-y-auto bg-slate-900/95 border-2 border-amber-600 rounded-lg shadow-2xl animate-in slide-in-from-right duration-300">
+    <div 
+      className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm animate-fade-in"
+      onClick={() => setIsExpanded(false)}
+    >
+      <div 
+        className="ai-reasoning-panel fixed right-4 top-20 w-96 max-h-[80vh] overflow-y-auto bg-slate-900/95 border-2 border-amber-600 rounded-lg shadow-2xl animate-in slide-in-from-right duration-300 overscroll-contain"
+        onClick={(e) => e.stopPropagation()}
+      >
         {/* Header */}
         <div className="panel-header bg-gradient-to-r from-amber-900 to-slate-900 p-4 border-b border-amber-600">
           <div className="flex items-center justify-between">

@@ -1017,12 +1017,41 @@ export class PirateGameManager {
       };
     }
 
-    // NOTE: Territory logic moved to smart contract
-    // const claimResult = PirateGameEngine.processTerritoryClaim(player, toCoordinate, gameState.gameMap);
+    // Update the map to mark territory as owned
+    const coord = this.stringToCoordinate(toCoordinate);
+    const territory = gameState.gameMap.cells[coord.x]?.[coord.y];
+    
+    if (!territory) {
+      return {
+        updatedGameState: gameState,
+        success: false,
+        message: 'Territory not found'
+      };
+    }
+    
+    // Check if territory is already owned by this player
+    if (territory.owner === player) {
+      return {
+        updatedGameState: gameState,
+        success: false,
+        message: 'Territory already owned by you'
+      };
+    }
+    
+    // Create updated map with new ownership
+    const updatedCells = gameState.gameMap.cells.map((row, x) =>
+      row.map((cell, y) => {
+        if (x === coord.x && y === coord.y) {
+          return { ...cell, owner: player };
+        }
+        return cell;
+      })
+    );
+    
     const claimResult = {
       success: true,
-      message: 'Territory claimed',
-      updatedMap: gameState.gameMap // Fallback to current map
+      message: `Territory ${toCoordinate} claimed!`,
+      updatedMap: { ...gameState.gameMap, cells: updatedCells }
     };
 
     if (!claimResult.success) {
