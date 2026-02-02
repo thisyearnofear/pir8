@@ -55,10 +55,10 @@ export const AIReasoningPanel: React.FC<AIReasoningPanelProps> = ({
     return null;
   }
 
-  const { optionsConsidered, chosenOption, gameAnalysis, difficulty, thinkingTime } = reasoning;
+  const { optionsConsidered = [], chosenOption, gameAnalysis, difficulty, thinkingTime } = reasoning;
 
   // Sort options by score (highest first)
-  const sortedOptions = [...optionsConsidered].sort((a, b) => b.score - a.score);
+  const sortedOptions = [...(optionsConsidered || [])].sort((a, b) => b.score - a.score);
   const discardedOptions = sortedOptions.filter(
     (opt) => opt.target !== chosenOption?.target || opt.type !== chosenOption?.type
   );
@@ -120,8 +120,8 @@ export const AIReasoningPanel: React.FC<AIReasoningPanelProps> = ({
           )}
 
           <div className="text-xs text-center pt-2 border-t border-slate-700 text-amber-400/80 group-hover:text-amber-300 transition-colors">
-            {optionsConsidered.length > 1 
-              ? `Evaluated ${optionsConsidered.length} options — tap for full analysis ↗`
+            {(optionsConsidered || []).length > 1 
+              ? `Evaluated ${(optionsConsidered || []).length} options — tap for full analysis ↗`
               : 'Tap anywhere to see full analysis ↗'}
           </div>
         </div>
@@ -238,18 +238,18 @@ export const AIReasoningPanel: React.FC<AIReasoningPanelProps> = ({
       )}
 
       {/* Discarded Options */}
-      {discardedOptions.length > 0 && (
+      {(discardedOptions || []).length > 0 && (
         <div className="discarded-options p-4">
           <h4 className="text-xs uppercase text-slate-500 font-semibold mb-2 flex items-center gap-1">
             <span>✕</span> Discarded Options
           </h4>
           <div className="space-y-2">
-            {discardedOptions.slice(0, 3).map((option, index) => (
+            {(discardedOptions || []).slice(0, 3).map((option, index) => (
               <DiscardedOptionCard key={`${option.type}-${index}`} option={option} index={index} />
             ))}
-            {discardedOptions.length > 3 && (
+            {(discardedOptions || []).length > 3 && (
               <div className="text-xs text-slate-500 text-center py-1">
-                +{discardedOptions.length - 3} more options considered
+                +{(discardedOptions || []).length - 3} more options considered
               </div>
             )}
           </div>
