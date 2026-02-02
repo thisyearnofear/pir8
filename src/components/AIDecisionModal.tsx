@@ -22,7 +22,7 @@ export default function AIDecisionModal({
 }: AIDecisionModalProps) {
   if (!isVisible || !reasoning) return null;
 
-  const { chosenOption, optionsConsidered, gameAnalysis, difficulty, thinkingTime } = reasoning;
+  const { chosenOption, optionsConsidered = [], gameAnalysis, difficulty, thinkingTime } = reasoning;
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm animate-fade-in">
@@ -81,10 +81,10 @@ export default function AIDecisionModal({
         <div className="mb-4">
           <h3 className="text-sm font-bold text-neon-magenta uppercase mb-3 flex items-center gap-2">
             <span>🎯</span>
-            <span>Options Evaluated ({optionsConsidered.length})</span>
+            <span>Options Evaluated ({(optionsConsidered || []).length})</span>
           </h3>
           <div className="space-y-2 max-h-48 overflow-y-auto">
-            {optionsConsidered.slice(0, 5).map((option, idx) => {
+            {(optionsConsidered || []).slice(0, 5).map((option, idx) => {
               const isChosen = chosenOption?.type === option.type && 
                               chosenOption?.shipId === option.shipId &&
                               chosenOption?.target === option.target;
