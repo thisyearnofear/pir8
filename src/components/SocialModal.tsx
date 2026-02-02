@@ -1,7 +1,7 @@
 'use client';
 
 import { useState, useEffect } from 'react';
-import { useWallet } from '@solana/wallet-adapter-react';
+import { useSafeWallet } from '@/components/SafeWalletProvider';
 
 interface SocialModalProps {
     type: 'leaderboard' | 'referral';
@@ -21,7 +21,7 @@ interface LeaderboardEntry {
 }
 
 export default function SocialModal({ type, gameId, isOpen, onClose }: SocialModalProps) {
-    const { publicKey } = useWallet();
+    const { publicKey } = useSafeWallet();
     const [leaderboard, setLeaderboard] = useState<LeaderboardEntry[]>([]);
     const [leaderboardType, setLeaderboardType] = useState<'human' | 'agent'>('human');
     const [referralCode, setReferralCode] = useState('');
@@ -76,7 +76,7 @@ export default function SocialModal({ type, gameId, isOpen, onClose }: SocialMod
 
     return (
         <div className="fixed inset-0 bg-black/95 backdrop-blur-lg flex items-center justify-center z-modal"
-             role="dialog" aria-modal="true">
+            role="dialog" aria-modal="true">
             <div className="bg-gradient-to-br from-slate-900 via-slate-800 to-slate-900 
                       rounded-3xl border-2 border-neon-cyan p-8 max-w-2xl w-full mx-4 
                       shadow-2xl shadow-neon-cyan/30 max-h-[90vh] overflow-y-auto">
@@ -96,17 +96,15 @@ export default function SocialModal({ type, gameId, isOpen, onClose }: SocialMod
                         <div className="flex bg-slate-800 p-1 rounded-xl mb-6">
                             <button
                                 onClick={() => setLeaderboardType('human')}
-                                className={`flex-1 py-2 rounded-lg font-bold text-sm transition-all ${
-                                    leaderboardType === 'human' ? 'bg-neon-cyan text-black shadow-lg shadow-neon-cyan/20' : 'text-gray-400 hover:text-white'
-                                }`}
+                                className={`flex-1 py-2 rounded-lg font-bold text-sm transition-all ${leaderboardType === 'human' ? 'bg-neon-cyan text-black shadow-lg shadow-neon-cyan/20' : 'text-gray-400 hover:text-white'
+                                    }`}
                             >
                                 👤 HUMANS
                             </button>
                             <button
                                 onClick={() => setLeaderboardType('agent')}
-                                className={`flex-1 py-2 rounded-lg font-bold text-sm transition-all ${
-                                    leaderboardType === 'agent' ? 'bg-neon-magenta text-black shadow-lg shadow-neon-magenta/20' : 'text-gray-400 hover:text-white'
-                                }`}
+                                className={`flex-1 py-2 rounded-lg font-bold text-sm transition-all ${leaderboardType === 'agent' ? 'bg-neon-magenta text-black shadow-lg shadow-neon-magenta/20' : 'text-gray-400 hover:text-white'
+                                    }`}
                             >
                                 🤖 AGENTS
                             </button>
@@ -114,8 +112,8 @@ export default function SocialModal({ type, gameId, isOpen, onClose }: SocialMod
                         {leaderboard.map((entry, index) => (
                             <div key={entry.publicKey}
                                 className={`p-4 rounded-xl border-2 ${entry.publicKey === publicKey?.toString()
-                                        ? 'border-neon-orange bg-neon-orange/10'
-                                        : 'border-slate-600 bg-slate-800/50'
+                                    ? 'border-neon-orange bg-neon-orange/10'
+                                    : 'border-slate-600 bg-slate-800/50'
                                     }`}>
                                 <div className="flex items-center justify-between">
                                     <div className="flex items-center gap-3">

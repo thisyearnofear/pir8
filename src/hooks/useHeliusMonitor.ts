@@ -10,6 +10,7 @@ import { usePirateGameState } from './usePirateGameState';
 interface UseHeliusMonitorProps {
   gameId?: string;
   onGameEvent?: (event: GameEvent) => void;
+  enabled?: boolean;
 }
 
 export interface GameEvent {
@@ -19,7 +20,7 @@ export interface GameEvent {
   timestamp: number;
 }
 
-export const useHeliusMonitor = ({ gameId, onGameEvent }: UseHeliusMonitorProps = {}) => {
+export const useHeliusMonitor = ({ gameId, onGameEvent, enabled = true }: UseHeliusMonitorProps = {}) => {
   const { setMessage, clearError } = usePirateGameState();
   const monitorRef = useRef<HeliusMonitor | null>(null);
   const isConnectedRef = useRef(false);
@@ -64,7 +65,8 @@ export const useHeliusMonitor = ({ gameId, onGameEvent }: UseHeliusMonitorProps 
   }, [onGameEvent, setMessage, LOG_LEVEL]);
 
   const connect = useCallback(() => {
-    if (isConnectedRef.current || !process.env.NEXT_PUBLIC_HELIUS_RPC_URL) {
+    const heliusUrl = process.env.NEXT_PUBLIC_HELIUS_RPC_URL;
+    if (!enabled || isConnectedRef.current || !heliusUrl || heliusUrl.includes('YOUR_API_KEY')) {
       return;
     }
 
@@ -84,7 +86,7 @@ export const useHeliusMonitor = ({ gameId, onGameEvent }: UseHeliusMonitorProps 
       // Mark as not connected so we can retry later
       isConnectedRef.current = false;
     }
-  }, [handleTransaction, gameId, clearError, LOG_LEVEL]);
+  }, [enabled, handleTransaction, gameId, clearError, LOG_LEVEL]);
 
   const disconnect = useCallback(() => {
     if (monitorRef.current) {
@@ -98,7 +100,6 @@ export const useHeliusMonitor = ({ gameId, onGameEvent }: UseHeliusMonitorProps 
     }
   }, [LOG_LEVEL]);
 
-  // Auto-connect when component mounts
   useEffect(() => {
     // Defer connection to avoid blocking initial render
     const timer = setTimeout(() => {

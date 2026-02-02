@@ -31,7 +31,7 @@ export class HeliusMonitor {
       return;
     }
 
-    if (!API_ENDPOINTS.HELIUS_RPC) {
+    if (!API_ENDPOINTS.HELIUS_RPC || API_ENDPOINTS.HELIUS_RPC.includes('YOUR_API_KEY')) {
       throw new Error("Helius RPC URL not configured");
     }
 

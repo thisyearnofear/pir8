@@ -7,11 +7,11 @@
 
 import { useState, useEffect } from 'react';
 import { usePirateGameState } from '@/hooks/usePirateGameState';
-import { useWallet } from '@solana/wallet-adapter-react';
+import { useSafeWallet } from '@/components/SafeWalletProvider';
 
 export default function LobbyBrowser() {
   const { lobbies, fetchLobbies, isLoading, joinGame, createGame } = usePirateGameState();
-  const { publicKey } = useWallet();
+  const { publicKey } = useSafeWallet();
   const [showCreateModal, setShowCreateModal] = useState(false);
   const [newGameId, setNewGameId] = useState<number>(Math.floor(Math.random() * 1000));
 
@@ -74,7 +74,7 @@ export default function LobbyBrowser() {
                   </div>
                 </div>
               </div>
-              
+
               <div className="flex items-center justify-between">
                 <div className="flex -space-x-2">
                   <div className="w-8 h-8 rounded-full bg-slate-700 border-2 border-slate-900 flex items-center justify-center text-xs">🏴‍☠️</div>
@@ -108,7 +108,7 @@ export default function LobbyBrowser() {
                 />
               </div>
               <p className="text-xs text-gray-400 italic">
-                Each seed creates a unique coordinates map on the Solana ledger. 
+                Each seed creates a unique coordinates map on the Solana ledger.
                 Share this ID with your crew or agents to join.
               </p>
             </div>

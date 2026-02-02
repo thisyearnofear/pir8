@@ -30,7 +30,7 @@ export default function PirateMap({
   const [hoveredCoordinate, setHoveredCoordinate] = useState<string | null>(null);
   const [tooltipPosition, setTooltipPosition] = useState({ x: 0, y: 0 });
   const mapRef = useRef<HTMLDivElement>(null);
-  
+
   // CONSOLIDATED animation state - Single source of truth
   const [shipPositions, setShipPositions] = useState<Map<string, string>>(new Map());
   const [shipAnimations, setShipAnimations] = useState<Map<string, {
@@ -48,17 +48,17 @@ export default function PirateMap({
 
   // Track previous ship state with refs to avoid dependency loops
   const prevShipsRef = useRef<Map<string, { position: string; health: number }>>(new Map());
-  
+
   // Detect changes and determine action type
   useEffect(() => {
     const now = Date.now();
     const prevShips = prevShipsRef.current;
     let hasChanges = false;
-    
+
     ships.forEach(ship => {
       const currentPos = PirateGameManager.coordinateToString(ship.position);
       const prev = prevShips.get(ship.id);
-      
+
       // Position changed = movement
       if (prev && prev.position !== currentPos) {
         hasChanges = true;
@@ -67,7 +67,7 @@ export default function PirateMap({
           next.set(ship.id, { type: 'move', timestamp: now });
           return next;
         });
-        
+
         // Track trail (last 3 positions)
         setShipTrails(prevTrails => {
           const next = new Map(prevTrails);
@@ -76,7 +76,7 @@ export default function PirateMap({
           next.set(ship.id, trail);
           return next;
         });
-        
+
         // Auto-clear after animation
         setTimeout(() => {
           setShipAnimations(prevAnims => {
@@ -86,7 +86,7 @@ export default function PirateMap({
           });
         }, 600);
       }
-      
+
       // Health decreased = damaged
       if (prev && ship.health < prev.health) {
         hasChanges = true;
@@ -96,7 +96,7 @@ export default function PirateMap({
           next.set(ship.id, { type: 'damaged', timestamp: now });
           return next;
         });
-        
+
         setDamageNumbers(prevDmg => [...prevDmg, {
           id: `dmg-${ship.id}-${now}`,
           shipId: ship.id,
@@ -104,7 +104,7 @@ export default function PirateMap({
           position: currentPos,
           timestamp: now
         }]);
-        
+
         setTimeout(() => {
           setShipAnimations(prevAnims => {
             const next = new Map(prevAnims);
@@ -114,7 +114,7 @@ export default function PirateMap({
         }, 500);
       }
     });
-    
+
     // Update positions ref for next comparison
     const newPositions = new Map<string, { position: string; health: number }>();
     ships.forEach(ship => {
@@ -124,13 +124,13 @@ export default function PirateMap({
       });
     });
     prevShipsRef.current = newPositions;
-    
+
     // Update position state for rendering
     if (hasChanges || shipPositions.size === 0) {
       setShipPositions(new Map(ships.map(s => [s.id, PirateGameManager.coordinateToString(s.position)])));
     }
   }, [ships]);
-  
+
   // CONSOLIDATED: Auto-cleanup for damage numbers (PERFORMANT)
   useEffect(() => {
     if (damageNumbers.length > 0) {
@@ -199,6 +199,29 @@ export default function PirateMap({
     return distance <= selectedShip.speed;
   };
 
+  // Determine ship color based on player owner
+  const getShipColor = (shipId: string) => {
+    const playerId = shipId.split('_')[0] || 'unknown';
+
+    // Me = Cyan
+    if (currentPlayerPK && playerId === currentPlayerPK) {
+      return { tailwind: 'text-neon-cyan', ring: 'ring-neon-cyan', shadow: 'shadow-neon-cyan/50', hex: '#00D9FF', name: 'cyan' };
+    }
+
+    // Hash distinct AI/Enemies to colors
+    // Use simple char code sum for deterministic color assignment
+    const hash = playerId.split('').reduce((acc, char) => acc + char.charCodeAt(0), 0);
+    const palette = [
+      { tailwind: 'text-neon-magenta', ring: 'ring-neon-magenta', shadow: 'shadow-neon-magenta/50', hex: '#FF00FF', name: 'magenta' },
+      { tailwind: 'text-neon-gold', ring: 'ring-neon-gold', shadow: 'shadow-neon-gold/50', hex: '#FFD700', name: 'gold' },
+      { tailwind: 'text-neon-purple', ring: 'ring-neon-purple', shadow: 'shadow-neon-purple/50', hex: '#BC13FE', name: 'purple' },
+      { tailwind: 'text-neon-orange', ring: 'ring-neon-orange', shadow: 'shadow-neon-orange/50', hex: '#FF5F1F', name: 'orange' },
+      { tailwind: 'text-green-400', ring: 'ring-green-400', shadow: 'shadow-green-400/50', hex: '#4ade80', name: 'green' },
+    ];
+
+    return palette[hash % palette.length]!;
+  };
+
   const getCellClassName = (coordinate: string): string => {
     const cell = getCellAtCoordinate(coordinate);
     const ship = getShipAtPosition(coordinate);
@@ -244,17 +267,16 @@ export default function PirateMap({
 
     // Territory ownership
     if (cell?.owner) {
+      // If owner is a player, color ring by player color?
+      // For now keep orange to distinguish from ships
       className += 'ring-2 ring-neon-orange ';
     }
 
     // Ship highlighting with visual hierarchy
     if (ship) {
-      if (isMyShip(ship)) {
-        className += 'ring-4 ring-neon-cyan shadow-lg shadow-neon-cyan/50 ';
-      } else {
-        className += 'ring-4 ring-red-500 shadow-lg shadow-red-500/50 ';
-      }
-      
+      const colors = getShipColor(ship.id);
+      className += `ring-4 ${colors.ring} shadow-lg ${colors.shadow} `;
+
       // Add glow effect for animating ships
       const animation = shipAnimations.get(ship.id);
       if (animation) {
@@ -264,7 +286,7 @@ export default function PirateMap({
 
     // Selected ship highlighting with enhanced glow
     if (ship?.id === selectedShipId) {
-      className += 'ring-4 ring-neon-gold shadow-2xl shadow-neon-gold/60 ';
+      className += 'ring-4 ring-white shadow-2xl shadow-white/60 animate-pulse ';
     }
 
     // Movement target highlighting
@@ -313,16 +335,22 @@ export default function PirateMap({
         {trail.map((trailPos, idx) => {
           const trailCoord = PirateGameManager.stringToCoordinate(trailPos);
           const currentCoord = PirateGameManager.stringToCoordinate(coordinate);
-          
+
           // Only render trail on current cell if it's in the trail path
           if (trailCoord.x === currentCoord.x && trailCoord.y === currentCoord.y) {
+            // Determine color from ship if possible (we don't have ship reference here easily unless we find it)
+            // But we can approximate since only one ship moves at a time usually
+            // For robustness, default to a generic trace or try to find ship that owns this trail
+            const ownerShip = ships.find(s => shipTrails.get(s.id)?.includes(trailPos));
+            const ownerColor = ownerShip ? getShipColor(ownerShip.id).hex : '#ffffff';
+
             return (
               <div
                 key={`trail-${idx}`}
                 className="ship-trail absolute"
                 style={{
-                  backgroundColor: ship && isMyShip(ship) ? 'rgba(0, 217, 255, 0.6)' : 'rgba(239, 68, 68, 0.6)',
-                  boxShadow: `0 0 6px ${ship && isMyShip(ship) ? 'rgba(0, 217, 255, 0.8)' : 'rgba(239, 68, 68, 0.8)'}`,
+                  backgroundColor: `${ownerColor}40`, // 25% opacity
+                  boxShadow: `0 0 6px ${ownerColor}`,
                   animationDelay: `${idx * 0.15}s`,
                   top: '50%',
                   left: '50%',
@@ -336,56 +364,48 @@ export default function PirateMap({
 
         {/* Ship overlay with ACTION-SPECIFIC animations */}
         {ship && (
-          <div 
-            className={`ship-icon absolute ${isMyShip(ship) ? 'text-neon-cyan' : 'text-red-400'} ${
-              animation?.type === 'move' ? 'ship-anim-move' : ''
-            } ${
-              animation?.type === 'attack' ? 'ship-anim-attack' : ''
-            } ${
-              animation?.type === 'claim' ? 'ship-anim-claim' : ''
-            } ${
-              animation?.type === 'damaged' ? 'ship-anim-damaged' : ''
-            }`}
+          <div
+            className={`ship-icon absolute ${getShipColor(ship.id).tailwind} ${animation?.type === 'move' ? 'ship-anim-move' : ''
+              } ${animation?.type === 'attack' ? 'ship-anim-attack' : ''
+              } ${animation?.type === 'claim' ? 'ship-anim-claim' : ''
+              } ${animation?.type === 'damaged' ? 'ship-anim-damaged' : ''
+              }`}
             style={{
               fontSize: ship.id === selectedShipId ? '1.8rem' : '1.5rem',
               filter: ship.health < 30 ? 'brightness(0.6) saturate(0.5)' : 'brightness(1)',
-              textShadow: isMyShip(ship) 
-                ? '0 0 10px rgba(0, 217, 255, 0.8), 0 0 20px rgba(0, 217, 255, 0.4)' 
-                : '0 0 10px rgba(239, 68, 68, 0.8), 0 0 20px rgba(239, 68, 68, 0.4)'
+              textShadow: `0 0 10px ${getShipColor(ship.id).hex}cc, 0 0 20px ${getShipColor(ship.id).hex}66`
             }}
           >
             {SHIP_EMOJIS[ship.type]}
-            
+
             {/* Visual effects based on action type (MODULAR) */}
             {animation && (
               <>
-                <div 
+                <div
                   className="absolute inset-0 rounded-full"
                   style={{
-                    background: `radial-gradient(circle, ${
-                      isMyShip(ship) ? 'rgba(0, 217, 255, 0.3)' : 'rgba(239, 68, 68, 0.3)'
-                    } 0%, transparent 70%)`,
+                    background: `radial-gradient(circle, ${getShipColor(ship.id).hex}4D 0%, transparent 70%)`,
                     animation: 'ship-wake 0.6s ease-out'
                   }}
                 />
-                
+
                 {/* Ripple effect */}
-                <div 
+                <div
                   className="ripple-effect"
                   style={{
-                    color: isMyShip(ship) ? 'rgba(0, 217, 255, 0.6)' : 'rgba(239, 68, 68, 0.6)'
+                    color: `${getShipColor(ship.id).hex}99`
                   }}
                 />
-                
+
                 {/* Particle burst - customize based on action */}
                 {[...Array(animation.type === 'attack' ? 8 : 6)].map((_, i) => {
                   const particleCount = animation.type === 'attack' ? 8 : 6;
                   const angle = (i * (360 / particleCount)) * (Math.PI / 180);
                   const distance = animation.type === 'attack' ? 40 : 30;
-                  const particleColor = animation.type === 'attack' 
-                    ? '#ff4444' 
-                    : isMyShip(ship) ? '#00D9FF' : '#ef4444';
-                  
+                  const particleColor = animation.type === 'attack'
+                    ? '#ff4444'
+                    : getShipColor(ship.id).hex;
+
                   return (
                     <div
                       key={i}
@@ -409,7 +429,7 @@ export default function PirateMap({
             )}
           </div>
         )}
-        
+
         {/* Damage numbers (ENHANCEMENT) */}
         {cellDamageNumbers.map(dmg => (
           <div
@@ -425,15 +445,15 @@ export default function PirateMap({
           <div className="health-bar absolute bottom-1 left-1 right-1 h-1.5 bg-gray-800 rounded border border-gray-600">
             <div
               className="h-full rounded transition-all duration-500 ease-out"
-              style={{ 
+              style={{
                 width: `${(ship.health / ship.maxHealth) * 100}%`,
-                background: ship.health < 30 
+                background: ship.health < 30
                   ? 'linear-gradient(90deg, #dc2626, #ef4444)'
                   : ship.health < 60
-                  ? 'linear-gradient(90deg, #f59e0b, #fbbf24)'
-                  : 'linear-gradient(90deg, #10b981, #34d399)',
-                boxShadow: ship.health < 30 
-                  ? '0 0 8px rgba(220, 38, 38, 0.6)' 
+                    ? 'linear-gradient(90deg, #f59e0b, #fbbf24)'
+                    : 'linear-gradient(90deg, #10b981, #34d399)',
+                boxShadow: ship.health < 30
+                  ? '0 0 8px rgba(220, 38, 38, 0.6)'
                   : '0 0 5px rgba(16, 185, 129, 0.4)'
               }}
             ></div>

@@ -1,7 +1,7 @@
 'use client';
 
 import { useState } from 'react';
-import { useWallet } from '@solana/wallet-adapter-react';
+import { useSafeWallet } from '@/components/SafeWalletProvider';
 import { Ship, GameState, Player } from '../types/game';
 import { SHIP_EMOJIS } from '../utils/constants';
 
@@ -49,12 +49,12 @@ export default function PirateControls({
   onPracticeMode
 }: PirateControlsProps) {
 
-  const { publicKey } = useWallet();
+  const { publicKey } = useSafeWallet();
   const [gameIdInput, setGameIdInput] = useState('');
   const [showJoinForm, setShowJoinForm] = useState(false);
   const [selectedCoordinate, setSelectedCoordinate] = useState<{ x: number; y: number } | null>(null);
   const [isScanning, setIsScanning] = useState(false);
-  
+
   // Progressive disclosure state - collapse less critical sections by default
   const [expandedSections, setExpandedSections] = useState(() => {
     // Try to load saved preferences from localStorage
@@ -172,18 +172,18 @@ export default function PirateControls({
   };
 
   // Collapsible Section Component
-  const CollapsibleSection = ({ 
-    title, 
-    icon, 
-    isExpanded, 
-    onToggle, 
+  const CollapsibleSection = ({
+    title,
+    icon,
+    isExpanded,
+    onToggle,
     children,
     badge
-  }: { 
-    title: string; 
-    icon: string; 
-    isExpanded: boolean; 
-    onToggle: () => void; 
+  }: {
+    title: string;
+    icon: string;
+    isExpanded: boolean;
+    onToggle: () => void;
     children: React.ReactNode;
     badge?: string;
   }) => (

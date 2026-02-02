@@ -1,7 +1,7 @@
 'use client';
 
 import { Player } from '../types/game';
-import { useWallet } from '@solana/wallet-adapter-react';
+import { useSafeWallet } from '@/components/SafeWalletProvider';
 import { SHIP_EMOJIS } from '../utils/constants';
 
 interface PlayerStatsProps {
@@ -29,7 +29,7 @@ export default function PlayerStats({
   scannedCoordinates: _scannedCoordinates = [],
   isPracticeMode: _isPracticeMode = false
 }: PlayerStatsProps) {
-  const { publicKey } = useWallet();
+  const { publicKey } = useSafeWallet();
 
   const getTotalScore = (player: Player): number => {
     return player.totalScore;

@@ -34,14 +34,18 @@ export default function AIBattleControls({
 
     const turnText = `Turn ${gameState.turnNumber}`;
     const playerName = currentPlayer.username || currentPlayer.publicKey.slice(0, 8);
-    
+
     // Simple commentary based on turn
     const newCommentary = `${turnText}: ${playerName}'s turn...`;
     setCommentary(newCommentary);
-    
+
     // Add to history (keep last 5)
-    setCommentaryHistory(prev => [newCommentary, ...prev].slice(0, 5));
-  }, [gameState?.turnNumber, gameState?.currentPlayerIndex, isAIvsAIMode, gameState]);
+    setCommentaryHistory(prev => {
+      // Avoid duplicate entries
+      if (prev.length > 0 && prev[0] === newCommentary) return prev;
+      return [newCommentary, ...prev].slice(0, 5);
+    });
+  }, [gameState?.turnNumber, gameState?.currentPlayerIndex, isAIvsAIMode]);
 
   if (!isAIvsAIMode) return null;
 
@@ -65,11 +69,10 @@ export default function AIBattleControls({
             <button
               key={option.value}
               onClick={() => onSpeedChange(option.value)}
-              className={`px-3 py-2 rounded-lg font-bold text-sm transition-all ${
-                playbackSpeed === option.value
+              className={`px-3 py-2 rounded-lg font-bold text-sm transition-all ${playbackSpeed === option.value
                   ? 'bg-neon-cyan text-black scale-110'
                   : 'bg-slate-800 text-gray-300 hover:bg-slate-700'
-              }`}
+                }`}
               title={option.label}
             >
               <div className="text-center">
@@ -97,7 +100,7 @@ export default function AIBattleControls({
             </button>
           )}
         </div>
-        
+
         {/* Current commentary */}
         <div className="bg-slate-800/80 rounded-lg p-3 mb-3 border-l-4 border-neon-gold">
           <p className="text-sm text-white font-semibold">{commentary || 'Waiting for action...'}</p>

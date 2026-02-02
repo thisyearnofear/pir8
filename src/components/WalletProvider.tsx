@@ -23,8 +23,13 @@ export function WalletContextProvider({
   }, []);
 
   // Use Helius RPC if available, otherwise fall back to default
+  // Use Helius RPC if successfully configured, otherwise fall back to default
   const endpoint = useMemo(() => {
-    return process.env.NEXT_PUBLIC_HELIUS_RPC_URL || clusterApiUrl("devnet");
+    const heliusUrl = process.env.NEXT_PUBLIC_HELIUS_RPC_URL;
+    if (heliusUrl && !heliusUrl.includes('YOUR_API_KEY')) {
+      return heliusUrl;
+    }
+    return clusterApiUrl("devnet");
   }, []);
 
   const wallets = useMemo(

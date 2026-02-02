@@ -245,7 +245,8 @@ export function useGameLifecycle(options: GameLifecycleOptions = {}): GameLifecy
   // Set up Helius monitor
   const { isConnected: heliusConnected } = useHeliusMonitor({
     gameId,
-    onGameEvent: handleHeliusEvent
+    onGameEvent: handleHeliusEvent,
+    enabled: !!gameId
   });
 
   // Set up polling fallback and initial sync
