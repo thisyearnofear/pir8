@@ -38,6 +38,10 @@ import ResourceCollectionPanel from './ResourceCollectionPanel';
 import ShipBuildingPanel from './ShipBuildingPanel';
 import VictoryScreen from './VictoryScreen';
 import AIReasoningPanel from './AIReasoningPanel';
+import TerritoryBonusPanel from './TerritoryBonusPanel';
+import QuickActionsBar from './QuickActionsBar';
+import GameEventLog from './GameEventLog';
+import ResourceBar from './ResourceBar';
 import { GameState, Ship, Player } from '@/types/game';
 import { AIReasoning } from '@/lib/pirateGameEngine';
 
@@ -339,6 +343,35 @@ export default function GameContainer({
               showHints={isPracticeMode}
             />
 
+            {/* ===== LEFT SIDE PANELS ===== */}
+            {currentPlayer && (
+              <div className="absolute top-4 left-4 z-30 flex flex-col gap-3 max-w-xs">
+                {/* Resource Bar */}
+                <ResourceBar
+                  resources={currentPlayer.resources}
+                  isCompact={true}
+                />
+                
+                {/* Game Event Log */}
+                <GameEventLog
+                  events={gameState.eventLog}
+                  maxVisible={4}
+                  isCompact={true}
+                />
+              </div>
+            )}
+
+            {/* ===== TERRITORY BONUS PANEL ===== */}
+            {currentPlayer && (
+              <div className="absolute top-4 right-4 z-30">
+                <TerritoryBonusPanel
+                  player={currentPlayer}
+                  gameState={gameState}
+                  isCompact={true}
+                />
+              </div>
+            )}
+
             {/* ===== FLOATING QUICK ACTIONS ===== */}
             {isMyTurn && (
               <div className="absolute bottom-20 right-4 flex flex-col gap-2">
@@ -408,6 +441,14 @@ export default function GameContainer({
               </div>
             )}
           </div>
+
+          {/* ===== QUICK ACTIONS BAR ===== */}
+          <QuickActionsBar
+            onCollectAll={onCollectResources}
+            onEndTurn={() => Promise.resolve(onEndTurn())}
+            isMyTurn={isMyTurn}
+            canUndo={false}
+          />
 
           {/* Bottom Action Bar - Mobile Optimized */}
           <div className="flex items-center justify-between px-3 py-2 bg-slate-900/90 border-t border-neon-cyan/30 gap-2">

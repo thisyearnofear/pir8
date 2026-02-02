@@ -156,10 +156,13 @@ export class PirateGameManager {
 
   /**
    * Create starting fleet for a player
-   * ENHANCEMENT: Ships now have abilities initialized
+   * ENHANCEMENT: Now creates 2 ships (matching GAME_CONFIG.STARTING_SHIPS)
+   * Ships have abilities initialized
    */
   static createStartingFleet(playerId: string, startingPosition: Coordinate): Ship[] {
     const { initializeShipAbility } = require('./shipAbilities');
+    
+    // Create starting fleet: 1 sloop (scout) + 1 frigate (combat)
     return [
       {
         id: `${playerId}_sloop_1`,
@@ -172,6 +175,19 @@ export class PirateGameManager {
         position: startingPosition,
         resources: { gold: 0, crew: 0, cannons: 0, supplies: 0, wood: 0, rum: 0 },
         ability: initializeShipAbility('sloop'),
+        activeEffects: [],
+      },
+      {
+        id: `${playerId}_frigate_1`,
+        type: 'frigate',
+        health: 200,
+        maxHealth: 200,
+        attack: 40,
+        defense: 25,
+        speed: 2,
+        position: { x: startingPosition.x + 1, y: startingPosition.y },
+        resources: { gold: 0, crew: 0, cannons: 0, supplies: 0, wood: 0, rum: 0 },
+        ability: initializeShipAbility('frigate'),
         activeEffects: [],
       }
     ];
@@ -386,14 +402,18 @@ export class PirateGameManager {
 
   /**
    * Advance to next player's turn
-   * ENHANCEMENT: Tick ability cooldowns and effects
+   * ENHANCEMENT: Tick ability cooldowns, effects, and regenerate scan charges
    */
   static advanceTurn(gameState: GameState): GameState {
     const { tickAbilityCooldown, tickShipEffects } = require('./shipAbilities');
     
-    // ENHANCEMENT: Update all ships' abilities and effects
+    const MAX_SCAN_CHARGES = 5; // Max scan charges per player
+    
+    // ENHANCEMENT: Update all ships' abilities and effects, regenerate scan charges
     const updatedPlayers = gameState.players.map(player => ({
       ...player,
+      // Regenerate 1 scan charge per turn (up to max)
+      scanCharges: Math.min((player.scanCharges || 0) + 1, MAX_SCAN_CHARGES),
       ships: player.ships.map(ship => {
         let updated = tickAbilityCooldown(ship);
         updated = tickShipEffects(updated);
@@ -866,11 +886,28 @@ export class PirateGameManager {
       }
     });
 
+    // ENHANCEMENT: Port healing - ships at owned ports get healed
+    const PORT_HEAL_AMOUNT = 20;
+    let healedAmount = 0;
+    let updatedShips = currentPlayer.ships;
+    
+    if (territory.type === 'port') {
+      updatedShips = currentPlayer.ships.map(s => {
+        if (s.id === shipId && s.health < s.maxHealth) {
+          const newHealth = Math.min(s.maxHealth, s.health + PORT_HEAL_AMOUNT);
+          healedAmount = newHealth - s.health;
+          return { ...s, health: newHealth };
+        }
+        return s;
+      });
+    }
+
     // Update player resources
     const updatedPlayers = [...gameState.players];
     updatedPlayers[playerIndex] = {
       ...currentPlayer,
       publicKey: currentPlayer.publicKey, // Ensure publicKey is preserved
+      ships: updatedShips,
       resources: {
         gold: currentPlayer.resources.gold + (collectedResources.gold || 0),
         crew: currentPlayer.resources.crew + (collectedResources.crew || 0),
@@ -885,11 +922,13 @@ export class PirateGameManager {
       .filter(([_, amount]) => amount && amount > 0)
       .map(([resource, amount]) => `${amount} ${resource}`)
       .join(', ');
+    
+    const healMessage = healedAmount > 0 ? ` | 🔧 Ship repaired +${healedAmount} HP` : '';
 
     return {
       updatedGameState: { ...gameState, players: updatedPlayers },
       success: true,
-      message: `Collected: ${resourcesList}`
+      message: `Collected: ${resourcesList}${healMessage}`
     };
   }
 
