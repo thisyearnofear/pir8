@@ -16,30 +16,35 @@ export class GameBalance {
     cost: Resources;
     strength: number;
     resourceBonus: number;
+    range: number;
   }> = {
     sloop: {
       stats: SHIP_CONFIGS.sloop,
       cost: { gold: 500, crew: 10, cannons: 5, supplies: 20, wood: 0, rum: 0 },
       strength: 1.0,
-      resourceBonus: 1.0
+      resourceBonus: 1.0,
+      range: 2
     },
     frigate: {
       stats: SHIP_CONFIGS.frigate,
       cost: { gold: 1200, crew: 25, cannons: 15, supplies: 40, wood: 0, rum: 0 },
       strength: 2.0,
-      resourceBonus: 1.2
+      resourceBonus: 1.2,
+      range: 3
     },
     galleon: {
       stats: SHIP_CONFIGS.galleon,
       cost: { gold: 2500, crew: 50, cannons: 30, supplies: 80, wood: 0, rum: 0 },
       strength: 3.5,
-      resourceBonus: 1.5
+      resourceBonus: 1.5,
+      range: 2
     },
     flagship: {
       stats: SHIP_CONFIGS.flagship,
       cost: { gold: 5000, crew: 100, cannons: 60, supplies: 150, wood: 0, rum: 0 },
       strength: 5.0,
-      resourceBonus: 1.3
+      resourceBonus: 1.3,
+      range: 1
     }
   };
 
@@ -84,13 +89,22 @@ export class GameBalance {
     attackerHealth: number,
     defenderDefense: number,
     turnNumber: number = 0,
-    isMomentumHit: boolean = false
+    isMomentumHit: boolean = false,
+    distance: number = 1
   ): { damage: number; isCritical: boolean } {
     const attackerStrength = this.SHIP_BALANCE[attackerType].strength;
     const defenderStrength = this.SHIP_BALANCE[defenderType].strength;
     const healthMultiplier = attackerHealth / 100;
 
-    let baseDamage = attackerStrength * 40 * healthMultiplier;
+    // Distance penalty logic
+    // Damage drops off by 20% for each tile beyond range 1
+    // Range 1: 100% damage
+    // Range 2: 80% damage
+    // Range 3: 60% damage
+    const distancePenalty = Math.max(0, (distance - 1) * 0.2);
+    const distanceMultiplier = Math.max(0.1, 1.0 - distancePenalty);
+
+    let baseDamage = attackerStrength * 40 * healthMultiplier * distanceMultiplier;
     const defenseReduction = defenderDefense * (defenderStrength / 10);
     let effectiveDamage = Math.max(5, baseDamage - defenseReduction);
 

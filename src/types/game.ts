@@ -20,6 +20,7 @@ export interface ShipAbility {
   isReady: boolean;
   cost?: Partial<Resources>;
   type: 'offensive' | 'defensive' | 'utility';
+  range?: number;
 }
 
 export interface ShipEffect {

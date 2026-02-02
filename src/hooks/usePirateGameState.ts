@@ -1,6 +1,7 @@
 import { create } from "zustand";
 import { GameState, Player, GameAction, Ship } from "../types/game";
 import { PirateGameManager } from "../lib/pirateGameEngine";
+import { getVisibleCoordinates } from "../utils/helpers";
 
 /**
  * Game Mode Types - Progressive Onboarding Architecture
@@ -556,11 +557,21 @@ export const usePirateGameState = create<PirateGameStore>((set, get) => ({
 
       const practiceGame = PirateGameManager.createPracticeGame(humanPlayer, difficulty);
       savePracticeGame(practiceGame);
+
+      // Initialize scanned coordinates with starting positions (Fog of War)
+      const initialScanned = new Set<string>();
+      const playerInGame = practiceGame.players.find(p => p.publicKey === humanPlayer.publicKey);
+      if (playerInGame) {
+        playerInGame.ships.forEach(ship => {
+          getVisibleCoordinates(ship.position.x, ship.position.y).forEach(coord => initialScanned.add(coord));
+        });
+      }
+
       set({
         gameState: practiceGame,
         gameMode: 'practice',
         selectedShipId: null,
-        scannedCoordinates: new Set(),
+        scannedCoordinates: initialScanned,
         scanChargesRemaining: 3,
         showMessage: `⚔️ Practice mode started! Defeat ${difficulty} AI opponent!`,
       });
@@ -590,7 +601,12 @@ export const usePirateGameState = create<PirateGameStore>((set, get) => ({
     if (result.success) {
       const advancedState = PirateGameManager.advanceTurn(result.updatedGameState);
       savePracticeGame(advancedState);
-      set({ gameState: advancedState, selectedShipId: null });
+
+      // Update scanned coordinates (Fog of War)
+      const currentScanned = new Set(get().scannedCoordinates);
+      getVisibleCoordinates(toX, toY).forEach(coord => currentScanned.add(coord));
+
+      set({ gameState: advancedState, selectedShipId: null, scannedCoordinates: currentScanned });
 
       // Process AI turn after a delay
       setTimeout(() => get().processAITurn(), 1000);

@@ -4,6 +4,7 @@ import { useState, useRef, useEffect } from "react";
 import { GameMap, TerritoryCell, Ship } from "../types/game";
 import { TERRITORY_EMOJIS, SHIP_EMOJIS, TEAM_COLORS } from "../utils/constants";
 import { PirateGameManager } from "../lib/pirateGameEngine";
+import { GameBalance } from "../lib/gameBalance";
 import TerritoryTooltip from "./TerritoryTooltip";
 
 interface PlayerInfo {
@@ -209,11 +210,22 @@ export default function PirateMap({
   };
 
   const getShipAtPosition = (coordinate: string): Ship | undefined => {
-    return ships.find(
+    const ship = ships.find(
       (ship) =>
         PirateGameManager.coordinateToString(ship.position) === coordinate &&
         ship.health > 0,
     );
+
+    if (!ship) return undefined;
+
+    // FOG OF WAR: Hide enemy ships in unscanned areas
+    // Always show my own ships
+    if (isMyShip(ship)) return ship;
+
+    // Show enemy ships only if the coordinate is scanned
+    if (isCoordinateScanned(coordinate)) return ship;
+
+    return undefined;
   };
 
   const getCellAtCoordinate = (
@@ -241,6 +253,28 @@ export default function PirateMap({
     );
 
     return distance <= selectedShip.speed;
+  };
+
+  const isValidAttackTarget = (coordinate: string): boolean => {
+    if (!selectedShipId || !currentPlayerPK) return false;
+
+    const selectedShip = ships.find((s) => s.id === selectedShipId);
+    if (!selectedShip) return false;
+
+    // Only show attack range for my ships
+    if (!isMyShip(selectedShip)) return false;
+
+    const targetCoord = PirateGameManager.stringToCoordinate(coordinate);
+    const distance = PirateGameManager.calculateDistance(
+      selectedShip.position,
+      targetCoord,
+    );
+
+    // Get range from GameBalance
+    const range = GameBalance.SHIP_BALANCE[selectedShip.type].range;
+
+    // Check if within range (using diagonal support logic: 1.5 * range)
+    return distance <= range * 1.5;
   };
 
   // Get player index for consistent team colors
@@ -357,6 +391,18 @@ export default function PirateMap({
     // Movement target highlighting
     if (selectedShipId && isValidMoveTarget(coordinate)) {
       className += "ring-2 ring-green-400 ring-opacity-70 ";
+    }
+
+    // Attack range highlighting
+    if (selectedShipId && isValidAttackTarget(coordinate)) {
+      const targetShip = getShipAtPosition(coordinate);
+      if (targetShip && !isMyShip(targetShip)) {
+        // Enemy ship in range - Strong highlight
+        className += "ring-2 ring-red-500 ring-opacity-90 animate-pulse ";
+      } else if (!isValidMoveTarget(coordinate)) {
+        // Just range indication (fainter), but avoid overriding movement highlight
+        className += "ring-1 ring-red-400 ring-opacity-30 ";
+      }
     }
 
     // Hover effect

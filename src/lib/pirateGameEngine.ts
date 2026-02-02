@@ -102,22 +102,125 @@ export class PirateGameManager {
 
   /**
    * Create a basic game map (simplified version for local state)
+   * ENHANCED: Organic Map Generation using "Seeds" and Clusters
    */
   static createGameMap(size: number = 10): GameMap {
+    // 1. Initialize empty water map
     const cells: TerritoryCell[][] = Array(size).fill(null).map(() => []);
-
+    
+    // Initialize all cells as water first
     for (let x = 0; x < size; x++) {
       for (let y = 0; y < size; y++) {
-        const coordinate = this.coordinateToString({ x, y });
-        const cellType = this.generateTerritoryType(x, y, size);
-
         cells[x]![y] = {
-          coordinate,
-          type: cellType,
+          coordinate: this.coordinateToString({ x, y }),
+          type: 'water',
           owner: null,
-          resources: TERRITORY_RESOURCE_GENERATION[cellType] || {},
+          resources: {},
           isContested: false,
         };
+      }
+    }
+
+    // 2. Place Feature Seeds (Organic Generation)
+    // We'll place a few "centers" for islands and ports
+    const numIslands = Math.floor(size / 3) + 1; // 3-5 islands for 10x10
+    const islandCenters: Coordinate[] = [];
+
+    // Helper to find valid spot (away from edges and other centers)
+    const findValidSeed = (minDist: number): Coordinate | null => {
+      let attempts = 0;
+      while (attempts < 20) {
+        const x = Math.floor(Math.random() * (size - 4)) + 2; // Keep away from strict edge
+        const y = Math.floor(Math.random() * (size - 4)) + 2;
+        
+        let valid = true;
+        for (const center of islandCenters) {
+          if (this.calculateDistance({x, y}, center) < minDist) {
+            valid = false;
+            break;
+          }
+        }
+        if (valid) return {x, y};
+        attempts++;
+      }
+      return null;
+    };
+
+    // Place Island Centers
+    for (let i = 0; i < numIslands; i++) {
+      const seed = findValidSeed(3);
+      if (seed) islandCenters.push(seed);
+    }
+
+    // 3. Grow Terrain from Seeds
+    for (const center of islandCenters) {
+      // The center is an island
+      cells[center.x]![center.y]!.type = 'island';
+      
+      // Neighbors might be islands or ports
+      const neighbors = [
+        {x: center.x+1, y: center.y}, {x: center.x-1, y: center.y},
+        {x: center.x, y: center.y+1}, {x: center.x, y: center.y-1},
+        {x: center.x+1, y: center.y+1}, {x: center.x-1, y: center.y-1},
+        {x: center.x+1, y: center.y-1}, {x: center.x-1, y: center.y+1}
+      ];
+
+      for (const n of neighbors) {
+        if (n.x >= 0 && n.x < size && n.y >= 0 && n.y < size) {
+          const rand = Math.random();
+          if (rand < 0.4) {
+             cells[n.x]![n.y]!.type = 'island';
+          } else if (rand < 0.7) {
+             cells[n.x]![n.y]!.type = 'port';
+          }
+          // Else remains water
+        }
+      }
+    }
+
+    // 4. Place Treasures (Remote locations)
+    let treasuresPlaced = 0;
+    let attempts = 0;
+    while (treasuresPlaced < 3 && attempts < 50) {
+      const x = Math.floor(Math.random() * size);
+      const y = Math.floor(Math.random() * size);
+      
+      // Must be water currently
+      if (cells[x]![y]!.type === 'water') {
+        // Check distance from all island centers (should be somewhat far)
+        let minDistanceToLand = 999;
+        for (const center of islandCenters) {
+          const d = this.calculateDistance({x, y}, center);
+          if (d < minDistanceToLand) minDistanceToLand = d;
+        }
+
+        if (minDistanceToLand > 2.5) {
+           cells[x]![y]!.type = 'treasure';
+           treasuresPlaced++;
+        }
+      }
+      attempts++;
+    }
+
+    // 5. Place Hazards (Storms, Reefs, Whirlpools)
+    const hazardCount = Math.floor(size * size * 0.15); // 15% hazards
+    for (let i = 0; i < hazardCount; i++) {
+       const x = Math.floor(Math.random() * size);
+       const y = Math.floor(Math.random() * size);
+       
+       if (cells[x]![y]!.type === 'water') {
+          const rand = Math.random();
+          if (rand < 0.4) cells[x]![y]!.type = 'storm';
+          else if (rand < 0.7) cells[x]![y]!.type = 'reef';
+          else cells[x]![y]!.type = 'whirlpool';
+       }
+    }
+
+    // 6. Assign Resources to all cells
+    for (let x = 0; x < size; x++) {
+      for (let y = 0; y < size; y++) {
+        const cell = cells[x]![y]!;
+        cell.resources = TERRITORY_RESOURCE_GENERATION[cell.type] || {};
       }
     }
 
@@ -125,33 +228,90 @@ export class PirateGameManager {
   }
 
   /**
-   * Generate territory type based on position
+   * Check for random events when entering a territory
+   * ENHANCEMENT: Adds variety to location visits
    */
-  static generateTerritoryType(x: number, y: number, size: number): TerritoryCellType {
-    const centerX = Math.floor(size / 2);
-    const centerY = Math.floor(size / 2);
-    const distanceFromCenter = Math.sqrt((x - centerX) ** 2 + (y - centerY) ** 2);
-    const maxDistance = Math.sqrt(centerX ** 2 + centerY ** 2);
-    const normalizedDistance = distanceFromCenter / maxDistance;
+  static checkLocationEvent(
+    ship: Ship,
+    territoryType: TerritoryCellType,
+    gameState: GameState
+  ): {
+    message: string;
+    resourceChange?: Partial<Resources>;
+    healthChange?: number;
+  } | null {
+    const rand = Math.random();
 
-    if (normalizedDistance < 0.2) {
-      return Math.random() < 0.7 ? 'treasure' : 'port';
-    } else if (normalizedDistance < 0.5) {
-      const rand = Math.random();
-      if (rand < 0.4) return 'island';
-      if (rand < 0.6) return 'port';
-      return 'water';
-    } else if (normalizedDistance < 0.8) {
-      const rand = Math.random();
-      if (rand < 0.1) return 'storm';
-      if (rand < 0.15) return 'reef';
-      return 'water';
-    } else {
-      const rand = Math.random();
-      if (rand < 0.2) return 'whirlpool';
-      if (rand < 0.3) return 'storm';
-      return 'water';
+    // Event probabilities
+    if (territoryType === 'water' && rand < 0.05) {
+      return {
+        message: '📦 Found floating supply crate! (+10 Supplies)',
+        resourceChange: { supplies: 10 }
+      };
     }
+
+    if (territoryType === 'island' && rand < 0.25) {
+      if (rand < 0.10) {
+        return {
+           message: '🗿 Natives offered tribute! (+50 Gold)',
+           resourceChange: { gold: 50 }
+        };
+      } else {
+        return {
+           message: '🌴 Explored jungle ruins! (+15 Supplies)',
+           resourceChange: { supplies: 15 }
+        };
+      }
+    }
+
+    if (territoryType === 'port' && rand < 0.15) {
+       return {
+          message: '🍻 Local sailors joined your crew! (+5 Crew)',
+          resourceChange: { crew: 5 }
+       };
+    }
+
+    if (territoryType === 'treasure' && rand < 0.40) {
+       return {
+          message: '💎 Discovered hidden loot! (+100 Gold)',
+          resourceChange: { gold: 100 }
+       };
+    }
+    
+    // Hazards always have high chance of bad things
+    if (territoryType === 'storm') {
+        if (rand < 0.6) {
+             return {
+                 message: '⚡ Storm battered the hull! (-15 HP)',
+                 healthChange: -15
+             };
+        } else {
+             return {
+                 message: '💨 Strong winds damaged rigging! (-10 Supplies)',
+                 resourceChange: { supplies: -10 }
+             };
+        }
+    }
+
+    if (territoryType === 'reef') {
+         if (rand < 0.5) {
+             return {
+                 message: '🪨 Scraped hull on hidden reef! (-20 HP)',
+                 healthChange: -20
+             };
+         }
+    }
+
+    if (territoryType === 'whirlpool') {
+         if (rand < 0.8) {
+             return {
+                 message: '🌀 Caught in maelstrom! (-30 HP)',
+                 healthChange: -30
+             };
+         }
+    }
+
+    return null;
   }
 
   /**
@@ -374,12 +534,48 @@ export class PirateGameManager {
         message: 'Current player not found'
       };
     }
-    const updatedShips = currentPlayer.ships.map(s =>
-      s.id === shipId ? { ...moveResult.updatedShip!, position: { ...moveResult.updatedShip!.position } } : { ...s, position: { ...s.position } }
-    );
+
+    // ENHANCEMENT: Check for location events
+    let eventMessage = '';
+    let healthChange = 0;
+    let resourceChange: Partial<Resources> = {};
+    
+    // Get territory type at new position
+    const territory = gameState.gameMap.cells[toPosition.x]?.[toPosition.y];
+    if (territory) {
+        const event = this.checkLocationEvent(ship, territory.type, gameState);
+        if (event) {
+            eventMessage = ` ${event.message}`;
+            healthChange = event.healthChange || 0;
+            resourceChange = event.resourceChange || {};
+        }
+    }
+
+    // Apply updates to ship and player resources
+    const updatedShips = currentPlayer.ships.map(s => {
+      if (s.id === shipId) {
+          const newHealth = Math.max(0, s.health + healthChange);
+          return { 
+              ...moveResult.updatedShip!, 
+              position: { ...moveResult.updatedShip!.position },
+              health: newHealth
+          };
+      }
+      return { ...s, position: { ...s.position } };
+    });
+
+    const updatedResources = { ...currentPlayer.resources };
+    if (resourceChange) {
+        for (const [key, val] of Object.entries(resourceChange)) {
+            // @ts-ignore
+            updatedResources[key] = (updatedResources[key] || 0) + val;
+        }
+    }
+
     updatedPlayers[playerIndex] = {
       ...currentPlayer,
       ships: updatedShips,
+      resources: updatedResources,
       publicKey: currentPlayer.publicKey,
       // Reset momentum on non-attack actions
       consecutiveAttacks: 0,
@@ -393,7 +589,7 @@ export class PirateGameManager {
       playerId: player,
       turnNumber: gameState.turnNumber,
       timestamp: Date.now(),
-      description: `${moveResult.updatedShip!.type} moved to ${toCoordinate}`,
+      description: `${moveResult.updatedShip!.type} moved to ${toCoordinate}.${eventMessage}`,
       data: { shipId, from: this.coordinateToString(ship.position), to: toCoordinate }
     };
 
@@ -406,7 +602,7 @@ export class PirateGameManager {
     return {
       updatedGameState,
       success: true,
-      message: moveResult.message
+      message: moveResult.message + eventMessage
     };
   }
 
@@ -699,13 +895,19 @@ export class PirateGameManager {
       };
     }
 
-    // Check if ships are in range (adjacent cells)
+    // Check if ships are in range
+    const maxRange = GameBalance.SHIP_BALANCE[attackerShip.type].range;
     const distance = this.calculateDistance(attackerShip.position, targetShip.position);
-    if (distance > 1.5) {
+    
+    // Allow diagonals: Multiplier of 1.5 allows full diagonals at each range step
+    // Range 1: 1.5 (covers 1.41)
+    // Range 2: 3.0 (covers 2.82)
+    // Range 3: 4.5 (covers 4.24)
+    if (distance > maxRange * 1.5) {
       return {
         updatedGameState: gameState,
         success: false,
-        message: 'Target out of range for attack'
+        message: `Target out of range (Max: ${maxRange}, Dist: ${distance.toFixed(1)})`
       };
     }
 
@@ -717,7 +919,8 @@ export class PirateGameManager {
       attackerShip.health,
       targetShip.defense,
       gameState.turnNumber,
-      isMomentumHit
+      isMomentumHit,
+      distance
     );
 
     // Apply damage to target ship

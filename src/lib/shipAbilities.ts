@@ -17,17 +17,19 @@ import { ShipType, ShipAbility, Ship, GameState, ShipEffect } from '@/types/game
 export const SHIP_ABILITIES: Record<ShipType, Omit<ShipAbility, 'currentCooldown' | 'isReady'>> = {
   sloop: {
     name: 'Spy Glass',
-    description: 'Reveal a 3x3 area of fog of war, spotting hidden enemies and treasures',
+    description: 'Reveal a 5x5 area of fog of war, spotting hidden enemies and treasures',
     cooldown: 2,
     cost: { gold: 50 },
     type: 'utility',
+    range: 2,
   },
   frigate: {
     name: 'Broadside',
-    description: 'Fire both sides at once, attacking up to 2 adjacent enemy ships',
+    description: 'Fire all guns, attacking up to 2 enemy ships within range 3',
     cooldown: 3,
     cost: { cannons: 2 },
     type: 'offensive',
+    range: 3,
   },
   galleon: {
     name: 'Fortress Mode',
@@ -35,13 +37,15 @@ export const SHIP_ABILITIES: Record<ShipType, Omit<ShipAbility, 'currentCooldown
     cooldown: 3,
     cost: { supplies: 30 },
     type: 'defensive',
+    range: 0,
   },
   flagship: {
     name: 'Devastating Volley',
-    description: 'Unleash a massive attack dealing 2x damage to a single target',
+    description: 'Unleash a massive attack dealing 2x damage to a single target within range 2',
     cooldown: 4,
     cost: { cannons: 4, supplies: 20 },
     type: 'offensive',
+    range: 2,
   },
 };
 
@@ -121,8 +125,9 @@ export function useShipAbility(
       break;
 
     case 'frigate':
-      // Broadside: Attack 2 adjacent targets
-      const targets = findAdjacentEnemies(ship, gameState, 2);
+      // Broadside: Attack 2 targets within range
+      const range = ship.ability.range || 1;
+      const targets = findEnemiesInRange(ship, gameState, range, 2);
       if (targets.length === 0) {
         return {
           success: false,
@@ -165,6 +170,34 @@ export function useShipAbility(
           message: 'No target selected for Devastating Volley',
         };
       }
+      
+      // Check range
+      const volleyRange = ship.ability.range || 1;
+      const targetShip = findShipById(gameState, targetData.targetShipId);
+      if (!targetShip) {
+         return {
+          success: false,
+          updatedShip: ship,
+          updatedGameState: gameState,
+          message: 'Target ship not found',
+        };
+      }
+      
+      const dist = Math.sqrt(
+        Math.pow(targetShip.position.x - ship.position.x, 2) + 
+        Math.pow(targetShip.position.y - ship.position.y, 2)
+      );
+      
+      // Allow diagonals logic (range * 1.5)
+      if (dist > volleyRange * 1.5) {
+         return {
+          success: false,
+          updatedShip: ship,
+          updatedGameState: gameState,
+          message: `Target out of range for Volley (Max: ${volleyRange})`,
+        };
+      }
+
       message = 'Devastating Volley unleashed! 2x damage dealt!';
       // Damage would be applied in game engine
       break;
@@ -247,7 +280,15 @@ function revealFogOfWar(_position: any, _gameState: GameState): { treasures: num
   return { treasures: 2, enemies: 1 };
 }
 
-function findAdjacentEnemies(ship: Ship, gameState: GameState, maxTargets: number): Ship[] {
+function findShipById(gameState: GameState, shipId: string): Ship | undefined {
+  for (const player of gameState.players) {
+    const ship = player.ships.find(s => s.id === shipId);
+    if (ship) return ship;
+  }
+  return undefined;
+}
+
+function findEnemiesInRange(ship: Ship, gameState: GameState, range: number, maxTargets: number): Ship[] {
   const enemies: Ship[] = [];
   
   for (const player of gameState.players) {
@@ -256,10 +297,13 @@ function findAdjacentEnemies(ship: Ship, gameState: GameState, maxTargets: numbe
     for (const enemyShip of player.ships) {
       if (enemyShip.health <= 0) continue;
       
-      const distance = Math.abs(ship.position.x - enemyShip.position.x) + 
-                      Math.abs(ship.position.y - enemyShip.position.y);
+      const distance = Math.sqrt(
+        Math.pow(ship.position.x - enemyShip.position.x, 2) + 
+        Math.pow(ship.position.y - enemyShip.position.y, 2)
+      );
       
-      if (distance === 1 && enemies.length < maxTargets) {
+      // Allow diagonals logic
+      if (distance <= range * 1.5 && enemies.length < maxTargets) {
         enemies.push(enemyShip);
       }
     }

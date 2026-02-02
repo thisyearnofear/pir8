@@ -63,3 +63,17 @@ export function mapOnChainToLocal(onChain: any, gameId: string): GameState {
     pendingActions: [],
   };
 }
+
+/**
+ * Calculates visible coordinates around a center point (Fog of War)
+ * Returns array of "x,y" strings
+ */
+export function getVisibleCoordinates(x: number, y: number, range: number = 1): string[] {
+  const coords: string[] = [];
+  for (let dx = -range; dx <= range; dx++) {
+    for (let dy = -range; dy <= range; dy++) {
+      coords.push(`${x + dx},${y + dy}`);
+    }
+  }
+  return coords;
+}
