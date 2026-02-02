@@ -19,6 +19,8 @@ interface LeakageMeterProps {
   report: InformationLeakageReport;
   isGhostFleetActive: boolean;
   ghostFleetCharges: number;
+  isExpanded?: boolean;
+  onToggle?: () => void;
   className?: string;
 }
 
@@ -74,9 +76,13 @@ export function LeakageMeter({
   report,
   isGhostFleetActive,
   ghostFleetCharges,
+  isExpanded: externalExpanded,
+  onToggle,
   className = '',
 }: LeakageMeterProps) {
-  const [isExpanded, setIsExpanded] = useState(false);
+  const [internalExpanded, setInternalExpanded] = useState(false);
+  const isExpanded = externalExpanded ?? internalExpanded;
+  const toggleExpanded = onToggle || (() => setInternalExpanded(!internalExpanded));
   const [showDetails, setShowDetails] = useState(false);
 
   const { totalLeakageScore, visibleShipPositions, visibleResources, visibleTerritories, patternsDetected } = report;
@@ -85,7 +91,7 @@ export function LeakageMeter({
     <div className={`bg-slate-900/90 border border-slate-700 rounded-xl overflow-hidden ${className}`}>
       {/* Header */}
       <button
-        onClick={() => setIsExpanded(!isExpanded)}
+        onClick={toggleExpanded}
         className="w-full p-4 flex items-center justify-between hover:bg-slate-800/50 transition-colors"
       >
         <div className="flex items-center gap-3">
