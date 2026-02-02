@@ -1,6 +1,6 @@
 // Pirate Game Constants
 export const GAME_CONFIG = {
-  MAP_SIZE: 5, // Reduced from 10 to fit in Solana stack
+  MAP_SIZE: 8, // ENHANCED: Increased from 5 to provide strategic space for 4 players
   MAX_PLAYERS: 4,
   MIN_PLAYERS: 2,
   TURN_TIMEOUT: 45000, // 45 seconds for strategic decisions
@@ -8,7 +8,7 @@ export const GAME_CONFIG = {
   PLATFORM_FEE: 0.05, // 5%
   STARTING_SHIPS: 2, // Each player starts with 2 ships
   MAX_SHIPS_PER_PLAYER: 6,
-  VICTORY_TERRITORY_THRESHOLD: 5, // Number of valuable territories to win
+  VICTORY_TERRITORY_THRESHOLD: 8, // ENHANCED: Adjusted for larger map
 } as const;
 
 // Solana Configuration

@@ -45,8 +45,8 @@ const generateMockGameState = (gameId: string): GameState => {
         username: 'Blackbeard',
         resources: { gold: 1500, crew: 75, cannons: 20, supplies: 150, wood: 0, rum: 0 },
         ships: [
-          { id: 's1', type: 'sloop', health: 80, maxHealth: 100, attack: 25, defense: 10, speed: 3, position: { x: 2, y: 3 }, resources: { gold: 0, crew: 0, cannons: 0, supplies: 0, wood: 0, rum: 0 } },
-          { id: 's2', type: 'frigate', health: 150, maxHealth: 200, attack: 40, defense: 25, speed: 2, position: { x: 3, y: 4 }, resources: { gold: 0, crew: 0, cannons: 0, supplies: 0, wood: 0, rum: 0 } },
+          { id: 's1', type: 'sloop', health: 80, maxHealth: 100, attack: 25, defense: 10, speed: 3, position: { x: 2, y: 3 }, resources: { gold: 0, crew: 0, cannons: 0, supplies: 0, wood: 0, rum: 0 }, ability: { name: 'Spy Glass', description: 'Reveal fog of war', cooldown: 2, currentCooldown: 0, isReady: true, type: 'utility' }, activeEffects: [] },
+          { id: 's2', type: 'frigate', health: 150, maxHealth: 200, attack: 40, defense: 25, speed: 2, position: { x: 3, y: 4 }, resources: { gold: 0, crew: 0, cannons: 0, supplies: 0, wood: 0, rum: 0 }, ability: { name: 'Broadside', description: 'Attack 2 targets', cooldown: 3, currentCooldown: 0, isReady: true, type: 'offensive' }, activeEffects: [] },
         ],
         controlledTerritories: ['2,3', '3,3'],
         totalScore: 2500,
@@ -62,7 +62,7 @@ const generateMockGameState = (gameId: string): GameState => {
         username: 'Calico Jack',
         resources: { gold: 1200, crew: 60, cannons: 15, supplies: 120, wood: 0, rum: 0 },
         ships: [
-          { id: 's3', type: 'galleon', health: 280, maxHealth: 350, attack: 60, defense: 40, speed: 1, position: { x: 6, y: 6 }, resources: { gold: 0, crew: 0, cannons: 0, supplies: 0, wood: 0, rum: 0 } },
+          { id: 's3', type: 'galleon', health: 280, maxHealth: 350, attack: 60, defense: 40, speed: 1, position: { x: 6, y: 6 }, resources: { gold: 0, crew: 0, cannons: 0, supplies: 0, wood: 0, rum: 0 }, ability: { name: 'Fortress Mode', description: '+50% defense', cooldown: 3, currentCooldown: 0, isReady: true, type: 'defensive' }, activeEffects: [] },
         ],
         controlledTerritories: ['6,6', '6,7'],
         totalScore: 1800,

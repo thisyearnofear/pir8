@@ -11,6 +11,24 @@ export type ShipType = "sloop" | "frigate" | "galleon" | "flagship";
 export type ResourceType = "gold" | "crew" | "cannons" | "supplies";
 
 // Ship represents a player's fleet unit
+// ENHANCEMENT: Ship abilities system (MODULAR, DRY)
+export interface ShipAbility {
+  name: string;
+  description: string;
+  cooldown: number;
+  currentCooldown: number;
+  isReady: boolean;
+  cost?: Partial<Resources>;
+  type: 'offensive' | 'defensive' | 'utility';
+}
+
+export interface ShipEffect {
+  type: 'defense_buff' | 'attack_buff' | 'immobile' | 'invisible' | 'burning';
+  duration: number;
+  magnitude: number;
+  source: string; // ID of ship that caused effect
+}
+
 export interface Ship {
   id: string;
   type: ShipType;
@@ -21,6 +39,8 @@ export interface Ship {
   speed: number;
   position: Coordinate;
   resources: Resources;
+  ability: ShipAbility; // ENHANCEMENT: Each ship has unique ability
+  activeEffects: ShipEffect[]; // ENHANCEMENT: Buffs/debuffs tracking
 }
 
 // Territory cell on the game map
@@ -158,9 +178,10 @@ export interface GameConfig {
 }
 
 // Ship configurations for different types
+// Note: abilities and activeEffects should be initialized at runtime via initializeShipAbility
 export const SHIP_CONFIGS: Record<
   ShipType,
-  Omit<Ship, "id" | "position" | "resources">
+  Omit<Ship, "id" | "position" | "resources" | "ability" | "activeEffects">
 > = {
   sloop: {
     type: "sloop",

@@ -67,7 +67,7 @@ export const AIReasoningPanel: React.FC<AIReasoningPanelProps> = ({
   if (!isExpanded) {
     return (
       <div 
-        className="ai-reasoning-panel-mini fixed left-4 top-32 w-72 bg-slate-900/95 border-2 border-amber-600 rounded-lg shadow-2xl z-40 cursor-pointer hover:border-amber-400 transition-colors"
+        className="ai-reasoning-panel-mini fixed left-4 top-32 w-72 bg-slate-900/95 border-2 border-amber-600 rounded-lg shadow-2xl z-40 cursor-pointer hover:border-amber-400 hover:scale-[1.02] transition-all group"
         onClick={(e) => {
           e.stopPropagation();
           setIsExpanded(true);
@@ -89,8 +89,8 @@ export const AIReasoningPanel: React.FC<AIReasoningPanelProps> = ({
                 AI Thinking...
               </h3>
             </div>
-            <span className="text-xs text-amber-300 bg-amber-900/50 px-2 py-1 rounded">
-              Click to expand
+            <span className="text-xs text-amber-300 bg-amber-900/50 px-2 py-1 rounded flex items-center gap-1 group-hover:bg-amber-700/50 transition-colors">
+              <span>⬆</span> Expand
             </span>
           </div>
         </div>
@@ -119,11 +119,11 @@ export const AIReasoningPanel: React.FC<AIReasoningPanelProps> = ({
             </div>
           )}
 
-          {optionsConsidered.length > 1 && (
-            <div className="text-xs text-slate-400 text-center pt-1 border-t border-slate-700">
-              Evaluated {optionsConsidered.length} options • Click for details
-            </div>
-          )}
+          <div className="text-xs text-center pt-2 border-t border-slate-700 text-amber-400/80 group-hover:text-amber-300 transition-colors">
+            {optionsConsidered.length > 1 
+              ? `Evaluated ${optionsConsidered.length} options — tap for full analysis ↗`
+              : 'Tap anywhere to see full analysis ↗'}
+          </div>
         </div>
       </div>
     );

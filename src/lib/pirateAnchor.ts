@@ -220,9 +220,11 @@ export class PirateGameConverter {
   }
 
   static convertToFrontendShip(shipData: ShipData): Ship {
+    const { initializeShipAbility } = require('./shipAbilities');
+    const shipType = this.convertShipType(shipData.shipType);
     return {
       id: shipData.id,
-      type: this.convertShipType(shipData.shipType),
+      type: shipType,
       health: shipData.health,
       maxHealth: shipData.maxHealth,
       attack: shipData.attack,
@@ -233,6 +235,8 @@ export class PirateGameConverter {
         y: shipData.positionY
       },
       resources: { gold: 0, crew: 0, cannons: 0, supplies: 0, wood: 0, rum: 0 },
+      ability: initializeShipAbility(shipType),
+      activeEffects: [],
     };
   }
 

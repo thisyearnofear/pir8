@@ -12,7 +12,7 @@ export class GameBalance {
    * Combines stats from SHIP_CONFIGS with economy data
    */
   static readonly SHIP_BALANCE: Record<ShipType, {
-    stats: Omit<Ship, 'id' | 'position' | 'resources'>;
+    stats: Omit<Ship, 'id' | 'position' | 'resources' | 'ability' | 'activeEffects'>;
     cost: Resources;
     strength: number;
     resourceBonus: number;

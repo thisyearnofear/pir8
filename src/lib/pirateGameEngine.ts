@@ -156,8 +156,10 @@ export class PirateGameManager {
 
   /**
    * Create starting fleet for a player
+   * ENHANCEMENT: Ships now have abilities initialized
    */
   static createStartingFleet(playerId: string, startingPosition: Coordinate): Ship[] {
+    const { initializeShipAbility } = require('./shipAbilities');
     return [
       {
         id: `${playerId}_sloop_1`,
@@ -168,7 +170,9 @@ export class PirateGameManager {
         defense: 10,
         speed: 3,
         position: startingPosition,
-        resources: { gold: 0, crew: 0, cannons: 0, supplies: 0, wood: 0, rum: 0 }
+        resources: { gold: 0, crew: 0, cannons: 0, supplies: 0, wood: 0, rum: 0 },
+        ability: initializeShipAbility('sloop'),
+        activeEffects: [],
       }
     ];
   }
@@ -382,9 +386,22 @@ export class PirateGameManager {
 
   /**
    * Advance to next player's turn
+   * ENHANCEMENT: Tick ability cooldowns and effects
    */
   static advanceTurn(gameState: GameState): GameState {
-    let nextPlayerIndex = (gameState.currentPlayerIndex + 1) % gameState.players.length;
+    const { tickAbilityCooldown, tickShipEffects } = require('./shipAbilities');
+    
+    // ENHANCEMENT: Update all ships' abilities and effects
+    const updatedPlayers = gameState.players.map(player => ({
+      ...player,
+      ships: player.ships.map(ship => {
+        let updated = tickAbilityCooldown(ship);
+        updated = tickShipEffects(updated);
+        return updated;
+      })
+    }));
+
+    let nextPlayerIndex = (gameState.currentPlayerIndex + 1) % updatedPlayers.length;
     let turnNumber = gameState.turnNumber;
     let updatedWeather = gameState.globalWeather;
 
@@ -422,6 +439,7 @@ export class PirateGameManager {
 
     return {
       ...gameState,
+      players: updatedPlayers,
       currentPlayerIndex: nextPlayerIndex,
       turnNumber,
       turnTimeRemaining: GAME_CONFIG.TURN_TIMEOUT,
@@ -972,6 +990,7 @@ export class PirateGameManager {
 
     // NOTE: Ship creation logic moved to smart contract
     // const newShip = PirateGameEngine.createShip(shipType as ShipType, player, buildCoord);
+    const { initializeShipAbility } = require('./shipAbilities');
     const newShip = {
       id: `${player}_${shipType}_${Date.now()}`,
       type: shipType as ShipType,
@@ -981,7 +1000,9 @@ export class PirateGameManager {
       defense: 10,
       speed: 2,
       position: buildCoord,
-      resources: { gold: 0, crew: 0, cannons: 0, supplies: 0, wood: 0, rum: 0 }
+      resources: { gold: 0, crew: 0, cannons: 0, supplies: 0, wood: 0, rum: 0 },
+      ability: initializeShipAbility(shipType as ShipType),
+      activeEffects: [],
     };
 
     // Deduct resources and add ship
