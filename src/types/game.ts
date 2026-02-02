@@ -106,6 +106,10 @@ export interface Player {
   speedBonusAccumulated: number;
   averageDecisionTimeMs: number;
   totalMoves: number;
+
+  // Momentum system: consecutive attacks build bonus
+  consecutiveAttacks: number;
+  lastActionWasAttack: boolean;
 }
 
 export interface GameState {

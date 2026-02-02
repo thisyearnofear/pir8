@@ -62,9 +62,9 @@ const SLIDES = [
     subtitle: 'Three Paths to Glory',
     content: 'Choose your strategy! Multiple victory conditions mean every playstyle can triumph.',
     details: [
-      { icon: '🏴‍☠️', text: 'Territory Control', desc: 'Dominate 60% of valuable lands', color: 'text-red-400' },
-      { icon: '⚔️', text: 'Fleet Supremacy', desc: 'Control 80% of naval power', color: 'text-orange-400' },
-      { icon: '💎', text: 'Economic Victory', desc: 'Amass 15,000+ resources', color: 'text-yellow-400' },
+      { icon: '🏴‍☠️', text: 'Territory Control', desc: 'Dominate 50% of valuable lands', color: 'text-red-400' },
+      { icon: '⚔️', text: 'Fleet Supremacy', desc: 'Control 65% of naval power', color: 'text-orange-400' },
+      { icon: '💎', text: 'Economic Victory', desc: 'Amass 10,000+ resources', color: 'text-yellow-400' },
     ],
     bgGradient: 'from-yellow-900/20 to-amber-900/20'
   },

@@ -16,6 +16,8 @@ import { getEffectiveStats } from '@/lib/shipAbilities';
 interface DamagePreviewProps {
   attacker: Ship;
   defender: Ship;
+  turnNumber?: number;
+  consecutiveAttacks?: number;
   onConfirm: () => void;
   onCancel: () => void;
   isProcessing?: boolean;
@@ -24,40 +26,49 @@ interface DamagePreviewProps {
 export default function DamagePreview({
   attacker,
   defender,
+  turnNumber = 0,
+  consecutiveAttacks = 0,
   onConfirm,
   onCancel,
   isProcessing = false,
 }: DamagePreviewProps) {
+  const isMomentumHit = GameBalance.checkMomentum(consecutiveAttacks);
+
   // Get effective stats (including buffs/debuffs)
   const attackerStats = getEffectiveStats(attacker);
   const defenderStats = getEffectiveStats(defender);
-  
+
   // Calculate expected damage range
-  const baseDamage = GameBalance.calculateCombatDamage(
+  const { damage: baseDamage } = GameBalance.calculateCombatDamage(
     attacker.type,
     defender.type,
     attacker.health,
-    defenderStats.defense
+    defenderStats.defense,
+    turnNumber,
+    isMomentumHit
   );
-  
+
   // Show damage range (±15% variance)
   const minDamage = Math.floor(baseDamage * 0.85);
   const maxDamage = Math.ceil(baseDamage * 1.15);
-  
+
   // Calculate outcomes
   const defenderHealthAfter = Math.max(0, defender.health - baseDamage);
   const willDestroy = defenderHealthAfter === 0;
   const damagePercent = Math.round((baseDamage / defender.health) * 100);
 
   // Calculate counterattack (if defender survives and is adjacent)
-  const counterDamage = !willDestroy
+  const counterResult = !willDestroy
     ? GameBalance.calculateCombatDamage(
         defender.type,
         attacker.type,
         defenderHealthAfter,
-        attackerStats.defense
+        attackerStats.defense,
+        turnNumber,
+        false
       )
-    : 0;
+    : { damage: 0, isCritical: false };
+  const counterDamage = counterResult.damage;
   const attackerHealthAfter = Math.max(0, attacker.health - counterDamage);
   const willBeDestroyed = attackerHealthAfter === 0;
 
@@ -115,13 +126,15 @@ export default function DamagePreview({
         {/* Damage Prediction */}
         <div className="bg-slate-800/50 border border-slate-700 rounded-lg p-4 mb-4">
           <h3 className="text-sm font-bold text-gray-300 mb-3">Expected Outcome</h3>
-          
+
           <div className="space-y-3">
             {/* Your Attack */}
             <div className="flex items-center justify-between">
               <span className="text-sm text-gray-400">Your damage:</span>
               <span className="text-lg font-bold text-red-400">
                 {minDamage === maxDamage ? baseDamage : `${minDamage}-${maxDamage}`}
+                {isMomentumHit && <span className="text-orange-400 ml-2">🔥(+25%)</span>}
+                <span className="text-yellow-400 ml-2">💥(15%)</span>
               </span>
             </div>
 

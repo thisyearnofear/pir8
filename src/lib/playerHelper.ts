@@ -28,6 +28,8 @@ export const createPlayerFromWallet = (publicKey: PublicKey): Player => {
     speedBonusAccumulated: 0,
     averageDecisionTimeMs: 0,
     totalMoves: 0,
+    consecutiveAttacks: 0,
+    lastActionWasAttack: false,
   };
 };
 
@@ -48,5 +50,7 @@ export const createAIPlayer = (gameId: string): Player => {
     speedBonusAccumulated: 0,
     averageDecisionTimeMs: 0,
     totalMoves: 0,
+    consecutiveAttacks: 0,
+    lastActionWasAttack: false,
   };
 };

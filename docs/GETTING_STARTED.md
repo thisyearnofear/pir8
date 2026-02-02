@@ -246,10 +246,10 @@ pnpm run cli -- memo --game game_0 --action join
    - Dynamic weather affects movement and combat
    - Turns cycle through all players
 
-4. **Victory Conditions** (First to achieve wins)
-   - **Fleet Dominance**: Control 80% of naval power
-   - **Territory Control**: Own 60% of valuable territories
-   - **Economic Victory**: Accumulate 15,000+ resource value
+ 4. **Victory Conditions** (First to achieve wins)
+    - **Fleet Dominance**: Control 65% of naval power
+    - **Territory Control**: Own 50% of valuable territories
+    - **Economic Victory**: Accumulate 10,000+ resource value
 
 5. **Completion**
    - Winner determined by victory condition achieved first

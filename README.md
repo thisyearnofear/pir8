@@ -122,9 +122,9 @@ Open [http://localhost:3000](http://localhost:3000) and connect your Solana wall
 - 🌫️ **Fog**: Limited visibility, -30% movement
 
 **Victory Conditions**:
-- **Fleet Dominance**: Control 80% of total naval power
-- **Territory Control**: Own 60% of valuable territories
-- **Economic Victory**: Accumulate 15,000+ resource value
+- **Fleet Dominance**: Control 65% of total naval power
+- **Territory Control**: Own 50% of valuable territories
+- **Economic Victory**: Accumulate 10,000+ resource value
 
 **Resource Economy**:
 - 💰 **Gold**: Primary currency for ship building

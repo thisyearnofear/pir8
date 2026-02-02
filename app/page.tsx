@@ -26,6 +26,7 @@ import PrivacyStatusIndicator from "@/components/PrivacyStatusIndicator";
 import ViralEventModal from "@/components/ViralEventModal";
 import SocialModal from "@/components/SocialModal";
 import LobbyBrowser from "@/components/LobbyBrowser";
+import AIStreamPanel from "@/components/AIStreamPanel";
 import { LeakageMeter, BountyBoard, PrivacyLessonModal } from "@/components/privacy";
 import AIBattleModal from "@/components/AIBattleModal";
 import AIBattleControls from "@/components/AIBattleControls";
@@ -78,11 +79,11 @@ export default function Home() {
     isPracticeMode,
     // AI vs AI mode
     startAIvsAIGame,
+    isAIvsAIMode,
     setPlaybackSpeed,
     getPlaybackSpeed,
-    isAIvsAIMode,
     setAIDecisionCallback,
-    currentAIReasoning
+    aiReasoningHistory
   } = usePirateGameState();
 
   const [isCreatingGame, setIsCreatingGame] = useState(false);
@@ -99,7 +100,7 @@ export default function Home() {
   
   // AI vs AI mode state
   const [showAIBattleModal, setShowAIBattleModal] = useState(false);
-  const [showAIReasoning, setShowAIReasoning] = useState(false);
+  const [expandedPanel, setExpandedPanel] = useState<'leakage' | 'ai' | null>('ai');
   
   // Spectator mode state
   const [showSpectatorMode, setShowSpectatorMode] = useState(false);
@@ -228,6 +229,8 @@ export default function Home() {
       speedBonusAccumulated: 0,
       averageDecisionTimeMs: 0,
       totalMoves: 0,
+      consecutiveAttacks: 0,
+      lastActionWasAttack: false,
     };
     
     const success = startPracticeGame(practicePlayer, difficulty);
@@ -577,17 +580,31 @@ export default function Home() {
       <ErrorToast error={error} onClose={clearError} />
       <SuccessToast message={showMessage} onClose={() => setMessage(null)} />
 
-      {/* Privacy Simulation Components - Practice Mode Only */}
-      {isPracticeMode() && privacySim.leakageReport && (
-        <>
-          <div className="fixed top-20 right-4 z-privacy-panel w-72">
+      {/* Privacy & AI Stream Components - Side Panel Stack */}
+      {(isPracticeMode() || isAIvsAIMode) && (
+        <div className="fixed top-20 right-4 z-privacy-panel w-80 space-y-3">
+          {/* Information Leakage Meter */}
+          {privacySim.leakageReport && (
             <LeakageMeter
               report={privacySim.leakageReport}
               isGhostFleetActive={privacySim.ghostFleetStatus?.isActive || false}
               ghostFleetCharges={privacySim.ghostFleetStatus?.chargesRemaining || 0}
+              isExpanded={expandedPanel === 'leakage'}
+              onToggle={() => setExpandedPanel(expandedPanel === 'leakage' ? null : 'leakage')}
             />
-          </div>
+          )}
 
+          {/* AI Thought Stream - NEW ongoing stream */}
+          <AIStreamPanel
+            history={aiReasoningHistory}
+            isExpanded={expandedPanel === 'ai'}
+            onToggle={() => setExpandedPanel(expandedPanel === 'ai' ? null : 'ai')}
+          />
+        </div>
+      )}
+
+      {isPracticeMode() && (
+        <>
           <PrivacyLessonModal
             lesson={privacySim.currentLesson}
             isVisible={privacySim.isLessonVisible}
@@ -699,7 +716,6 @@ export default function Home() {
           onSpeedChange={setPlaybackSpeed}
           gameState={gameState}
           isAIvsAIMode={isAIvsAIMode}
-          onToggleReasoning={() => setShowAIReasoning(!showAIReasoning)}
         />
       )}
 
@@ -942,9 +958,6 @@ export default function Home() {
               onClearJoinError={clearJoinError}
               onOpenLeaderboard={() => setSocialModal({ type: 'leaderboard', isOpen: true })}
               onOpenReferral={() => setSocialModal({ type: 'referral', isOpen: true })}
-              showAIReasoning={showAIReasoning}
-              onToggleAIReasoning={() => setShowAIReasoning(!showAIReasoning)}
-              aiReasoning={currentAIReasoning}
             />
           ) : (
             /* Enhanced Empty State with Wallet CTA */

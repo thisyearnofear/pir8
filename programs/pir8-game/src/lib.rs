@@ -12,11 +12,11 @@ pub mod pir8_game {
 
     /// Register an autonomous agent with optional social metadata
     pub fn register_agent(
-        ctx: Context<RegisterAgent>, 
-        name: String, 
+        ctx: Context<RegisterAgent>,
+        name: String,
         version: String,
         twitter: Option<String>,
-        website: Option<String>
+        website: Option<String>,
     ) -> Result<()> {
         let agent = &mut ctx.accounts.agent;
         let clock = Clock::get()?;
@@ -27,22 +27,25 @@ pub mod pir8_game {
         agent.twitter = twitter;
         agent.website = website;
         agent.last_active = clock.unix_timestamp;
-        
+
         msg!("Agent {} registered with metadata", agent.name);
         Ok(())
     }
 
     /// Authorize a delegate key to make moves on behalf of the agent owner (Session Key)
-    pub fn delegate_agent_control(ctx: Context<DelegateAgentControl>, delegate: Option<Pubkey>) -> Result<()> {
+    pub fn delegate_agent_control(
+        ctx: Context<DelegateAgentControl>,
+        delegate: Option<Pubkey>,
+    ) -> Result<()> {
         let agent = &mut ctx.accounts.agent;
         agent.delegate = delegate;
-        
+
         if let Some(key) = delegate {
             msg!("Agent control delegated to {}", key);
         } else {
             msg!("Agent control revoked");
         }
-        
+
         Ok(())
     }
 
@@ -78,7 +81,10 @@ pub mod pir8_game {
         let system_program = &ctx.accounts.system_program;
         let player_pubkey = player.key();
 
-        require!(game.status == GameStatus::Waiting, GameError::GameNotJoinable);
+        require!(
+            game.status == GameStatus::Waiting,
+            GameError::GameNotJoinable
+        );
         require!(game.player_count < MAX_PLAYERS, GameError::GameFull);
 
         // Check if player already joined
@@ -88,12 +94,9 @@ pub mod pir8_game {
 
         // Transfer Entry Fee (0.1 SOL)
         let entry_fee = 100_000_000; // 0.1 SOL in lamports
-        
-        let transfer_instruction = system_instruction::transfer(
-            &player.key(),
-            &game.key(),
-            entry_fee,
-        );
+
+        let transfer_instruction =
+            system_instruction::transfer(&player.key(), &game.key(), entry_fee);
 
         anchor_lang::solana_program::program::invoke(
             &transfer_instruction,
@@ -107,7 +110,12 @@ pub mod pir8_game {
         // Add player
         game.players.push(PlayerData {
             pubkey: player_pubkey,
-            resources: Resources { gold: 1000, crew: 50, cannons: 10, supplies: 100 },
+            resources: Resources {
+                gold: 1000,
+                crew: 50,
+                cannons: 10,
+                supplies: 100,
+            },
             ships: Vec::new(),
             controlled_territories: Vec::new(),
             total_score: 0,
@@ -134,8 +142,14 @@ pub mod pir8_game {
         let game = &mut ctx.accounts.game;
         let clock = Clock::get()?;
 
-        require!(game.status == GameStatus::Waiting, GameError::GameAlreadyStarted);
-        require!(game.player_count >= MIN_PLAYERS, GameError::NotEnoughPlayers);
+        require!(
+            game.status == GameStatus::Waiting,
+            GameError::GameAlreadyStarted
+        );
+        require!(
+            game.player_count >= MIN_PLAYERS,
+            GameError::NotEnoughPlayers
+        );
 
         // Generate map
         let seed = clock.unix_timestamp as u64;
@@ -161,7 +175,10 @@ pub mod pir8_game {
         let clock = Clock::get()?;
 
         // Only authority can reset
-        require!(ctx.accounts.authority.key() == game.authority, GameError::Unauthorized);
+        require!(
+            ctx.accounts.authority.key() == game.authority,
+            GameError::Unauthorized
+        );
 
         game.status = GameStatus::Waiting;
         game.player_count = 0;
@@ -190,22 +207,31 @@ pub mod pir8_game {
 
         // Validate game state
         require!(game.status == GameStatus::Active, GameError::GameNotActive);
-        
+
         // Validate it's the player's turn
-        let current_player = game.get_current_player()
-            .ok_or(GameError::NotPlayerTurn)?;
-        require!(current_player.pubkey == player_pubkey, GameError::NotPlayerTurn);
+        let current_player = game.get_current_player().ok_or(GameError::NotPlayerTurn)?;
+        require!(
+            current_player.pubkey == player_pubkey,
+            GameError::NotPlayerTurn
+        );
 
         // Validate coordinates
-        require!(to_x < MAP_SIZE as u8 && to_y < MAP_SIZE as u8, GameError::InvalidCoordinate);
+        require!(
+            to_x < MAP_SIZE as u8 && to_y < MAP_SIZE as u8,
+            GameError::InvalidCoordinate
+        );
 
         // First, find the ship and validate move distance (immutable borrow)
         let (from_x, from_y, ship_speed) = {
-            let player = game.players.iter()
+            let player = game
+                .players
+                .iter()
                 .find(|p| p.pubkey == player_pubkey)
                 .ok_or(GameError::NotPlayerTurn)?;
-            
-            let ship = player.ships.iter()
+
+            let ship = player
+                .ships
+                .iter()
                 .find(|s| s.id == ship_id)
                 .ok_or(GameError::ShipNotFound)?;
 
@@ -213,7 +239,8 @@ pub mod pir8_game {
         };
 
         // Validate move distance (Manhattan distance <= ship speed)
-        let distance = ((to_x as i16 - from_x as i16).abs() + (to_y as i16 - from_y as i16).abs()) as u32;
+        let distance =
+            ((to_x as i16 - from_x as i16).abs() + (to_y as i16 - from_y as i16).abs()) as u32;
         require!(distance <= ship_speed, GameError::InvalidCoordinate);
 
         // Check if position is occupied by another ship
@@ -229,10 +256,13 @@ pub mod pir8_game {
         let current_turn = game.turn_number;
 
         // Now get mutable reference and update ship
-        let player = game.get_player_mut(&player_pubkey)
+        let player = game
+            .get_player_mut(&player_pubkey)
             .ok_or(GameError::NotPlayerTurn)?;
-        
-        let ship = player.ships.iter_mut()
+
+        let ship = player
+            .ships
+            .iter_mut()
             .find(|s| s.id == ship_id)
             .ok_or(GameError::ShipNotFound)?;
 
@@ -283,16 +313,18 @@ pub mod pir8_game {
 
         // Validate game state
         require!(game.status == GameStatus::Active, GameError::GameNotActive);
-        
+
         // Validate it's the player's turn
-        let current_player = game.get_current_player()
-            .ok_or(GameError::NotPlayerTurn)?;
-        require!(current_player.pubkey == player_pubkey, GameError::NotPlayerTurn);
+        let current_player = game.get_current_player().ok_or(GameError::NotPlayerTurn)?;
+        require!(
+            current_player.pubkey == player_pubkey,
+            GameError::NotPlayerTurn
+        );
 
         // Find attacker ship
         let mut attacker_pos = (0u8, 0u8);
         let mut attacker_attack = 0u32;
-        
+
         for player in game.players.iter() {
             if player.pubkey == player_pubkey {
                 for ship in player.ships.iter() {
@@ -320,15 +352,16 @@ pub mod pir8_game {
             for ship in player.ships.iter_mut() {
                 if ship.id == target_ship_id {
                     target_found = true;
-                    
+
                     // Check if ships are adjacent (Manhattan distance <= 1)
-                    let distance = ((ship.position_x as i16 - attacker_pos.0 as i16).abs() 
-                                  + (ship.position_y as i16 - attacker_pos.1 as i16).abs()) as u32;
+                    let distance = ((ship.position_x as i16 - attacker_pos.0 as i16).abs()
+                        + (ship.position_y as i16 - attacker_pos.1 as i16).abs())
+                        as u32;
                     require!(distance <= 1, GameError::ShipsNotInRange);
 
                     // Calculate damage (attack - defense, minimum 1)
                     damage_dealt = attacker_attack.saturating_sub(ship.defense).max(1);
-                    
+
                     // Apply damage
                     if ship.health <= damage_dealt {
                         ship.health = 0;
@@ -336,7 +369,7 @@ pub mod pir8_game {
                     } else {
                         ship.health -= damage_dealt;
                     }
-                    
+
                     break;
                 }
             }
@@ -367,24 +400,23 @@ pub mod pir8_game {
     }
 
     /// Claim a territory at ship's current position
-    pub fn claim_territory(
-        ctx: Context<MakeMove>,
-        ship_id: String,
-    ) -> Result<()> {
+    pub fn claim_territory(ctx: Context<MakeMove>, ship_id: String) -> Result<()> {
         let game = &mut ctx.accounts.game;
         let player_pubkey = ctx.accounts.player.key();
 
         // Validate game state
         require!(game.status == GameStatus::Active, GameError::GameNotActive);
-        
+
         // Validate it's the player's turn
-        let current_player = game.get_current_player()
-            .ok_or(GameError::NotPlayerTurn)?;
-        require!(current_player.pubkey == player_pubkey, GameError::NotPlayerTurn);
+        let current_player = game.get_current_player().ok_or(GameError::NotPlayerTurn)?;
+        require!(
+            current_player.pubkey == player_pubkey,
+            GameError::NotPlayerTurn
+        );
 
         // Find ship and get its position
         let mut ship_pos = None;
-        
+
         for player in game.players.iter() {
             if player.pubkey == player_pubkey {
                 for ship in player.ships.iter() {
@@ -400,7 +432,9 @@ pub mod pir8_game {
 
         // Get territory cell
         let index = (x as usize * MAP_SIZE) + y as usize;
-        let cell = game.territory_map.get_mut(index)
+        let cell = game
+            .territory_map
+            .get_mut(index)
             .ok_or(GameError::InvalidCoordinate)?;
 
         // Check if territory is claimable (not water, storm, reef, or whirlpool)
@@ -418,9 +452,10 @@ pub mod pir8_game {
 
         // Add to player's controlled territories
         let coord = format!("{},{}", x, y);
-        let player = game.get_player_mut(&player_pubkey)
+        let player = game
+            .get_player_mut(&player_pubkey)
             .ok_or(GameError::NotPlayerTurn)?;
-        
+
         if !player.controlled_territories.contains(&coord) {
             player.controlled_territories.push(coord);
         }
@@ -439,19 +474,19 @@ pub mod pir8_game {
     }
 
     /// Collect resources from controlled territories
-    pub fn collect_resources(
-        ctx: Context<MakeMove>,
-    ) -> Result<()> {
+    pub fn collect_resources(ctx: Context<MakeMove>) -> Result<()> {
         let game = &mut ctx.accounts.game;
         let player_pubkey = ctx.accounts.player.key();
 
         // Validate game state
         require!(game.status == GameStatus::Active, GameError::GameNotActive);
-        
+
         // Validate it's the player's turn
-        let current_player = game.get_current_player()
-            .ok_or(GameError::NotPlayerTurn)?;
-        require!(current_player.pubkey == player_pubkey, GameError::NotPlayerTurn);
+        let current_player = game.get_current_player().ok_or(GameError::NotPlayerTurn)?;
+        require!(
+            current_player.pubkey == player_pubkey,
+            GameError::NotPlayerTurn
+        );
 
         // Calculate resources from controlled territories (immutable borrow)
         let mut total_gold = 0u32;
@@ -460,7 +495,9 @@ pub mod pir8_game {
 
         // Clone territory list to avoid borrow issues
         let controlled_territories: Vec<String> = {
-            let player = game.players.iter()
+            let player = game
+                .players
+                .iter()
                 .find(|p| p.pubkey == player_pubkey)
                 .ok_or(GameError::NotPlayerTurn)?;
             player.controlled_territories.clone()
@@ -480,7 +517,8 @@ pub mod pir8_game {
         }
 
         // Now get mutable reference and add resources
-        let player = game.get_player_mut(&player_pubkey)
+        let player = game
+            .get_player_mut(&player_pubkey)
             .ok_or(GameError::NotPlayerTurn)?;
 
         player.resources.gold = player.resources.gold.saturating_add(total_gold);
@@ -514,19 +552,29 @@ pub mod pir8_game {
 
         // Validate game state
         require!(game.status == GameStatus::Active, GameError::GameNotActive);
-        
+
         // Validate it's the player's turn
-        let current_player = game.get_current_player()
-            .ok_or(GameError::NotPlayerTurn)?;
-        require!(current_player.pubkey == player_pubkey, GameError::NotPlayerTurn);
+        let current_player = game.get_current_player().ok_or(GameError::NotPlayerTurn)?;
+        require!(
+            current_player.pubkey == player_pubkey,
+            GameError::NotPlayerTurn
+        );
 
         // Check if location is a port
         let index = (port_x as usize * MAP_SIZE) + port_y as usize;
-        let cell = game.territory_map.get(index)
+        let cell = game
+            .territory_map
+            .get(index)
             .ok_or(GameError::InvalidCoordinate)?;
-        
-        require!(cell.cell_type == TerritoryCellType::Port, GameError::NoAdjacentPort);
-        require!(cell.owner == Some(player_pubkey), GameError::TerritoryNotControlled);
+
+        require!(
+            cell.cell_type == TerritoryCellType::Port,
+            GameError::NoAdjacentPort
+        );
+        require!(
+            cell.owner == Some(player_pubkey),
+            GameError::TerritoryNotControlled
+        );
 
         // Check if position is occupied
         for p in game.players.iter() {
@@ -544,18 +592,22 @@ pub mod pir8_game {
         // Store turn number before mutable borrow
         let current_turn = game.turn_number;
 
-        let player = game.get_player_mut(&player_pubkey)
+        let player = game
+            .get_player_mut(&player_pubkey)
             .ok_or(GameError::NotPlayerTurn)?;
 
         // Check fleet size limit
-        require!(player.ships.len() < MAX_SHIPS_PER_PLAYER, GameError::FleetSizeLimit);
+        require!(
+            player.ships.len() < MAX_SHIPS_PER_PLAYER,
+            GameError::FleetSizeLimit
+        );
 
         // Check resources
         require!(
-            player.resources.gold >= costs.gold &&
-            player.resources.crew >= costs.crew &&
-            player.resources.cannons >= costs.cannons &&
-            player.resources.supplies >= costs.supplies,
+            player.resources.gold >= costs.gold
+                && player.resources.crew >= costs.crew
+                && player.resources.cannons >= costs.cannons
+                && player.resources.supplies >= costs.supplies,
             GameError::InsufficientResources
         );
 
@@ -596,14 +648,63 @@ pub mod pir8_game {
     }
 
     /// Check victory conditions and complete game if met
-    pub fn check_and_complete_game(
-        ctx: Context<MakeMove>,
-    ) -> Result<()> {
+    pub fn check_and_complete_game(ctx: Context<MakeMove>) -> Result<()> {
         let game = &mut ctx.accounts.game;
         let clock = Clock::get()?;
 
         // Only check if game is active
         require!(game.status == GameStatus::Active, GameError::GameNotActive);
+
+        // Max turns check - game ends at 50 turns (lowered from 100)
+        const MAX_TURNS: u32 = 50;
+        if game.turn_number >= MAX_TURNS {
+            // Determine winner by score when max turns reached
+            let mut scored_players: Vec<(Pubkey, u32, u32, usize, u32)> = Vec::new();
+
+            for player in game.players.iter() {
+                if !player.is_active {
+                    continue;
+                }
+                let active_ships = player.ships.iter().filter(|s| s.health > 0).count();
+                let total_health: u32 = player.ships.iter().map(|s| s.health).sum();
+                let territories = player.controlled_territories.len();
+                let resource_value = player.resources.gold
+                    + player.resources.crew * 10
+                    + player.resources.cannons * 20
+                    + player.resources.supplies * 5;
+
+                // Weighted score: ships * 100 + health * 2 + territories * 150 + resources
+                let score = (active_ships as u32 * 100)
+                    + (total_health * 2)
+                    + ((territories * 150) as u32)
+                    + resource_value;
+                scored_players.push((
+                    player.pubkey,
+                    active_ships as u32,
+                    total_health,
+                    territories,
+                    score,
+                ));
+            }
+
+            // Sort by score descending
+            scored_players.sort_by(|a, b| b.4.cmp(&a.4));
+
+            if let Some((winner_pubkey, _, _, _, _)) = scored_players.first() {
+                game.status = GameStatus::Completed;
+                game.winner = Some(*winner_pubkey);
+                game.completed_at = Some(clock.unix_timestamp);
+
+                emit!(GameCompleted {
+                    game_id: 0,
+                    winner: *winner_pubkey,
+                    victory_type: "Time Limit".to_string(),
+                });
+
+                msg!("Game completed by time limit! Winner: {}", winner_pubkey);
+            }
+            return Ok(());
+        }
 
         // Check victory conditions for each player
         let mut winner: Option<(Pubkey, String)> = None;
@@ -613,44 +714,49 @@ pub mod pir8_game {
                 continue;
             }
 
-            // Victory Condition 1: Fleet Dominance (80% of total naval power)
-            let total_fleet_power: u32 = game.players.iter()
+            // Victory Condition 1: Fleet Dominance (65% of total naval power) - lowered from 80%
+            let total_fleet_power: u32 = game
+                .players
+                .iter()
                 .flat_map(|p| p.ships.iter())
                 .map(|s| s.health)
                 .sum();
-            
-            let player_fleet_power: u32 = player.ships.iter()
-                .map(|s| s.health)
-                .sum();
 
-            if total_fleet_power > 0 && player_fleet_power * 100 >= total_fleet_power * 80 {
+            let player_fleet_power: u32 = player.ships.iter().map(|s| s.health).sum();
+
+            if total_fleet_power > 0 && player_fleet_power * 100 >= total_fleet_power * 65 {
                 winner = Some((player.pubkey, "Fleet Dominance".to_string()));
                 break;
             }
 
-            // Victory Condition 2: Territory Control (60% of valuable territories)
-            let valuable_territories: usize = game.territory_map.iter()
-                .filter(|cell| matches!(
-                    cell.cell_type,
-                    TerritoryCellType::Port | TerritoryCellType::Island | TerritoryCellType::Treasure
-                ))
+            // Victory Condition 2: Territory Control (50% of valuable territories) - lowered from 60%
+            let valuable_territories: usize = game
+                .territory_map
+                .iter()
+                .filter(|cell| {
+                    matches!(
+                        cell.cell_type,
+                        TerritoryCellType::Port
+                            | TerritoryCellType::Island
+                            | TerritoryCellType::Treasure
+                    )
+                })
                 .count();
 
             let player_territories = player.controlled_territories.len();
 
-            if valuable_territories > 0 && player_territories * 100 >= valuable_territories * 60 {
+            if valuable_territories > 0 && player_territories * 100 >= valuable_territories * 50 {
                 winner = Some((player.pubkey, "Territory Control".to_string()));
                 break;
             }
 
-            // Victory Condition 3: Economic Victory (15,000+ resource value)
-            let resource_value = 
-                player.resources.gold +
-                player.resources.crew * 10 +
-                player.resources.cannons * 20 +
-                player.resources.supplies * 5;
+            // Victory Condition 3: Economic Victory (10,000+ resource value) - lowered from 15,000
+            let resource_value = player.resources.gold
+                + player.resources.crew * 10
+                + player.resources.cannons * 20
+                + player.resources.supplies * 5;
 
-            if resource_value >= 15000 {
+            if resource_value >= 10000 {
                 winner = Some((player.pubkey, "Economic Victory".to_string()));
                 break;
             }
@@ -685,20 +791,25 @@ pub mod pir8_game {
 
         // Validate game state
         require!(game.status == GameStatus::Active, GameError::GameNotActive);
-        
+
         // Validate it's the player's turn
-        let current_player = game.get_current_player()
-            .ok_or(GameError::NotPlayerTurn)?;
-        require!(current_player.pubkey == player_pubkey, GameError::NotPlayerTurn);
+        let current_player = game.get_current_player().ok_or(GameError::NotPlayerTurn)?;
+        require!(
+            current_player.pubkey == player_pubkey,
+            GameError::NotPlayerTurn
+        );
 
         // Get tile type first (before mutable borrow)
         let index = (coordinate_x as usize * MAP_SIZE) + coordinate_y as usize;
-        let tile_type = game.territory_map.get(index)
+        let tile_type = game
+            .territory_map
+            .get(index)
             .map(|cell| format!("{:?}", cell.cell_type))
             .unwrap_or_else(|| "Unknown".to_string());
 
         // Get player and check scan charges
-        let player = game.get_player_mut(&player_pubkey)
+        let player = game
+            .get_player_mut(&player_pubkey)
             .ok_or(GameError::NotPlayerTurn)?;
         require!(player.scan_charges > 0, GameError::NoScansRemaining);
 
@@ -728,19 +839,19 @@ pub mod pir8_game {
     }
 
     /// End current player's turn without taking an action
-    pub fn end_turn(
-        ctx: Context<MakeMove>,
-    ) -> Result<()> {
+    pub fn end_turn(ctx: Context<MakeMove>) -> Result<()> {
         let game = &mut ctx.accounts.game;
         let player_pubkey = ctx.accounts.player.key();
 
         // Validate game state
         require!(game.status == GameStatus::Active, GameError::GameNotActive);
-        
+
         // Validate it's the player's turn
-        let current_player = game.get_current_player()
-            .ok_or(GameError::NotPlayerTurn)?;
-        require!(current_player.pubkey == player_pubkey, GameError::NotPlayerTurn);
+        let current_player = game.get_current_player().ok_or(GameError::NotPlayerTurn)?;
+        require!(
+            current_player.pubkey == player_pubkey,
+            GameError::NotPlayerTurn
+        );
 
         // Advance turn
         game.advance_turn();

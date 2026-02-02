@@ -56,6 +56,8 @@ const generateMockGameState = (gameId: string): GameState => {
         speedBonusAccumulated: 150,
         averageDecisionTimeMs: 8500,
         totalMoves: 12,
+        consecutiveAttacks: 1,
+        lastActionWasAttack: true,
       },
       {
         publicKey: 'Player2...abc',
@@ -72,6 +74,8 @@ const generateMockGameState = (gameId: string): GameState => {
         speedBonusAccumulated: 75,
         averageDecisionTimeMs: 12000,
         totalMoves: 8,
+        consecutiveAttacks: 0,
+        lastActionWasAttack: false,
       },
     ],
     currentPlayerIndex: 0,

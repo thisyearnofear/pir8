@@ -216,6 +216,8 @@ export class PirateGameConverter {
       speedBonusAccumulated: 0,
       averageDecisionTimeMs: 0,
       totalMoves: 0,
+      consecutiveAttacks: 0,
+      lastActionWasAttack: false,
     };
   }
 

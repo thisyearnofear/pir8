@@ -70,31 +70,75 @@ export class GameBalance {
    * Victory condition thresholds
    */
   static readonly VICTORY_CONDITIONS = {
-    territoryControlThreshold: 0.6, // 60% of valuable territories
-    fleetDominanceThreshold: 0.8,   // 80% of total fleet power
-    resourceDominanceThreshold: 15000 // Total resource value
+    territoryControlThreshold: 0.5, // 50% of valuable territories - lowered from 60%
+    fleetDominanceThreshold: 0.65,  // 65% of total fleet power - lowered from 80%
+    resourceDominanceThreshold: 10000 // 10K resource value - lowered from 15K
   };
 
   /**
-   * Combat damage calculations
+   * Combat damage calculations with critical strikes
    */
   static calculateCombatDamage(
     attackerType: ShipType,
     defenderType: ShipType,
     attackerHealth: number,
-    defenderDefense: number
-  ): number {
+    defenderDefense: number,
+    turnNumber: number = 0,
+    isMomentumHit: boolean = false
+  ): { damage: number; isCritical: boolean } {
     const attackerStrength = this.SHIP_BALANCE[attackerType].strength;
     const defenderStrength = this.SHIP_BALANCE[defenderType].strength;
-    const healthMultiplier = attackerHealth / 100; // Full health = 100% damage
+    const healthMultiplier = attackerHealth / 100;
 
-    const baseDamage = attackerStrength * 20 * healthMultiplier;
-    const defenseReduction = defenderDefense * (defenderStrength / 10); // Defense effectiveness based on ship type
-    const effectiveDamage = Math.max(1, baseDamage - defenseReduction);
+    let baseDamage = attackerStrength * 40 * healthMultiplier;
+    const defenseReduction = defenderDefense * (defenderStrength / 10);
+    let effectiveDamage = Math.max(5, baseDamage - defenseReduction);
 
-    // Add some randomness (±15%)
+    // Momentum bonus: consecutive attacks deal 25% more damage
+    if (isMomentumHit) {
+      effectiveDamage *= 1.25;
+    }
+
     const variance = 0.85 + (Math.random() * 0.3);
-    return Math.floor(effectiveDamage * variance);
+    let finalDamage = effectiveDamage * variance;
+
+    // Sudden death: double damage
+    if (turnNumber >= 40) {
+      finalDamage *= 2;
+    }
+
+    // Critical strike: 15% chance for 2x damage
+    const isCritical = Math.random() < 0.15;
+    if (isCritical) {
+      finalDamage *= 2;
+    }
+
+    return { damage: Math.floor(finalDamage), isCritical };
+  }
+
+  /**
+   * Check if momentum bonus applies
+   */
+  static checkMomentum(consecutiveAttacks: number): boolean {
+    return consecutiveAttacks >= 2;
+  }
+
+  /**
+   * Calculate comeback bonus for resources when losing
+   */
+  static calculateComebackBonus(
+    myTerritories: number,
+    avgTerritories: number,
+    myShips: number,
+    avgShips: number
+  ): number {
+    const territoryGap = avgTerritories - myTerritories;
+    const shipGap = avgShips - myShips;
+
+    if (territoryGap > 0 || shipGap > 0) {
+      return Math.floor((territoryGap * 2 + shipGap * 5));
+    }
+    return 0;
   }
 
   /**

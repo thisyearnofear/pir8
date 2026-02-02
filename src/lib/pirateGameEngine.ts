@@ -208,11 +208,13 @@ export class PirateGameManager {
       resources: this.generateStartingResources(),
       ships: this.createStartingFleet(
         player.publicKey,
-        startingPositions[index]?.[0] || { x: 0, y: 0 } // Take the first position from the array, fallback to 0,0
+        startingPositions[index]?.[0] || { x: 0, y: 0 }
       ),
       controlledTerritories: [],
       totalScore: 0,
       isActive: true,
+      consecutiveAttacks: 0,
+      lastActionWasAttack: false,
     }));
 
     return {
@@ -296,130 +298,136 @@ export class PirateGameManager {
   /**
    * Process ship movement
    */
-  static processShipMovementAction(
-    gameState: GameState,
-    action: GameAction
-  ): { updatedGameState: GameState; success: boolean; message: string } {
-    const { data, player } = action;
-    const { shipId, toCoordinate } = data;
+   static processShipMovementAction(
+     gameState: GameState,
+     action: GameAction
+   ): { updatedGameState: GameState; success: boolean; message: string } {
+     const { data, player } = action;
+     const { shipId, toCoordinate } = data;
 
-    if (!shipId || !toCoordinate) {
-      return {
-        updatedGameState: gameState,
-        success: false,
-        message: 'Missing ship ID or destination'
-      };
-    }
+     if (!shipId || !toCoordinate) {
+       return {
+         updatedGameState: gameState,
+         success: false,
+         message: 'Missing ship ID or destination'
+       };
+     }
 
-    const playerIndex = gameState.players.findIndex(p => p.publicKey === player);
-    if (playerIndex === -1) {
-      return {
-        updatedGameState: gameState,
-        success: false,
-        message: 'Player not found'
-      };
-    }
-    const currentPlayer = gameState.players[playerIndex];
-    if (!currentPlayer) {
-      return {
-        updatedGameState: gameState,
-        success: false,
-        message: 'Current player not found'
-      };
-    }
-    const ship = currentPlayer.ships.find(s => s.id === shipId);
+     const playerIndex = gameState.players.findIndex(p => p.publicKey === player);
+     if (playerIndex === -1) {
+       return {
+         updatedGameState: gameState,
+         success: false,
+         message: 'Player not found'
+       };
+     }
+     const currentPlayer = gameState.players[playerIndex];
+     if (!currentPlayer) {
+       return {
+         updatedGameState: gameState,
+         success: false,
+         message: 'Current player not found'
+       };
+     }
+     const ship = currentPlayer.ships.find(s => s.id === shipId);
 
-    if (!ship) {
-      return {
-        updatedGameState: gameState,
-        success: false,
-        message: 'Ship not found'
-      };
-    }
+     if (!ship) {
+       return {
+         updatedGameState: gameState,
+         success: false,
+         message: 'Ship not found'
+       };
+     }
 
-    const toPosition = this.stringToCoordinate(toCoordinate);
-    // NOTE: Game logic moved to smart contract - this is now just for local UI feedback
-    // const moveResult = PirateGameEngine.processShipMovement(ship, toPosition, gameState.gameMap);
+     const toPosition = this.stringToCoordinate(toCoordinate);
+     // NOTE: Game logic moved to smart contract - this is now just for local UI feedback
+     // const moveResult = PirateGameEngine.processShipMovement(ship, toPosition, gameState.gameMap);
 
-    // For now, assume move is valid (smart contract will validate)
-    // CRITICAL: Create new position object with new reference for React to detect change
-    const moveResult = { 
-      success: true, 
-      updatedShip: { ...ship, position: { x: toPosition.x, y: toPosition.y } },
-      message: 'Movement processed'
-    };
+     // For now, assume move is valid (smart contract will validate)
+     // CRITICAL: Create new position object with new reference for React to detect change
+     const moveResult = {
+       success: true,
+       updatedShip: { ...ship, position: { x: toPosition.x, y: toPosition.y } },
+       message: 'Movement processed'
+     };
 
-    if (!moveResult.success) {
-      return {
-        updatedGameState: gameState,
-        success: false,
-        message: 'Movement failed'
-      };
-    }
+     if (!moveResult.success) {
+       return {
+         updatedGameState: gameState,
+         success: false,
+         message: 'Movement failed'
+       };
+     }
 
-    // Update game state with new ship position
-    // CRITICAL: Create completely new ship objects with new position references for React
-    const updatedPlayers = [...gameState.players];
-    if (!currentPlayer) {
-      return {
-        updatedGameState: gameState,
-        success: false,
-        message: 'Current player not found'
-      };
-    }
-    const updatedShips = currentPlayer.ships.map(s =>
-      s.id === shipId ? { ...moveResult.updatedShip!, position: { ...moveResult.updatedShip!.position } } : { ...s, position: { ...s.position } }
-    );
-    updatedPlayers[playerIndex] = {
-      ...currentPlayer,
-      ships: updatedShips,
-      publicKey: currentPlayer.publicKey // Ensure publicKey is preserved
-    };
+     // Update game state with new ship position
+     // CRITICAL: Create completely new ship objects with new position references for React
+     const updatedPlayers = [...gameState.players];
+     if (!currentPlayer) {
+       return {
+         updatedGameState: gameState,
+         success: false,
+         message: 'Current player not found'
+       };
+     }
+     const updatedShips = currentPlayer.ships.map(s =>
+       s.id === shipId ? { ...moveResult.updatedShip!, position: { ...moveResult.updatedShip!.position } } : { ...s, position: { ...s.position } }
+     );
+     updatedPlayers[playerIndex] = {
+       ...currentPlayer,
+       ships: updatedShips,
+       publicKey: currentPlayer.publicKey,
+       // Reset momentum on non-attack actions
+       consecutiveAttacks: 0,
+       lastActionWasAttack: false,
+     };
 
-    // Add event to log
-    const moveEvent: GameEvent = {
-      id: `event_${Date.now()}`,
-      type: 'ship_moved',
-      playerId: player,
-      turnNumber: gameState.turnNumber,
-      timestamp: Date.now(),
-      description: `${moveResult.updatedShip!.type} moved to ${toCoordinate}`,
-      data: { shipId, from: this.coordinateToString(ship.position), to: toCoordinate }
-    };
+     // Add event to log
+     const moveEvent: GameEvent = {
+       id: `event_${Date.now()}`,
+       type: 'ship_moved',
+       playerId: player,
+       turnNumber: gameState.turnNumber,
+       timestamp: Date.now(),
+       description: `${moveResult.updatedShip!.type} moved to ${toCoordinate}`,
+       data: { shipId, from: this.coordinateToString(ship.position), to: toCoordinate }
+     };
 
-    const updatedGameState = {
-      ...gameState,
-      players: updatedPlayers,
-      eventLog: [...gameState.eventLog, moveEvent].slice(-10), // Keep last 10 events
-    };
+     const updatedGameState = {
+       ...gameState,
+       players: updatedPlayers,
+       eventLog: [...gameState.eventLog, moveEvent].slice(-10),
+     };
 
-    return {
-      updatedGameState,
-      success: true,
-      message: moveResult.message
-    };
-  }
+     return {
+       updatedGameState,
+       success: true,
+       message: moveResult.message
+     };
+   }
 
   /**
-   * Advance to next player's turn
-   * ENHANCEMENT: Tick ability cooldowns, effects, and regenerate scan charges
-   */
-  static advanceTurn(gameState: GameState): GameState {
-    const { tickAbilityCooldown, tickShipEffects } = require('./shipAbilities');
-    
-    const MAX_SCAN_CHARGES = 5; // Max scan charges per player
-    
-    // ENHANCEMENT: Update all ships' abilities and effects, regenerate scan charges
-    const updatedPlayers = gameState.players.map(player => ({
-      ...player,
-      // Regenerate 1 scan charge per turn (up to max)
-      scanCharges: Math.min((player.scanCharges || 0) + 1, MAX_SCAN_CHARGES),
-      ships: player.ships.map(ship => {
-        let updated = tickAbilityCooldown(ship);
-        updated = tickShipEffects(updated);
-        return updated;
-      })
-    }));
+    * Advance to next player's turn
+    * ENHANCEMENT: Tick ability cooldowns, effects, and regenerate scan charges
+    */
+   static advanceTurn(gameState: GameState): GameState {
+     const { tickAbilityCooldown, tickShipEffects } = require('./shipAbilities');
+
+     const MAX_SCAN_CHARGES = 5; // Max scan charges per player
+
+     // ENHANCEMENT: Update all ships' abilities and effects, regenerate scan charges
+     const updatedPlayers = gameState.players.map(player => ({
+       ...player,
+       // Regenerate 1 scan charge per turn (up to max)
+       scanCharges: Math.min((player.scanCharges || 0) + 1, MAX_SCAN_CHARGES),
+       // Reset momentum when turn changes to new player
+       consecutiveAttacks: 0,
+       lastActionWasAttack: false,
+       ships: player.ships.map(ship => {
+         let updated = tickAbilityCooldown(ship);
+         updated = tickShipEffects(updated);
+         return updated;
+       })
+     }));
 
     let nextPlayerIndex = (gameState.currentPlayerIndex + 1) % updatedPlayers.length;
     let turnNumber = gameState.turnNumber;
@@ -511,7 +519,7 @@ export class PirateGameManager {
     winner: Player | null;
     updatedGameState: GameState;
   } {
-    const MAX_TURNS = 100; // Prevent infinite games
+    const MAX_TURNS = 50; // Prevent infinite games - was 100
     const activePlayers = gameState.players.filter(p => 
       p.isActive && p.ships.some(s => s.health > 0)
     );
@@ -539,7 +547,7 @@ export class PirateGameManager {
 
     // Victory Condition 3: Max turns reached - determine winner by score
     if (gameState.turnNumber >= MAX_TURNS) {
-      const winner = this.determineWinnerByScore(gameState.players);
+      const winner = this.determineWinnerByScore(gameState.players, gameState);
       const updatedGameState: GameState = {
         ...gameState,
         gameStatus: 'completed' as const,
@@ -574,24 +582,41 @@ export class PirateGameManager {
   /**
    * Determine winner by scoring multiple factors
    */
-  private static determineWinnerByScore(players: Player[]): Player | null {
+  private static determineWinnerByScore(players: Player[], gameState?: GameState): Player | null {
     if (players.length === 0) return null;
+
+    const turnNumber = gameState?.turnNumber || 0;
+    const isSuddenDeath = turnNumber >= 40;
+    const avgTerritories = players.reduce((sum, p) => sum + p.controlledTerritories.length, 0) / players.length;
+    const avgShips = players.reduce((sum, p) => sum + p.ships.filter(s => s.health > 0).length, 0) / players.length;
 
     const scoredPlayers = players.map(player => {
       const activeShips = player.ships.filter(s => s.health > 0).length;
       const totalShipHealth = player.ships.reduce((sum, s) => sum + s.health, 0);
       const territories = player.controlledTerritories.length;
-      const resources = player.resources.gold + 
-                       player.resources.crew * 2 + 
+      const resources = player.resources.gold +
+                       player.resources.crew * 2 +
                        player.resources.cannons * 5;
 
       // Weighted scoring system
-      const score = 
-        activeShips * 100 +          // Ships are most important
-        totalShipHealth * 2 +        // Health matters
-        territories * 150 +          // Territory control is critical
-        resources * 0.5 +            // Resources are a tiebreaker
-        player.totalScore;           // Existing score
+      let score =
+        activeShips * 100 +
+        totalShipHealth * 2 +
+        territories * 150 +
+        resources * 0.5 +
+        player.totalScore;
+
+      // Catch-up bonus: losing players get compensation
+      const territoryGap = avgTerritories - territories;
+      const shipGap = avgShips - activeShips;
+      if (territoryGap > 0 || shipGap > 0) {
+        score += (territoryGap * 50) + (shipGap * 100);
+      }
+
+      // Sudden death modifier (turn 40+): weighted toward ships over territories
+      if (isSuddenDeath) {
+        score = (activeShips * 150) + (totalShipHealth * 3) + (territories * 100) + resources;
+      }
 
       return { player, score };
     });
@@ -679,24 +704,49 @@ export class PirateGameManager {
       };
     }
 
-    // NOTE: Combat logic moved to smart contract
-    // const combatResult = PirateGameEngine.processShipCombat(attackerShip, targetShip);
-    const combatResult = { 
-      success: true, 
-      updatedAttacker: attackerShip, 
-      updatedTarget: targetShip,
-      message: 'Attack completed' 
-    };
+    // Calculate combat damage with momentum and critical strike
+    const isMomentumHit = GameBalance.checkMomentum(currentPlayer.consecutiveAttacks);
+    const { damage, isCritical } = GameBalance.calculateCombatDamage(
+      attackerShip.type,
+      targetShip.type,
+      attackerShip.health,
+      targetShip.defense,
+      gameState.turnNumber,
+      isMomentumHit
+    );
+
+    // Apply damage to target ship
+    const newTargetHealth = Math.max(0, targetShip.health - damage);
+    const targetDestroyed = newTargetHealth === 0;
+
+    // Update momentum: increment if attacking, reset if not
+    const newConsecutiveAttacks = currentPlayer.lastActionWasAttack
+      ? currentPlayer.consecutiveAttacks + 1
+      : 1;
 
     // Update game state
     const updatedPlayers = [...gameState.players];
+    updatedPlayers[playerIndex] = {
+      ...currentPlayer,
+      consecutiveAttacks: newConsecutiveAttacks,
+      lastActionWasAttack: true,
+    };
     updatedPlayers[targetPlayerIndex] = {
       ...targetPlayer,
-      publicKey: targetPlayer.publicKey, // Ensure publicKey is preserved
+      publicKey: targetPlayer.publicKey,
       ships: targetPlayer.ships.map(s =>
-        s.id === targetShipId ? combatResult.updatedTarget! : s
-      )
+        s.id === targetShipId
+          ? { ...s, health: newTargetHealth }
+          : s
+      ),
+      // Reset target's momentum if they were attacking
+      consecutiveAttacks: targetDestroyed ? 0 : targetPlayer.consecutiveAttacks,
     };
+
+    // Build result message
+    let message = `⚔️ ${isCritical ? '💥 CRITICAL! ' : ''}${damage} damage!`;
+    if (targetDestroyed) message += ' Enemy ship destroyed!';
+    if (isMomentumHit) message += ' (Momentum +25%)';
 
     const updatedGameState = {
       ...gameState,
@@ -706,7 +756,7 @@ export class PirateGameManager {
     return {
       updatedGameState,
       success: true,
-      message: 'Attack completed successfully'
+      message
     };
   }
 
@@ -786,8 +836,11 @@ export class PirateGameManager {
 
     updatedPlayers[playerIndex] = {
       ...targetPlayer,
-      publicKey: targetPlayer.publicKey, // Ensure publicKey is preserved
-      controlledTerritories: [...targetPlayer.controlledTerritories, toCoordinate]
+      publicKey: targetPlayer.publicKey,
+      controlledTerritories: [...targetPlayer.controlledTerritories, toCoordinate],
+      // Reset momentum on non-attack actions
+      consecutiveAttacks: 0,
+      lastActionWasAttack: false,
     };
 
     const updatedGameState = {
@@ -801,6 +854,60 @@ export class PirateGameManager {
       success: true,
       message: claimResult.message
     };
+  }
+
+  /**
+   * Resign from the game - for when position is hopeless
+   */
+  static resign(gameState: GameState, player: string): GameState {
+    const playerIndex = gameState.players.findIndex(p => p.publicKey === player);
+    if (playerIndex === -1) return gameState;
+
+    const updatedPlayers = [...gameState.players];
+    const resigningPlayer = updatedPlayers[playerIndex];
+    if (!resigningPlayer) return gameState;
+
+    updatedPlayers[playerIndex] = {
+      ...resigningPlayer,
+      isActive: false,
+    };
+
+    // Check if game should end
+    const activePlayers = updatedPlayers.filter(p => p.isActive);
+
+    // If only one player left, they win
+    if (activePlayers.length === 1) {
+      const winner = activePlayers[0];
+      if (winner) {
+        return {
+          ...gameState,
+          gameStatus: 'completed',
+          winner: winner.publicKey,
+          players: updatedPlayers,
+        };
+      }
+    }
+
+    return {
+      ...gameState,
+      players: updatedPlayers,
+    };
+  }
+
+  /**
+   * Check if a player should consider resigning (hopeless position)
+   */
+  static shouldResign(player: Player, gameState: GameState): boolean {
+    const activePlayers = gameState.players.filter(p => p.isActive && p.ships.some(s => s.health > 0));
+    if (activePlayers.length < 2) return false;
+
+    const playerShips = player.ships.filter(s => s.health > 0).length;
+    const avgShips = activePlayers.reduce((sum, p) => sum + p.ships.filter(s => s.health > 0).length, 0) / activePlayers.length;
+    const playerTerritories = player.controlledTerritories.length;
+    const avgTerritories = activePlayers.reduce((sum, p) => sum + p.controlledTerritories.length, 0) / activePlayers.length;
+
+    // Resign if: less than 25% of average ships AND less than 25% of average territories
+    return playerShips < avgShips * 0.25 && playerTerritories < avgTerritories * 0.25;
   }
 
   /**
@@ -886,28 +993,26 @@ export class PirateGameManager {
       }
     });
 
-    // ENHANCEMENT: Port healing - ships at owned ports get healed
-    const PORT_HEAL_AMOUNT = 20;
-    let healedAmount = 0;
-    let updatedShips = currentPlayer.ships;
-    
-    if (territory.type === 'port') {
-      updatedShips = currentPlayer.ships.map(s => {
-        if (s.id === shipId && s.health < s.maxHealth) {
-          const newHealth = Math.min(s.maxHealth, s.health + PORT_HEAL_AMOUNT);
-          healedAmount = newHealth - s.health;
-          return { ...s, health: newHealth };
-        }
-        return s;
-      });
+    // Comeback bonus: losing players get extra resources
+    const gameAnalysis = this.analyzeGameState(gameState, currentPlayer);
+    const comebackBonus = GameBalance.calculateComebackBonus(
+      gameAnalysis.territoriesControlled,
+      gameAnalysis.averageTerritoriesPerPlayer,
+      gameAnalysis.totalShips,
+      gameAnalysis.averageShipsPerPlayer
+    );
+
+    // Apply comeback bonus to gold
+    if (comebackBonus > 0) {
+      collectedResources.gold = (collectedResources.gold || 0) + comebackBonus;
     }
 
-    // Update player resources
+    // Update player resources (no port healing - combat is permanent)
     const updatedPlayers = [...gameState.players];
     updatedPlayers[playerIndex] = {
       ...currentPlayer,
-      publicKey: currentPlayer.publicKey, // Ensure publicKey is preserved
-      ships: updatedShips,
+      publicKey: currentPlayer.publicKey,
+      ships: currentPlayer.ships,
       resources: {
         gold: currentPlayer.resources.gold + (collectedResources.gold || 0),
         crew: currentPlayer.resources.crew + (collectedResources.crew || 0),
@@ -922,13 +1027,13 @@ export class PirateGameManager {
       .filter(([_, amount]) => amount && amount > 0)
       .map(([resource, amount]) => `${amount} ${resource}`)
       .join(', ');
-    
-    const healMessage = healedAmount > 0 ? ` | 🔧 Ship repaired +${healedAmount} HP` : '';
+
+    const comebackMessage = comebackBonus > 0 ? ` (+${comebackBonus} comeback bonus)` : '';
 
     return {
       updatedGameState: { ...gameState, players: updatedPlayers },
       success: true,
-      message: `Collected: ${resourcesList}${healMessage}`
+      message: `Collected: ${resourcesList}${comebackMessage}`
     };
   }
 
@@ -1107,10 +1212,10 @@ export class PirateGameManager {
    * Create an AI player for practice mode
    * ENHANCEMENT: Store difficulty in publicKey for proper AI behavior
    */
-  static createAIPlayer(_gameId: string, difficulty: 'novice' | 'pirate' | 'captain' | 'admiral' = 'pirate'): Player {
+   static createAIPlayer(_gameId: string, difficulty: 'novice' | 'pirate' | 'captain' | 'admiral' = 'pirate'): Player {
     const aiNames = ['Blackbeard', 'Calico Jack', 'Anne Bonny', 'Bartholomew', 'Mary Read'];
     const randomName = aiNames[Math.floor(Math.random() * aiNames.length)];
-    
+
     // Store difficulty in publicKey format: AI_{name}_{difficulty}_{timestamp}
     return {
       publicKey: `AI_${randomName}_${difficulty}_${Date.now()}`,
@@ -1125,6 +1230,8 @@ export class PirateGameManager {
       speedBonusAccumulated: 0,
       averageDecisionTimeMs: 0,
       totalMoves: 0,
+      consecutiveAttacks: 0,
+      lastActionWasAttack: false,
     };
   }
 
@@ -1464,28 +1571,30 @@ export class PirateGameManager {
   /**
    * Find best attack with score and reasoning
    */
-  private static findBestAttackWithScore(gameState: GameState, aiPlayer: Player, gameAnalysis: any): { shipId: string; targetShipId: string; score: number; reason: string } | null {
+    private static findBestAttackWithScore(gameState: GameState, aiPlayer: Player, gameAnalysis: any): { shipId: string; targetShipId: string; score: number; reason: string } | null {
     const activeShips = aiPlayer.ships.filter(s => s.health > 0);
     let bestAttack: { shipId: string; targetShipId: string; score: number; reason: string } | null = null;
-    
+
+    const isLateGame = gameState.turnNumber > 25;
+
     for (const ship of activeShips) {
       for (const enemy of gameState.players) {
         if (enemy.publicKey === aiPlayer.publicKey) continue;
-        
+
         for (const enemyShip of enemy.ships.filter(s => s.health > 0)) {
-          const manhattanDist = Math.abs(ship.position.x - enemyShip.position.x) + 
+          const manhattanDist = Math.abs(ship.position.x - enemyShip.position.x) +
                                 Math.abs(ship.position.y - enemyShip.position.y);
-          
+
           if (manhattanDist <= 1) {
             let score = 100;
             let reason = 'Enemy in range';
-            
+
             // Prefer attacking weak ships
             score += (100 - enemyShip.health);
             if (enemyShip.health < 30) {
               reason = 'Finish off weakened enemy';
             }
-            
+
             // Prefer attacking stronger ship types
             if (enemyShip.type === 'flagship') {
               score += 50;
@@ -1496,26 +1605,32 @@ export class PirateGameManager {
             } else if (enemyShip.type === 'frigate') {
               score += 20;
             }
-            
+
             // If losing, be more aggressive
             if (gameAnalysis.isLosing) {
               score += 25;
               reason = 'Aggressive strike - must turn tide';
             }
-            
+
+            // Late game: prioritize combat over expansion
+            if (isLateGame) {
+              score *= 1.5;
+              reason += ' (late game)';
+            }
+
             if (!bestAttack || score > bestAttack.score) {
-              bestAttack = { 
-                shipId: ship.id, 
-                targetShipId: enemyShip.id, 
-                score, 
-                reason 
+              bestAttack = {
+                shipId: ship.id,
+                targetShipId: enemyShip.id,
+                score,
+                reason
               };
             }
           }
         }
       }
     }
-    
+
     return bestAttack;
   }
 
