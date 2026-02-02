@@ -31,53 +31,95 @@ export default function PirateMap({
   const [tooltipPosition, setTooltipPosition] = useState({ x: 0, y: 0 });
   const mapRef = useRef<HTMLDivElement>(null);
   
-  // Track ship movements for animations
+  // CONSOLIDATED animation state - Single source of truth
   const [shipPositions, setShipPositions] = useState<Map<string, string>>(new Map());
-  const [animatingShips, setAnimatingShips] = useState<Set<string>>(new Set());
-  const [recentActions, setRecentActions] = useState<Map<string, 'move' | 'attack' | 'claim'>>(new Map());
+  const [shipAnimations, setShipAnimations] = useState<Map<string, {
+    type: 'move' | 'attack' | 'claim' | 'damaged';
+    timestamp: number;
+  }>>(new Map());
+  const [shipTrails, setShipTrails] = useState<Map<string, string[]>>(new Map());
+  const [damageNumbers, setDamageNumbers] = useState<Array<{
+    id: string;
+    shipId: string;
+    amount: number;
+    position: string;
+    timestamp: number;
+  }>>([]);
 
-  // Detect ship position changes and trigger animations
+  // ENHANCED: Detect changes and determine action type (SINGLE SOURCE)
   useEffect(() => {
     const newPositions = new Map<string, string>();
-    const newAnimatingShips = new Set<string>();
+    const newAnimations = new Map(shipAnimations);
+    const newTrails = new Map(shipTrails);
+    const now = Date.now();
     
     ships.forEach(ship => {
       const currentPos = PirateGameManager.coordinateToString(ship.position);
       const previousPos = shipPositions.get(ship.id);
+      const previousShip = ships.find(s => s.id === ship.id);
       
       newPositions.set(ship.id, currentPos);
       
-      // If position changed, trigger animation
+      // Position changed = movement
       if (previousPos && previousPos !== currentPos) {
-        newAnimatingShips.add(ship.id);
+        newAnimations.set(ship.id, { type: 'move', timestamp: now });
         
-        // Clear animation after it completes
+        // Track trail (last 3 positions)
+        const trail = shipTrails.get(ship.id) || [];
+        trail.push(previousPos);
+        if (trail.length > 3) trail.shift();
+        newTrails.set(ship.id, trail);
+        
+        // Auto-clear after animation
         setTimeout(() => {
-          setAnimatingShips(prev => {
-            const next = new Set(prev);
-            next.delete(ship.id);
+          setShipAnimations(prev => {
+            const next = new Map(prev);
+            if (next.get(ship.id)?.timestamp === now) next.delete(ship.id);
             return next;
           });
-        }, 600); // Match animation duration
+        }, 600);
+      }
+      
+      // Health decreased = damaged (for damage numbers)
+      if (previousShip && ship.health < previousShip.health) {
+        const damage = previousShip.health - ship.health;
+        newAnimations.set(ship.id, { type: 'damaged', timestamp: now });
+        
+        // Add damage number
+        setDamageNumbers(prev => [...prev, {
+          id: `dmg-${ship.id}-${now}`,
+          shipId: ship.id,
+          amount: damage,
+          position: currentPos,
+          timestamp: now
+        }]);
+        
+        setTimeout(() => {
+          setShipAnimations(prev => {
+            const next = new Map(prev);
+            if (next.get(ship.id)?.timestamp === now) next.delete(ship.id);
+            return next;
+          });
+        }, 500);
       }
     });
     
     setShipPositions(newPositions);
-    if (newAnimatingShips.size > 0) {
-      setAnimatingShips(newAnimatingShips);
-    }
-  }, [ships]);
+    setShipAnimations(newAnimations);
+    setShipTrails(newTrails);
+  }, [ships, shipPositions, shipTrails, shipAnimations]);
   
-  // Clear recent action indicators after delay
+  // CONSOLIDATED: Auto-cleanup for damage numbers (PERFORMANT)
   useEffect(() => {
-    if (recentActions.size > 0) {
-      const timer = setTimeout(() => {
-        setRecentActions(new Map());
-      }, 1000);
-      return () => clearTimeout(timer);
+    if (damageNumbers.length > 0) {
+      const timer = setInterval(() => {
+        const now = Date.now();
+        setDamageNumbers(prev => prev.filter(dmg => now - dmg.timestamp < 1500));
+      }, 100);
+      return () => clearInterval(timer);
     }
     return undefined;
-  }, [recentActions]);
+  }, [damageNumbers.length]);
 
   const isCoordinateScanned = (coordinate: string): boolean => {
     return scannedCoordinates.includes(coordinate);
@@ -192,7 +234,8 @@ export default function PirateMap({
       }
       
       // Add glow effect for animating ships
-      if (animatingShips.has(ship.id)) {
+      const animation = shipAnimations.get(ship.id);
+      if (animation) {
         className += 'ring-offset-2 ring-offset-black ';
       }
     }
@@ -224,6 +267,9 @@ export default function PirateMap({
     const cell = getCellAtCoordinate(coordinate);
     const ship = getShipAtPosition(coordinate);
     const isScanned = isCoordinateScanned(coordinate);
+    const animation = ship ? shipAnimations.get(ship.id) : undefined;
+    const trail = ship ? shipTrails.get(ship.id) || [] : [];
+    const cellDamageNumbers = damageNumbers.filter(dmg => dmg.position === coordinate);
 
     return (
       <div className="cell-content h-full w-full flex flex-col items-center justify-center text-lg relative">
@@ -241,11 +287,42 @@ export default function PirateMap({
           </div>
         )}
 
-        {/* Ship overlay */}
+        {/* Ship trail markers (ENHANCED) */}
+        {trail.map((trailPos, idx) => {
+          const trailCoord = PirateGameManager.stringToCoordinate(trailPos);
+          const currentCoord = PirateGameManager.stringToCoordinate(coordinate);
+          
+          // Only render trail on current cell if it's in the trail path
+          if (trailCoord.x === currentCoord.x && trailCoord.y === currentCoord.y) {
+            return (
+              <div
+                key={`trail-${idx}`}
+                className="ship-trail absolute"
+                style={{
+                  backgroundColor: ship && isMyShip(ship) ? 'rgba(0, 217, 255, 0.6)' : 'rgba(239, 68, 68, 0.6)',
+                  boxShadow: `0 0 6px ${ship && isMyShip(ship) ? 'rgba(0, 217, 255, 0.8)' : 'rgba(239, 68, 68, 0.8)'}`,
+                  animationDelay: `${idx * 0.15}s`,
+                  top: '50%',
+                  left: '50%',
+                  transform: 'translate(-50%, -50%)'
+                }}
+              />
+            );
+          }
+          return null;
+        })}
+
+        {/* Ship overlay with ACTION-SPECIFIC animations */}
         {ship && (
           <div 
             className={`ship-icon absolute ${isMyShip(ship) ? 'text-neon-cyan' : 'text-red-400'} ${
-              animatingShips.has(ship.id) ? 'ship-animating' : ''
+              animation?.type === 'move' ? 'ship-anim-move' : ''
+            } ${
+              animation?.type === 'attack' ? 'ship-anim-attack' : ''
+            } ${
+              animation?.type === 'claim' ? 'ship-anim-claim' : ''
+            } ${
+              animation?.type === 'damaged' ? 'ship-anim-damaged' : ''
             }`}
             style={{
               fontSize: ship.id === selectedShipId ? '1.8rem' : '1.5rem',
@@ -257,8 +334,8 @@ export default function PirateMap({
           >
             {SHIP_EMOJIS[ship.type]}
             
-            {/* Movement trail effect */}
-            {animatingShips.has(ship.id) && (
+            {/* Visual effects based on action type (MODULAR) */}
+            {animation && (
               <>
                 <div 
                   className="absolute inset-0 rounded-full"
@@ -278,19 +355,26 @@ export default function PirateMap({
                   }}
                 />
                 
-                {/* Particle burst effect */}
-                {[...Array(6)].map((_, i) => {
-                  const angle = (i * 60) * (Math.PI / 180);
-                  const distance = 30;
+                {/* Particle burst - customize based on action */}
+                {[...Array(animation.type === 'attack' ? 8 : 6)].map((_, i) => {
+                  const particleCount = animation.type === 'attack' ? 8 : 6;
+                  const angle = (i * (360 / particleCount)) * (Math.PI / 180);
+                  const distance = animation.type === 'attack' ? 40 : 30;
+                  const particleColor = animation.type === 'attack' 
+                    ? '#ff4444' 
+                    : isMyShip(ship) ? '#00D9FF' : '#ef4444';
+                  
                   return (
                     <div
                       key={i}
-                      className="absolute w-1 h-1 rounded-full"
+                      className="absolute rounded-full"
                       style={{
+                        width: animation.type === 'attack' ? '6px' : '4px',
+                        height: animation.type === 'attack' ? '6px' : '4px',
                         left: '50%',
                         top: '50%',
-                        background: isMyShip(ship) ? '#00D9FF' : '#ef4444',
-                        boxShadow: `0 0 4px ${isMyShip(ship) ? '#00D9FF' : '#ef4444'}`,
+                        background: particleColor,
+                        boxShadow: `0 0 6px ${particleColor}`,
                         animation: 'particle-burst 0.6s ease-out',
                         // @ts-ignore
                         '--tx': `${Math.cos(angle) * distance}px`,
@@ -303,6 +387,16 @@ export default function PirateMap({
             )}
           </div>
         )}
+        
+        {/* Damage numbers (ENHANCEMENT) */}
+        {cellDamageNumbers.map(dmg => (
+          <div
+            key={dmg.id}
+            className="damage-number"
+          >
+            -{dmg.amount}
+          </div>
+        ))}
 
         {/* Health indicator for damaged ships with animation */}
         {ship && ship.health < ship.maxHealth && (
