@@ -236,7 +236,8 @@ export default function PirateMap({
   };
 
   const isMyShip = (ship: Ship): boolean => {
-    if (!currentPlayerPK) return false;
+    // If no currentPlayerPK, disable fog-of-war gating (show all ships)
+    if (!currentPlayerPK) return true;
     return ship.id.startsWith(currentPlayerPK);
   };
 
@@ -382,10 +383,10 @@ export default function PirateMap({
       }
     }
 
-    // Selected ship highlighting with enhanced glow
+    // Selected ship highlighting with enhanced glow (no pulse animation)
     if (ship?.id === selectedShipId) {
       className +=
-        "ring-4 ring-white shadow-2xl shadow-white/60 animate-pulse ";
+        "ring-4 ring-white shadow-2xl shadow-white/60 ";
     }
 
     // Movement target highlighting
@@ -397,8 +398,8 @@ export default function PirateMap({
     if (selectedShipId && isValidAttackTarget(coordinate)) {
       const targetShip = getShipAtPosition(coordinate);
       if (targetShip && !isMyShip(targetShip)) {
-        // Enemy ship in range - Strong highlight
-        className += "ring-2 ring-red-500 ring-opacity-90 animate-pulse ";
+        // Enemy ship in range - Strong highlight (no pulse animation)
+        className += "ring-2 ring-red-500 ring-opacity-90 ";
       } else if (!isValidMoveTarget(coordinate)) {
         // Just range indication (fainter), but avoid overriding movement highlight
         className += "ring-1 ring-red-400 ring-opacity-30 ";
