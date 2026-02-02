@@ -10,11 +10,26 @@ pub use pirate_lib::*;
 pub mod pir8_game {
     use super::*;
 
-    /// Initialize the single global game (one-time setup)
-    pub fn initialize_game(ctx: Context<InitializeGame>) -> Result<()> {
+    /// Register an autonomous agent
+    pub fn register_agent(ctx: Context<RegisterAgent>, name: String, version: String) -> Result<()> {
+        let agent = &mut ctx.accounts.agent;
+        let clock = Clock::get()?;
+
+        agent.owner = ctx.accounts.owner.key();
+        agent.name = name;
+        agent.version = version;
+        agent.last_active = clock.unix_timestamp;
+        
+        msg!("Agent {} registered", agent.name);
+        Ok(())
+    }
+
+    /// Create a new game instance
+    pub fn create_game(ctx: Context<CreateGame>, game_id: u64) -> Result<()> {
         let game = &mut ctx.accounts.game;
         let clock = Clock::get()?;
 
+        game.game_id = game_id;
         game.authority = ctx.accounts.authority.key();
         game.status = GameStatus::Waiting;
         game.player_count = 0;
@@ -30,7 +45,7 @@ pub mod pir8_game {
         game.players = Vec::new();
         game.territory_map = Vec::new();
 
-        msg!("Global game initialized");
+        msg!("Game {} created", game_id);
         Ok(())
     }
 

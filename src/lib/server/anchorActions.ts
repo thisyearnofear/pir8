@@ -16,17 +16,49 @@ class NodeWallet {
 }
 
 function loadKeypairFromEnv(): Keypair {
-  const raw = process.env.PAYER_SECRET_KEY || '';
-  if (!raw) throw new Error('PAYER_SECRET_KEY missing');
-  const arr = raw.trim().startsWith('[') ? JSON.parse(raw) : raw.split(',').map(n => parseInt(n, 10));
-  if (!Array.isArray(arr) || !arr.length) throw new Error('Invalid PAYER_SECRET_KEY');
-  return Keypair.fromSecretKey(Uint8Array.from(arr));
+  // Try multiple env vars for flexibility
+  const raw = process.env.PAYER_SECRET_KEY || process.env['SOLANA_PRIVATE_KEY'] || '';
+  
+  if (!raw) {
+    console.warn('[Anchor Client] No private key found in env (PAYER_SECRET_KEY or SOLANA_PRIVATE_KEY). Using dummy keypair for read-only operations.');
+    // @ts-ignore
+    return Keypair.generate();
+  }
+
+  try {
+    const arr = raw.trim().startsWith('[') ? JSON.parse(raw) : raw.split(',').map(n => parseInt(n, 10));
+    if (!Array.isArray(arr) || !arr.length) throw new Error('Invalid key format');
+    return Keypair.fromSecretKey(Uint8Array.from(arr));
+  } catch (error) {
+    console.warn('[Anchor Client] Failed to parse private key. Using dummy keypair for read-only operations.');
+    // @ts-ignore
+    return Keypair.generate();
+  }
 }
 
 function loadIdl(): Idl {
   const idlPath = process.env.PIR8_IDL_PATH || path.join(process.cwd(), 'programs/pir8-game/target/idl/pir8_game.json');
-  const json = fs.readFileSync(idlPath, 'utf8');
-  return JSON.parse(json);
+  try {
+    if (fs.existsSync(idlPath)) {
+      const json = fs.readFileSync(idlPath, 'utf8');
+      return JSON.parse(json);
+    }
+  } catch (e) {
+    console.warn('[Anchor Client] Failed to load IDL from file, using fallback/empty IDL');
+  }
+  
+  // Fallback: try public/idl
+  const publicIdlPath = path.join(process.cwd(), 'public/idl/pir8_game.json');
+  try {
+    if (fs.existsSync(publicIdlPath)) {
+      const json = fs.readFileSync(publicIdlPath, 'utf8');
+      return JSON.parse(json);
+    }
+  } catch (e) {
+    console.warn('[Anchor Client] Failed to load IDL from public/idl');
+  }
+  
+  throw new Error(`IDL not found at ${idlPath} or ${publicIdlPath}`);
 }
 
 export async function getAnchorClient(): Promise<{ program: Program; provider: AnchorProvider }> {

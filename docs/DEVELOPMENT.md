@@ -210,33 +210,31 @@ When creating custom hooks:
 3. **Handle Side Effects Properly**: Clean up subscriptions, timers, etc.
 4. **Return Consistent Interface**: Always return the same shape
 
-Example hook structure:
+### Agent Development
+
+#### PIR8 Agent Plugin
+
+The `PIR8AgentPlugin` is the universal middleware for autonomous play.
+
+1. **Adding New Tools**:
+To add a new autonomous capability (e.g., "Scan Map"), update `src/plugins/PIR8AgentPlugin.ts`:
 ```typescript
-// src/hooks/useCustomFeature.ts
-import { useState, useEffect } from 'react';
-
-interface CustomFeatureState {
-  data: any;
-  loading: boolean;
-  error: string | null;
+private scanMapTool(): PIR8AgentTool {
+  return {
+    name: 'pir8_scan_map',
+    description: 'Uses radar to reveal hidden tiles.',
+    parameters: { ... },
+    execute: async (input) => {
+      // Implementation
+    }
+  };
 }
+```
 
-export function useCustomFeature(initialValue: string) {
-  const [state, setState] = useState<CustomFeatureState>({
-    data: null,
-    loading: false,
-    error: null,
-  });
-
-  useEffect(() => {
-    // Side effects
-    return () => {
-      // Cleanup
-    };
-  }, [initialValue]);
-
-  return state;
-}
+2. **Testing Headless Agents**:
+Use the integrated test bot to verify on-chain turn monitoring:
+```bash
+npx tsx src/agents/pirate-bot.ts
 ```
 
 ### Testing

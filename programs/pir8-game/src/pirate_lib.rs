@@ -126,7 +126,22 @@ impl Default for PlayerData {
 // ============================================================================
 
 #[account]
+pub struct AgentRegistry {
+    pub owner: Pubkey,
+    pub name: String,
+    pub version: String,
+    pub games_played: u64,
+    pub wins: u64,
+    pub last_active: i64,
+}
+
+impl AgentRegistry {
+    pub const SPACE: usize = 8 + 32 + 32 + 16 + 8 + 8 + 8; // Header + Owner + Name (32) + Version (16) + Stats + Timestamp
+}
+
+#[account]
 pub struct PirateGame {
+    pub game_id: u64,
     pub authority: Pubkey,
     pub status: GameStatus,
     pub player_count: u8,
@@ -303,12 +318,30 @@ pub enum GameError {
 // ============================================================================
 
 #[derive(Accounts)]
-pub struct InitializeGame<'info> {
+pub struct RegisterAgent<'info> {
+    #[account(
+        init_if_needed,
+        payer = owner,
+        space = AgentRegistry::SPACE,
+        seeds = [b"agent", owner.key().as_ref()],
+        bump
+    )]
+    pub agent: Account<'info, AgentRegistry>,
+
+    #[account(mut)]
+    pub owner: Signer<'info>,
+
+    pub system_program: Program<'info, System>,
+}
+
+#[derive(Accounts)]
+#[instruction(game_id: u64)]
+pub struct CreateGame<'info> {
     #[account(
         init,
         payer = authority,
         space = PirateGame::SPACE,
-        seeds = [b"global_game"],
+        seeds = [b"game", game_id.to_le_bytes().as_ref()],
         bump
     )]
     pub game: Account<'info, PirateGame>,
@@ -331,7 +364,7 @@ pub struct UserProfile {
 pub struct JoinGame<'info> {
     #[account(
         mut,
-        seeds = [b"global_game"],
+        seeds = [b"game", game.game_id.to_le_bytes().as_ref()],
         bump = game.bump,
     )]
     pub game: Account<'info, PirateGame>,
@@ -346,7 +379,7 @@ pub struct JoinGame<'info> {
 pub struct StartGame<'info> {
     #[account(
         mut,
-        seeds = [b"global_game"],
+        seeds = [b"game", game.game_id.to_le_bytes().as_ref()],
         bump = game.bump,
     )]
     pub game: Account<'info, PirateGame>,
@@ -358,7 +391,7 @@ pub struct StartGame<'info> {
 pub struct ResetGame<'info> {
     #[account(
         mut,
-        seeds = [b"global_game"],
+        seeds = [b"game", game.game_id.to_le_bytes().as_ref()],
         bump = game.bump,
     )]
     pub game: Account<'info, PirateGame>,
@@ -368,7 +401,11 @@ pub struct ResetGame<'info> {
 
 #[derive(Accounts)]
 pub struct MakeMove<'info> {
-    #[account(mut)]
+    #[account(
+        mut,
+        seeds = [b"game", game.game_id.to_le_bytes().as_ref()],
+        bump = game.bump,
+    )]
     pub game: Account<'info, PirateGame>,
     
     pub player: Signer<'info>,
@@ -376,7 +413,11 @@ pub struct MakeMove<'info> {
 
 #[derive(Accounts)]
 pub struct ScanCoordinate<'info> {
-    #[account(mut)]
+    #[account(
+        mut,
+        seeds = [b"game", game.game_id.to_le_bytes().as_ref()],
+        bump = game.bump,
+    )]
     pub game: Account<'info, PirateGame>,
     
     pub player: Signer<'info>,

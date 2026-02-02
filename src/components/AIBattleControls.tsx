@@ -12,6 +12,7 @@ interface AIBattleControlsProps {
   onSpeedChange: (speed: number) => void;
   gameState: any;
   isAIvsAIMode: boolean;
+  onToggleReasoning?: () => void;
 }
 
 export default function AIBattleControls({
@@ -19,6 +20,7 @@ export default function AIBattleControls({
   onSpeedChange,
   gameState,
   isAIvsAIMode,
+  onToggleReasoning,
 }: AIBattleControlsProps) {
   const [commentary, setCommentary] = useState<string>('');
   const [commentaryHistory, setCommentaryHistory] = useState<string[]>([]);
@@ -81,10 +83,20 @@ export default function AIBattleControls({
 
       {/* Live Commentary */}
       <div className="bg-slate-900/95 border-2 border-neon-gold/50 rounded-xl p-4 shadow-xl backdrop-blur-sm max-w-xs">
-        <h3 className="text-sm font-bold text-neon-gold uppercase mb-3 flex items-center gap-2">
-          <span>📢</span>
-          <span>Live Commentary</span>
-        </h3>
+        <div className="flex items-center justify-between mb-3">
+          <h3 className="text-sm font-bold text-neon-gold uppercase flex items-center gap-2">
+            <span>📢</span>
+            <span>Live Commentary</span>
+          </h3>
+          {onToggleReasoning && (
+            <button
+              onClick={onToggleReasoning}
+              className="text-xs bg-slate-800 hover:bg-slate-700 text-neon-cyan px-2 py-1 rounded border border-neon-cyan/30 transition-colors"
+            >
+              View Logic
+            </button>
+          )}
+        </div>
         
         {/* Current commentary */}
         <div className="bg-slate-800/80 rounded-lg p-3 mb-3 border-l-4 border-neon-gold">

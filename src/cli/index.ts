@@ -9,6 +9,7 @@ import { getAnchorClient } from '../lib/server/anchorActions';
 import { createGame, joinGame, handleShieldedMemo, GameCommandResult } from './commands/game';
 import { monitorHelius, HeliusMonitorResult } from './commands/monitoring';
 import { createWinnerToken, TokenCreateResult } from './commands/token';
+import { launchAgent } from './commands/agent';
 
 interface CliArgs {
   command?: string;
@@ -60,6 +61,7 @@ Commands:
   Monitoring & Tokens:
     monitor           Monitor Helius for treasury transactions
     token <gameId>    Create winner token for game
+    agent <gameId>    Launch an autonomous agent for a specific game lobby
 
 Options:
   --memo <json>     Zcash memo JSON (e.g., '{"v":"1","gameId":"demo_game",...}')
@@ -163,6 +165,17 @@ async function main() {
         }
         // TODO: Get winner pubkey from game state
         result = await createWinnerToken(gidNum, 'WINNER_PUBKEY');
+        break;
+      }
+
+      case 'agent': {
+        const gameId = args.positional[0];
+        if (!gameId) {
+          console.error('Error: agent requires a game ID');
+          process.exit(1);
+        }
+        const { program, provider } = await getAnchorClient();
+        result = await launchAgent(program, provider, gameId);
         break;
       }
 

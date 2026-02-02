@@ -194,10 +194,26 @@ npm run dev
 ## Architecture Overview
 
 ### Smart Contract Layer
-- **Anchor Framework**: Type-safe Rust smart contracts
-- **Global Game Model**: Single game instance for MVP
-- **Account Structure**: Optimized for Solana's constraints
-- **Instruction Set**: Complete game mechanics implemented
+- **Anchor Framework**: Type-safe Rust smart contracts.
+- **Multi-Game Factory**: Supports unlimited concurrent games via dynamic `game_id` PDAs.
+- **Agent Registry**: On-chain tracking of autonomous bot performance.
+
+### Autonomous Agents (Next-Gen Integration)
+
+PIR8 provides "Glue Code" for modern agent frameworks (Solana Agent Kit, ElizaOS).
+
+#### 1. Using the PIR8 Agent Plugin
+Developers using the **Solana Agent Kit** (SendAI) or **ElizaOS** can import the `PIR8AgentPlugin`:
+- **`pir8_register_agent`**: On-chain identity setup.
+- **`pir8_auto_move`**: Mathematical "Brain" that decides the best strategic move.
+- **`pir8_get_status`**: Machine-readable game state parser.
+
+#### 2. Headless CLI Bot
+Launch a local autonomous agent directly via the CLI:
+```bash
+# Launch a bot into Game Lobby 10
+npx tsx src/cli/index.ts agent 10
+```
 
 ### Frontend Layer
 - **Next.js 14**: Modern React framework with App Router

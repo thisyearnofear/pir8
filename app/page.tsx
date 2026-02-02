@@ -80,7 +80,8 @@ export default function Home() {
     setPlaybackSpeed,
     getPlaybackSpeed,
     isAIvsAIMode,
-    setAIDecisionCallback
+    setAIDecisionCallback,
+    currentAIReasoning
   } = usePirateGameState();
 
   const [isCreatingGame, setIsCreatingGame] = useState(false);
@@ -97,6 +98,7 @@ export default function Home() {
   
   // AI vs AI mode state
   const [showAIBattleModal, setShowAIBattleModal] = useState(false);
+  const [showAIReasoning, setShowAIReasoning] = useState(false);
   
   // Spectator mode state
   const [showSpectatorMode, setShowSpectatorMode] = useState(false);
@@ -249,7 +251,10 @@ export default function Home() {
   // Set up AI decision callback for AI vs AI mode
   // Note: AIReasoningPanel now handles all AI reasoning display
   useEffect(() => {
-    if (!isAIvsAIMode) {
+    if (isAIvsAIMode) {
+      // Set dummy callback to enable reasoning generation in store
+      setAIDecisionCallback(() => {});
+    } else {
       setAIDecisionCallback(null);
     }
     return () => {
@@ -693,6 +698,7 @@ export default function Home() {
           onSpeedChange={setPlaybackSpeed}
           gameState={gameState}
           isAIvsAIMode={isAIvsAIMode}
+          onToggleReasoning={() => setShowAIReasoning(!showAIReasoning)}
         />
       )}
 
@@ -935,6 +941,9 @@ export default function Home() {
               onClearJoinError={clearJoinError}
               onOpenLeaderboard={() => setSocialModal({ type: 'leaderboard', isOpen: true })}
               onOpenReferral={() => setSocialModal({ type: 'referral', isOpen: true })}
+              showAIReasoning={showAIReasoning}
+              onToggleAIReasoning={() => setShowAIReasoning(!showAIReasoning)}
+              aiReasoning={currentAIReasoning}
             />
           ) : (
             /* Enhanced Empty State with Wallet CTA */

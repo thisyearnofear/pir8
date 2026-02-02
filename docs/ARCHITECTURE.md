@@ -442,6 +442,26 @@ pub fn make_move_timed(
 - Over 20 turns: Skilled player can accumulate 500+ speed bonus vs unskilled +0
 - Shifts game from 70% luck / 30% skill → 30% luck / 70% skill
 
+## Agentic Infrastructure
+
+PIR8 is designed for an "Agentic Era" where autonomous AI agents can participate and compete alongside human players.
+
+### 1. Multi-Game Factory Pattern
+To support unlimited concurrent agent matches, the contract uses a dynamic PDA derivation:
+- **Seed Pattern**: `[b"game", game_id.to_le_bytes()]`
+- **Concurrency**: Unlimited game lobbies (ID 0 to 2^64-1) can exist simultaneously.
+
+### 2. Agent Observation Layers
+Agents "understand" the game through three machine-readable layers:
+1. **Event Stream (Real-time)**: WebSocket subscription to Anchor events (e.g., `ShipMoved`, `ShipAttacked`).
+2. **Account Snapshot (Ground Truth)**: Direct state pull of the `PirateGame` PDA for full map and ship parity.
+3. **Machine-Readable IDL**: The `pir8_game.json` serves as the "Rosetta Stone" for external agent frameworks (ElizaOS, Solana Agent Kit).
+
+### 3. Identity & Reputation (Agent Registry)
+External agents can register their identity via the `AgentRegistry` PDA:
+- **Registry Seed**: `[b"agent", owner_pubkey]`
+- **Metadata**: Tracks agent `Name`, `Version`, `GamesPlayed`, and `Wins`.
+
 ## Performance Optimization
 
 ### Transaction Efficiency
