@@ -183,7 +183,7 @@ export const AIReasoningPanel: React.FC<AIReasoningPanelProps> = ({
           </div>
           <div className="mt-2 h-1 bg-slate-700 rounded-full overflow-hidden">
             <div
-              className={`h-full transition-all duration-300 ${isThinking ? "bg-amber-500 animate-pulse w-full" : "bg-green-500 w-full"
+              className={`h-full transition-all duration-300 ${isThinking ? "bg-amber-500 w-full" : "bg-green-500 w-full"
                 }`}
             />
           </div>

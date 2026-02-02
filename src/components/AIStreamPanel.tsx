@@ -101,7 +101,7 @@ function ReasoningCard({ reasoning, isLatest }: { reasoning: AIReasoning; isLate
             {difficulty.name}
           </span>
           {isLatest && (
-            <span className="text-[10px] text-amber-400 animate-pulse font-bold uppercase">
+            <span className="text-[10px] text-amber-400 font-bold uppercase">
               • Current
             </span>
           )}

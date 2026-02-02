@@ -696,9 +696,9 @@ export default function PirateControls({
                             border-2 border-neon-magenta/50 rounded-2xl p-5 space-y-4 relative overflow-hidden
                             shadow-2xl shadow-neon-magenta/20">
 
-              {/* Animated background elements */}
-              <div className="absolute top-2 right-2 w-16 h-16 bg-neon-magenta/10 rounded-full blur-xl animate-pulse"></div>
-              <div className="absolute bottom-2 left-2 w-12 h-12 bg-neon-cyan/10 rounded-full blur-lg animate-pulse delay-1000"></div>
+              {/* Subtle background elements */}
+              <div className="absolute top-2 right-2 w-16 h-16 bg-neon-magenta/10 rounded-full blur-xl"></div>
+              <div className="absolute bottom-2 left-2 w-12 h-12 bg-neon-cyan/10 rounded-full blur-lg"></div>
 
               {/* Header */}
               <div className="relative text-center mb-4">
@@ -714,7 +714,7 @@ export default function PirateControls({
                 <div className="flex items-center justify-between mb-3">
                   <span className="text-neon-cyan font-mono text-sm font-bold">DECISION TIME:</span>
                   <div className="flex items-center gap-2">
-                    <div className={`w-3 h-3 rounded-full animate-pulse ${decisionTimeMs < 5000 ? 'bg-green-400' :
+                    <div className={`w-3 h-3 rounded-full ${decisionTimeMs < 5000 ? 'bg-green-400' :
                       decisionTimeMs < 10000 ? 'bg-yellow-400' :
                         decisionTimeMs < 15000 ? 'bg-orange-400' : 'bg-red-500'
                       }`}></div>
@@ -734,8 +734,7 @@ export default function PirateControls({
                       }`}
                     style={{ width: `${Math.min(100, (decisionTimeMs / 30000) * 100)}%` }}
                   >
-                    <div className="absolute inset-0 bg-gradient-to-r from-transparent via-white/30 to-transparent 
-                                    animate-pulse"></div>
+                    <div className="absolute inset-0 bg-gradient-to-r from-transparent via-white/20 to-transparent"></div>
                   </div>
                 </div>
 

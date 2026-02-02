@@ -39,6 +39,7 @@ interface PirateGameStore {
   isAIvsAIMode: boolean;
   currentAIReasoning: any | null; // AIReasoning from pirateGameEngine
   aiDecisionCallback: ((reasoning: any) => void) | null;
+  aiReasoningHistory: any[];
 
   // Actions - On-chain (require wallet)
   fetchLobbies: () => Promise<void>;
@@ -178,6 +179,7 @@ export const usePirateGameState = create<PirateGameStore>((set, get) => ({
   isAIvsAIMode: false,
   currentAIReasoning: null,
   aiDecisionCallback: null,
+  aiReasoningHistory: [] as any[],
 
   fetchLobbies: async () => {
     try {
@@ -674,7 +676,10 @@ export const usePirateGameState = create<PirateGameStore>((set, get) => ({
             turnNumber: advancedState.turnNumber,
           };
 
-          set({ gameState: newState, currentAIReasoning: decision.reasoning });
+          // Update reasoning history (keep last 20 entries)
+          const prevHistory = get().aiReasoningHistory || [];
+          const newHistory = [decision.reasoning, ...prevHistory].slice(0, 20);
+          set({ gameState: newState, currentAIReasoning: decision.reasoning, aiReasoningHistory: newHistory });
 
           // Check for game end
           if (newState.gameStatus === 'completed') {
@@ -811,6 +816,7 @@ export const usePirateGameState = create<PirateGameStore>((set, get) => ({
         scannedCoordinates: new Set(),
         scanChargesRemaining: 3,
         showMessage: `⚔️ AI Battle: ${difficulty1} vs ${difficulty2}!`,
+        aiReasoningHistory: [], // Clear history for new game
       });
 
       setTimeout(() => set({ showMessage: null }), 3000);

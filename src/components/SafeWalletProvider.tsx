@@ -1,6 +1,6 @@
 'use client';
 
-import React, { createContext, useContext } from "react";
+import React, { createContext, useContext, useState, useEffect } from "react";
 import { useWallet } from "@solana/wallet-adapter-react";
 import { WalletContextProvider } from "./WalletProvider";
 
@@ -26,7 +26,22 @@ const defaultWalletContext: SafeWalletContextType = {
 const SafeWalletContext = createContext<SafeWalletContextType>(defaultWalletContext);
 
 export function SafeWalletProvider({ children }: { children: React.ReactNode }) {
-    // Always wrap in WalletContextProvider so useWallet() works everywhere
+    const [isClient, setIsClient] = useState(false);
+
+    useEffect(() => {
+        setIsClient(true);
+    }, []);
+
+    // During SSR, render children with default context (no wallet)
+    if (!isClient) {
+        return (
+            <SafeWalletContext.Provider value={defaultWalletContext}>
+                {children}
+            </SafeWalletContext.Provider>
+        );
+    }
+
+    // On client, wrap in WalletContextProvider
     return (
         <WalletContextProvider>
             <WalletErrorBoundary>

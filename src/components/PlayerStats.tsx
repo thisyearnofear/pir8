@@ -2,7 +2,7 @@
 
 import { Player } from '../types/game';
 import { useSafeWallet } from '@/components/SafeWalletProvider';
-import { SHIP_EMOJIS } from '../utils/constants';
+import { SHIP_EMOJIS, TEAM_COLORS } from '../utils/constants';
 
 interface PlayerStatsProps {
   players: Player[];
@@ -98,6 +98,11 @@ export default function PlayerStats({
       case 3: return '🥉';
       default: return '⚓';
     }
+  };
+
+  // Get team color by player index (DRY - uses shared TEAM_COLORS)
+  const getTeamColor = (index: number) => {
+    return TEAM_COLORS[index % TEAM_COLORS.length]!;
   };
 
   return (

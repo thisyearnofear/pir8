@@ -524,7 +524,7 @@ export class PirateGameManager {
     winner: Player | null;
     updatedGameState: GameState;
   } {
-    const MAX_TURNS = 50; // Prevent infinite games - was 100
+    const MAX_TURNS = 35; // Prevent infinite games - target 25-40 turns
     const activePlayers = gameState.players.filter(p =>
       p.isActive && p.ships.some(s => s.health > 0)
     );

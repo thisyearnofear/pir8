@@ -280,6 +280,7 @@ export default function SpectatorView({ initialGameId, onClose, onJoinGame }: Sp
           <PirateMap
             gameMap={gameState.gameMap}
             ships={gameState.players.flatMap((p) => p.ships).filter((s) => s.health > 0)}
+            players={gameState.players}
             onCellSelect={() => {}} // No-op in spectator mode
             onShipClick={() => {}} // No-op in spectator mode
             isMyTurn={false} // Spectators never have turn

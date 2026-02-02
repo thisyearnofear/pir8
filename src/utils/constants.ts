@@ -36,6 +36,14 @@ export const ZCASH_CONFIG = {
   ENABLED: process.env['NEXT_PUBLIC_ZCASH_ENABLED'] === 'true',
 } as const;
 
+// Team Colors - Single source of truth for player visual distinction
+export const TEAM_COLORS = [
+  { tailwind: 'text-neon-cyan', ring: 'ring-neon-cyan', shadow: 'shadow-neon-cyan/50', hex: '#00D9FF', name: 'Cyan', bg: 'bg-neon-cyan/30', border: 'border-neon-cyan' },
+  { tailwind: 'text-neon-gold', ring: 'ring-neon-gold', shadow: 'shadow-neon-gold/50', hex: '#FFD700', name: 'Gold', bg: 'bg-neon-gold/30', border: 'border-neon-gold' },
+  { tailwind: 'text-neon-magenta', ring: 'ring-neon-magenta', shadow: 'shadow-neon-magenta/50', hex: '#FF00FF', name: 'Magenta', bg: 'bg-neon-magenta/30', border: 'border-neon-magenta' },
+  { tailwind: 'text-neon-purple', ring: 'ring-neon-purple', shadow: 'shadow-neon-purple/50', hex: '#BC13FE', name: 'Purple', bg: 'bg-neon-purple/30', border: 'border-neon-purple' },
+] as const;
+
 // Pirate Territory & Ship Mappings
 export const TERRITORY_EMOJIS = {
   'water': '🌊',

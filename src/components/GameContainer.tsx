@@ -325,6 +325,7 @@ export default function GameContainer({
             <PirateMap
               gameMap={gameState.gameMap}
               ships={allShips}
+              players={gameState.players}
               onCellSelect={onCellSelect}
               onShipClick={onShipClick}
               isMyTurn={isMyTurn}
