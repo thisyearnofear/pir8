@@ -3,7 +3,7 @@ import { Inter } from 'next/font/google'
 import './globals.css'
 import '@/styles/MusicPlayer.css'
 import '@solana/wallet-adapter-react-ui/styles.css'
-import { WalletContextProvider } from '@/components/WalletProvider'
+import { SafeWalletProvider } from '@/components/SafeWalletProvider'
 import { ZcashBridgeInitializer } from '@/components/ZcashBridgeInitializer'
 
 const inter = Inter({ subsets: ['latin'], display: 'swap' })
@@ -48,31 +48,43 @@ export default function RootLayout({
             __html: `
               // Prevent ethereum provider conflicts from crashing the app
               window.addEventListener('error', function(e) {
-                if (e.message && e.message.includes('ethereum')) {
-                  console.warn('Ethereum provider error suppressed:', e.message);
+                if (e.message && (e.message.includes('ethereum') || e.message.includes('Cannot set property'))) {
+                  console.warn('Provider error suppressed:', e.message);
                   e.preventDefault();
                   return false;
                 }
               });
               
               window.addEventListener('unhandledrejection', function(e) {
-                if (e.reason && e.reason.message && e.reason.message.includes('ethereum')) {
-                  console.warn('Ethereum provider rejection suppressed:', e.reason.message);
+                if (e.reason && e.reason.message && (e.reason.message.includes('ethereum') || e.reason.message.includes('Cannot set property'))) {
+                  console.warn('Provider rejection suppressed:', e.reason.message);
                   e.preventDefault();
                   return false;
                 }
               });
+
+              // Prevent wallet adapter from overriding ethereum provider
+              if (typeof window !== 'undefined') {
+                const originalDefineProperty = Object.defineProperty;
+                Object.defineProperty = function(obj, prop, descriptor) {
+                  if (obj === window && prop === 'ethereum' && descriptor.set) {
+                    console.warn('Prevented ethereum provider override');
+                    return obj;
+                  }
+                  return originalDefineProperty.call(this, obj, prop, descriptor);
+                };
+              }
             `
           }}
         />
       </head>
       <body className={`${inter.className} bg-gradient-to-br from-ocean-blue via-blue-900 to-slate-900 min-h-screen safe-area-inset`}>
-        <WalletContextProvider>
+        <SafeWalletProvider>
           <ZcashBridgeInitializer />
           <div className="min-h-screen bg-gradient-to-br from-ocean-blue via-blue-900 to-slate-900 text-white">
             {children}
           </div>
-        </WalletContextProvider>
+        </SafeWalletProvider>
       </body>
     </html>
   )

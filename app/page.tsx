@@ -9,7 +9,7 @@
 
 "use client";
 
-import { useWallet } from "@solana/wallet-adapter-react";
+import { useSafeWallet } from "@/components/SafeWalletProvider";
 import { usePirateGameState } from "@/hooks/usePirateGameState";
 import { useErrorHandler } from "@/hooks/useErrorHandler";
 import { useShowOnboarding } from "@/hooks/useShowOnboarding";
@@ -29,6 +29,7 @@ import LobbyBrowser from "@/components/LobbyBrowser";
 import AIStreamPanel from "@/components/AIStreamPanel";
 import { LeakageMeter, BountyBoard, PrivacyLessonModal } from "@/components/privacy";
 import AIBattleModal from "@/components/AIBattleModal";
+import { AIBattleErrorBoundary } from "@/components/AIBattleErrorBoundary";
 import AIBattleControls from "@/components/AIBattleControls";
 import { useState, useEffect, useMemo, useCallback } from "react";
 import dynamic from "next/dynamic";
@@ -44,7 +45,8 @@ const WalletButtonWrapper = dynamic(
 );
 
 export default function Home() {
-  const { publicKey, wallet } = useWallet();
+  // Safely access wallet context
+  const { publicKey, wallet } = useSafeWallet();
   const {
     gameState,
     error,
@@ -138,7 +140,7 @@ export default function Home() {
 
   // Update privacy simulation when game state changes in practice mode
   useEffect(() => {
-    if (isPracticeMode() && gameState) {
+    if (isPracticeMode() && gameState?.players) {
       const humanPlayer = gameState.players.find((p: any) => !p.publicKey.startsWith('AI_'));
       if (humanPlayer) {
         // Get recent actions from game state (or empty array if not available)
@@ -381,7 +383,7 @@ export default function Home() {
 
   const handleCellSelect = async (coordinate: string) => {
     const playerKey = getCurrentPlayerKey;
-    if (!playerKey || !gameState || !isMyTurn(playerKey)) return;
+    if (!playerKey || !gameState?.players || !isMyTurn(playerKey)) return;
 
     // Practice mode handling
     if (isPracticeMode()) {
@@ -393,7 +395,7 @@ export default function Home() {
       } else {
         // Try to select a ship at this coordinate
         const humanPlayer = gameState.players.find((p: any) => !p.publicKey.startsWith('AI_'));
-        const myShips = humanPlayer?.ships.filter((ship: any) =>
+        const myShips = humanPlayer?.ships?.filter((ship: any) =>
           ship.position.x + ',' + ship.position.y === coordinate
         ) || [];
 
@@ -909,55 +911,109 @@ export default function Home() {
 
           {/* Main Game Container - Extracted for cleaner architecture */}
           {gameState ? (
-            <GameContainer
-              gameState={gameState}
-              currentPlayerPK={isPracticeMode()
-                ? gameState.players.find((p: any) => !p.publicKey.startsWith('AI_'))?.publicKey
-                : publicKey?.toString()
-              }
-              isPracticeMode={isPracticeMode()}
-              isMyTurn={isMyTurn(getCurrentPlayerKey)}
-              decisionTimeMs={decisionTime}
-              currentPlayerName={getCurrentPlayerName()}
-              scanChargesRemaining={scanChargesRemaining}
-              speedBonusAccumulated={speedBonusAccumulated}
-              averageDecisionTimeMs={averageDecisionTimeMs}
-              scannedCoordinates={getScannedCoordinates()}
-              selectedShipId={selectedShipId}
-              shipActionModalShip={shipActionModalShip}
-              onCellSelect={handleCellSelect}
-              onShipClick={handleShipClick}
-              onShipSelect={selectShip}
-              onShipAction={handleShipAction}
-              onCloseShipActionModal={() => setShipActionModalShip(null)}
-              onCreateGame={handleCreateGame}
-              onQuickStart={handleQuickStart}
-              onStartGame={async () => {
-                if (!wallet) return;
-                setIsCreatingGame(true);
-                try {
-                  const success = await startGame(wallet);
-                  if (success) handleGameEvent("🏴‍☠️ Battle Started! Hoist the colors!");
-                } catch (error) {
-                  handleGameError(error, "start game");
-                } finally {
-                  setIsCreatingGame(false);
+            isAIvsAIMode ? (
+              <AIBattleErrorBoundary>
+                <GameContainer
+                  gameState={gameState}
+                  currentPlayerPK={isPracticeMode()
+                    ? gameState.players.find((p: any) => !p.publicKey.startsWith('AI_'))?.publicKey
+                    : publicKey?.toString()
+                  }
+                  isPracticeMode={isPracticeMode()}
+                  isMyTurn={isMyTurn(getCurrentPlayerKey)}
+                  decisionTimeMs={decisionTime}
+                  currentPlayerName={getCurrentPlayerName()}
+                  scanChargesRemaining={scanChargesRemaining}
+                  speedBonusAccumulated={speedBonusAccumulated}
+                  averageDecisionTimeMs={averageDecisionTimeMs}
+                  scannedCoordinates={getScannedCoordinates()}
+                  selectedShipId={selectedShipId}
+                  shipActionModalShip={shipActionModalShip}
+                  onCellSelect={handleCellSelect}
+                  onShipClick={handleShipClick}
+                  onShipSelect={selectShip}
+                  onShipAction={handleShipAction}
+                  onCloseShipActionModal={() => setShipActionModalShip(null)}
+                  onCreateGame={handleCreateGame}
+                  onQuickStart={handleQuickStart}
+                  onStartGame={async () => {
+                    if (!wallet) return;
+                    setIsCreatingGame(true);
+                    try {
+                      const success = await startGame(wallet);
+                      if (success) handleGameEvent("🏴‍☠️ Battle Started! Hoist the colors!");
+                    } catch (error) {
+                      handleGameError(error, "start game");
+                    } finally {
+                      setIsCreatingGame(false);
+                    }
+                  }}
+                  onJoinGame={handleJoinGame}
+                  onEndTurn={endTurn}
+                  onPracticeMode={() => setShowPracticeMenu(true)}
+                  onCollectResources={handleCollectResources}
+                  onBuildShip={handleBuildShip}
+                  onNewGame={handleNewGame}
+                  onReturnToLobby={handleReturnToLobby}
+                  isCreatingGame={isCreatingGame}
+                  isJoining={isJoining}
+                  joinError={joinError}
+                  onClearJoinError={clearJoinError}
+                  onOpenLeaderboard={() => setSocialModal({ type: 'leaderboard', isOpen: true })}
+                  onOpenReferral={() => setSocialModal({ type: 'referral', isOpen: true })}
+                />
+              </AIBattleErrorBoundary>
+            ) : (
+              <GameContainer
+                gameState={gameState}
+                currentPlayerPK={isPracticeMode()
+                  ? gameState.players.find((p: any) => !p.publicKey.startsWith('AI_'))?.publicKey
+                  : publicKey?.toString()
                 }
-              }}
-              onJoinGame={handleJoinGame}
-              onEndTurn={endTurn}
-              onPracticeMode={() => setShowPracticeMenu(true)}
-              onCollectResources={handleCollectResources}
-              onBuildShip={handleBuildShip}
-              onNewGame={handleNewGame}
-              onReturnToLobby={handleReturnToLobby}
-              isCreatingGame={isCreatingGame}
-              isJoining={isJoining}
-              joinError={joinError}
-              onClearJoinError={clearJoinError}
-              onOpenLeaderboard={() => setSocialModal({ type: 'leaderboard', isOpen: true })}
-              onOpenReferral={() => setSocialModal({ type: 'referral', isOpen: true })}
-            />
+                isPracticeMode={isPracticeMode()}
+                isMyTurn={isMyTurn(getCurrentPlayerKey)}
+                decisionTimeMs={decisionTime}
+                currentPlayerName={getCurrentPlayerName()}
+                scanChargesRemaining={scanChargesRemaining}
+                speedBonusAccumulated={speedBonusAccumulated}
+                averageDecisionTimeMs={averageDecisionTimeMs}
+                scannedCoordinates={getScannedCoordinates()}
+                selectedShipId={selectedShipId}
+                shipActionModalShip={shipActionModalShip}
+                onCellSelect={handleCellSelect}
+                onShipClick={handleShipClick}
+                onShipSelect={selectShip}
+                onShipAction={handleShipAction}
+                onCloseShipActionModal={() => setShipActionModalShip(null)}
+                onCreateGame={handleCreateGame}
+                onQuickStart={handleQuickStart}
+                onStartGame={async () => {
+                  if (!wallet) return;
+                  setIsCreatingGame(true);
+                  try {
+                    const success = await startGame(wallet);
+                    if (success) handleGameEvent("🏴‍☠️ Battle Started! Hoist the colors!");
+                  } catch (error) {
+                    handleGameError(error, "start game");
+                  } finally {
+                    setIsCreatingGame(false);
+                  }
+                }}
+                onJoinGame={handleJoinGame}
+                onEndTurn={endTurn}
+                onPracticeMode={() => setShowPracticeMenu(true)}
+                onCollectResources={handleCollectResources}
+                onBuildShip={handleBuildShip}
+                onNewGame={handleNewGame}
+                onReturnToLobby={handleReturnToLobby}
+                isCreatingGame={isCreatingGame}
+                isJoining={isJoining}
+                joinError={joinError}
+                onClearJoinError={clearJoinError}
+                onOpenLeaderboard={() => setSocialModal({ type: 'leaderboard', isOpen: true })}
+                onOpenReferral={() => setSocialModal({ type: 'referral', isOpen: true })}
+              />
+            )
           ) : (
             /* Enhanced Empty State with Wallet CTA */
             <div className="flex-1 flex items-center justify-center min-h-[600px] px-4">
