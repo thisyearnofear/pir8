@@ -232,9 +232,7 @@ export class PirateGameManager {
    * ENHANCEMENT: Adds variety to location visits
    */
   static checkLocationEvent(
-    ship: Ship,
-    territoryType: TerritoryCellType,
-    gameState: GameState
+    territoryType: TerritoryCellType
   ): {
     message: string;
     resourceChange?: Partial<Resources>;
@@ -543,7 +541,7 @@ export class PirateGameManager {
     // Get territory type at new position
     const territory = gameState.gameMap.cells[toPosition.x]?.[toPosition.y];
     if (territory) {
-        const event = this.checkLocationEvent(ship, territory.type, gameState);
+        const event = this.checkLocationEvent(territory.type);
         if (event) {
             eventMessage = ` ${event.message}`;
             healthChange = event.healthChange || 0;
