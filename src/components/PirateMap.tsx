@@ -4,8 +4,8 @@ import { useState, useRef, useEffect } from "react";
 import { GameMap, TerritoryCell, Ship } from "../types/game";
 import { TERRITORY_EMOJIS, SHIP_EMOJIS, TEAM_COLORS } from "../utils/constants";
 import { PirateGameManager } from "../lib/pirateGameEngine";
-import { GameBalance } from "../lib/gameBalance";
 import TerritoryTooltip from "./TerritoryTooltip";
+import { useMobileOptimized } from "@/hooks/useMobileOptimized";
 
 interface PlayerInfo {
   publicKey: string;
@@ -15,7 +15,7 @@ interface PlayerInfo {
 interface PirateMapProps {
   gameMap: GameMap;
   ships: Ship[];
-  players?: PlayerInfo[]; // For team color assignment
+  players?: PlayerInfo[];
   onCellSelect: (coordinate: string) => void;
   onShipClick?: (ship: Ship) => void;
   isMyTurn: boolean;
@@ -35,69 +35,212 @@ export default function PirateMap({
   currentPlayerPK,
   scannedCoordinates = [],
 }: PirateMapProps) {
-  const [hoveredCoordinate, setHoveredCoordinate] = useState<string | null>(
-    null,
-  );
+  const [hoveredCoordinate, setHoveredCoordinate] = useState<string | null>(null);
   const [tooltipPosition, setTooltipPosition] = useState({ x: 0, y: 0 });
   const mapRef = useRef<HTMLDivElement>(null);
 
-  // CONSOLIDATED animation state - Single source of truth
-  const [shipPositions, setShipPositions] = useState<Map<string, string>>(
-    new Map(),
-  );
-  const [shipAnimations, setShipAnimations] = useState<
-    Map<
-      string,
-      {
-        type: "move" | "attack" | "claim" | "damaged";
-        timestamp: number;
+  // ENHANCED mobile optimization
+  const { 
+    isMobile, 
+    getGridSize,
+    shouldReduceAnimations,
+    classes,
+    touchHandlers,
+    triggerHaptic
+  } = useMobileOptimized({
+    onTap: (element) => {
+      const coordinate = element.dataset.coordinate;
+      if (coordinate) handleCellClick(coordinate);
+    },
+    onLongPress: (element) => {
+      const coordinate = element.dataset.coordinate;
+      if (coordinate && isMobile) {
+        setHoveredCoordinate(coordinate);
+        triggerHaptic('medium');
       }
-    >
-  >(new Map());
-  const [shipTrails, setShipTrails] = useState<Map<string, string[]>>(
-    new Map(),
-  );
-  const [damageNumbers, setDamageNumbers] = useState<
-    Array<{
-      id: string;
-      shipId: string;
-      amount: number;
-      position: string;
-      timestamp: number;
-    }>
-  >([]);
+    }
+  });
 
-  // Track previous ship state with refs to avoid dependency loops
-  const prevShipsRef = useRef<
-    Map<string, { position: string; health: number }>
-  >(new Map());
+  // CONSOLIDATED animation state
+  const [shipAnimations, setShipAnimations] = useState<Map<string, { type: "move" | "attack" | "damaged"; timestamp: number }>>(new Map());
+  const [damageNumbers, setDamageNumbers] = useState<Array<{ id: string; shipId: string; amount: number; position: string; timestamp: number }>>([]);
+  const prevShipsRef = useRef<Map<string, { position: string; health: number }>>(new Map());
 
-  // Detect changes and determine action type
+  // ENHANCED animation detection
   useEffect(() => {
+    if (shouldReduceAnimations()) return;
+
     const now = Date.now();
     const prevShips = prevShipsRef.current;
-    let hasChanges = false;
 
     ships.forEach((ship) => {
       const currentPos = PirateGameManager.coordinateToString(ship.position);
       const prev = prevShips.get(ship.id);
 
-      // Position changed = movement
       if (prev && prev.position !== currentPos) {
-        hasChanges = true;
-        setShipAnimations((prevAnims) => {
-          const next = new Map(prevAnims);
-          next.set(ship.id, { type: "move", timestamp: now });
-          return next;
-        });
+        setShipAnimations(prev => new Map(prev.set(ship.id, { type: "move", timestamp: now })));
+      }
 
-        // Track trail (last 3 positions)
-        setShipTrails((prevTrails) => {
-          const next = new Map(prevTrails);
-          const trail = [...(next.get(ship.id) || []), prev.position];
-          if (trail.length > 3) trail.shift();
-          next.set(ship.id, trail);
-          return next;
+      if (prev && prev.health > ship.health) {
+        const damage = prev.health - ship.health;
+        setDamageNumbers(prev => [...prev, { id: `${ship.id}-${now}`, shipId: ship.id, amount: damage, position: currentPos, timestamp: now }]);
+        setShipAnimations(prev => new Map(prev.set(ship.id, { type: "damaged", timestamp: now })));
+      }
+    });
+
+    prevShipsRef.current = new Map(ships.map(s => [s.id, { position: PirateGameManager.coordinateToString(s.position), health: s.health }]));
+  }, [ships, shouldReduceAnimations]);
+
+  // CONSOLIDATED cleanup
+  useEffect(() => {
+    if (damageNumbers.length === 0) return;
+    const timer = setInterval(() => {
+      const now = Date.now();
+      setDamageNumbers(prev => prev.filter(dmg => now - dmg.timestamp < 1500));
+    }, 100);
+    return () => clearInterval(timer);
+  }, [damageNumbers.length]);
+
+  const handleCellClick = (coordinate: string) => {
+    if (!isMyTurn) return;
+    const ship = getShipAtPosition(coordinate);
+    if (ship && isMyShip(ship) && onShipClick) {
+      onShipClick(ship);
+      return;
+    }
+    onCellSelect(coordinate);
+  };
+
+  const handleCellHover = (coordinate: string, event: React.MouseEvent) => {
+    if (isMobile) return;
+    setHoveredCoordinate(coordinate);
+    setTooltipPosition({ x: event.clientX, y: event.clientY });
+  };
+
+  const getShipAtPosition = (coordinate: string): Ship | undefined => {
+    return ships.find(ship => PirateGameManager.coordinateToString(ship.position) === coordinate);
+  };
+
+  const isMyShip = (ship: Ship): boolean => {
+    return ship.owner === currentPlayerPK;
+  };
+
+  const getPlayerColor = (playerPK: string): string => {
+    const playerIndex = players.findIndex(p => p.publicKey === playerPK);
+    return TEAM_COLORS[playerIndex % TEAM_COLORS.length] || "#ffffff";
+  };
+
+  const getCellContent = (coordinate: string) => {
+    const ship = getShipAtPosition(coordinate);
+    const cell = gameMap.cells.find(c => PirateGameManager.coordinateToString({ x: c.x, y: c.y }) === coordinate);
+
+    if (ship) {
+      const isSelected = selectedShipId === ship.id;
+      const playerColor = getPlayerColor(ship.owner);
+      const animationClass = shipAnimations.get(ship.id);
+      
+      return (
+        <div className="relative w-full h-full flex items-center justify-center">
+          <span
+            className={`ship-icon ${animationClass && !shouldReduceAnimations() ? `ship-anim-${animationClass.type}` : ""} ${isSelected ? "ring-2 ring-neon-gold" : ""}`}
+            style={{ color: playerColor }}
+          >
+            {SHIP_EMOJIS[ship.type]}
+          </span>
+          
+          <div className="health-bar">
+            <div
+              className="h-full transition-all duration-300"
+              style={{
+                width: `${(ship.health / ship.maxHealth) * 100}%`,
+                backgroundColor: ship.health > ship.maxHealth * 0.5 ? "#22c55e" : ship.health > ship.maxHealth * 0.25 ? "#eab308" : "#ef4444"
+              }}
+            />
+          </div>
+
+          {damageNumbers.filter(dmg => dmg.shipId === ship.id).map(dmg => (
+            <div key={dmg.id} className="damage-number">-{dmg.amount}</div>
+          ))}
+        </div>
+      );
+    }
+
+    if (cell) {
+      const isScanned = scannedCoordinates.includes(coordinate);
+      return (
+        <div className={`territory-icon ${isScanned ? "opacity-100" : "opacity-60"}`}>
+          {TERRITORY_EMOJIS[cell.type]}
+        </div>
+      );
+    }
+
+    return null;
+  };
+
+  const gridSize = getGridSize();
+  const totalCells = gridSize * gridSize;
+
+  return (
+    <div className={`relative ${classes.container}`} ref={mapRef}>
+      {/* ENHANCED responsive grid */}
+      <div 
+        className={`grid ${classes.grid} ${isMobile ? 'mobile-map-grid' : 'game-grid'}`}
+        style={{ 
+          gridTemplateColumns: `repeat(${gridSize}, minmax(0, 1fr))`,
+          maxWidth: isMobile ? 'min(98vw, 85vh)' : 'auto',
+          aspectRatio: '1',
+          margin: '0 auto'
+        }}
+      >
+        {Array.from({ length: totalCells }, (_, index) => {
+          const x = index % gridSize;
+          const y = Math.floor(index / gridSize);
+          const coordinate = PirateGameManager.coordinateToString({ x, y });
+          
+          return (
+            <div
+              key={coordinate}
+              data-coordinate={coordinate}
+              className={`
+                territory-cell cursor-pointer
+                ${isMyTurn ? "hover:bg-neon-cyan hover:bg-opacity-20" : ""}
+                ${selectedShipId && getShipAtPosition(coordinate)?.id === selectedShipId ? "ring-2 ring-neon-gold" : ""}
+                ${classes.button}
+              `}
+              {...(isMobile ? touchHandlers : {
+                onClick: () => handleCellClick(coordinate),
+                onMouseEnter: (e) => handleCellHover(coordinate, e),
+                onMouseLeave: () => setHoveredCoordinate(null)
+              })}
+            >
+              <div className="cell-content">
+                {getCellContent(coordinate)}
+              </div>
+            </div>
+          );
+        })}
+      </div>
+
+      {/* CONSOLIDATED tooltip */}
+      {hoveredCoordinate && (
+        <TerritoryTooltip
+          coordinate={hoveredCoordinate}
+          gameMap={gameMap}
+          ships={ships}
+          position={tooltipPosition}
+          onClose={() => setHoveredCoordinate(null)}
+        />
+      )}
+
+      {/* Mobile status indicator */}
+      {isMobile && (
+        <div className="absolute top-2 right-2 bg-black bg-opacity-50 rounded px-2 py-1 text-xs text-neon-cyan">
+          {isMyTurn ? "Your Turn" : "Waiting..."}
+        </div>
+      )}
+    </div>
+  );
+}
         });
 
         // Auto-clear after animation

@@ -25,7 +25,6 @@ module.exports = {
         mono: ['JetBrains Mono', 'monospace'],
         tech: ['Orbitron', 'sans-serif'],
       },
-      // Consolidated z-index scale (DRY principle)
       zIndex: {
         'toast': '9999',
         'modal': '99999',
@@ -33,13 +32,12 @@ module.exports = {
         'header': '100',
         'privacy-panel': '50',
       },
-      // Privacy-specific colors for leakage visualization
       privacy: {
-        'safe': '#22c55e',      // green-500
-        'low': '#eab308',       // yellow-500
-        'medium': '#f97316',    // orange-500
-        'high': '#ef4444',      // red-500
-        'critical': '#dc2626',  // red-600
+        'safe': '#22c55e',
+        'low': '#eab308',
+        'medium': '#f97316',
+        'high': '#ef4444',
+        'critical': '#dc2626',
       },
       animation: {
         'treasure-glow': 'treasure-glow 2s ease-in-out infinite alternate',

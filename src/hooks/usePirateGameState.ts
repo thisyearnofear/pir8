@@ -185,26 +185,35 @@ export const usePirateGameState = create<PirateGameStore>((set, get) => ({
   fetchLobbies: async () => {
     try {
       set({ isLoading: true });
-      const { Connection, PublicKey } = await import('@solana/web3.js');
+      
       const { SOLANA_CONFIG } = await import('../utils/constants');
+      if (!SOLANA_CONFIG.PROGRAM_ID) {
+        console.warn('SOLANA_CONFIG.PROGRAM_ID is not set');
+        set({ lobbies: [], isLoading: false });
+        return;
+      }
+      
+      const { Connection, PublicKey } = await import('@solana/web3.js');
       const connection = new Connection(SOLANA_CONFIG.RPC_URL || 'https://api.devnet.solana.com');
-      const programId = new PublicKey(SOLANA_CONFIG.PROGRAM_ID!);
+      
+      try {
+        const programId = new PublicKey(SOLANA_CONFIG.PROGRAM_ID);
+        const accounts = await (connection as any).getProgramAccounts(programId, {
+          filters: [
+            { dataSize: 10240 }
+          ]
+        });
 
-      // Fetch all PirateGame accounts
-      const accounts = await (connection as any).getProgramAccounts(programId, {
-        filters: [
-          { dataSize: 10240 } // PirateGame::SPACE
-        ]
-      });
-
-      const lobbies = accounts.map((acc: any) => ({
-        address: acc.pubkey.toBase58(),
-        // Metadata can be parsed here once IDL is fully compiled
-      }));
-
-      set({ lobbies, isLoading: false });
+        const lobbies = accounts.map((acc: any) => ({
+          address: acc.pubkey.toBase58(),
+        }));
+        set({ lobbies, isLoading: false });
+      } catch (programError) {
+        console.warn('Failed to fetch from program, returning empty lobbies:', programError);
+        set({ lobbies: [], isLoading: false });
+      }
     } catch (error) {
-      console.error('Failed to fetch lobbies:', error);
+      console.warn('Failed to fetch lobbies:', error);
       set({ isLoading: false });
     }
   },

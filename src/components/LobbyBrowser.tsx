@@ -16,15 +16,19 @@ export default function LobbyBrowser() {
   const [newGameId, setNewGameId] = useState<number>(Math.floor(Math.random() * 1000));
 
   useEffect(() => {
-    fetchLobbies();
-    // Poll every 10 seconds
-    const interval = setInterval(fetchLobbies, 10000);
-    return () => clearInterval(interval);
-  }, [fetchLobbies]);
+    if (publicKey) {
+      fetchLobbies();
+      const interval = setInterval(fetchLobbies, 10000);
+      return () => clearInterval(interval);
+    }
+  }, [fetchLobbies, publicKey]);
 
   const handleCreate = async () => {
-    if (!publicKey) return;
-    const success = await createGame(newGameId, [], 0.1, {}); // Wallet handled in hook
+    if (!publicKey) {
+      console.warn('Wallet not connected');
+      return;
+    }
+    const success = await createGame(newGameId, [], 0.1, publicKey);
     if (success) setShowCreateModal(false);
   };
 

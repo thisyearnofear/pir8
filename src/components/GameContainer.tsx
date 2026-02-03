@@ -8,6 +8,8 @@
 
 import { useState, useEffect, useCallback } from 'react';
 import PirateMap from './PirateMap';
+import { useMobileOptimized } from '@/hooks/useMobileOptimized';
+import { MobileGameContainer } from './mobile/MobileGameContainer';
 
 // =============================================================================
 // HAPTIC FEEDBACK UTILITY
@@ -152,6 +154,8 @@ export default function GameContainer({
   showAIReasoning,
   onToggleAIReasoning,
 }: GameContainerProps) {
+  // ENHANCED mobile optimization
+  const { isMobile, classes } = useMobileOptimized();
 
   const [menuOpen, setMenuOpen] = useState(false);
   const [activeTab, setActiveTab] = useState<'stats' | 'actions' | 'build' | 'ai'>('stats');
@@ -257,7 +261,124 @@ export default function GameContainer({
 
   // Active game - focused layout with map as hero
   if (gameState.gameStatus === 'active' && gameState.gameMap) {
-    return (
+    // ENHANCED mobile layout - simplified UI for mobile
+    if (isMobile) {
+      return (
+        <div className={`h-screen flex flex-col bg-gradient-to-br from-slate-900 via-slate-800 to-slate-900 ${classes.container}`}>
+          {/* Mobile HUD */}
+          <div className="flex items-center justify-between px-3 py-2 bg-slate-900/90 border-b border-neon-cyan/30">
+            <div className={`px-3 py-1 rounded-full font-bold text-sm ${isMyTurn ? 'bg-neon-cyan text-black' : 'bg-slate-700 text-gray-300'}`}>
+              {isMyTurn ? '⚔️ Your Turn' : `⏳ ${currentPlayerName.slice(0, 12)}`}
+            </div>
+            
+            <div className="flex items-center gap-3">
+              {isMyTurn && (
+                <div className={`text-sm font-mono ${decisionTimeMs < 5000 ? 'text-green-400' : decisionTimeMs < 10000 ? 'text-yellow-400' : 'text-red-400'}`}>
+                  ⏱️ {formatTime(decisionTimeMs)}
+                </div>
+              )}
+              
+              <button
+                onClick={() => setMenuOpen(!menuOpen)}
+                className={`p-2 rounded-lg transition-all ${classes.button} ${menuOpen ? 'bg-neon-cyan text-black' : 'bg-slate-700 text-white'}`}
+              >
+                {menuOpen ? '✕' : '☰'}
+              </button>
+            </div>
+          </div>
+
+          {/* Main Content */}
+          <div className="flex-1 flex items-center justify-center p-2 relative">
+            <PirateMap
+              gameMap={gameState.gameMap}
+              ships={allShips}
+              players={gameState.players}
+              onCellSelect={onCellSelect}
+              onShipClick={onShipClick}
+              isMyTurn={isMyTurn}
+              selectedShipId={selectedShipId || undefined}
+              currentPlayerPK={currentPlayerPK}
+              scannedCoordinates={scannedCoordinates}
+            />
+          </div>
+
+          {/* Mobile Bottom Bar */}
+          <div className="flex items-center justify-between px-3 py-2 bg-slate-900/90 border-t border-neon-cyan/30">
+            {currentPlayer && (
+              <div className="flex space-x-3 text-xs">
+                <span className="text-neon-gold">💰{currentPlayer.resources.gold}</span>
+                <span className="text-neon-cyan">👥{currentPlayer.resources.crew}</span>
+                <span className="text-neon-orange">📦{currentPlayer.resources.supplies}</span>
+              </div>
+            )}
+            
+            <div className="flex items-center gap-2">
+              {scanChargesRemaining > 0 && (
+                <div className="px-2 py-1 bg-neon-magenta bg-opacity-20 rounded text-xs text-neon-magenta">
+                  🔍 {scanChargesRemaining}
+                </div>
+              )}
+              
+              {isMyTurn && (
+                <button
+                  onClick={onEndTurn}
+                  className={`px-4 py-2 bg-neon-cyan text-black rounded font-bold text-sm ${classes.button}`}
+                >
+                  End Turn
+                </button>
+              )}
+            </div>
+          </div>
+
+          {/* Mobile Menu Overlay */}
+          {menuOpen && (
+            <div className="absolute inset-0 z-50 bg-black bg-opacity-80 backdrop-blur-sm">
+              <div className="absolute inset-x-0 bottom-0 bg-slate-900 border-t border-neon-cyan rounded-t-xl max-h-96 overflow-y-auto">
+                <div className="p-4">
+                  <div className="flex justify-between items-center mb-4">
+                    <h3 className="text-lg font-bold text-neon-cyan">Game Menu</h3>
+                    <button onClick={() => setMenuOpen(false)} className="text-neon-cyan">✕</button>
+                  </div>
+                  
+                  {currentPlayer && (
+                    <div className="space-y-3">
+                      <PlayerStats
+                        player={currentPlayer}
+                        gameState={gameState}
+                        isCurrentPlayer={true}
+                        scanChargesRemaining={scanChargesRemaining}
+                        speedBonusAccumulated={speedBonusAccumulated}
+                        averageDecisionTimeMs={averageDecisionTimeMs}
+                      />
+                      
+                      {isMyTurn && (
+                        <div className="grid grid-cols-2 gap-2">
+                          <button
+                            onClick={() => { onCollectResources(); setMenuOpen(false); }}
+                            className={`p-3 bg-neon-gold text-black rounded font-bold ${classes.button}`}
+                          >
+                            💰 Collect
+                          </button>
+                          <button
+                            onClick={() => setMenuOpen(false)}
+                            className={`p-3 bg-slate-700 text-white rounded font-bold ${classes.button}`}
+                          >
+                            🏗️ Build
+                          </button>
+                        </div>
+                      )}
+                    </div>
+                  )}
+                </div>
+              </div>
+            </div>
+          )}
+        </div>
+      );
+    }
+
+    // Desktop layout (existing code)
+    const gameContent = (
       <>
         {/* Ship Action Modal */}
         {shipActionModalShip && (
@@ -649,6 +770,36 @@ export default function GameContainer({
         )}
       </>
     );
+
+    // Wrap with mobile container if on mobile
+    if (isMobile) {
+      return (
+        <MobileGameContainer
+          gameState={gameState}
+          isMyTurn={isMyTurn}
+          currentPlayerName={currentPlayerName}
+          decisionTimeMs={decisionTimeMs}
+          scanChargesRemaining={scanChargesRemaining}
+          speedBonusAccumulated={speedBonusAccumulated}
+          onEndTurn={onEndTurn}
+          resources={currentPlayer?.resources}
+        >
+          <PirateMap
+            gameMap={gameState.gameMap}
+            ships={allShips}
+            players={gameState.players}
+            onCellSelect={onCellSelect}
+            onShipClick={onShipClick}
+            isMyTurn={isMyTurn}
+            selectedShipId={selectedShipId || undefined}
+            currentPlayerPK={currentPlayerPK}
+            scannedCoordinates={scannedCoordinates}
+          />
+        </MobileGameContainer>
+      );
+    }
+
+    return gameContent;
   }
 
   // Pre-game / Waiting state - Show placeholder with controls

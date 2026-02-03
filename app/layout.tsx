@@ -12,8 +12,9 @@ export const viewport: Viewport = {
   width: 'device-width',
   initialScale: 1,
   viewportFit: 'cover',
-  maximumScale: 5,
-  userScalable: true,
+  maximumScale: 1, // Prevent zoom for better mobile gaming experience
+  userScalable: false, // Disable zoom for consistent touch interactions
+  themeColor: '#006994',
 }
 
 export const metadata: Metadata = {
