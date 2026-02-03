@@ -16,11 +16,10 @@ export default function LobbyBrowser() {
   const [newGameId, setNewGameId] = useState<number>(Math.floor(Math.random() * 1000));
 
   useEffect(() => {
-    if (publicKey) {
-      fetchLobbies();
-      const interval = setInterval(fetchLobbies, 10000);
-      return () => clearInterval(interval);
-    }
+    if (!publicKey) return;
+    fetchLobbies();
+    const interval = setInterval(fetchLobbies, 10000);
+    return () => clearInterval(interval);
   }, [fetchLobbies, publicKey]);
 
   const handleCreate = async () => {

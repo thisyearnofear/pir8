@@ -1,8 +1,8 @@
 "use client";
 
 import { useState, useRef, useEffect } from "react";
-import { GameMap, TerritoryCell, Ship } from "../types/game";
-import { TERRITORY_EMOJIS, SHIP_EMOJIS, TEAM_COLORS } from "../utils/constants";
+import { GameMap, Ship } from "../types/game";
+import { TERRITORY_EMOJIS, SHIP_EMOJIS } from "../utils/constants";
 import { PirateGameManager } from "../lib/pirateGameEngine";
 import TerritoryTooltip from "./TerritoryTooltip";
 import { useMobileOptimized } from "@/hooks/useMobileOptimized";
@@ -49,11 +49,11 @@ export default function PirateMap({
     triggerHaptic
   } = useMobileOptimized({
     onTap: (element) => {
-      const coordinate = element.dataset.coordinate;
+      const coordinate = element.dataset['coordinate'];
       if (coordinate) handleCellClick(coordinate);
     },
     onLongPress: (element) => {
-      const coordinate = element.dataset.coordinate;
+      const coordinate = element.dataset['coordinate'];
       if (coordinate && isMobile) {
         setHoveredCoordinate(coordinate);
         triggerHaptic('medium');
@@ -122,21 +122,23 @@ export default function PirateMap({
   };
 
   const isMyShip = (ship: Ship): boolean => {
-    return ship.owner === currentPlayerPK;
+    return ship.id.startsWith(currentPlayerPK || '');
   };
 
-  const getPlayerColor = (playerPK: string): string => {
-    const playerIndex = players.findIndex(p => p.publicKey === playerPK);
-    return TEAM_COLORS[playerIndex % TEAM_COLORS.length] || "#ffffff";
+  const getPlayerColor = (shipId: string): string => {
+    const playerIndex = players.findIndex(p => shipId.startsWith(p.publicKey));
+    const colors = ['#00D9FF', '#FFD700', '#FF00FF', '#BC13FE'];
+    return colors[playerIndex % colors.length] || "#ffffff";
   };
 
   const getCellContent = (coordinate: string) => {
     const ship = getShipAtPosition(coordinate);
-    const cell = gameMap.cells.find(c => PirateGameManager.coordinateToString({ x: c.x, y: c.y }) === coordinate);
+    const flatCells = gameMap.cells.flat();
+    const cell = flatCells.find(c => c.coordinate === coordinate);
 
     if (ship) {
       const isSelected = selectedShipId === ship.id;
-      const playerColor = getPlayerColor(ship.owner);
+      const playerColor = getPlayerColor(ship.id);
       const animationClass = shipAnimations.get(ship.id);
       
       return (
@@ -145,7 +147,7 @@ export default function PirateMap({
             className={`ship-icon ${animationClass && !shouldReduceAnimations() ? `ship-anim-${animationClass.type}` : ""} ${isSelected ? "ring-2 ring-neon-gold" : ""}`}
             style={{ color: playerColor }}
           >
-            {SHIP_EMOJIS[ship.type]}
+            {SHIP_EMOJIS[ship.type as keyof typeof SHIP_EMOJIS]}
           </span>
           
           <div className="health-bar">
@@ -179,10 +181,10 @@ export default function PirateMap({
 
   const gridSize = getGridSize();
   const totalCells = gridSize * gridSize;
+  const flatCells = gameMap.cells.flat();
 
   return (
     <div className={`relative ${classes.container}`} ref={mapRef}>
-      {/* ENHANCED responsive grid */}
       <div 
         className={`grid ${classes.grid} ${isMobile ? 'mobile-map-grid' : 'game-grid'}`}
         style={{ 
@@ -221,602 +223,17 @@ export default function PirateMap({
         })}
       </div>
 
-      {/* CONSOLIDATED tooltip */}
       {hoveredCoordinate && (
         <TerritoryTooltip
-          coordinate={hoveredCoordinate}
-          gameMap={gameMap}
-          ships={ships}
+          type={flatCells.find(c => c.coordinate === hoveredCoordinate)?.type as any}
           position={tooltipPosition}
-          onClose={() => setHoveredCoordinate(null)}
+          isVisible={true}
         />
       )}
 
-      {/* Mobile status indicator */}
       {isMobile && (
         <div className="absolute top-2 right-2 bg-black bg-opacity-50 rounded px-2 py-1 text-xs text-neon-cyan">
           {isMyTurn ? "Your Turn" : "Waiting..."}
-        </div>
-      )}
-    </div>
-  );
-}
-        });
-
-        // Auto-clear after animation
-        setTimeout(() => {
-          setShipAnimations((prevAnims) => {
-            const next = new Map(prevAnims);
-            if (next.get(ship.id)?.timestamp === now) next.delete(ship.id);
-            return next;
-          });
-        }, 600);
-      }
-
-      // Health decreased = damaged
-      if (prev && ship.health < prev.health) {
-        hasChanges = true;
-        const damage = prev.health - ship.health;
-        setShipAnimations((prevAnims) => {
-          const next = new Map(prevAnims);
-          next.set(ship.id, { type: "damaged", timestamp: now });
-          return next;
-        });
-
-        setDamageNumbers((prevDmg) => [
-          ...prevDmg,
-          {
-            id: `dmg-${ship.id}-${now}`,
-            shipId: ship.id,
-            amount: damage,
-            position: currentPos,
-            timestamp: now,
-          },
-        ]);
-
-        setTimeout(() => {
-          setShipAnimations((prevAnims) => {
-            const next = new Map(prevAnims);
-            if (next.get(ship.id)?.timestamp === now) next.delete(ship.id);
-            return next;
-          });
-        }, 500);
-      }
-    });
-
-    // Update positions ref for next comparison
-    const newPositions = new Map<
-      string,
-      { position: string; health: number }
-    >();
-    ships.forEach((ship) => {
-      newPositions.set(ship.id, {
-        position: PirateGameManager.coordinateToString(ship.position),
-        health: ship.health,
-      });
-    });
-    prevShipsRef.current = newPositions;
-
-    // Update position state for rendering
-    if (hasChanges || shipPositions.size === 0) {
-      setShipPositions(
-        new Map(
-          ships.map((s) => [
-            s.id,
-            PirateGameManager.coordinateToString(s.position),
-          ]),
-        ),
-      );
-    }
-  }, [ships, shipPositions.size]);
-
-  // CONSOLIDATED: Auto-cleanup for damage numbers (PERFORMANT)
-  useEffect(() => {
-    if (damageNumbers.length > 0) {
-      const timer = setInterval(() => {
-        const now = Date.now();
-        setDamageNumbers((prev) =>
-          prev.filter((dmg) => now - dmg.timestamp < 1500),
-        );
-      }, 100);
-      return () => clearInterval(timer);
-    }
-    return undefined;
-  }, [damageNumbers.length]);
-
-  const isCoordinateScanned = (coordinate: string): boolean => {
-    return scannedCoordinates.includes(coordinate);
-  };
-
-  const handleCellClick = (coordinate: string) => {
-    if (!isMyTurn) return;
-
-    // Check if clicking on a ship
-    const ship = getShipAtPosition(coordinate);
-    if (ship && isMyShip(ship) && onShipClick) {
-      onShipClick(ship);
-      return;
-    }
-
-    onCellSelect(coordinate);
-  };
-
-  const handleMouseMove = (e: React.MouseEvent, coordinate: string) => {
-    if (mapRef.current) {
-      const rect = mapRef.current.getBoundingClientRect();
-      setTooltipPosition({
-        x: e.clientX - rect.left,
-        y: e.clientY - rect.top,
-      });
-    }
-    setHoveredCoordinate(coordinate);
-  };
-
-  const getShipAtPosition = (coordinate: string): Ship | undefined => {
-    const ship = ships.find(
-      (ship) =>
-        PirateGameManager.coordinateToString(ship.position) === coordinate &&
-        ship.health > 0,
-    );
-
-    if (!ship) return undefined;
-
-    // FOG OF WAR: Hide enemy ships in unscanned areas
-    // Always show my own ships
-    if (isMyShip(ship)) return ship;
-
-    // Show enemy ships only if the coordinate is scanned
-    if (isCoordinateScanned(coordinate)) return ship;
-
-    return undefined;
-  };
-
-  const getCellAtCoordinate = (
-    coordinate: string,
-  ): TerritoryCell | undefined => {
-    const coord = PirateGameManager.stringToCoordinate(coordinate);
-    return gameMap.cells[coord.x]?.[coord.y];
-  };
-
-  const isMyShip = (ship: Ship): boolean => {
-    // If no currentPlayerPK, disable fog-of-war gating (show all ships)
-    if (!currentPlayerPK) return true;
-    return ship.id.startsWith(currentPlayerPK);
-  };
-
-  const isValidMoveTarget = (coordinate: string): boolean => {
-    if (!selectedShipId || !currentPlayerPK) return false;
-
-    const selectedShip = ships.find((s) => s.id === selectedShipId);
-    if (!selectedShip) return false;
-
-    const targetCoord = PirateGameManager.stringToCoordinate(coordinate);
-    const distance = PirateGameManager.calculateDistance(
-      selectedShip.position,
-      targetCoord,
-    );
-
-    return distance <= selectedShip.speed;
-  };
-
-  const isValidAttackTarget = (coordinate: string): boolean => {
-    if (!selectedShipId || !currentPlayerPK) return false;
-
-    const selectedShip = ships.find((s) => s.id === selectedShipId);
-    if (!selectedShip) return false;
-
-    // Only show attack range for my ships
-    if (!isMyShip(selectedShip)) return false;
-
-    const targetCoord = PirateGameManager.stringToCoordinate(coordinate);
-    const distance = PirateGameManager.calculateDistance(
-      selectedShip.position,
-      targetCoord,
-    );
-
-    // Get range from GameBalance
-    const range = GameBalance.SHIP_BALANCE[selectedShip.type].range;
-
-    // Check if within range (using diagonal support logic: 1.5 * range)
-    return distance <= range * 1.5;
-  };
-
-  // Get player index for consistent team colors
-  const getPlayerIndex = (playerPK: string): number => {
-    if (!playerPK) return -1;
-    return players.findIndex((p) => p.publicKey === playerPK);
-  };
-
-  // Get color by player publicKey - uses player index for team colors
-  const getPlayerColor = (playerPK: string) => {
-    const idx = getPlayerIndex(playerPK);
-    if (idx >= 0) {
-      return TEAM_COLORS[idx % TEAM_COLORS.length]!;
-    }
-    // Fallback to first color if player not found
-    return TEAM_COLORS[0]!;
-  };
-
-  // Determine ship color based on player owner (ENHANCED for team colors)
-  const getShipColor = (shipId: string) => {
-    // Find which player owns this ship by checking if shipId starts with their publicKey
-    // Use player index to ensure consistent team colors (0=Cyan, 1=Gold, etc)
-    const playerIndex = players.findIndex((p) =>
-      shipId.startsWith(p.publicKey),
-    );
-
-    if (playerIndex >= 0) {
-      return TEAM_COLORS[playerIndex % TEAM_COLORS.length]!;
-    }
-
-    // Fallback: current player gets cyan if not found in players list
-    if (currentPlayerPK && shipId.startsWith(currentPlayerPK)) {
-      return TEAM_COLORS[0]!;
-    }
-
-    // Fallback for unmatched ships - hash to remaining colors
-    const hash = shipId
-      .split("")
-      .reduce((acc, char) => acc + char.charCodeAt(0), 0);
-    return TEAM_COLORS[(hash % (TEAM_COLORS.length - 1)) + 1]!;
-  };
-
-  const getCellClassName = (coordinate: string): string => {
-    const cell = getCellAtCoordinate(coordinate);
-    const ship = getShipAtPosition(coordinate);
-    const isScanned = isCoordinateScanned(coordinate);
-    let className = "territory-cell ";
-
-    // Unscanned tile - show as "?"
-    if (!isScanned && cell) {
-      className +=
-        "bg-gray-700 bg-opacity-50 hover:bg-gray-600 border border-gray-600 ";
-    } else {
-      // Scanned tile highlighting with brighter colors
-      if (isScanned) {
-        className += "ring-2 ring-neon-magenta ring-opacity-80 shadow-lg ";
-      }
-
-      // Base cell styling based on territory type
-      if (cell) {
-        switch (cell.type) {
-          case "water":
-            className += "bg-blue-600 bg-opacity-70 hover:bg-blue-500 ";
-            break;
-          case "island":
-            className +=
-              "bg-green-600 bg-opacity-70 hover:bg-green-500 pirate-glow ";
-            break;
-          case "port":
-            className +=
-              "bg-yellow-600 bg-opacity-70 hover:bg-yellow-500 pirate-glow ";
-            break;
-          case "treasure":
-            className +=
-              "bg-amber-500 bg-opacity-70 hover:bg-amber-400 pirate-glow ";
-            break;
-          case "storm":
-            className += "bg-purple-600 bg-opacity-70 hover:bg-purple-500 ";
-            break;
-          case "reef":
-            className += "bg-gray-600 bg-opacity-70 hover:bg-gray-500 ";
-            break;
-          case "whirlpool":
-            className += "bg-indigo-700 bg-opacity-70 hover:bg-indigo-600 ";
-            break;
-        }
-      }
-    }
-
-    // Territory ownership - color by player team
-    if (cell?.owner) {
-      const ownerColor = getPlayerColor(cell.owner);
-      className += `ring-2 ${ownerColor.ring} ${ownerColor.bg} `;
-    }
-
-    // Ship highlighting with visual hierarchy
-    if (ship) {
-      const colors = getShipColor(ship.id);
-      className += `ring-4 ${colors.ring} shadow-lg ${colors.shadow} `;
-
-      // Add glow effect for animating ships
-      const animation = shipAnimations.get(ship.id);
-      if (animation) {
-        className += "ring-offset-2 ring-offset-black ";
-      }
-    }
-
-    // Selected ship highlighting with enhanced glow (no pulse animation)
-    if (ship?.id === selectedShipId) {
-      className +=
-        "ring-4 ring-white shadow-2xl shadow-white/60 ";
-    }
-
-    // Movement target highlighting
-    if (selectedShipId && isValidMoveTarget(coordinate)) {
-      className += "ring-2 ring-green-400 ring-opacity-70 ";
-    }
-
-    // Attack range highlighting
-    if (selectedShipId && isValidAttackTarget(coordinate)) {
-      const targetShip = getShipAtPosition(coordinate);
-      if (targetShip && !isMyShip(targetShip)) {
-        // Enemy ship in range - Strong highlight (no pulse animation)
-        className += "ring-2 ring-red-500 ring-opacity-90 ";
-      } else if (!isValidMoveTarget(coordinate)) {
-        // Just range indication (fainter), but avoid overriding movement highlight
-        className += "ring-1 ring-red-400 ring-opacity-30 ";
-      }
-    }
-
-    // Hover effect
-    if (hoveredCoordinate === coordinate) {
-      className += "bg-white bg-opacity-20 ";
-    }
-
-    // Interactive styling
-    if (isMyTurn) {
-      className += "cursor-pointer hover:bg-white hover:bg-opacity-10 ";
-    }
-
-    return className;
-  };
-
-  const renderCellContent = (coordinate: string): React.ReactElement => {
-    const cell = getCellAtCoordinate(coordinate);
-    const ship = getShipAtPosition(coordinate);
-    const isScanned = isCoordinateScanned(coordinate);
-    const animation = ship ? shipAnimations.get(ship.id) : undefined;
-    const trail = ship ? shipTrails.get(ship.id) || [] : [];
-    const cellDamageNumbers = damageNumbers.filter(
-      (dmg) => dmg.position === coordinate,
-    );
-
-    return (
-      <div className="cell-content h-full w-full flex flex-col items-center justify-center text-lg relative">
-        {/* Unscanned territory - show question mark */}
-        {!isScanned && cell && (
-          <div className="territory-icon text-gray-400 text-xl font-bold">
-            ?
-          </div>
-        )}
-
-        {/* Territory emoji - only for scanned tiles */}
-        {isScanned && cell && (
-          <div className="territory-icon">{TERRITORY_EMOJIS[cell.type]}</div>
-        )}
-
-        {/* Ship trail markers (ENHANCED) */}
-        {trail.map((trailPos, idx) => {
-          const trailCoord = PirateGameManager.stringToCoordinate(trailPos);
-          const currentCoord = PirateGameManager.stringToCoordinate(coordinate);
-
-          // Only render trail on current cell if it's in the trail path
-          if (
-            trailCoord.x === currentCoord.x &&
-            trailCoord.y === currentCoord.y
-          ) {
-            // Determine color from ship if possible (we don't have ship reference here easily unless we find it)
-            // But we can approximate since only one ship moves at a time usually
-            // For robustness, default to a generic trace or try to find ship that owns this trail
-            const ownerShip = ships.find((s) =>
-              shipTrails.get(s.id)?.includes(trailPos),
-            );
-            const ownerColor = ownerShip
-              ? getShipColor(ownerShip.id).hex
-              : "#ffffff";
-
-            return (
-              <div
-                key={`trail-${idx}`}
-                className="ship-trail absolute"
-                style={{
-                  backgroundColor: `${ownerColor}40`, // 25% opacity
-                  boxShadow: `0 0 6px ${ownerColor}`,
-                  animationDelay: `${idx * 0.15}s`,
-                  top: "50%",
-                  left: "50%",
-                  transform: "translate(-50%, -50%)",
-                }}
-              />
-            );
-          }
-          return null;
-        })}
-
-        {/* Ship overlay with ACTION-SPECIFIC animations */}
-        {ship && (
-          <div
-            className={`ship-icon absolute ${getShipColor(ship.id).tailwind} ${
-              animation?.type === "move" ? "ship-anim-move" : ""
-            } ${animation?.type === "attack" ? "ship-anim-attack" : ""} ${
-              animation?.type === "claim" ? "ship-anim-claim" : ""
-            } ${animation?.type === "damaged" ? "ship-anim-damaged" : ""}`}
-            style={{
-              fontSize: ship.id === selectedShipId ? "1.8rem" : "1.5rem",
-              filter:
-                ship.health < 30
-                  ? "brightness(0.6) saturate(0.5)"
-                  : "brightness(1)",
-              textShadow: `0 0 10px ${getShipColor(ship.id).hex}cc, 0 0 20px ${getShipColor(ship.id).hex}66`,
-            }}
-          >
-            {SHIP_EMOJIS[ship.type]}
-
-            {/* Visual effects based on action type (MODULAR) */}
-            {animation && (
-              <>
-                <div
-                  className="absolute inset-0 rounded-full"
-                  style={{
-                    background: `radial-gradient(circle, ${getShipColor(ship.id).hex}4D 0%, transparent 70%)`,
-                    animation: "ship-wake 0.6s ease-out",
-                  }}
-                />
-
-                {/* Ripple effect */}
-                <div
-                  className="ripple-effect"
-                  style={{
-                    color: `${getShipColor(ship.id).hex}99`,
-                  }}
-                />
-
-                {/* Particle burst - customize based on action */}
-                {[...Array(animation.type === "attack" ? 8 : 6)].map((_, i) => {
-                  const particleCount = animation.type === "attack" ? 8 : 6;
-                  const angle = i * (360 / particleCount) * (Math.PI / 180);
-                  const distance = animation.type === "attack" ? 40 : 30;
-                  const particleColor =
-                    animation.type === "attack"
-                      ? "#ff4444"
-                      : getShipColor(ship.id).hex;
-
-                  return (
-                    <div
-                      key={i}
-                      className="absolute rounded-full"
-                      style={{
-                        width: animation.type === "attack" ? "6px" : "4px",
-                        height: animation.type === "attack" ? "6px" : "4px",
-                        left: "50%",
-                        top: "50%",
-                        background: particleColor,
-                        boxShadow: `0 0 6px ${particleColor}`,
-                        animation: "particle-burst 0.6s ease-out",
-                        // @ts-ignore
-                        "--tx": `${Math.cos(angle) * distance}px`,
-                        "--ty": `${Math.sin(angle) * distance}px`,
-                      }}
-                    />
-                  );
-                })}
-              </>
-            )}
-          </div>
-        )}
-
-        {/* Damage numbers (ENHANCEMENT) */}
-        {cellDamageNumbers.map((dmg) => (
-          <div key={dmg.id} className="damage-number">
-            -{dmg.amount}
-          </div>
-        ))}
-
-        {/* Health indicator for damaged ships with animation */}
-        {ship && ship.health < ship.maxHealth && (
-          <div className="health-bar absolute bottom-1 left-1 right-1 h-1.5 bg-gray-800 rounded border border-gray-600">
-            <div
-              className="h-full rounded transition-all duration-500 ease-out"
-              style={{
-                width: `${(ship.health / ship.maxHealth) * 100}%`,
-                background:
-                  ship.health < 30
-                    ? "linear-gradient(90deg, #dc2626, #ef4444)"
-                    : ship.health < 60
-                      ? "linear-gradient(90deg, #f59e0b, #fbbf24)"
-                      : "linear-gradient(90deg, #10b981, #34d399)",
-                boxShadow:
-                  ship.health < 30
-                    ? "0 0 8px rgba(220, 38, 38, 0.6)"
-                    : "0 0 5px rgba(16, 185, 129, 0.4)",
-              }}
-            ></div>
-          </div>
-        )}
-      </div>
-    );
-  };
-
-  const renderMapGrid = (): React.ReactElement[] => {
-    const cells: React.ReactElement[] = [];
-
-    for (let x = 0; x < gameMap.size; x++) {
-      for (let y = 0; y < gameMap.size; y++) {
-        const coordinate = `${x},${y}`;
-
-        cells.push(
-          <div
-            key={coordinate}
-            className={getCellClassName(coordinate)}
-            onClick={() => handleCellClick(coordinate)}
-            onMouseMove={(e) => handleMouseMove(e, coordinate)}
-            onMouseLeave={() => setHoveredCoordinate(null)}
-          >
-            {renderCellContent(coordinate)}
-          </div>,
-        );
-      }
-    }
-
-    return cells;
-  };
-
-  const hoveredCell = hoveredCoordinate
-    ? getCellAtCoordinate(hoveredCoordinate)
-    : null;
-
-  return (
-    <div
-      className="pirate-map-container relative w-full h-full flex flex-col items-center justify-center"
-      ref={mapRef}
-    >
-      <div
-        className="game-map-grid relative mobile-map-grid"
-        style={{
-          display: "grid",
-          gridTemplateColumns: `repeat(${gameMap.size}, 1fr)`,
-          gridTemplateRows: `repeat(${gameMap.size}, 1fr)`,
-          aspectRatio: "1",
-          width: "100%",
-          maxWidth: "min(95vw, 70vh)",
-          margin: "0 auto",
-        }}
-      >
-        {renderMapGrid()}
-
-        {/* Territory Tooltip */}
-        {hoveredCell && isCoordinateScanned(hoveredCoordinate!) && (
-          <TerritoryTooltip
-            type={hoveredCell.type}
-            position={tooltipPosition}
-            isVisible={true}
-          />
-        )}
-      </div>
-
-      {/* Selection info - Mobile Optimized */}
-      {selectedShipId && (
-        <div className="mt-2 sm:mt-4 p-2 sm:p-3 bg-neon-cyan bg-opacity-10 border border-neon-cyan rounded-lg text-center w-full max-w-xs">
-          <div className="text-xs sm:text-sm text-neon-cyan font-mono truncate">
-            Ship: {ships.find((s) => s.id === selectedShipId)?.type}
-          </div>
-          <div className="text-xs text-gray-300 mt-1">
-            Tap highlighted cell to move
-          </div>
-        </div>
-      )}
-
-      {/* Hover info - Mobile Optimized */}
-      {hoveredCoordinate && (
-        <div className="mt-1 sm:mt-2 p-1.5 sm:p-2 bg-black bg-opacity-50 border border-gray-500 rounded text-center w-full max-w-xs">
-          <div className="text-xs text-gray-300 truncate">
-            Pos: {hoveredCoordinate}
-          </div>
-          {getCellAtCoordinate(hoveredCoordinate) && (
-            <div className="text-xs text-neon-cyan truncate">
-              {getCellAtCoordinate(hoveredCoordinate)!.type}
-              {getCellAtCoordinate(hoveredCoordinate)!.owner && (
-                <span className="text-neon-orange"> (Ctrl)</span>
-              )}
-            </div>
-          )}
-          {getShipAtPosition(hoveredCoordinate) && (
-            <div className="text-xs text-neon-magenta truncate">
-              {getShipAtPosition(hoveredCoordinate)!.type} -
-              {getShipAtPosition(hoveredCoordinate)!.health}HP
-            </div>
-          )}
         </div>
       )}
     </div>

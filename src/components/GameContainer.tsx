@@ -343,9 +343,10 @@ export default function GameContainer({
                   {currentPlayer && (
                     <div className="space-y-3">
                       <PlayerStats
-                        player={currentPlayer}
-                        gameState={gameState}
-                        isCurrentPlayer={true}
+                        players={gameState.players}
+                        currentPlayerIndex={gameState.currentPlayerIndex}
+                        gameStatus={gameState.gameStatus}
+                        winner={gameState.winner}
                         scanChargesRemaining={scanChargesRemaining}
                         speedBonusAccumulated={speedBonusAccumulated}
                         averageDecisionTimeMs={averageDecisionTimeMs}
@@ -775,12 +776,9 @@ export default function GameContainer({
     if (isMobile) {
       return (
         <MobileGameContainer
-          gameState={gameState}
           isMyTurn={isMyTurn}
           currentPlayerName={currentPlayerName}
           decisionTimeMs={decisionTimeMs}
-          scanChargesRemaining={scanChargesRemaining}
-          speedBonusAccumulated={speedBonusAccumulated}
           onEndTurn={onEndTurn}
           resources={currentPlayer?.resources}
         >
