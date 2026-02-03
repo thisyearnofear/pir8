@@ -19,12 +19,12 @@ export interface ShipAbility {
   currentCooldown: number;
   isReady: boolean;
   cost?: Partial<Resources>;
-  type: 'offensive' | 'defensive' | 'utility';
+  type: "offensive" | "defensive" | "utility";
   range?: number;
 }
 
 export interface ShipEffect {
-  type: 'defense_buff' | 'attack_buff' | 'immobile' | 'invisible' | 'burning';
+  type: "defense_buff" | "attack_buff" | "immobile" | "invisible" | "burning";
   duration: number;
   magnitude: number;
   source: string; // ID of ship that caused effect
@@ -113,8 +113,11 @@ export interface Player {
   lastActionWasAttack: boolean;
 }
 
+export type OnChainGameMode = "Casual" | "Competitive" | "AgentArena";
+
 export interface GameState {
   gameId: string;
+  gameMode: OnChainGameMode;
   players: Player[];
   currentPlayerIndex: number;
   gameMap: GameMap;

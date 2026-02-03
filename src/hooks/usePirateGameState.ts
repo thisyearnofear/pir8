@@ -9,7 +9,9 @@ import { getVisibleCoordinates } from "../utils/helpers";
  * - 'practice': Local AI opponent (no wallet required)
  * - 'spectator': Read-only view of live games (no wallet required)
  */
-export type GameMode = 'on-chain' | 'practice' | 'spectator';
+import { OnChainGameMode } from "../types/game";
+
+export type GameMode = "on-chain" | "practice" | "spectator";
 
 interface PirateGameStore {
   // Game State
@@ -50,7 +52,16 @@ interface PirateGameStore {
     _entryFee: number,
     wallet: any,
   ) => Promise<boolean>;
-  joinGame: (gameId: string | number, player: Player, wallet: any) => Promise<boolean>;
+  joinGame: (
+    gameId: string | number,
+    player: Player,
+    wallet: any,
+  ) => Promise<boolean>;
+  findOrCreateGame: (
+    mode: OnChainGameMode,
+    player: Player,
+    wallet: any,
+  ) => Promise<boolean>;
   startGame: (gameId: number, wallet: any) => Promise<boolean>;
   processAction: (action: GameAction) => Promise<boolean>;
   selectShip: (shipId: string | null) => void;
@@ -68,7 +79,11 @@ interface PirateGameStore {
     targetShipId: string,
     wallet: any,
   ) => Promise<boolean>;
-  claimTerritory: (gameId: number, shipId: string, wallet: any) => Promise<boolean>;
+  claimTerritory: (
+    gameId: number,
+    shipId: string,
+    wallet: any,
+  ) => Promise<boolean>;
   collectResources: (gameId: number, wallet: any) => Promise<boolean>;
   buildShip: (
     gameId: number,
@@ -84,7 +99,10 @@ interface PirateGameStore {
   setGameState: (gameState: GameState) => void;
 
   // Actions - Practice Mode (no wallet required)
-  startPracticeGame: (humanPlayer: Player, difficulty?: 'novice' | 'pirate' | 'captain' | 'admiral') => boolean;
+  startPracticeGame: (
+    humanPlayer: Player,
+    difficulty?: "novice" | "pirate" | "captain" | "admiral",
+  ) => boolean;
   makePracticeMove: (shipId: string, toX: number, toY: number) => boolean;
   makePracticeAttack: (shipId: string, targetShipId: string) => boolean;
   makePracticeClaim: (shipId: string) => boolean;
@@ -92,7 +110,11 @@ interface PirateGameStore {
   exitPracticeMode: () => void;
 
   // Actions - AI vs AI Demo Mode (no wallet required)
-  startAIvsAIGame: (difficulty1: 'novice' | 'pirate' | 'captain' | 'admiral', difficulty2: 'novice' | 'pirate' | 'captain' | 'admiral', speed?: number) => boolean;
+  startAIvsAIGame: (
+    difficulty1: "novice" | "pirate" | "captain" | "admiral",
+    difficulty2: "novice" | "pirate" | "captain" | "admiral",
+    speed?: number,
+  ) => boolean;
   setPlaybackSpeed: (speed: number) => void;
   getPlaybackSpeed: () => number;
   setAIDecisionCallback: (callback: ((reasoning: any) => void) | null) => void;
@@ -109,7 +131,13 @@ interface PirateGameStore {
     coordinateY: number,
     wallet: any,
   ) => Promise<boolean>;
-  moveShipTimed: (gameId: number, shipId: string, toX: number, toY: number, wallet: any) => Promise<boolean>;
+  moveShipTimed: (
+    gameId: number,
+    shipId: string,
+    toX: number,
+    toY: number,
+    wallet: any,
+  ) => Promise<boolean>;
   getScannedCoordinates: () => string[];
   isCoordinateScanned: (coordinate: string) => boolean;
 
@@ -123,40 +151,43 @@ interface PirateGameStore {
 }
 
 // localStorage key for practice game persistence
-const PRACTICE_GAME_STORAGE_KEY = 'pir8_practice_game';
+const PRACTICE_GAME_STORAGE_KEY = "pir8_practice_game";
 
 // Load saved practice game from localStorage
 const loadSavedPracticeGame = (): GameState | null => {
-  if (typeof window === 'undefined') return null;
+  if (typeof window === "undefined") return null;
   try {
     const saved = localStorage.getItem(PRACTICE_GAME_STORAGE_KEY);
     if (saved) {
       return JSON.parse(saved) as GameState;
     }
   } catch (error) {
-    console.error('Failed to load saved practice game:', error);
+    console.error("Failed to load saved practice game:", error);
   }
   return null;
 };
 
 // Save practice game to localStorage
 const savePracticeGame = (gameState: GameState | null) => {
-  if (typeof window === 'undefined') return;
+  if (typeof window === "undefined") return;
   try {
     if (gameState) {
-      localStorage.setItem(PRACTICE_GAME_STORAGE_KEY, JSON.stringify(gameState));
+      localStorage.setItem(
+        PRACTICE_GAME_STORAGE_KEY,
+        JSON.stringify(gameState),
+      );
     } else {
       localStorage.removeItem(PRACTICE_GAME_STORAGE_KEY);
     }
   } catch (error) {
-    console.error('Failed to save practice game:', error);
+    console.error("Failed to save practice game:", error);
   }
 };
 
 export const usePirateGameState = create<PirateGameStore>((set, get) => ({
   // Initial state
   gameState: null,
-  gameMode: 'on-chain' as GameMode,
+  gameMode: "on-chain" as GameMode,
   lobbies: [],
   isLoading: false,
   error: null,
@@ -185,47 +216,58 @@ export const usePirateGameState = create<PirateGameStore>((set, get) => ({
   fetchLobbies: async () => {
     try {
       set({ isLoading: true });
-      
-      const { SOLANA_CONFIG } = await import('../utils/constants');
+
+      const { SOLANA_CONFIG } = await import("../utils/constants");
       if (!SOLANA_CONFIG.PROGRAM_ID) {
-        console.warn('SOLANA_CONFIG.PROGRAM_ID is not set');
+        console.warn("SOLANA_CONFIG.PROGRAM_ID is not set");
         set({ lobbies: [], isLoading: false });
         return;
       }
-      
-      const { Connection, PublicKey } = await import('@solana/web3.js');
-      const connection = new Connection(SOLANA_CONFIG.RPC_URL || 'https://api.devnet.solana.com');
-      
+
+      const { Connection, PublicKey } = await import("@solana/web3.js");
+      const connection = new Connection(
+        SOLANA_CONFIG.RPC_URL || "https://api.devnet.solana.com",
+      );
+
       try {
         const programId = new PublicKey(SOLANA_CONFIG.PROGRAM_ID);
-        const accounts = await (connection as any).getProgramAccounts(programId, {
-          filters: [
-            { dataSize: 10240 }
-          ]
-        });
+        const accounts = await (connection as any).getProgramAccounts(
+          programId,
+          {
+            filters: [{ dataSize: 10240 }],
+          },
+        );
 
         const lobbies = accounts.map((acc: any) => ({
           address: acc.pubkey.toBase58(),
         }));
         set({ lobbies, isLoading: false });
       } catch (programError) {
-        console.warn('Failed to fetch from program, returning empty lobbies:', programError);
+        console.warn(
+          "Failed to fetch from program, returning empty lobbies:",
+          programError,
+        );
         set({ lobbies: [], isLoading: false });
       }
     } catch (error) {
-      console.warn('Failed to fetch lobbies:', error);
+      console.warn("Failed to fetch lobbies:", error);
       set({ isLoading: false });
     }
   },
 
-  fetchGameState: async (gameId: number, wallet: any): Promise<GameState | null> => {
+  fetchGameState: async (
+    gameId: number,
+    wallet: any,
+  ): Promise<GameState | null> => {
     try {
-      const { fetchGameStateClient } = await import("../lib/client/solanaClient");
+      const { fetchGameStateClient } = await import(
+        "../lib/client/solanaClient"
+      );
       const onChainState = await fetchGameStateClient(wallet, gameId);
       if (!onChainState) return null;
 
       // Transform on-chain to local (Aggressive Consolidation: use shared mapper)
-      const { mapOnChainToLocal } = await import('../utils/helpers');
+      const { mapOnChainToLocal } = await import("../utils/helpers");
       return mapOnChainToLocal(onChainState, gameId.toString());
     } catch (e) {
       return null;
@@ -245,7 +287,7 @@ export const usePirateGameState = create<PirateGameStore>((set, get) => ({
       set({ isLoading: false });
       return true;
     } catch (error) {
-      set({ error: 'Failed to start game', isLoading: false });
+      set({ error: "Failed to start game", isLoading: false });
       return false;
     }
   },
@@ -268,7 +310,7 @@ export const usePirateGameState = create<PirateGameStore>((set, get) => ({
       set({ isLoading: false });
       return true;
     } catch (error) {
-      set({ error: 'Failed to create game', isLoading: false });
+      set({ error: "Failed to create game", isLoading: false });
       return false;
     }
   },
@@ -281,7 +323,10 @@ export const usePirateGameState = create<PirateGameStore>((set, get) => ({
   ): Promise<boolean> => {
     try {
       set({ isLoading: true, error: null });
-      const gId = typeof gameId === 'string' ? parseInt(gameId.replace('onchain_', ''), 10) : gameId;
+      const gId =
+        typeof gameId === "string"
+          ? parseInt(gameId.replace("onchain_", ""), 10)
+          : gameId;
 
       const { joinGameClient } = await import("../lib/client/solanaClient");
       await joinGameClient(wallet, gId);
@@ -292,7 +337,107 @@ export const usePirateGameState = create<PirateGameStore>((set, get) => ({
       set({ isLoading: false });
       return true;
     } catch (error) {
-      set({ error: 'Failed to join game', isLoading: false });
+      set({ error: "Failed to join game", isLoading: false });
+      return false;
+    }
+  },
+
+  findOrCreateGame: async (
+    mode: OnChainGameMode,
+    _player: Player,
+    wallet: any,
+  ): Promise<boolean> => {
+    try {
+      set({ isLoading: true, error: null });
+      const {
+        fetchLobbiesClient,
+        joinGameClient,
+        createGameClient,
+        fetchGameStateClient,
+      } = await import("../lib/client/solanaClient");
+      const { mapOnChainToLocal } = await import("../utils/helpers");
+
+      // 1. Fetch all lobbies with details
+      const allGames = await fetchLobbiesClient(wallet);
+      // allGames is [{ publicKey, account }]
+
+      // 2. Filter for suitable matches
+      const matches = allGames.filter((g: any) => {
+        const acc = g.account;
+        if (!acc) return false;
+
+        // Check Status: Waiting (acc.status is enum object)
+        const isWaiting =
+          (acc.status && acc.status.waiting !== undefined) ||
+          (acc.status && Object.keys(acc.status)[0] === "waiting");
+
+        // Check Mode
+        const modeKeys = acc.mode ? Object.keys(acc.mode) : [];
+        const firstKey = modeKeys[0];
+        const accModeKey = firstKey ? firstKey.toLowerCase() : "casual";
+        // Handle potential casing differences
+        const desiredModeKey =
+          mode.toLowerCase() === "agentarena"
+            ? "agentarena"
+            : mode.toLowerCase();
+
+        const modeMatch =
+          accModeKey === desiredModeKey ||
+          (accModeKey === "agent_arena" && desiredModeKey === "agentarena");
+
+        // Check Player Count (assuming MAX_PLAYERS=4 from constants)
+        const hasSpace = (acc.playerCount || 0) < 4;
+
+        return isWaiting && modeMatch && hasSpace;
+      });
+
+      if (matches.length > 0) {
+        // Sort by player count descending (fill almost full lobbies first)
+        matches.sort(
+          (a: any, b: any) =>
+            (b.account?.playerCount || 0) - (a.account?.playerCount || 0),
+        );
+
+        const bestMatch = matches[0];
+        // acc.gameId is likely a BN
+        const matchId = bestMatch.account.gameId.toNumber();
+
+        console.log(`Found matching game ${matchId}, joining...`);
+        await joinGameClient(wallet, matchId);
+
+        // Fetch state
+        const onChainState = await fetchGameStateClient(wallet, matchId);
+        if (onChainState) {
+          const mappedState = mapOnChainToLocal(
+            onChainState,
+            matchId.toString(),
+          );
+          set({ gameState: mappedState });
+        }
+      } else {
+        // Create new game
+        const newGameId = Math.floor(Date.now() / 1000);
+        console.log(
+          `No match found, creating game ${newGameId} in mode ${mode}...`,
+        );
+        await createGameClient(wallet, newGameId, mode);
+
+        // Fetch state
+        const onChainState = await fetchGameStateClient(wallet, newGameId);
+        if (onChainState) {
+          const mappedState = mapOnChainToLocal(
+            onChainState,
+            newGameId.toString(),
+          );
+          set({ gameState: mappedState });
+        }
+      }
+
+      set({ isLoading: false });
+      return true;
+    } catch (error) {
+      console.error(error);
+      set({ error: "Failed to find or create game", isLoading: false });
       return false;
     }
   },
@@ -316,7 +461,7 @@ export const usePirateGameState = create<PirateGameStore>((set, get) => ({
       set({ isLoading: false });
       return true;
     } catch (error) {
-      set({ error: 'Move failed', isLoading: false });
+      set({ error: "Move failed", isLoading: false });
       return false;
     }
   },
@@ -338,16 +483,22 @@ export const usePirateGameState = create<PirateGameStore>((set, get) => ({
       set({ isLoading: false });
       return true;
     } catch (error) {
-      set({ error: 'Attack failed', isLoading: false });
+      set({ error: "Attack failed", isLoading: false });
       return false;
     }
   },
 
   // Claim territory
-  claimTerritory: async (gameId: number, shipId: string, wallet: any): Promise<boolean> => {
+  claimTerritory: async (
+    gameId: number,
+    shipId: string,
+    wallet: any,
+  ): Promise<boolean> => {
     try {
       set({ isLoading: true, error: null });
-      const { claimTerritoryClient } = await import("../lib/client/solanaClient");
+      const { claimTerritoryClient } = await import(
+        "../lib/client/solanaClient"
+      );
       await claimTerritoryClient(wallet, gameId, shipId);
 
       const state = await get().fetchGameState(gameId, wallet);
@@ -355,7 +506,7 @@ export const usePirateGameState = create<PirateGameStore>((set, get) => ({
       set({ isLoading: false });
       return true;
     } catch (error) {
-      set({ error: 'Claim failed', isLoading: false });
+      set({ error: "Claim failed", isLoading: false });
       return false;
     }
   },
@@ -364,7 +515,9 @@ export const usePirateGameState = create<PirateGameStore>((set, get) => ({
   collectResources: async (gameId: number, wallet: any): Promise<boolean> => {
     try {
       set({ isLoading: true, error: null });
-      const { collectResourcesClient } = await import("../lib/client/solanaClient");
+      const { collectResourcesClient } = await import(
+        "../lib/client/solanaClient"
+      );
       await collectResourcesClient(wallet, gameId);
 
       const state = await get().fetchGameState(gameId, wallet);
@@ -372,7 +525,7 @@ export const usePirateGameState = create<PirateGameStore>((set, get) => ({
       set({ isLoading: false });
       return true;
     } catch (error) {
-      set({ error: 'Collection failed', isLoading: false });
+      set({ error: "Collection failed", isLoading: false });
       return false;
     }
   },
@@ -395,7 +548,7 @@ export const usePirateGameState = create<PirateGameStore>((set, get) => ({
       set({ isLoading: false });
       return true;
     } catch (error) {
-      set({ error: 'Build failed', isLoading: false });
+      set({ error: "Build failed", isLoading: false });
       return false;
     }
   },
@@ -407,7 +560,7 @@ export const usePirateGameState = create<PirateGameStore>((set, get) => ({
       await endTurnClient(wallet, gameId);
       const state = await get().fetchGameState(gameId, wallet);
       if (state) set({ gameState: state });
-    } catch (e) { }
+    } catch (e) {}
   },
 
   // Skill Mechanics: Scan coordinate
@@ -418,12 +571,16 @@ export const usePirateGameState = create<PirateGameStore>((set, get) => ({
     wallet: any,
   ): Promise<boolean> => {
     try {
-      const { scanCoordinateClient } = await import("../lib/client/solanaClient");
+      const { scanCoordinateClient } = await import(
+        "../lib/client/solanaClient"
+      );
       await scanCoordinateClient(wallet, gameId, coordinateX, coordinateY);
       const state = await get().fetchGameState(gameId, wallet);
       if (state) set({ gameState: state });
       return true;
-    } catch (e) { return false; }
+    } catch (e) {
+      return false;
+    }
   },
 
   // Skill Mechanics: Move ship with timing bonus
@@ -538,7 +695,7 @@ export const usePirateGameState = create<PirateGameStore>((set, get) => ({
 
   isPracticeMode: () => {
     const { gameMode } = get();
-    return gameMode === 'practice';
+    return gameMode === "practice";
   },
 
   // ===== PRACTICE MODE METHODS =====
@@ -547,38 +704,48 @@ export const usePirateGameState = create<PirateGameStore>((set, get) => ({
     set({ gameMode: mode });
   },
 
-  startPracticeGame: (humanPlayer: Player, difficulty: 'novice' | 'pirate' | 'captain' | 'admiral' = 'pirate') => {
+  startPracticeGame: (
+    humanPlayer: Player,
+    difficulty: "novice" | "pirate" | "captain" | "admiral" = "pirate",
+  ) => {
     try {
       // Check for saved game
       const savedGame = loadSavedPracticeGame();
-      if (savedGame && savedGame.gameStatus !== 'completed') {
+      if (savedGame && savedGame.gameStatus !== "completed") {
         set({
           gameState: savedGame,
-          gameMode: 'practice',
+          gameMode: "practice",
           selectedShipId: null,
           scannedCoordinates: new Set(),
           scanChargesRemaining: 3,
-          showMessage: '⚔️ Resumed your practice battle!',
+          showMessage: "⚔️ Resumed your practice battle!",
         });
         setTimeout(() => set({ showMessage: null }), 3000);
         return true;
       }
 
-      const practiceGame = PirateGameManager.createPracticeGame(humanPlayer, difficulty);
+      const practiceGame = PirateGameManager.createPracticeGame(
+        humanPlayer,
+        difficulty,
+      );
       savePracticeGame(practiceGame);
 
       // Initialize scanned coordinates with starting positions (Fog of War)
       const initialScanned = new Set<string>();
-      const playerInGame = practiceGame.players.find(p => p.publicKey === humanPlayer.publicKey);
+      const playerInGame = practiceGame.players.find(
+        (p) => p.publicKey === humanPlayer.publicKey,
+      );
       if (playerInGame) {
-        playerInGame.ships.forEach(ship => {
-          getVisibleCoordinates(ship.position.x, ship.position.y).forEach(coord => initialScanned.add(coord));
+        playerInGame.ships.forEach((ship) => {
+          getVisibleCoordinates(ship.position.x, ship.position.y).forEach(
+            (coord) => initialScanned.add(coord),
+          );
         });
       }
 
       set({
         gameState: practiceGame,
-        gameMode: 'practice',
+        gameMode: "practice",
         selectedShipId: null,
         scannedCoordinates: initialScanned,
         scanChargesRemaining: 3,
@@ -587,8 +754,8 @@ export const usePirateGameState = create<PirateGameStore>((set, get) => ({
       setTimeout(() => set({ showMessage: null }), 3000);
       return true;
     } catch (error) {
-      console.error('Failed to start practice game:', error);
-      set({ error: 'Failed to start practice game' });
+      console.error("Failed to start practice game:", error);
+      set({ error: "Failed to start practice game" });
       return false;
     }
   },
@@ -600,22 +767,30 @@ export const usePirateGameState = create<PirateGameStore>((set, get) => ({
     const action: GameAction = {
       id: `practice_${Date.now()}`,
       gameId: gameState.gameId,
-      player: gameState.players[gameState.currentPlayerIndex]?.publicKey || '',
-      type: 'move_ship',
+      player: gameState.players[gameState.currentPlayerIndex]?.publicKey || "",
+      type: "move_ship",
       data: { shipId, toCoordinate: `${toX},${toY}` },
       timestamp: Date.now(),
     };
 
     const result = PirateGameManager.processTurnAction(gameState, action);
     if (result.success) {
-      const advancedState = PirateGameManager.advanceTurn(result.updatedGameState);
+      const advancedState = PirateGameManager.advanceTurn(
+        result.updatedGameState,
+      );
       savePracticeGame(advancedState);
 
       // Update scanned coordinates (Fog of War)
       const currentScanned = new Set(get().scannedCoordinates);
-      getVisibleCoordinates(toX, toY).forEach(coord => currentScanned.add(coord));
+      getVisibleCoordinates(toX, toY).forEach((coord) =>
+        currentScanned.add(coord),
+      );
 
-      set({ gameState: advancedState, selectedShipId: null, scannedCoordinates: currentScanned });
+      set({
+        gameState: advancedState,
+        selectedShipId: null,
+        scannedCoordinates: currentScanned,
+      });
 
       // Process AI turn after a delay
       setTimeout(() => get().processAITurn(), 1000);
@@ -631,15 +806,17 @@ export const usePirateGameState = create<PirateGameStore>((set, get) => ({
     const action: GameAction = {
       id: `practice_${Date.now()}`,
       gameId: gameState.gameId,
-      player: gameState.players[gameState.currentPlayerIndex]?.publicKey || '',
-      type: 'attack',
+      player: gameState.players[gameState.currentPlayerIndex]?.publicKey || "",
+      type: "attack",
       data: { shipId, targetShipId },
       timestamp: Date.now(),
     };
 
     const result = PirateGameManager.processTurnAction(gameState, action);
     if (result.success) {
-      const advancedState = PirateGameManager.advanceTurn(result.updatedGameState);
+      const advancedState = PirateGameManager.advanceTurn(
+        result.updatedGameState,
+      );
       savePracticeGame(advancedState);
       set({ gameState: advancedState });
 
@@ -656,15 +833,17 @@ export const usePirateGameState = create<PirateGameStore>((set, get) => ({
     const action: GameAction = {
       id: `practice_${Date.now()}`,
       gameId: gameState.gameId,
-      player: gameState.players[gameState.currentPlayerIndex]?.publicKey || '',
-      type: 'claim_territory',
+      player: gameState.players[gameState.currentPlayerIndex]?.publicKey || "",
+      type: "claim_territory",
       data: { shipId },
       timestamp: Date.now(),
     };
 
     const result = PirateGameManager.processTurnAction(gameState, action);
     if (result.success) {
-      const advancedState = PirateGameManager.advanceTurn(result.updatedGameState);
+      const advancedState = PirateGameManager.advanceTurn(
+        result.updatedGameState,
+      );
       savePracticeGame(advancedState);
       set({ gameState: advancedState });
 
@@ -675,51 +854,74 @@ export const usePirateGameState = create<PirateGameStore>((set, get) => ({
   },
 
   processAITurn: () => {
-    const { gameState, gameMode, isAIvsAIMode, playbackSpeed, aiDecisionCallback } = get();
-    if (!gameState || gameMode !== 'practice') return;
+    const {
+      gameState,
+      gameMode,
+      isAIvsAIMode,
+      playbackSpeed,
+      aiDecisionCallback,
+    } = get();
+    if (!gameState || gameMode !== "practice") return;
 
     const currentPlayer = gameState.players[gameState.currentPlayerIndex];
-    if (!currentPlayer?.publicKey.startsWith('AI_')) return;
+    if (!currentPlayer?.publicKey.startsWith("AI_")) return;
 
     // Generate AI decision with reasoning (for AI vs AI educational mode)
     if (isAIvsAIMode && aiDecisionCallback) {
-      const decision = PirateGameManager.generateAIDecision(gameState, currentPlayer);
+      const decision = PirateGameManager.generateAIDecision(
+        gameState,
+        currentPlayer,
+      );
 
       // Notify callback with reasoning
       aiDecisionCallback(decision.reasoning);
 
       // Process the action
       if (decision.action) {
-        const result = PirateGameManager.processTurnAction(gameState, decision.action);
+        const result = PirateGameManager.processTurnAction(
+          gameState,
+          decision.action,
+        );
         if (result.success) {
-          const advancedState = PirateGameManager.advanceTurn(result.updatedGameState);
+          const advancedState = PirateGameManager.advanceTurn(
+            result.updatedGameState,
+          );
 
           // Force a new object reference to trigger React re-renders
           const newState = {
             ...advancedState,
-            players: advancedState.players.map(p => ({ ...p, ships: [...p.ships] })),
+            players: advancedState.players.map((p) => ({
+              ...p,
+              ships: [...p.ships],
+            })),
             turnNumber: advancedState.turnNumber,
           };
 
           // Update reasoning history (keep last 20 entries)
           const prevHistory = get().aiReasoningHistory || [];
           const newHistory = [decision.reasoning, ...prevHistory].slice(0, 20);
-          set({ gameState: newState, currentAIReasoning: decision.reasoning, aiReasoningHistory: newHistory });
+          set({
+            gameState: newState,
+            currentAIReasoning: decision.reasoning,
+            aiReasoningHistory: newHistory,
+          });
 
           // Check for game end
-          if (newState.gameStatus === 'completed') {
-            const winner = newState.players.find(p => p.publicKey === newState.winner);
+          if (newState.gameStatus === "completed") {
+            const winner = newState.players.find(
+              (p) => p.publicKey === newState.winner,
+            );
             set({
               showMessage: winner
-                ? `🏆 ${winner.username || 'AI'} wins the battle!`
-                : '🏴‍☠️ Battle concluded!'
+                ? `🏆 ${winner.username || "AI"} wins the battle!`
+                : "🏴‍☠️ Battle concluded!",
             });
             return;
           }
 
           // Continue processing if still AI's turn
           const nextPlayer = newState.players[newState.currentPlayerIndex];
-          if (nextPlayer?.publicKey.startsWith('AI_')) {
+          if (nextPlayer?.publicKey.startsWith("AI_")) {
             const baseDelay = 2000; // 2 seconds to show decision modal
             const adjustedDelay = baseDelay / playbackSpeed;
             setTimeout(() => get().processAITurn(), adjustedDelay);
@@ -729,7 +931,10 @@ export const usePirateGameState = create<PirateGameStore>((set, get) => ({
           const advancedState = PirateGameManager.advanceTurn(gameState);
           const newState = {
             ...advancedState,
-            players: advancedState.players.map(p => ({ ...p, ships: [...p.ships] })),
+            players: advancedState.players.map((p) => ({
+              ...p,
+              ships: [...p.ships],
+            })),
             turnNumber: advancedState.turnNumber,
           };
           set({ gameState: newState });
@@ -740,7 +945,10 @@ export const usePirateGameState = create<PirateGameStore>((set, get) => ({
         const advancedState = PirateGameManager.advanceTurn(gameState);
         const newState = {
           ...advancedState,
-          players: advancedState.players.map(p => ({ ...p, ships: [...p.ships] })),
+          players: advancedState.players.map((p) => ({
+            ...p,
+            ships: [...p.ships],
+          })),
           turnNumber: advancedState.turnNumber,
         };
         set({ gameState: newState });
@@ -758,26 +966,31 @@ export const usePirateGameState = create<PirateGameStore>((set, get) => ({
       // Force a new object reference to trigger React re-renders
       const newState = {
         ...updatedState,
-        players: updatedState.players.map(p => ({ ...p, ships: [...p.ships] })),
+        players: updatedState.players.map((p) => ({
+          ...p,
+          ships: [...p.ships],
+        })),
         turnNumber: updatedState.turnNumber,
       };
 
       set({ gameState: newState });
 
       // Check for game end
-      if (newState.gameStatus === 'completed') {
-        const winner = newState.players.find(p => p.publicKey === newState.winner);
+      if (newState.gameStatus === "completed") {
+        const winner = newState.players.find(
+          (p) => p.publicKey === newState.winner,
+        );
         set({
           showMessage: winner
-            ? `🏆 ${winner.username || 'AI'} wins the battle!`
-            : '🏴‍☠️ Battle concluded!'
+            ? `🏆 ${winner.username || "AI"} wins the battle!`
+            : "🏴‍☠️ Battle concluded!",
         });
         return;
       }
 
       // Continue processing if still AI's turn
       const nextPlayer = newState.players[newState.currentPlayerIndex];
-      if (nextPlayer?.publicKey.startsWith('AI_')) {
+      if (nextPlayer?.publicKey.startsWith("AI_")) {
         const baseDelay = isAIvsAIMode ? 800 : 1500;
         const adjustedDelay = baseDelay / playbackSpeed;
         setTimeout(() => get().processAITurn(), adjustedDelay);
@@ -789,52 +1002,59 @@ export const usePirateGameState = create<PirateGameStore>((set, get) => ({
     savePracticeGame(null); // Clear saved practice game
     set({
       gameState: null,
-      gameMode: 'on-chain',
+      gameMode: "on-chain",
       selectedShipId: null,
       scannedCoordinates: new Set(),
       scanChargesRemaining: 3,
       isAIvsAIMode: false,
       playbackSpeed: 1,
-      showMessage: 'Practice session ended. Ready for real battles!',
+      showMessage: "Practice session ended. Ready for real battles!",
     });
     setTimeout(() => set({ showMessage: null }), 3000);
   },
 
   // ===== AI vs AI DEMO MODE =====
 
-  startAIvsAIGame: (difficulty1: 'novice' | 'pirate' | 'captain' | 'admiral', difficulty2: 'novice' | 'pirate' | 'captain' | 'admiral', speed: number = 1) => {
+  startAIvsAIGame: (
+    difficulty1: "novice" | "pirate" | "captain" | "admiral",
+    difficulty2: "novice" | "pirate" | "captain" | "admiral",
+    speed: number = 1,
+  ) => {
     try {
       // Create two AI players
-      const aiPlayer1 = PirateGameManager.createAIPlayer('demo', difficulty1);
-      const aiPlayer2 = PirateGameManager.createAIPlayer('demo', difficulty2);
+      const aiPlayer1 = PirateGameManager.createAIPlayer("demo", difficulty1);
+      const aiPlayer2 = PirateGameManager.createAIPlayer("demo", difficulty2);
 
       // Ensure players have required arrays initialized
-      [aiPlayer1, aiPlayer2].forEach(player => {
+      [aiPlayer1, aiPlayer2].forEach((player) => {
         player.ships = player.ships || [];
         player.controlledTerritories = player.controlledTerritories || [];
         player.scannedCoordinates = player.scannedCoordinates || [];
       });
 
       // Create game with both AI players
-      const demoGame = PirateGameManager.createNewGame([aiPlayer1, aiPlayer2], `ai_demo_${Date.now()}`);
+      const demoGame = PirateGameManager.createNewGame(
+        [aiPlayer1, aiPlayer2],
+        `ai_demo_${Date.now()}`,
+      );
 
       // Ensure game state has required arrays
       const activeGame = {
         ...demoGame,
-        gameStatus: 'active' as const,
-        players: demoGame.players.map(player => ({
+        gameStatus: "active" as const,
+        players: demoGame.players.map((player) => ({
           ...player,
           ships: player.ships || [],
           controlledTerritories: player.controlledTerritories || [],
-          scannedCoordinates: player.scannedCoordinates || []
+          scannedCoordinates: player.scannedCoordinates || [],
         })),
         pendingActions: demoGame.pendingActions || [],
-        eventLog: demoGame.eventLog || []
+        eventLog: demoGame.eventLog || [],
       };
 
       set({
         gameState: activeGame,
-        gameMode: 'practice',
+        gameMode: "practice",
         isAIvsAIMode: true,
         playbackSpeed: speed,
         selectedShipId: null,
@@ -856,8 +1076,8 @@ export const usePirateGameState = create<PirateGameStore>((set, get) => ({
 
       return true;
     } catch (error) {
-      console.error('Failed to start AI vs AI game:', error);
-      set({ error: 'Failed to start AI vs AI game' });
+      console.error("Failed to start AI vs AI game:", error);
+      set({ error: "Failed to start AI vs AI game" });
       return false;
     }
   },

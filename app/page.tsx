@@ -64,8 +64,8 @@ export default function Home() {
     scanChargesRemaining,
     speedBonusAccumulated,
     averageDecisionTimeMs,
-    createGame,
     joinGame,
+    findOrCreateGame,
     startGame,
     moveShip,
     attackWithShip,
@@ -102,6 +102,7 @@ export default function Home() {
   const [shipActionModalShip, setShipActionModalShip] = useState<Ship | null>(
     null,
   );
+  const [showModeSelect, setShowModeSelect] = useState(false);
   const [socialModal, setSocialModal] = useState<{
     type: "leaderboard" | "referral";
     isOpen: boolean;
@@ -232,7 +233,7 @@ export default function Home() {
     if (!publicKey || !wallet) return;
     try {
       const player = createPlayerFromWallet(publicKey);
-      await createGame([player], 0.1, wallet);
+      await findOrCreateGame("Casual", player, wallet);
       handleGameEvent("🏴‍☠️ New battle begins!");
     } catch (error) {
       handleGameError(error, "create new game");
@@ -375,20 +376,28 @@ export default function Home() {
       setJoinError("Please connect your wallet first");
       return;
     }
+    setShowModeSelect(true);
+  };
 
+  const handleModeSelected = async (
+    mode: "Casual" | "Competitive" | "AgentArena",
+  ) => {
+    if (!publicKey || !wallet) return;
+
+    setShowModeSelect(false);
     setIsCreatingGame(true);
     setJoinError(undefined);
 
     try {
       const player = createPlayerFromWallet(publicKey);
-      const success = await createGame([player], 0.1, wallet);
+      const success = await findOrCreateGame(mode, player, wallet);
 
       if (success) {
-        handleGameEvent("🏴‍☠️ Battle arena created! Awaiting pirates...");
+        handleGameEvent(`🏴‍☠️ Entering ${mode} Arena...`);
       }
     } catch (error) {
-      console.error("Failed to create game:", error);
-      handleGameError(error, "create game");
+      console.error("Failed to enter arena:", error);
+      setJoinError("Failed to join battle arena");
     } finally {
       setIsCreatingGame(false);
     }
@@ -759,6 +768,70 @@ export default function Home() {
 
       {/* AI Decision display removed - now handled by AIReasoningPanel */}
 
+      {/* Game Mode Selection Modal */}
+      {showModeSelect && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/80 backdrop-blur-sm">
+          <div className="bg-slate-900 border-2 border-neon-cyan/50 rounded-2xl p-8 max-w-md w-full mx-4 shadow-2xl shadow-neon-cyan/20 transform transition-all duration-300">
+            <h2 className="text-3xl font-black text-transparent bg-clip-text bg-gradient-to-r from-neon-cyan to-neon-gold mb-4">
+              Choose Battle Arena
+            </h2>
+            <div className="space-y-4">
+              <button
+                onClick={() => handleModeSelected("Casual")}
+                className="w-full p-4 bg-slate-800 border-2 border-neon-cyan rounded-xl hover:bg-slate-700 transition-all text-left group"
+              >
+                <div className="flex items-center justify-between mb-2">
+                  <span className="text-xl font-bold text-neon-cyan">
+                    Casual Arena
+                  </span>
+                  <span className="text-2xl">🏴‍☠️</span>
+                </div>
+                <p className="text-slate-400 text-sm">
+                  Mixed battles. Humans and Agents welcome. Great for quick
+                  matches.
+                </p>
+              </button>
+
+              <button
+                onClick={() => handleModeSelected("Competitive")}
+                className="w-full p-4 bg-slate-800 border-2 border-neon-gold rounded-xl hover:bg-slate-700 transition-all text-left group"
+              >
+                <div className="flex items-center justify-between mb-2">
+                  <span className="text-xl font-bold text-neon-gold">
+                    Competitive
+                  </span>
+                  <span className="text-2xl">🏆</span>
+                </div>
+                <p className="text-slate-400 text-sm">
+                  Humans only. Prove your skill against real players.
+                </p>
+              </button>
+
+              <button
+                onClick={() => handleModeSelected("AgentArena")}
+                className="w-full p-4 bg-slate-800 border-2 border-neon-magenta rounded-xl hover:bg-slate-700 transition-all text-left group"
+              >
+                <div className="flex items-center justify-between mb-2">
+                  <span className="text-xl font-bold text-neon-magenta">
+                    Agent Arena
+                  </span>
+                  <span className="text-2xl">🤖</span>
+                </div>
+                <p className="text-slate-400 text-sm">
+                  Bot battles. Test your agents against others or the house AI.
+                </p>
+              </button>
+            </div>
+            <button
+              onClick={() => setShowModeSelect(false)}
+              className="mt-6 w-full py-2 text-slate-400 hover:text-white"
+            >
+              Cancel
+            </button>
+          </div>
+        </div>
+      )}
+
       {/* Practice Mode Menu Modal - Performance Optimized */}
       {showPracticeMenu && !gameState && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/80 backdrop-blur-sm">
@@ -918,18 +991,18 @@ export default function Home() {
                 <div className="relative inline-block">
                   {/* Animated background glow */}
                   <div
-                    className="absolute inset-0 bg-gradient-to-r from-neon-cyan/20 via-neon-gold/20 to-neon-cyan/20 
+                    className="absolute inset-0 bg-gradient-to-r from-neon-cyan/20 via-neon-gold/20 to-neon-cyan/20
                                   rounded-2xl blur-xl animate-pulse"
                   ></div>
 
                   {/* Main title */}
                   <div
-                    className="relative bg-gradient-to-br from-slate-900/90 to-slate-800/90 
+                    className="relative bg-gradient-to-br from-slate-900/90 to-slate-800/90
                                   border-2 border-neon-cyan/50 rounded-2xl p-4 sm:p-6 backdrop-blur-sm
                                   shadow-2xl shadow-neon-cyan/20"
                   >
                     <h1
-                      className="text-3xl sm:text-4xl lg:text-5xl font-black text-transparent bg-clip-text 
+                      className="text-3xl sm:text-4xl lg:text-5xl font-black text-transparent bg-clip-text
                                    bg-gradient-to-r from-neon-cyan via-neon-gold to-neon-cyan mb-2 sm:mb-3
                                    animate-subtle-glow drop-shadow-2xl"
                     >
@@ -974,10 +1047,10 @@ export default function Home() {
                 >
                   <div className="absolute inset-0 bg-neon-purple/20 rounded-xl blur-md group-hover:blur-lg transition-all"></div>
                   <div
-                    className="relative bg-gradient-to-r from-neon-purple/80 to-neon-cyan/80 
+                    className="relative bg-gradient-to-r from-neon-purple/80 to-neon-cyan/80
                                   hover:from-neon-purple hover:to-neon-cyan
                                   text-black font-bold py-2 px-3 sm:px-4 rounded-xl
-                                  hover:shadow-lg hover:shadow-neon-purple/50 hover:scale-105 
+                                  hover:shadow-lg hover:shadow-neon-purple/50 hover:scale-105
                                   active:scale-95 transition-all duration-300 flex items-center gap-2
                                   text-sm sm:text-base"
                   >
@@ -996,10 +1069,10 @@ export default function Home() {
                 >
                   <div className="absolute inset-0 bg-neon-gold/20 rounded-xl blur-md group-hover:blur-lg transition-all"></div>
                   <div
-                    className="relative bg-gradient-to-r from-neon-gold/80 to-neon-orange/80 
+                    className="relative bg-gradient-to-r from-neon-gold/80 to-neon-orange/80
                                   hover:from-neon-gold hover:to-neon-orange
                                   text-black font-bold py-2 px-3 sm:px-4 rounded-xl
-                                  hover:shadow-lg hover:shadow-neon-gold/50 hover:scale-105 
+                                  hover:shadow-lg hover:shadow-neon-gold/50 hover:scale-105
                                   active:scale-95 transition-all duration-300 flex items-center gap-2
                                   text-sm sm:text-base"
                   >
@@ -1018,10 +1091,10 @@ export default function Home() {
                 >
                   <div className="absolute inset-0 bg-neon-magenta/20 rounded-xl blur-md group-hover:blur-lg transition-all"></div>
                   <div
-                    className="relative bg-gradient-to-r from-neon-magenta/80 to-neon-orange/80 
+                    className="relative bg-gradient-to-r from-neon-magenta/80 to-neon-orange/80
                                   hover:from-neon-magenta hover:to-neon-orange
                                   text-black font-bold py-2 px-3 sm:px-4 rounded-xl
-                                  hover:shadow-lg hover:shadow-neon-magenta/50 hover:scale-105 
+                                  hover:shadow-lg hover:shadow-neon-magenta/50 hover:scale-105
                                   active:scale-95 transition-all duration-300 flex items-center gap-2
                                   text-sm sm:text-base"
                   >
@@ -1183,7 +1256,7 @@ export default function Home() {
 
                     <div>
                       <h3
-                        className="text-3xl sm:text-4xl lg:text-5xl font-black text-transparent bg-clip-text 
+                        className="text-3xl sm:text-4xl lg:text-5xl font-black text-transparent bg-clip-text
                                      bg-gradient-to-r from-neon-cyan via-neon-gold to-neon-cyan mb-4
                                      animate-subtle-glow"
                       >
@@ -1201,7 +1274,7 @@ export default function Home() {
                     {/* Action Cards */}
                     <div className="grid grid-cols-1 md:grid-cols-3 gap-6 max-w-4xl mx-auto">
                       <div
-                        className="bg-gradient-to-br from-slate-800/60 to-slate-900/60 border-2 border-neon-cyan/50 
+                        className="bg-gradient-to-br from-slate-800/60 to-slate-900/60 border-2 border-neon-cyan/50
                                      rounded-2xl p-6 hover:scale-105 transition-all duration-300
                                      hover:shadow-lg hover:shadow-neon-cyan/30"
                       >
@@ -1214,14 +1287,14 @@ export default function Home() {
                           climb the leaderboard
                         </p>
                         <div className="inline-flex items-center gap-2 text-neon-cyan text-sm font-semibold">
-                          <span>Click "Connect Wallet" above</span>
+                          <span>Click &quot;Connect Wallet&quot; above</span>
                           <span>↑</span>
                         </div>
                       </div>
 
                       <button
                         onClick={() => setShowPracticeMenu(true)}
-                        className="bg-gradient-to-br from-slate-800/60 to-slate-900/60 border-2 border-neon-gold/50 
+                        className="bg-gradient-to-br from-slate-800/60 to-slate-900/60 border-2 border-neon-gold/50
                                    rounded-2xl p-6 hover:scale-105 transition-all duration-300
                                    hover:shadow-lg hover:shadow-neon-gold/30 text-left"
                       >
@@ -1242,7 +1315,7 @@ export default function Home() {
                       {/* NEW: AI vs AI Demo */}
                       <button
                         onClick={() => setShowAIBattleModal(true)}
-                        className="bg-gradient-to-br from-slate-800/60 to-slate-900/60 border-2 border-neon-magenta/50 
+                        className="bg-gradient-to-br from-slate-800/60 to-slate-900/60 border-2 border-neon-magenta/50
                                    rounded-2xl p-6 hover:scale-105 transition-all duration-300
                                    hover:shadow-lg hover:shadow-neon-magenta/30 text-left"
                       >
@@ -1289,7 +1362,7 @@ export default function Home() {
                     </div>
                     <div>
                       <h3
-                        className="text-3xl sm:text-4xl font-black text-transparent bg-clip-text 
+                        className="text-3xl sm:text-4xl font-black text-transparent bg-clip-text
                                      bg-gradient-to-r from-neon-cyan via-neon-gold to-neon-cyan mb-4"
                       >
                         Ready for Battle, Captain!
@@ -1307,7 +1380,7 @@ export default function Home() {
                       {/* Practice Mode */}
                       <button
                         onClick={() => setShowPracticeMenu(true)}
-                        className="group bg-gradient-to-br from-slate-800/60 to-slate-900/60 border-2 border-neon-gold/50 
+                        className="group bg-gradient-to-br from-slate-800/60 to-slate-900/60 border-2 border-neon-gold/50
                                    rounded-2xl p-6 hover:scale-105 transition-all duration-300
                                    hover:shadow-lg hover:shadow-neon-gold/30 text-left"
                       >
@@ -1328,7 +1401,7 @@ export default function Home() {
                       {/* NEW: AI vs AI Demo */}
                       <button
                         onClick={() => setShowAIBattleModal(true)}
-                        className="group bg-gradient-to-br from-slate-800/60 to-slate-900/60 border-2 border-neon-magenta/50 
+                        className="group bg-gradient-to-br from-slate-800/60 to-slate-900/60 border-2 border-neon-magenta/50
                                    rounded-2xl p-6 hover:scale-105 transition-all duration-300
                                    hover:shadow-lg hover:shadow-neon-magenta/30 text-left"
                       >
@@ -1349,7 +1422,7 @@ export default function Home() {
                       {/* Watch / Join */}
                       <button
                         onClick={() => setShowSpectatorMode(true)}
-                        className="group bg-gradient-to-br from-slate-800/60 to-slate-900/60 border-2 border-neon-purple/50 
+                        className="group bg-gradient-to-br from-slate-800/60 to-slate-900/60 border-2 border-neon-purple/50
                                    rounded-2xl p-6 hover:scale-105 transition-all duration-300
                                    hover:shadow-lg hover:shadow-neon-purple/30 text-left"
                       >
@@ -1370,7 +1443,7 @@ export default function Home() {
                     {/* Quick Tips */}
                     <div className="max-w-2xl mx-auto">
                       <div
-                        className="bg-gradient-to-r from-neon-cyan/10 to-neon-gold/10 
+                        className="bg-gradient-to-r from-neon-cyan/10 to-neon-gold/10
                                      border border-neon-cyan/30 rounded-xl p-6 backdrop-blur-sm"
                       >
                         <div className="flex items-start gap-4">

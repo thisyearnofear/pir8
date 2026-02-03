@@ -1,6 +1,6 @@
 // Pirate Game Constants
 export const GAME_CONFIG = {
-  MAP_SIZE: 8, // ENHANCED: Increased from 5 to provide strategic space for 4 players
+  MAP_SIZE: 10, // ENHANCED: Increased from 5 to provide strategic space for 4 players
   MAX_PLAYERS: 4,
   MIN_PLAYERS: 2,
   TURN_TIMEOUT: 45000, // 45 seconds for strategic decisions
