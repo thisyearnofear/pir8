@@ -223,19 +223,49 @@ export default function PirateMap({
         })}
       </div>
 
-      {hoveredCoordinate && (
-        <TerritoryTooltip
-          type={flatCells.find(c => c.coordinate === hoveredCoordinate)?.type as any}
-          position={tooltipPosition}
-          isVisible={true}
-        />
-      )}
+        {hoveredCoordinate && (
+          <TerritoryTooltip
+            type={flatCells.find(c => c.coordinate === hoveredCoordinate)?.type as any}
+            position={tooltipPosition}
+            isVisible={true}
+          />
+        )}
 
-      {isMobile && (
-        <div className="absolute top-2 right-2 bg-black bg-opacity-50 rounded px-2 py-1 text-xs text-neon-cyan">
-          {isMyTurn ? "Your Turn" : "Waiting..."}
-        </div>
-      )}
-    </div>
-  );
+        {/* Selection info - Mobile Optimized */}
+        {selectedShipId && (
+          <div className="mt-2 sm:mt-4 p-2 sm:p-3 bg-neon-cyan bg-opacity-10 border border-neon-cyan rounded-lg text-center w-full max-w-xs">
+            <div className="text-xs sm:text-sm text-neon-cyan font-mono truncate">
+              Ship: {ships.find((s) => s.id === selectedShipId)?.type}
+            </div>
+            <div className="text-xs text-gray-300 mt-1">
+              Tap highlighted cell to move
+            </div>
+          </div>
+        )}
+
+        {/* Hover info - Mobile Optimized */}
+        {hoveredCoordinate && (
+          <div className="mt-1 sm:mt-2 p-1.5 sm:p-2 bg-black bg-opacity-50 border border-gray-500 rounded text-center w-full max-w-xs">
+            <div className="text-xs text-gray-300 truncate">
+              Pos: {hoveredCoordinate}
+            </div>
+            {flatCells.find(c => c.coordinate === hoveredCoordinate) && (
+              <div className="text-xs text-neon-cyan truncate">
+                {flatCells.find(c => c.coordinate === hoveredCoordinate)?.type}
+                {flatCells.find(c => c.coordinate === hoveredCoordinate)?.owner && (
+                  <span className="text-neon-orange"> (Ctrl)</span>
+                )}
+              </div>
+            )}
+            {getShipAtPosition(hoveredCoordinate) && (
+              <div className="text-xs text-neon-magenta truncate">
+                {getShipAtPosition(hoveredCoordinate)!.type} -
+                {getShipAtPosition(hoveredCoordinate)!.health}HP
+              </div>
+            )}
+          </div>
+        )}
+
+      </div>
+    );
 }
