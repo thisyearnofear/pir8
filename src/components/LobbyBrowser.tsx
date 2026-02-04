@@ -15,14 +15,14 @@ export default function LobbyBrowser() {
   const [showCreateModal, setShowCreateModal] = useState(false);
   const [newGameId, setNewGameId] = useState<number>(Math.floor(Math.random() * 1000));
   const [isCreating, setIsCreating] = useState(false);
-  const [isJoining, setIsJoining] = useState(false);
+  const [joiningLobby, setJoiningLobby] = useState<string | null>(null);
 
   useEffect(() => {
-    if (!publicKey) return;
-    fetchLobbies();
-    const interval = setInterval(fetchLobbies, 10000);
+    if (!publicKey || !wallet) return;
+    fetchLobbies(wallet);
+    const interval = setInterval(() => fetchLobbies(wallet), 10000);
     return () => clearInterval(interval);
-  }, [fetchLobbies, publicKey]);
+  }, [fetchLobbies, publicKey, wallet]);
 
   const handleCreate = async () => {
     if (!publicKey || !wallet) {
@@ -69,23 +69,45 @@ export default function LobbyBrowser() {
     }
   };
 
-  const handleJoinLobby = async (lobbyAddress: string) => {
+  const handleJoinLobby = async (lobbyAddress: string, gameId?: number) => {
     if (!publicKey || !wallet) {
       console.warn('Wallet not connected');
       return;
     }
 
-    setIsJoining(true);
+    // Prevent duplicate joins for the same lobby
+    if (joiningLobby === lobbyAddress) {
+      console.log('Already joining this lobby');
+      return;
+    }
+
+    setJoiningLobby(lobbyAddress);
     try {
       // Use proper client-side transaction building
-      const { joinGame, createWalletAdapter } = await import("@/lib/client/transactionBuilder");
+      const { joinGame, createWalletAdapter, getClientProgram } = await import("@/lib/client/transactionBuilder");
+      const { PublicKey } = await import("@solana/web3.js");
 
-      console.log(`Joining lobby: ${lobbyAddress}`);
+      let targetGameId = gameId;
+
+      // If gameId not provided, fetch from chain
+      if (!targetGameId) {
+        console.log(`Fetching gameId from lobby: ${lobbyAddress}`);
+        const walletAdapter = createWalletAdapter({ ...wallet, publicKey });
+        const program = await getClientProgram(walletAdapter);
+        const gameAccount = await (program as any).account.pirateGame.fetchNullable(new PublicKey(lobbyAddress));
+        if (!gameAccount) {
+          throw new Error('Lobby not found on chain');
+        }
+        targetGameId = gameAccount.gameId.toNumber();
+        console.log(`Found gameId: ${targetGameId}`);
+      }
+
+      console.log(`Joining lobby: ${lobbyAddress} with gameId: ${targetGameId}`);
 
       // Create a wallet adapter compatible object
       const walletAdapter = createWalletAdapter({ ...wallet, publicKey });
 
-      const joinTx = await joinGame(walletAdapter);
+      const joinTx = await joinGame(walletAdapter, targetGameId);
       console.log('Joined lobby:', joinTx);
 
       // TODO: Update UI to show the joined game state
@@ -93,7 +115,7 @@ export default function LobbyBrowser() {
     } catch (error) {
       console.error('Failed to join lobby:', error);
     } finally {
-      setIsJoining(false);
+      setJoiningLobby(null);
     }
   };
 
@@ -129,36 +151,102 @@ export default function LobbyBrowser() {
         </div>
       ) : (
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-          {lobbies.map((lobby: any) => (
-            <div key={lobby.address} className="bg-slate-800/50 border border-slate-700 rounded-xl p-4 hover:border-neon-cyan/50 transition-all group">
+          {lobbies.map((lobby: any) => {
+            // Determine if game is joinable
+            const statusKey = lobby.status ? Object.keys(lobby.status)[0] : 'unknown';
+            const isWaiting = statusKey === 'waitingForPlayers';
+            const hasSpace = lobby.playerCount < lobby.maxPlayers;
+            const isJoinable = isWaiting && hasSpace;
+
+            // Check if current user is already in this game
+            const userWalletPk = publicKey?.toBase58();
+            const isUserInGame = userWalletPk && lobby.players?.includes(userWalletPk);
+            const isUserGameWaiting = isUserInGame && isWaiting && lobby.playerCount === 1;
+
+            return (
+            <div key={lobby.address} className={`rounded-xl p-4 border transition-all group ${
+              isUserInGame
+                ? 'bg-neon-cyan/10 border-neon-cyan hover:border-neon-cyan/80'
+                : 'bg-slate-800/50 border-slate-700 hover:border-neon-cyan/50'
+            }`}>
               <div className="flex justify-between items-start mb-4">
                 <div>
-                  <div className="text-xs font-mono text-neon-cyan mb-1">LOBBY ID</div>
+                  <div className="text-xs font-mono text-neon-cyan mb-1 flex items-center gap-2">
+                    LOBBY ID
+                    {isUserInGame && (
+                      <span className="bg-neon-cyan text-black text-[10px] px-1.5 py-0.5 rounded font-bold">
+                        YOU'RE IN
+                      </span>
+                    )}
+                  </div>
                   <div className="text-lg font-bold text-white truncate max-w-[180px]">{lobby.address}</div>
                 </div>
                 <div className="text-right">
                   <div className="text-xs font-mono text-gray-500 mb-1">STATUS</div>
-                  <div className="text-xs bg-green-500/20 text-green-400 px-2 py-0.5 rounded border border-green-500/30 font-bold uppercase tracking-wider">
-                    Joinable
+                  <div className={`text-xs px-2 py-0.5 rounded border font-bold uppercase tracking-wider ${
+                    isUserGameWaiting
+                      ? 'bg-neon-cyan/30 text-neon-cyan border-neon-cyan animate-pulse'
+                      : isJoinable
+                      ? 'bg-green-500/20 text-green-400 border-green-500/30'
+                      : statusKey === 'active'
+                      ? 'bg-yellow-500/20 text-yellow-400 border-yellow-500/30'
+                      : 'bg-red-500/20 text-red-400 border-red-500/30'
+                  }`}>
+                    {isUserGameWaiting
+                      ? 'Awaiting Opponent...'
+                      : isWaiting
+                      ? `Waiting (${lobby.playerCount}/${lobby.maxPlayers})`
+                      : statusKey}
                   </div>
                 </div>
               </div>
 
               <div className="flex items-center justify-between">
                 <div className="flex -space-x-2">
-                  <div className="w-8 h-8 rounded-full bg-slate-700 border-2 border-slate-900 flex items-center justify-center text-xs">🏴‍☠️</div>
-                  <div className="w-8 h-8 rounded-full bg-slate-700 border-2 border-slate-900 flex items-center justify-center text-xs">👤</div>
+                  {lobby.players?.slice(0, 4).map((player: string, idx: number) => (
+                    <div
+                      key={idx}
+                      className={`w-8 h-8 rounded-full border-2 border-slate-900 flex items-center justify-center text-xs ${
+                        player === userWalletPk ? 'bg-neon-cyan text-black' : 'bg-slate-700'
+                      }`}
+                      title={player === userWalletPk ? 'You' : `Player ${idx + 1}`}
+                    >
+                      {player === userWalletPk ? '👤' : '🏴‍☠️'}
+                    </div>
+                  ))}
+                  {lobby.playerCount > 4 && (
+                    <div className="w-8 h-8 rounded-full bg-slate-800 border-2 border-slate-900 flex items-center justify-center text-xs text-gray-400">
+                      +{lobby.playerCount - 4}
+                    </div>
+                  )}
+                  {Array.from({ length: Math.max(0, (lobby.maxPlayers || 2) - lobby.playerCount) }).map((_, idx) => (
+                    <div
+                      key={`empty-${idx}`}
+                      className="w-8 h-8 rounded-full bg-slate-800/50 border-2 border-dashed border-slate-700 flex items-center justify-center text-xs text-slate-600"
+                    >
+                      ?
+                    </div>
+                  ))}
                 </div>
                 <button
-                  onClick={() => handleJoinLobby(lobby.address)}
-                  disabled={isJoining}
+                  onClick={() => handleJoinLobby(lobby.address, lobby.gameId)}
+                  disabled={!!joiningLobby || !isJoinable || isUserInGame}
                   className="bg-neon-cyan hover:bg-neon-blue text-black font-bold py-1.5 px-4 rounded-lg text-sm transition-colors disabled:opacity-50"
                 >
-                  {isJoining ? 'BOARDING...' : 'BOARD SHIP'}
+                  {joiningLobby === lobby.address
+                    ? 'BOARDING...'
+                    : isUserInGame
+                    ? isUserGameWaiting
+                      ? 'WAITING...'
+                      : 'IN GAME'
+                    : isJoinable
+                    ? 'BOARD SHIP'
+                    : 'FULL/STARTED'}
                 </button>
               </div>
             </div>
-          ))}
+            );
+          })}
         </div>
       )}
 

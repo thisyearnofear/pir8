@@ -213,7 +213,7 @@ export const usePirateGameState = create<PirateGameStore>((set, get) => ({
   aiDecisionCallback: null,
   aiReasoningHistory: [] as any[],
 
-  fetchLobbies: async () => {
+  fetchLobbies: async (wallet?: any) => {
     try {
       set({ isLoading: true });
 
@@ -224,43 +224,42 @@ export const usePirateGameState = create<PirateGameStore>((set, get) => ({
         return;
       }
 
-      const { Connection, PublicKey } = await import("@solana/web3.js");
+      // Use the proper fetchLobbies from transactionBuilder that deserializes accounts
+      const { fetchLobbies: fetchLobbiesFromChain, createWalletAdapter } = await import(
+        "../lib/client/transactionBuilder"
+      );
 
-      // Try Helius first, fallback to default devnet RPC
-      let connection;
-      try {
-        connection = new Connection(
+      // Create a minimal wallet adapter if wallet not provided
+      let walletAdapter;
+      if (wallet) {
+        walletAdapter = createWalletAdapter(wallet);
+      } else {
+        // Fallback: create adapter with just connection (read-only)
+        const { Connection } = await import("@solana/web3.js");
+        const connection = new Connection(
           SOLANA_CONFIG.RPC_URL || "https://api.devnet.solana.com",
           "confirmed"
         );
-      } catch (rpcError) {
-        console.warn("Failed to connect to Helius, using default devnet RPC");
-        connection = new Connection("https://api.devnet.solana.com", "confirmed");
+        walletAdapter = { connection, publicKey: null } as any;
       }
 
-      try {
-        const programId = new PublicKey(SOLANA_CONFIG.PROGRAM_ID);
-        const accounts = await (connection as any).getProgramAccounts(
-          programId,
-          {
-            filters: [{ dataSize: 10240 }],
-          },
-        );
+      const games = await fetchLobbiesFromChain(walletAdapter);
 
-        const lobbies = accounts.map((acc: any) => ({
-          address: acc.pubkey.toBase58(),
-        }));
-        set({ lobbies, isLoading: false });
-      } catch (programError) {
-        console.warn(
-          "Failed to fetch from program, returning empty lobbies:",
-          programError,
-        );
-        set({ lobbies: [], isLoading: false });
-      }
+      // Map to lobby format with actual game data
+      const lobbies = games.map((g: any) => ({
+        address: g.publicKey.toBase58(),
+        gameId: g.account?.gameId?.toNumber?.() || null,
+        status: g.account?.status,
+        playerCount: g.account?.playerCount || 0,
+        maxPlayers: g.account?.maxPlayers || 2,
+        mode: g.account?.mode,
+        players: g.account?.players?.map((p: any) => p.pubkey?.toBase58?.()) || [],
+      }));
+
+      set({ lobbies, isLoading: false });
     } catch (error) {
       console.warn("Failed to fetch lobbies:", error);
-      set({ isLoading: false });
+      set({ lobbies: [], isLoading: false });
     }
   },
 
