@@ -1,40 +1,16 @@
 'use server';
 
-import { AnchorProvider, BN, Program, Idl } from '@coral-xyz/anchor';
-import { Connection, Keypair, PublicKey, SystemProgram } from '@solana/web3.js';
+import { AnchorProvider, Program, Idl } from '@coral-xyz/anchor';
+import { Connection, PublicKey } from '@solana/web3.js';
 import fs from 'fs';
 import path from 'path';
 import { SOLANA_CONFIG } from '@/utils/constants';
 import { PROGRAM_ID } from '../anchor';
 import { getGlobalGamePDA } from '../anchorUtils';
 
-class NodeWallet {
-  constructor(readonly payer: Keypair) { }
-  get publicKey() { return (this.payer as any).publicKey; }
-  async signTransaction(tx: any) { tx.sign(this.payer); return tx; }
-  async signAllTransactions(txs: any[]) { txs.forEach(t => t.sign(this.payer)); return txs; }
-}
-
-function loadKeypairFromEnv(): Keypair {
-  // Try multiple env vars for flexibility
-  const raw = process.env.PAYER_SECRET_KEY || process.env['SOLANA_PRIVATE_KEY'] || '';
-  
-  if (!raw) {
-    console.warn('[Anchor Client] No private key found in env (PAYER_SECRET_KEY or SOLANA_PRIVATE_KEY). Using dummy keypair for read-only operations.');
-    // @ts-ignore
-    return Keypair.generate();
-  }
-
-  try {
-    const arr = raw.trim().startsWith('[') ? JSON.parse(raw) : raw.split(',').map(n => parseInt(n, 10));
-    if (!Array.isArray(arr) || !arr.length) throw new Error('Invalid key format');
-    return Keypair.fromSecretKey(Uint8Array.from(arr));
-  } catch (error) {
-    console.warn('[Anchor Client] Failed to parse private key. Using dummy keypair for read-only operations.');
-    // @ts-ignore
-    return Keypair.generate();
-  }
-}
+// ============================================================================
+// READ-ONLY BLOCKCHAIN QUERIES (No wallet required)
+// ============================================================================
 
 function loadIdl(): Idl {
   const idlPath = process.env.PIR8_IDL_PATH || path.join(process.cwd(), 'programs/pir8-game/target/idl/pir8_game.json');
@@ -46,7 +22,7 @@ function loadIdl(): Idl {
   } catch (e) {
     console.warn('[Anchor Client] Failed to load IDL from file, using fallback/empty IDL');
   }
-  
+
   // Fallback: try public/idl
   const publicIdlPath = path.join(process.cwd(), 'public/idl/pir8_game.json');
   try {
@@ -57,25 +33,24 @@ function loadIdl(): Idl {
   } catch (e) {
     console.warn('[Anchor Client] Failed to load IDL from public/idl');
   }
-  
+
   throw new Error(`IDL not found at ${idlPath} or ${publicIdlPath}`);
 }
 
 export async function getAnchorClient(): Promise<{ program: Program; provider: AnchorProvider }> {
   const rpcUrl = SOLANA_CONFIG.RPC_URL || 'https://api.devnet.solana.com';
   const connection = new Connection(rpcUrl, 'confirmed');
-  const payer = loadKeypairFromEnv();
-  const wallet = new NodeWallet(payer) as any;
-  const provider = new AnchorProvider(connection, wallet, { commitment: 'confirmed' });
+
+  // Read-only provider - no wallet needed for queries
+  const provider = new AnchorProvider(connection, {} as any, { commitment: 'confirmed' });
 
   try {
     const idl = loadIdl();
     const programId = SOLANA_CONFIG.PROGRAM_ID ? new PublicKey(SOLANA_CONFIG.PROGRAM_ID) : PROGRAM_ID;
-    console.log('[Anchor Client] Loading program:', programId.toString());
+    console.log('[Anchor Client] Loading program for read-only access:', programId.toString());
 
-    // Anchor 0.29: Program(idl, programId, provider)
     const program = new Program(idl as Idl, programId, provider);
-    console.log('[Anchor Client] Program loaded successfully');
+    console.log('[Anchor Client] Program loaded successfully (read-only)');
     return { program, provider };
   } catch (error) {
     console.error('[Anchor Client] Error loading program:', error);
@@ -83,87 +58,12 @@ export async function getAnchorClient(): Promise<{ program: Program; provider: A
   }
 }
 
-export async function initializeGlobalGame(): Promise<string> {
-  const { program, provider } = await getAnchorClient();
-  const [gamePDA] = getGlobalGamePDA(PROGRAM_ID);
-
-  await (program as any).methods
-    .initializeGame(new BN(Date.now()))
-    .accounts({
-      game: gamePDA,
-      authority: (provider as any).wallet.publicKey,
-      systemProgram: (SystemProgram as any).programId,
-    })
-    .rpc();
-
-  console.log('Global game initialized:', gamePDA.toString());
-  return gamePDA.toString();
-}
-
-export async function joinGlobalGame(): Promise<void> {
-  const { program, provider } = await getAnchorClient();
-  const [gamePDA] = getGlobalGamePDA(PROGRAM_ID);
-
-  // Check if player is already in the game to avoid 500 errors
-  try {
-    const gameState = await (program as any).account.pirateGame.fetch(gamePDA);
-    const playerPubkey = (provider as any).wallet.publicKey.toString();
-
-    const isAlreadyJoined = gameState.players.some(
-      (p: any) => p.pubkey.toString() === playerPubkey
-    );
-
-    if (isAlreadyJoined) {
-      console.log('Player already in global game, skipping transaction');
-      return;
-    }
-  } catch (e) {
-    // Game might not exist yet, proceed to try joining (which will fail with specific error if so)
-    console.log('Could not fetch game state, proceeding with join...');
-  }
-
-  await (program as any).methods
-    .joinGame()
-    .accounts({
-      game: gamePDA,
-      player: (provider as any).wallet.publicKey,
-      systemProgram: (SystemProgram as any).programId,
-    })
-    .rpc();
-
-  console.log('Joined global game');
-}
-
-export async function startGlobalGame(): Promise<void> {
-  const { program, provider } = await getAnchorClient();
-  const [gamePDA] = getGlobalGamePDA(PROGRAM_ID);
-
-  await (program as any).methods
-    .startGame()
-    .accounts({
-      game: gamePDA,
-      authority: (provider as any).wallet.publicKey,
-    })
-    .rpc();
-
-  console.log('Game started');
-}
-
-export async function resetGlobalGame(): Promise<void> {
-  // Note: resetGame might not exist in our IDL, so we'll skip this function for now
-  // or implement a different approach if needed
-  console.log('Game reset function - may need implementation adjustment');
-}
-
 export async function fetchGlobalGameState(): Promise<any> {
   const { program } = await getAnchorClient();
   const [gamePDA] = getGlobalGamePDA(PROGRAM_ID);
 
   try {
-    // Account name is camelCase in Anchor
     const rawState = await (program as any).account.pirateGame.fetch(gamePDA);
-
-    // Sanitize the data for Client Components
     return sanitizeSolanaData(rawState);
   } catch (error) {
     console.log('Game not initialized yet');
@@ -207,107 +107,61 @@ function sanitizeSolanaData(data: any): any {
 }
 
 // ============================================================================
-// GAMEPLAY INSTRUCTIONS
+// DEPRECATED: Server-side transactions are anti-pattern in Web3
+// These functions should be moved to client-side with user wallet signing
 // ============================================================================
 
+// DEPRECATED: Use client-side transaction building instead
+export async function initializeGlobalGame(): Promise<string> {
+  throw new Error('DEPRECATED: Server should not execute user transactions. Use client-side wallet signing.');
+}
+
+// DEPRECATED: Use client-side transaction building instead
+export async function joinGlobalGame(): Promise<void> {
+  throw new Error('DEPRECATED: Server should not execute user transactions. Use client-side wallet signing.');
+}
+
+// DEPRECATED: Use client-side transaction building instead
+export async function startGlobalGame(): Promise<void> {
+  throw new Error('DEPRECATED: Server should not execute user transactions. Use client-side wallet signing.');
+}
+
+// DEPRECATED: Use client-side transaction building instead
 export async function moveShip(
   shipId: string,
   toX: number,
   toY: number
 ): Promise<string> {
-  const { program, provider } = await getAnchorClient();
-  const [gamePDA] = getGlobalGamePDA(PROGRAM_ID);
-
-  const tx = await (program as any).methods
-    .moveShip(shipId, toX, toY)
-    .accounts({
-      game: gamePDA,
-      player: (provider as any).wallet.publicKey,
-    })
-    .rpc();
-
-  console.log('Ship moved:', tx);
-  return tx;
+  throw new Error('DEPRECATED: Server should not execute user transactions. Use client-side wallet signing.');
 }
 
+// DEPRECATED: Use client-side transaction building instead
 export async function attackShip(
   attackerShipId: string,
   targetShipId: string
 ): Promise<string> {
-  const { program, provider } = await getAnchorClient();
-  const [gamePDA] = getGlobalGamePDA(PROGRAM_ID);
-
-  const tx = await (program as any).methods
-    .attackShip(attackerShipId, targetShipId)
-    .accounts({
-      game: gamePDA,
-      player: (provider as any).wallet.publicKey,
-    })
-    .rpc();
-
-  console.log('Ship attacked:', tx);
-  return tx;
+  throw new Error('DEPRECATED: Server should not execute user transactions. Use client-side wallet signing.');
 }
 
+// DEPRECATED: Use client-side transaction building instead
 export async function claimTerritory(x: number, y: number): Promise<string> {
-  const { program, provider } = await getAnchorClient();
-  const [gamePDA] = getGlobalGamePDA(PROGRAM_ID);
-
-  const tx = await (program as any).methods
-    .claimTerritory(x, y)
-    .accounts({
-      game: gamePDA,
-      player: (provider as any).wallet.publicKey,
-    })
-    .rpc();
-
-  console.log('Territory claimed:', tx);
-  return tx;
+  throw new Error('DEPRECATED: Server should not execute user transactions. Use client-side wallet signing.');
 }
 
+// DEPRECATED: Use client-side transaction building instead
 export async function collectResources(x: number, y: number): Promise<string> {
-  const { program, provider } = await getAnchorClient();
-  const [gamePDA] = getGlobalGamePDA(PROGRAM_ID);
-
-  const tx = await (program as any).methods
-    .collectResources(x, y)
-    .accounts({
-      game: gamePDA,
-      player: (provider as any).wallet.publicKey,
-    })
-    .rpc();
-
-  console.log('Resources collected:', tx);
-  return tx;
+  throw new Error('DEPRECATED: Server should not execute user transactions. Use client-side wallet signing.');
 }
 
+// DEPRECATED: Use client-side transaction building instead
 export async function buildShip(
   shipType: 'sloop' | 'frigate' | 'galleon' | 'flagship'
 ): Promise<string> {
-  const { program, provider } = await getAnchorClient();
-  const [gamePDA] = getGlobalGamePDA(PROGRAM_ID);
-
-  const tx = await (program as any).methods
-    .buildShip(shipType)
-    .accounts({
-      game: gamePDA,
-      player: (provider as any).wallet.publicKey,
-    })
-    .rpc();
-
-  console.log('Ship built:', tx);
-  return tx;
-}
-
-export async function checkAndCompleteGame(): Promise<string> {
-  // Note: checkAndCompleteGame might not exist in our IDL, so we'll skip this function for now
-  // or implement a different approach if needed
-  console.log('Victory check function - may need implementation adjustment');
-  return '';
+  throw new Error('DEPRECATED: Server should not execute user transactions. Use client-side wallet signing.');
 }
 
 // ============================================================================
-// ZCASH BRIDGE INTEGRATION
+// ZCASH BRIDGE INTEGRATION (Special case - privacy requires server processing)
 // ============================================================================
 
 export async function joinGamePrivateViaZcash(params: {
@@ -316,57 +170,15 @@ export async function joinGamePrivateViaZcash(params: {
   zcashTxHash?: string;
   blockHeight?: number;
 }): Promise<string> {
-  const { program } = await getAnchorClient();
-  const [gamePDA] = getGlobalGamePDA(PROGRAM_ID);
-
-  console.log('[Zcash Bridge] Executing private join for:', {
+  // NOTE: This is a special case where server processing is required for privacy
+  // The Zcash memo contains the user's intent, but server executes to maintain privacy
+  console.log('[Zcash Bridge] Privacy-preserving join requested:', {
     gameId: params.gameId,
     player: params.solanaPubkey,
     zcashTx: params.zcashTxHash,
   });
 
-  try {
-    // Convert the Zcash-provided pubkey to Solana PublicKey
-    const playerPubkey = new PublicKey(params.solanaPubkey);
-
-    // Check if player is already in the game
-    try {
-      const gameState = await (program as any).account.pirateGame.fetch(gamePDA);
-      const isAlreadyJoined = gameState.players.some(
-        (p: any) => p.pubkey.toString() === params.solanaPubkey
-      );
-
-      if (isAlreadyJoined) {
-        console.log('[Zcash Bridge] Player already in game, skipping transaction');
-        return 'already_joined';
-      }
-    } catch (e) {
-      console.log('[Zcash Bridge] Could not fetch game state, proceeding with join...');
-    }
-
-    // Execute join_game instruction with the player from Zcash memo
-    const tx = await (program as any).methods
-      .joinGame()
-      .accounts({
-        game: gamePDA,
-        player: playerPubkey,
-        systemProgram: (SystemProgram as any).programId,
-      })
-      .rpc();
-
-    console.log('[Zcash Bridge] Private join successful:', tx);
-
-    // Log the cross-chain transaction for audit trail
-    console.log('[Zcash Bridge] Cross-chain entry recorded:', {
-      solanaTx: tx,
-      zcashTx: params.zcashTxHash,
-      blockHeight: params.blockHeight,
-      player: params.solanaPubkey,
-    });
-
-    return tx;
-  } catch (error) {
-    console.error('[Zcash Bridge] Private join failed:', error);
-    throw new Error(`Private join failed: ${error instanceof Error ? error.message : 'Unknown error'}`);
-  }
+  // TODO: Implement proper Zcash bridge with privacy-preserving server execution
+  // This is the ONLY legitimate use case for server-side transactions
+  throw new Error('Zcash bridge not yet implemented - requires privacy-preserving server execution');
 }

@@ -36,10 +36,11 @@ export function WalletContextProvider({
     // Suppress ethereum provider conflicts in AI vs AI mode
     if (
       error.message.includes("ethereum") ||
-      error.message.includes("provider")
+      error.message.includes("provider") ||
+      error.message.includes("detect-metamask")
     ) {
       console.warn(
-        "Ethereum provider conflict detected - continuing without wallet",
+        "Provider conflict detected - continuing without wallet",
       );
       return;
     }
