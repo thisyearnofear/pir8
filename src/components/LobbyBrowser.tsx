@@ -33,13 +33,17 @@ export default function LobbyBrowser() {
     setIsCreating(true);
     try {
       // Use proper client-side transaction building
-      const { initializeGame, joinGame } = await import("@/lib/client/transactionBuilder");
+      const { initializeGame, joinGame, createWalletAdapter } = await import("@/lib/client/transactionBuilder");
 
       console.log(`Creating game with seed: ${newGameId}`);
-      const initTx = await initializeGame(wallet);
+
+      // Create a wallet adapter compatible object
+      const walletAdapter = createWalletAdapter({ ...wallet, publicKey });
+
+      const initTx = await initializeGame(walletAdapter);
       console.log('Game initialized:', initTx);
 
-      const joinTx = await joinGame(wallet);
+      const joinTx = await joinGame(walletAdapter);
       console.log('Joined game:', joinTx);
 
       setShowCreateModal(false);
@@ -61,10 +65,14 @@ export default function LobbyBrowser() {
     setIsJoining(true);
     try {
       // Use proper client-side transaction building
-      const { joinGame } = await import("@/lib/client/transactionBuilder");
+      const { joinGame, createWalletAdapter } = await import("@/lib/client/transactionBuilder");
 
       console.log(`Joining lobby: ${lobbyAddress}`);
-      const joinTx = await joinGame(wallet);
+
+      // Create a wallet adapter compatible object
+      const walletAdapter = createWalletAdapter({ ...wallet, publicKey });
+
+      const joinTx = await joinGame(walletAdapter);
       console.log('Joined lobby:', joinTx);
 
       // TODO: Update UI to show the joined game state

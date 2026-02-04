@@ -260,10 +260,11 @@ export const usePirateGameState = create<PirateGameStore>((set, get) => ({
     wallet: any,
   ): Promise<GameState | null> => {
     try {
-      const { fetchGameState } = await import(
+      const { fetchGameState, createWalletAdapter } = await import(
         "../lib/client/transactionBuilder"
       );
-      const onChainState = await fetchGameState(wallet);
+      const walletAdapter = createWalletAdapter(wallet);
+      const onChainState = await fetchGameState(walletAdapter);
       if (!onChainState) return null;
 
       // Transform on-chain to local (Aggressive Consolidation: use shared mapper)

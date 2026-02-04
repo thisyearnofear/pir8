@@ -389,15 +389,18 @@ export default function Home() {
 
     try {
       // Use proper client-side transaction building
-      const { initializeGame, joinGame } = await import("@/lib/client/transactionBuilder");
+      const { initializeGame, joinGame, createWalletAdapter } = await import("@/lib/client/transactionBuilder");
+
+      // Create a wallet adapter compatible object
+      const walletAdapter = createWalletAdapter({ ...wallet, publicKey });
 
       // Initialize a new game with user's wallet
       console.log(`Creating ${mode} game...`);
-      const txSignature = await initializeGame(wallet);
+      const txSignature = await initializeGame(walletAdapter);
       console.log('Game initialized:', txSignature);
 
       // Join the game we just created
-      const joinTxSignature = await joinGame(wallet);
+      const joinTxSignature = await joinGame(walletAdapter);
       console.log('Joined game:', joinTxSignature);
 
       handleGameEvent(`🏴‍☠️ ${mode} Arena created! Waiting for opponents...`);
@@ -442,10 +445,13 @@ export default function Home() {
 
     try {
       // Use proper client-side transaction building
-      const { joinGame } = await import("@/lib/client/transactionBuilder");
+      const { joinGame, createWalletAdapter } = await import("@/lib/client/transactionBuilder");
+
+      // Create a wallet adapter compatible object
+      const walletAdapter = createWalletAdapter({ ...wallet, publicKey });
 
       console.log(`Joining game: ${gameIdInput}`);
-      const txSignature = await joinGame(wallet);
+      const txSignature = await joinGame(walletAdapter);
       console.log('Joined game:', txSignature);
 
       handleGameEvent(`🏴‍☠️ Joined battle ${gameIdInput}!`);
@@ -1160,8 +1166,9 @@ export default function Home() {
                     if (!wallet) return;
                     setIsCreatingGame(true);
                     try {
-                      const { startGame } = await import("@/lib/client/transactionBuilder");
-                      const txSignature = await startGame(wallet);
+                      const { startGame, createWalletAdapter } = await import("@/lib/client/transactionBuilder");
+                      const walletAdapter = createWalletAdapter({ ...wallet, publicKey });
+                      const txSignature = await startGame(walletAdapter);
                       console.log('Game started:', txSignature);
                       handleGameEvent("🏴‍☠️ Battle Started! Hoist the colors!");
                     } catch (error) {
@@ -1220,8 +1227,9 @@ export default function Home() {
                   if (!wallet) return;
                   setIsCreatingGame(true);
                   try {
-                    const { startGame } = await import("@/lib/client/transactionBuilder");
-                    const txSignature = await startGame(wallet);
+                    const { startGame, createWalletAdapter } = await import("@/lib/client/transactionBuilder");
+                    const walletAdapter = createWalletAdapter({ ...wallet, publicKey });
+                    const txSignature = await startGame(walletAdapter);
                     console.log('Game started:', txSignature);
                     handleGameEvent("🏴‍☠️ Battle Started! Hoist the colors!");
                   } catch (error) {

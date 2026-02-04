@@ -17,6 +17,28 @@ import type { WalletAdapter } from "@coral-xyz/anchor";
 // Import IDL - we'll need to generate this after building the contract
 let cachedIdl: Idl | null = null;
 
+// Helper function to create a wallet adapter compatible object from useWallet hook
+export const createWalletAdapter = (wallet: any, publicKey?: any): WalletAdapter => {
+    // Handle different wallet object structures
+    const actualPublicKey = publicKey || wallet?.publicKey || wallet?.adapter?.publicKey;
+    const signTransaction = wallet?.signTransaction || wallet?.adapter?.signTransaction;
+    const signAllTransactions = wallet?.signAllTransactions || wallet?.adapter?.signAllTransactions;
+
+    if (!actualPublicKey) {
+        throw new Error("Wallet not connected - no public key found");
+    }
+
+    if (!signTransaction) {
+        throw new Error("Wallet not connected - no signTransaction method found");
+    }
+
+    return {
+        publicKey: actualPublicKey,
+        signTransaction: signTransaction.bind(wallet?.adapter || wallet),
+        signAllTransactions: signAllTransactions?.bind(wallet?.adapter || wallet),
+    } as WalletAdapter;
+};
+
 async function getIdl(): Promise<Idl> {
     if (cachedIdl) return cachedIdl;
 
