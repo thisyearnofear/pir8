@@ -396,11 +396,12 @@ export default function Home() {
 
       // Initialize a new game with user's wallet
       console.log(`Creating ${mode} game...`);
-      const txSignature = await initializeGame(walletAdapter);
+      const gameId = Date.now();
+      const txSignature = await initializeGame(walletAdapter, gameId, mode);
       console.log('Game initialized:', txSignature);
 
       // Join the game we just created
-      const joinTxSignature = await joinGame(walletAdapter);
+      const joinTxSignature = await joinGame(walletAdapter, gameId);
       console.log('Joined game:', joinTxSignature);
 
       handleGameEvent(`🏴‍☠️ ${mode} Arena created! Waiting for opponents...`);

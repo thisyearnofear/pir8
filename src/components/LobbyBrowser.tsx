@@ -33,24 +33,37 @@ export default function LobbyBrowser() {
     setIsCreating(true);
     try {
       // Use proper client-side transaction building
-      const { initializeGame, joinGame, createWalletAdapter } = await import("@/lib/client/transactionBuilder");
+      const { initializeGame, joinGame, createWalletAdapter, testProgramConnection } = await import("@/lib/client/transactionBuilder");
 
       console.log(`Creating game with seed: ${newGameId}`);
 
       // Create a wallet adapter compatible object
       const walletAdapter = createWalletAdapter({ ...wallet, publicKey });
 
-      const initTx = await initializeGame(walletAdapter);
-      console.log('Game initialized:', initTx);
+      // Test program connection first
+      console.log('Testing program connection...');
+      const programConnected = await testProgramConnection(walletAdapter);
+      if (!programConnected) {
+        throw new Error('Program not found or not deployed. Please check the program ID and network.');
+      }
+      console.log('Program connection successful');
 
-      const joinTx = await joinGame(walletAdapter);
-      console.log('Joined game:', joinTx);
+      console.log('Step 1: Initializing game...');
+      const initTx = await initializeGame(walletAdapter, newGameId, 'Casual');
+      console.log('Game initialized successfully:', initTx);
+
+      console.log('Step 2: Joining game...');
+      const joinTx = await joinGame(walletAdapter, newGameId);
+      console.log('Joined game successfully:', joinTx);
 
       setShowCreateModal(false);
+      console.log('Game creation completed successfully');
       // TODO: Update UI to show the new game state
 
     } catch (error) {
       console.error('Failed to create game:', error);
+      // Show user-friendly error message
+      alert(`Failed to create game: ${error instanceof Error ? error.message : 'Unknown error'}`);
     } finally {
       setIsCreating(false);
     }

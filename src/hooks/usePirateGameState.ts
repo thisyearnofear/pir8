@@ -225,9 +225,18 @@ export const usePirateGameState = create<PirateGameStore>((set, get) => ({
       }
 
       const { Connection, PublicKey } = await import("@solana/web3.js");
-      const connection = new Connection(
-        SOLANA_CONFIG.RPC_URL || "https://api.devnet.solana.com",
-      );
+
+      // Try Helius first, fallback to default devnet RPC
+      let connection;
+      try {
+        connection = new Connection(
+          SOLANA_CONFIG.RPC_URL || "https://api.devnet.solana.com",
+          "confirmed"
+        );
+      } catch (rpcError) {
+        console.warn("Failed to connect to Helius, using default devnet RPC");
+        connection = new Connection("https://api.devnet.solana.com", "confirmed");
+      }
 
       try {
         const programId = new PublicKey(SOLANA_CONFIG.PROGRAM_ID);
@@ -492,15 +501,16 @@ export const usePirateGameState = create<PirateGameStore>((set, get) => ({
   // Claim territory
   claimTerritory: async (
     gameId: number,
-    _shipId: string,
+    shipId: string,
     wallet: any,
   ): Promise<boolean> => {
     try {
       set({ isLoading: true, error: null });
-      const { claimTerritory } = await import(
+      const { claimTerritory, createWalletAdapter } = await import(
         "../lib/client/transactionBuilder"
       );
-      await claimTerritory(wallet, 0, 0); // TODO: Fix coordinates
+      const walletAdapter = createWalletAdapter(wallet);
+      await claimTerritory(walletAdapter, shipId);
 
       const state = await get().fetchGameState(gameId, wallet);
       if (state) set({ gameState: state });
@@ -516,10 +526,11 @@ export const usePirateGameState = create<PirateGameStore>((set, get) => ({
   collectResources: async (gameId: number, wallet: any): Promise<boolean> => {
     try {
       set({ isLoading: true, error: null });
-      const { collectResources } = await import(
+      const { collectResources, createWalletAdapter } = await import(
         "../lib/client/transactionBuilder"
       );
-      await collectResources(wallet, 0, 0); // TODO: Fix coordinates
+      const walletAdapter = createWalletAdapter(wallet);
+      await collectResources(walletAdapter);
 
       const state = await get().fetchGameState(gameId, wallet);
       if (state) set({ gameState: state });
@@ -535,14 +546,15 @@ export const usePirateGameState = create<PirateGameStore>((set, get) => ({
   buildShip: async (
     gameId: number,
     shipType: string,
-    _portX: number,
-    _portY: number,
+    portX: number,
+    portY: number,
     wallet: any,
   ): Promise<boolean> => {
     try {
       set({ isLoading: true, error: null });
-      const { buildShip } = await import("../lib/client/transactionBuilder");
-      await buildShip(wallet, shipType as 'sloop' | 'frigate' | 'galleon' | 'flagship');
+      const { buildShip, createWalletAdapter } = await import("../lib/client/transactionBuilder");
+      const walletAdapter = createWalletAdapter(wallet);
+      await buildShip(walletAdapter, shipType as 'sloop' | 'frigate' | 'galleon' | 'flagship', portX, portY);
 
       const state = await get().fetchGameState(gameId, wallet);
       if (state) set({ gameState: state });

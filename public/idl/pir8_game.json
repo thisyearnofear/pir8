@@ -3,7 +3,72 @@
   "name": "pir8_game",
   "instructions": [
     {
-      "name": "initializeGame",
+      "name": "registerAgent",
+      "accounts": [
+        {
+          "name": "agent",
+          "isMut": true,
+          "isSigner": false
+        },
+        {
+          "name": "owner",
+          "isMut": true,
+          "isSigner": true
+        },
+        {
+          "name": "systemProgram",
+          "isMut": false,
+          "isSigner": false
+        }
+      ],
+      "args": [
+        {
+          "name": "name",
+          "type": "string"
+        },
+        {
+          "name": "version",
+          "type": "string"
+        },
+        {
+          "name": "twitter",
+          "type": {
+            "option": "string"
+          }
+        },
+        {
+          "name": "website",
+          "type": {
+            "option": "string"
+          }
+        }
+      ]
+    },
+    {
+      "name": "delegateAgentControl",
+      "accounts": [
+        {
+          "name": "agent",
+          "isMut": true,
+          "isSigner": false
+        },
+        {
+          "name": "owner",
+          "isMut": false,
+          "isSigner": true
+        }
+      ],
+      "args": [
+        {
+          "name": "delegate",
+          "type": {
+            "option": "publicKey"
+          }
+        }
+      ]
+    },
+    {
+      "name": "createGame",
       "accounts": [
         {
           "name": "game",
@@ -21,7 +86,18 @@
           "isSigner": false
         }
       ],
-      "args": []
+      "args": [
+        {
+          "name": "gameId",
+          "type": "u64"
+        },
+        {
+          "name": "mode",
+          "type": {
+            "defined": "GameMode"
+          }
+        }
+      ]
     },
     {
       "name": "joinGame",
@@ -59,6 +135,202 @@
         }
       ],
       "args": []
+    },
+    {
+      "name": "moveShip",
+      "accounts": [
+        {
+          "name": "game",
+          "isMut": true,
+          "isSigner": false
+        },
+        {
+          "name": "player",
+          "isMut": false,
+          "isSigner": true
+        }
+      ],
+      "args": [
+        {
+          "name": "shipId",
+          "type": "string"
+        },
+        {
+          "name": "toX",
+          "type": "u8"
+        },
+        {
+          "name": "toY",
+          "type": "u8"
+        },
+        {
+          "name": "decisionTimeMs",
+          "type": {
+            "option": "u64"
+          }
+        }
+      ]
+    },
+    {
+      "name": "attackShip",
+      "accounts": [
+        {
+          "name": "game",
+          "isMut": true,
+          "isSigner": false
+        },
+        {
+          "name": "player",
+          "isMut": false,
+          "isSigner": true
+        }
+      ],
+      "args": [
+        {
+          "name": "attackerShipId",
+          "type": "string"
+        },
+        {
+          "name": "targetShipId",
+          "type": "string"
+        }
+      ]
+    },
+    {
+      "name": "claimTerritory",
+      "accounts": [
+        {
+          "name": "game",
+          "isMut": true,
+          "isSigner": false
+        },
+        {
+          "name": "player",
+          "isMut": false,
+          "isSigner": true
+        }
+      ],
+      "args": [
+        {
+          "name": "shipId",
+          "type": "string"
+        }
+      ]
+    },
+    {
+      "name": "collectResources",
+      "accounts": [
+        {
+          "name": "game",
+          "isMut": true,
+          "isSigner": false
+        },
+        {
+          "name": "player",
+          "isMut": false,
+          "isSigner": true
+        }
+      ],
+      "args": []
+    },
+    {
+      "name": "buildShip",
+      "accounts": [
+        {
+          "name": "game",
+          "isMut": true,
+          "isSigner": false
+        },
+        {
+          "name": "player",
+          "isMut": false,
+          "isSigner": true
+        }
+      ],
+      "args": [
+        {
+          "name": "shipType",
+          "type": {
+            "defined": "ShipType"
+          }
+        },
+        {
+          "name": "portX",
+          "type": "u8"
+        },
+        {
+          "name": "portY",
+          "type": "u8"
+        }
+      ]
+    },
+    {
+      "name": "scanCoordinate",
+      "accounts": [
+        {
+          "name": "game",
+          "isMut": true,
+          "isSigner": false
+        },
+        {
+          "name": "player",
+          "isMut": false,
+          "isSigner": true
+        }
+      ],
+      "args": [
+        {
+          "name": "coordinateX",
+          "type": "u8"
+        },
+        {
+          "name": "coordinateY",
+          "type": "u8"
+        }
+      ]
+    },
+    {
+      "name": "endTurn",
+      "accounts": [
+        {
+          "name": "game",
+          "isMut": true,
+          "isSigner": false
+        },
+        {
+          "name": "player",
+          "isMut": false,
+          "isSigner": true
+        }
+      ],
+      "args": []
+    },
+    {
+      "name": "checkAndCompleteGame",
+      "accounts": [
+        {
+          "name": "game",
+          "isMut": true,
+          "isSigner": false
+        }
+      ],
+      "args": []
+    },
+    {
+      "name": "resetGame",
+      "accounts": [
+        {
+          "name": "game",
+          "isMut": true,
+          "isSigner": false
+        },
+        {
+          "name": "authority",
+          "isMut": false,
+          "isSigner": true
+        }
+      ],
+      "args": []
     }
   ],
   "accounts": [
@@ -67,6 +339,10 @@
       "type": {
         "kind": "struct",
         "fields": [
+          {
+            "name": "gameId",
+            "type": "u64"
+          },
           {
             "name": "authority",
             "type": "publicKey"
@@ -78,7 +354,57 @@
             }
           },
           {
+            "name": "mode",
+            "type": {
+              "defined": "GameMode"
+            }
+          },
+          {
             "name": "playerCount",
+            "type": "u8"
+          },
+          {
+            "name": "currentPlayerIndex",
+            "type": "u8"
+          },
+          {
+            "name": "turnNumber",
+            "type": "u32"
+          },
+          {
+            "name": "createdAt",
+            "type": "i64"
+          },
+          {
+            "name": "startedAt",
+            "type": {
+              "option": "i64"
+            }
+          },
+          {
+            "name": "completedAt",
+            "type": {
+              "option": "i64"
+            }
+          },
+          {
+            "name": "winner",
+            "type": {
+              "option": "publicKey"
+            }
+          },
+          {
+            "name": "weatherType",
+            "type": {
+              "defined": "WeatherType"
+            }
+          },
+          {
+            "name": "weatherDuration",
+            "type": "u8"
+          },
+          {
+            "name": "bump",
             "type": "u8"
           },
           {
@@ -88,6 +414,64 @@
                 "defined": "PlayerData"
               }
             }
+          },
+          {
+            "name": "territoryMap",
+            "type": {
+              "vec": {
+                "defined": "TerritoryCell"
+              }
+            }
+          }
+        ]
+      }
+    },
+    {
+      "name": "AgentRegistry",
+      "type": {
+        "kind": "struct",
+        "fields": [
+          {
+            "name": "owner",
+            "type": "publicKey"
+          },
+          {
+            "name": "delegate",
+            "type": {
+              "option": "publicKey"
+            }
+          },
+          {
+            "name": "name",
+            "type": "string"
+          },
+          {
+            "name": "version",
+            "type": "string"
+          },
+          {
+            "name": "twitter",
+            "type": {
+              "option": "string"
+            }
+          },
+          {
+            "name": "website",
+            "type": {
+              "option": "string"
+            }
+          },
+          {
+            "name": "gamesPlayed",
+            "type": "u64"
+          },
+          {
+            "name": "wins",
+            "type": "u64"
+          },
+          {
+            "name": "lastActive",
+            "type": "i64"
           }
         ]
       }
@@ -107,6 +491,72 @@
           },
           {
             "name": "Completed"
+          }
+        ]
+      }
+    },
+    {
+      "name": "GameMode",
+      "type": {
+        "kind": "enum",
+        "variants": [
+          {
+            "name": "Casual"
+          },
+          {
+            "name": "Competitive"
+          },
+          {
+            "name": "AgentArena"
+          }
+        ]
+      }
+    },
+    {
+      "name": "WeatherType",
+      "type": {
+        "kind": "enum",
+        "variants": [
+          {
+            "name": "Calm"
+          },
+          {
+            "name": "TradeWinds"
+          },
+          {
+            "name": "Storm"
+          },
+          {
+            "name": "Fog"
+          }
+        ]
+      }
+    },
+    {
+      "name": "TerritoryCellType",
+      "type": {
+        "kind": "enum",
+        "variants": [
+          {
+            "name": "Water"
+          },
+          {
+            "name": "Island"
+          },
+          {
+            "name": "Port"
+          },
+          {
+            "name": "Treasure"
+          },
+          {
+            "name": "Storm"
+          },
+          {
+            "name": "Reef"
+          },
+          {
+            "name": "Whirlpool"
           }
         ]
       }
@@ -133,6 +583,42 @@
                 "defined": "ShipData"
               }
             }
+          },
+          {
+            "name": "controlledTerritories",
+            "type": {
+              "vec": "string"
+            }
+          },
+          {
+            "name": "totalScore",
+            "type": "u32"
+          },
+          {
+            "name": "isActive",
+            "type": "bool"
+          },
+          {
+            "name": "scanCharges",
+            "type": "u8"
+          },
+          {
+            "name": "scannedCoordinates",
+            "type": {
+              "vec": "u8"
+            }
+          },
+          {
+            "name": "speedBonusAccumulated",
+            "type": "u64"
+          },
+          {
+            "name": "averageDecisionTimeMs",
+            "type": "u64"
+          },
+          {
+            "name": "totalMoves",
+            "type": "u8"
           }
         ]
       }
@@ -181,12 +667,52 @@
             "type": "u32"
           },
           {
+            "name": "maxHealth",
+            "type": "u32"
+          },
+          {
+            "name": "attack",
+            "type": "u32"
+          },
+          {
+            "name": "defense",
+            "type": "u32"
+          },
+          {
+            "name": "speed",
+            "type": "u32"
+          },
+          {
             "name": "positionX",
             "type": "u8"
           },
           {
             "name": "positionY",
             "type": "u8"
+          },
+          {
+            "name": "lastActionTurn",
+            "type": "u32"
+          }
+        ]
+      }
+    },
+    {
+      "name": "TerritoryCell",
+      "type": {
+        "kind": "struct",
+        "fields": [
+          {
+            "name": "cellType",
+            "type": {
+              "defined": "TerritoryCellType"
+            }
+          },
+          {
+            "name": "owner",
+            "type": {
+              "option": "publicKey"
+            }
           }
         ]
       }
