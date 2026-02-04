@@ -8,9 +8,9 @@ declare module 'zustand' {
     subscribe: (listener: (state: T, prevState: T) => void) => () => void;
     destroy: () => void;
   }
-  
+
   export function create<T>(initializer: (set: (partial: Partial<T> | ((state: T) => Partial<T>), replace?: boolean) => void, get: () => T, api: StoreApi<T>) => T): StoreApi<T>;
-  
+
   export default create;
 }
 
@@ -27,7 +27,7 @@ declare module '@coral-xyz/anchor' {
       address: string;
     };
   }
-  
+
   export interface WalletAdapter {
     publicKey: PublicKey | null;
     signTransaction(tx: Transaction): Promise<Transaction>;
@@ -35,24 +35,24 @@ declare module '@coral-xyz/anchor' {
     connect(): Promise<void>;
     disconnect(): Promise<void>;
   }
-  
+
   export interface ConfirmOptions {
     commitment?: 'processed' | 'confirmed' | 'finalized';
     preflightCommitment?: 'processed' | 'confirmed' | 'finalized';
     skipPreflight?: boolean;
   }
-  
+
   export interface MethodBuilder {
     accounts: (accounts: Record<string, PublicKey | any>) => MethodBuilder;
     rpc: (options?: any) => Promise<string>;
     simulate: (options?: any) => Promise<any>;
     view: () => Promise<any>;
   }
-  
+
   export interface MethodsNamespace {
     [key: string]: (...args: any[]) => MethodBuilder;
   }
-  
+
   export class Program<T = Idl> {
     constructor(idl: T, programId: PublicKey, provider: AnchorProvider);
     readonly programId: PublicKey;
@@ -60,11 +60,11 @@ declare module '@coral-xyz/anchor' {
     readonly provider: AnchorProvider;
     methods: MethodsNamespace;
   }
-  
+
   export class AnchorProvider {
     constructor(
-      connection: Connection, 
-      wallet: WalletAdapter, 
+      connection: Connection,
+      wallet: WalletAdapter,
       opts: ConfirmOptions
     );
     readonly connection: Connection;
@@ -72,7 +72,7 @@ declare module '@coral-xyz/anchor' {
     readonly opts: ConfirmOptions;
     publicKey: PublicKey;
   }
-  
+
   export class BN {
     constructor(number: number | string | BN);
     toNumber(): number;
@@ -83,11 +83,11 @@ declare module '@coral-xyz/anchor' {
     mul(other: BN): BN;
     div(other: BN): BN;
   }
-  
+
   export namespace web3 {
     export { Connection, PublicKey, Transaction };
   }
-  
+
   export namespace utils {
     export namespace rpc {
       export function confirmTransaction(
@@ -101,7 +101,7 @@ declare module '@coral-xyz/anchor' {
 
 declare module '@solana/web3.js' {
   export type Commitment = 'processed' | 'confirmed' | 'finalized' | 'recent' | 'single' | 'singleGossip' | 'root' | 'max';
-  
+
   export class Connection {
     constructor(endpoint: string, commitment?: Commitment);
     getBalance(publicKey: PublicKey, commitment?: Commitment): Promise<number>;
@@ -110,7 +110,7 @@ declare module '@solana/web3.js' {
     sendTransaction(transaction: Transaction, signers?: any[], options?: any): Promise<string>;
     confirmTransaction(signature: string, commitment?: Commitment): Promise<any>;
   }
-  
+
   export class PublicKey {
     constructor(value: string | Uint8Array | number[]);
     static findProgramAddressSync(seeds: (Buffer | Uint8Array)[], programId: PublicKey): [PublicKey, number];
@@ -118,28 +118,28 @@ declare module '@solana/web3.js' {
     toBytes(): Uint8Array;
     equals(other: PublicKey): boolean;
   }
-  
+
   export class SystemProgram {
     static programId: PublicKey;
   }
-  
+
   export class Transaction {
     constructor(options?: { feePayer?: PublicKey; recentBlockhash?: string });
     add(...instructions: TransactionInstruction[]): Transaction;
     sign(...signers: any[]): void;
     serialize(): Buffer;
   }
-  
+
   export class TransactionInstruction {
     constructor(options: { keys: any[]; programId: PublicKey; data?: Buffer });
   }
-  
+
   export class Keypair {
     static fromSecretKey(secretKey: Uint8Array): Keypair;
     publicKey: PublicKey;
     secretKey: Uint8Array;
   }
-  
+
   export function clusterApiUrl(cluster: 'devnet' | 'testnet' | 'mainnet-beta'): string;
 }
 
@@ -177,7 +177,6 @@ declare namespace NodeJS {
     NEXT_PUBLIC_LOG_LEVEL?: string;
     NEXT_PUBLIC_LIGHTWALLETD_URL?: string;
     NEXT_PUBLIC_ZCASH_SHIELDED_ADDR?: string;
-    PAYER_SECRET_KEY?: string;
     PIR8_IDL_PATH?: string;
     NEXT_PUBLIC_PROGAM_ID?: string;
   }
@@ -188,7 +187,7 @@ declare var process: {
 };
 
 declare var Buffer: {
-  new (str: string, encoding?: string): Uint8Array;
+  new(str: string, encoding?: string): Uint8Array;
   from(input: string | Uint8Array, encoding?: string): Uint8Array;
   alloc(size: number): Uint8Array;
   allocUnsafe(size: number): Uint8Array;

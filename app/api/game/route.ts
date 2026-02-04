@@ -1,7 +1,7 @@
-import { NextRequest, NextResponse } from 'next/server';
+import { NextResponse } from 'next/server';
 import { fetchGlobalGameState } from '@/lib/server/anchorActions';
 
-export async function GET(request: NextRequest) {
+export async function GET() {
     try {
         const gameState = await fetchGlobalGameState();
         return NextResponse.json({
@@ -20,7 +20,7 @@ export async function GET(request: NextRequest) {
     }
 }
 
-export async function POST(request: NextRequest) {
+export async function POST() {
     return NextResponse.json(
         {
             error: 'Server-side transactions are deprecated. Use client-side wallet signing.',

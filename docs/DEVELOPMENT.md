@@ -35,7 +35,10 @@ pir8/
 │   │
 │   ├── lib/                 # Core libraries
 │   │   ├── integrations.ts  # Helius/Pump/Zcash
-│   │   ├── anchorClient.ts  # Anchor program client
+│   │   ├── client/          # Client-side blockchain interactions
+│   │   │   └── transactionBuilder.ts  # User wallet transactions
+│   │   ├── server/          # Server-side read-only operations
+│   │   │   └── anchorActions.ts  # Blockchain queries only
 │   │   ├── gameLogic.ts     # Game rules engine
 │   │   └── pirateGameEngine.ts
 │   │
@@ -145,16 +148,21 @@ pub mod pir8_game {
 
 4. **Update Frontend Client**:
 ```typescript
-// src/lib/anchorClient.ts
-async newInstruction() {
-  return await this.program.methods
+// src/lib/client/transactionBuilder.ts
+import { buildMoveShipTx, executeTransaction } from '@/lib/client/transactionBuilder';
+
+async function newInstruction(wallet: WalletAdapter) {
+  const program = await getClientProgram(wallet);
+  const tx = await program.methods
     .newInstruction()
     .accounts({ 
       game: gamePDA,
       player: wallet.publicKey,
       systemProgram: SystemProgram.programId,
     })
-    .rpc();
+    .transaction();
+  
+  return await executeTransaction(wallet, tx);
 }
 ```
 
@@ -275,24 +283,28 @@ Write integration tests for:
 
 ```typescript
 // tests/integration/gameFlow.test.ts
-import { initializeGame, joinGame, makeMove } from '@/lib/anchorClient';
+import { initializeGame, joinGame, moveShip } from '@/lib/client/transactionBuilder';
 
 describe('Full Game Flow', () => {
   test('should complete a full game from start to finish', async () => {
-    const game = await initializeGame();
-    const player1 = await joinGame(game.id);
-    const player2 = await joinGame(game.id);
+    const wallet1 = mockWallet();
+    const wallet2 = mockWallet();
+    
+    // Initialize and join game
+    await initializeGame(wallet1);
+    await joinGame(wallet1);
+    await joinGame(wallet2);
     
     // Start game
-    await startGame(game.id);
+    await startGame(wallet1);
     
-    // Play through turns
-    await makeMove(player1.shipId, { x: 1, y: 1 });
-    await makeMove(player2.shipId, { x: 1, y: 2 });
+    // Play through turns (users sign their own transactions)
+    await moveShip(wallet1, 'ship1', 1, 1);
+    await moveShip(wallet2, 'ship2', 1, 2);
     
-    // Verify game state updates
-    const finalState = await getGameState(game.id);
-    expect(finalState.currentPlayer).toBe(player2.id);
+    // Verify game state updates (read-only server query)
+    const finalState = await fetchGlobalGameState();
+    expect(finalState.currentPlayerIndex).toBe(1);
   });
 });
 ```

@@ -64,7 +64,7 @@ export const buildInitializeGameTx = async (
     const program = await getClientProgram(wallet);
     const [gamePDA] = getGlobalGamePDA(PROGRAM_ID);
 
-    return await program.methods
+    return await (program as any).methods
         .initializeGame(new BN(Date.now()))
         .accounts({
             game: gamePDA,
@@ -80,7 +80,7 @@ export const buildJoinGameTx = async (
     const program = await getClientProgram(wallet);
     const [gamePDA] = getGlobalGamePDA(PROGRAM_ID);
 
-    return await program.methods
+    return await (program as any).methods
         .joinGame()
         .accounts({
             game: gamePDA,
@@ -96,7 +96,7 @@ export const buildStartGameTx = async (
     const program = await getClientProgram(wallet);
     const [gamePDA] = getGlobalGamePDA(PROGRAM_ID);
 
-    return await program.methods
+    return await (program as any).methods
         .startGame()
         .accounts({
             game: gamePDA,
@@ -114,7 +114,7 @@ export const buildMoveShipTx = async (
     const program = await getClientProgram(wallet);
     const [gamePDA] = getGlobalGamePDA(PROGRAM_ID);
 
-    return await program.methods
+    return await (program as any).methods
         .moveShip(shipId, toX, toY)
         .accounts({
             game: gamePDA,
@@ -131,7 +131,7 @@ export const buildAttackShipTx = async (
     const program = await getClientProgram(wallet);
     const [gamePDA] = getGlobalGamePDA(PROGRAM_ID);
 
-    return await program.methods
+    return await (program as any).methods
         .attackShip(attackerShipId, targetShipId)
         .accounts({
             game: gamePDA,
@@ -148,7 +148,7 @@ export const buildClaimTerritoryTx = async (
     const program = await getClientProgram(wallet);
     const [gamePDA] = getGlobalGamePDA(PROGRAM_ID);
 
-    return await program.methods
+    return await (program as any).methods
         .claimTerritory(x, y)
         .accounts({
             game: gamePDA,
@@ -165,7 +165,7 @@ export const buildCollectResourcesTx = async (
     const program = await getClientProgram(wallet);
     const [gamePDA] = getGlobalGamePDA(PROGRAM_ID);
 
-    return await program.methods
+    return await (program as any).methods
         .collectResources(x, y)
         .accounts({
             game: gamePDA,
@@ -181,7 +181,7 @@ export const buildBuildShipTx = async (
     const program = await getClientProgram(wallet);
     const [gamePDA] = getGlobalGamePDA(PROGRAM_ID);
 
-    return await program.methods
+    return await (program as any).methods
         .buildShip(shipType)
         .accounts({
             game: gamePDA,
@@ -209,14 +209,14 @@ export const executeTransaction = async (
 
     // Get recent blockhash
     const { blockhash } = await connection.getLatestBlockhash();
-    transaction.recentBlockhash = blockhash;
-    transaction.feePayer = wallet.publicKey;
+    (transaction as any).recentBlockhash = blockhash;
+    (transaction as any).feePayer = wallet.publicKey;
 
     // Sign transaction with user's wallet
     const signedTx = await wallet.signTransaction!(transaction);
 
     // Send and confirm transaction
-    const signature = await connection.sendRawTransaction(signedTx.serialize());
+    const signature = await connection.sendTransaction(signedTx);
     await connection.confirmTransaction(signature, "confirmed");
 
     return signature;
@@ -284,4 +284,70 @@ export const buildShip = async (
 ): Promise<string> => {
     const tx = await buildBuildShipTx(wallet, shipType);
     return await executeTransaction(wallet, tx);
+};
+
+// ============================================================================
+// ADDITIONAL GAME FUNCTIONS (for compatibility with existing game state)
+// ============================================================================
+
+export const endTurn = async (wallet: WalletAdapter): Promise<string> => {
+    const program = await getClientProgram(wallet);
+    const [gamePDA] = getGlobalGamePDA(PROGRAM_ID);
+
+    const tx = await (program as any).methods
+        .endTurn()
+        .accounts({
+            game: gamePDA,
+            player: wallet.publicKey!,
+        })
+        .transaction();
+
+    return await executeTransaction(wallet, tx);
+};
+
+export const scanCoordinate = async (
+    wallet: WalletAdapter,
+    x: number,
+    y: number,
+): Promise<string> => {
+    const program = await getClientProgram(wallet);
+    const [gamePDA] = getGlobalGamePDA(PROGRAM_ID);
+
+    const tx = await (program as any).methods
+        .scanCoordinate(x, y)
+        .accounts({
+            game: gamePDA,
+            player: wallet.publicKey!,
+        })
+        .transaction();
+
+    return await executeTransaction(wallet, tx);
+};
+
+// ============================================================================
+// READ-ONLY FUNCTIONS (for fetching game state)
+// ============================================================================
+
+export const fetchGameState = async (wallet: WalletAdapter): Promise<any> => {
+    const program = await getClientProgram(wallet);
+    const [gamePDA] = getGlobalGamePDA(PROGRAM_ID);
+
+    try {
+        const gameState = await (program as any).account.pirateGame.fetch(gamePDA);
+        return gameState;
+    } catch (error) {
+        console.log('Game not initialized yet');
+        return null;
+    }
+};
+
+export const fetchLobbies = async (wallet: WalletAdapter): Promise<any[]> => {
+    try {
+        const program = await getClientProgram(wallet);
+        const games = await (program as any).account.pirateGame.all();
+        return games;
+    } catch (e) {
+        console.warn('Error fetching lobbies:', e);
+        return [];
+    }
 };

@@ -10,10 +10,12 @@ import { usePirateGameState } from '@/hooks/usePirateGameState';
 import { useSafeWallet } from '@/components/SafeWalletProvider';
 
 export default function LobbyBrowser() {
-  const { lobbies, fetchLobbies, isLoading, joinGame, createGame } = usePirateGameState();
-  const { publicKey } = useSafeWallet();
+  const { lobbies, fetchLobbies, isLoading } = usePirateGameState();
+  const { publicKey, wallet } = useSafeWallet();
   const [showCreateModal, setShowCreateModal] = useState(false);
   const [newGameId, setNewGameId] = useState<number>(Math.floor(Math.random() * 1000));
+  const [isCreating, setIsCreating] = useState(false);
+  const [isJoining, setIsJoining] = useState(false);
 
   useEffect(() => {
     if (!publicKey) return;
@@ -23,12 +25,55 @@ export default function LobbyBrowser() {
   }, [fetchLobbies, publicKey]);
 
   const handleCreate = async () => {
-    if (!publicKey) {
+    if (!publicKey || !wallet) {
       console.warn('Wallet not connected');
       return;
     }
-    const success = await createGame(newGameId, [], 0.1, publicKey);
-    if (success) setShowCreateModal(false);
+
+    setIsCreating(true);
+    try {
+      // Use proper client-side transaction building
+      const { initializeGame, joinGame } = await import("@/lib/client/transactionBuilder");
+
+      console.log(`Creating game with seed: ${newGameId}`);
+      const initTx = await initializeGame(wallet);
+      console.log('Game initialized:', initTx);
+
+      const joinTx = await joinGame(wallet);
+      console.log('Joined game:', joinTx);
+
+      setShowCreateModal(false);
+      // TODO: Update UI to show the new game state
+
+    } catch (error) {
+      console.error('Failed to create game:', error);
+    } finally {
+      setIsCreating(false);
+    }
+  };
+
+  const handleJoinLobby = async (lobbyAddress: string) => {
+    if (!publicKey || !wallet) {
+      console.warn('Wallet not connected');
+      return;
+    }
+
+    setIsJoining(true);
+    try {
+      // Use proper client-side transaction building
+      const { joinGame } = await import("@/lib/client/transactionBuilder");
+
+      console.log(`Joining lobby: ${lobbyAddress}`);
+      const joinTx = await joinGame(wallet);
+      console.log('Joined lobby:', joinTx);
+
+      // TODO: Update UI to show the joined game state
+
+    } catch (error) {
+      console.error('Failed to join lobby:', error);
+    } finally {
+      setIsJoining(false);
+    }
   };
 
   return (
@@ -84,10 +129,11 @@ export default function LobbyBrowser() {
                   <div className="w-8 h-8 rounded-full bg-slate-700 border-2 border-slate-900 flex items-center justify-center text-xs">👤</div>
                 </div>
                 <button
-                  onClick={() => joinGame(lobby.address, {} as any, {})}
-                  className="bg-neon-cyan hover:bg-neon-blue text-black font-bold py-1.5 px-4 rounded-lg text-sm transition-colors"
+                  onClick={() => handleJoinLobby(lobby.address)}
+                  disabled={isJoining}
+                  className="bg-neon-cyan hover:bg-neon-blue text-black font-bold py-1.5 px-4 rounded-lg text-sm transition-colors disabled:opacity-50"
                 >
-                  BOARD SHIP
+                  {isJoining ? 'BOARDING...' : 'BOARD SHIP'}
                 </button>
               </div>
             </div>
@@ -124,9 +170,10 @@ export default function LobbyBrowser() {
               </button>
               <button
                 onClick={handleCreate}
-                className="flex-1 py-3 bg-gradient-to-r from-neon-gold to-neon-orange text-black font-bold rounded-xl hover:scale-105 active:scale-95 transition-all shadow-lg shadow-neon-gold/20"
+                disabled={isCreating}
+                className="flex-1 py-3 bg-gradient-to-r from-neon-gold to-neon-orange text-black font-bold rounded-xl hover:scale-105 active:scale-95 transition-all shadow-lg shadow-neon-gold/20 disabled:opacity-50"
               >
-                START BATTLE
+                {isCreating ? 'SPAWNING...' : 'START BATTLE'}
               </button>
             </div>
           </div>

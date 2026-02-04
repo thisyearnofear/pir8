@@ -128,34 +128,34 @@ export async function startGlobalGame(): Promise<void> {
 
 // DEPRECATED: Use client-side transaction building instead
 export async function moveShip(
-  shipId: string,
-  toX: number,
-  toY: number
+  _shipId: string,
+  _toX: number,
+  _toY: number
 ): Promise<string> {
   throw new Error('DEPRECATED: Server should not execute user transactions. Use client-side wallet signing.');
 }
 
 // DEPRECATED: Use client-side transaction building instead
 export async function attackShip(
-  attackerShipId: string,
-  targetShipId: string
+  _attackerShipId: string,
+  _targetShipId: string
 ): Promise<string> {
   throw new Error('DEPRECATED: Server should not execute user transactions. Use client-side wallet signing.');
 }
 
 // DEPRECATED: Use client-side transaction building instead
-export async function claimTerritory(x: number, y: number): Promise<string> {
+export async function claimTerritory(_x: number, _y: number): Promise<string> {
   throw new Error('DEPRECATED: Server should not execute user transactions. Use client-side wallet signing.');
 }
 
 // DEPRECATED: Use client-side transaction building instead
-export async function collectResources(x: number, y: number): Promise<string> {
+export async function collectResources(_x: number, _y: number): Promise<string> {
   throw new Error('DEPRECATED: Server should not execute user transactions. Use client-side wallet signing.');
 }
 
 // DEPRECATED: Use client-side transaction building instead
 export async function buildShip(
-  shipType: 'sloop' | 'frigate' | 'galleon' | 'flagship'
+  _shipType: 'sloop' | 'frigate' | 'galleon' | 'flagship'
 ): Promise<string> {
   throw new Error('DEPRECATED: Server should not execute user transactions. Use client-side wallet signing.');
 }

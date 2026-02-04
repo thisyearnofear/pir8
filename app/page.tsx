@@ -66,7 +66,6 @@ export default function Home() {
     averageDecisionTimeMs,
     joinGame,
     findOrCreateGame,
-    startGame,
     moveShip,
     attackWithShip,
     claimTerritory,
@@ -317,7 +316,7 @@ export default function Home() {
   useEffect(() => {
     if (isAIvsAIMode) {
       // Set dummy callback to enable reasoning generation in store
-      setAIDecisionCallback(() => {});
+      setAIDecisionCallback(() => { });
     } else {
       setAIDecisionCallback(null);
     }
@@ -389,15 +388,26 @@ export default function Home() {
     setJoinError(undefined);
 
     try {
-      const player = createPlayerFromWallet(publicKey);
-      const success = await findOrCreateGame(mode, player, wallet);
+      // Use proper client-side transaction building
+      const { initializeGame, joinGame } = await import("@/lib/client/transactionBuilder");
 
-      if (success) {
-        handleGameEvent(`🏴‍☠️ Entering ${mode} Arena...`);
-      }
+      // Initialize a new game with user's wallet
+      console.log(`Creating ${mode} game...`);
+      const txSignature = await initializeGame(wallet);
+      console.log('Game initialized:', txSignature);
+
+      // Join the game we just created
+      const joinTxSignature = await joinGame(wallet);
+      console.log('Joined game:', joinTxSignature);
+
+      handleGameEvent(`🏴‍☠️ ${mode} Arena created! Waiting for opponents...`);
+
+      // TODO: Update game state from blockchain
+      // For now, we'll need to implement proper state fetching
+
     } catch (error) {
-      console.error("Failed to enter arena:", error);
-      setJoinError("Failed to join battle arena");
+      console.error("Failed to create arena:", error);
+      setJoinError(error instanceof Error ? error.message : "Failed to create battle arena");
     } finally {
       setIsCreatingGame(false);
     }
@@ -431,16 +441,16 @@ export default function Home() {
     setJoinError(undefined);
 
     try {
-      const player = createPlayerFromWallet(publicKey);
-      const success = await joinGame(gameIdInput, player, wallet); // Pass wallet
+      // Use proper client-side transaction building
+      const { joinGame } = await import("@/lib/client/transactionBuilder");
 
-      if (success) {
-        handleGameEvent(`🏴‍☠️ Joined battle ${gameIdInput}!`);
-      } else {
-        setJoinError("Failed to join battle - invalid game ID or game full");
-      }
+      console.log(`Joining game: ${gameIdInput}`);
+      const txSignature = await joinGame(wallet);
+      console.log('Joined game:', txSignature);
 
-      return success;
+      handleGameEvent(`🏴‍☠️ Joined battle ${gameIdInput}!`);
+      return true;
+
     } catch (error) {
       console.error("Failed to join game:", error);
       setJoinError(
@@ -536,9 +546,9 @@ export default function Home() {
                 ship.health > 0 &&
                 Math.sqrt(
                   Math.pow(ship.position.x - selectedShip.position.x, 2) +
-                    Math.pow(ship.position.y - selectedShip.position.y, 2),
+                  Math.pow(ship.position.y - selectedShip.position.y, 2),
                 ) <=
-                  range * 1.5,
+                range * 1.5,
             );
 
             if (nearbyEnemies.length > 0) {
@@ -602,9 +612,9 @@ export default function Home() {
               ship.health > 0 &&
               Math.sqrt(
                 Math.pow(ship.position.x - selectedShipOnChain.position.x, 2) +
-                  Math.pow(ship.position.y - selectedShipOnChain.position.y, 2),
+                Math.pow(ship.position.y - selectedShipOnChain.position.y, 2),
               ) <=
-                range * 1.5,
+              range * 1.5,
           );
 
           if (nearbyEnemies.length > 0) {
@@ -850,11 +860,10 @@ export default function Home() {
                   <button
                     key={diff}
                     onClick={() => setSelectedDifficulty(diff)}
-                    className={`w-full p-4 rounded-xl border-2 transition-all text-left ${
-                      selectedDifficulty === diff
-                        ? "border-neon-cyan bg-neon-cyan/20"
-                        : "border-slate-600 hover:border-neon-cyan/50"
-                    }`}
+                    className={`w-full p-4 rounded-xl border-2 transition-all text-left ${selectedDifficulty === diff
+                      ? "border-neon-cyan bg-neon-cyan/20"
+                      : "border-slate-600 hover:border-neon-cyan/50"
+                      }`}
                   >
                     <div className="flex items-center justify-between">
                       <span className="font-bold capitalize">{diff}</span>
@@ -1126,8 +1135,8 @@ export default function Home() {
                   currentPlayerPK={
                     isPracticeMode()
                       ? gameState.players.find(
-                          (p: any) => !p.publicKey.startsWith("AI_"),
-                        )?.publicKey
+                        (p: any) => !p.publicKey.startsWith("AI_"),
+                      )?.publicKey
                       : publicKey?.toString()
                   }
                   isPracticeMode={isPracticeMode()}
@@ -1151,9 +1160,10 @@ export default function Home() {
                     if (!wallet) return;
                     setIsCreatingGame(true);
                     try {
-                      const success = await startGame(wallet);
-                      if (success)
-                        handleGameEvent("🏴‍☠️ Battle Started! Hoist the colors!");
+                      const { startGame } = await import("@/lib/client/transactionBuilder");
+                      const txSignature = await startGame(wallet);
+                      console.log('Game started:', txSignature);
+                      handleGameEvent("🏴‍☠️ Battle Started! Hoist the colors!");
                     } catch (error) {
                       handleGameError(error, "start game");
                     } finally {
@@ -1185,8 +1195,8 @@ export default function Home() {
                 currentPlayerPK={
                   isPracticeMode()
                     ? gameState.players.find(
-                        (p: any) => !p.publicKey.startsWith("AI_"),
-                      )?.publicKey
+                      (p: any) => !p.publicKey.startsWith("AI_"),
+                    )?.publicKey
                     : publicKey?.toString()
                 }
                 isPracticeMode={isPracticeMode()}
@@ -1210,9 +1220,10 @@ export default function Home() {
                   if (!wallet) return;
                   setIsCreatingGame(true);
                   try {
-                    const success = await startGame(wallet);
-                    if (success)
-                      handleGameEvent("🏴‍☠️ Battle Started! Hoist the colors!");
+                    const { startGame } = await import("@/lib/client/transactionBuilder");
+                    const txSignature = await startGame(wallet);
+                    console.log('Game started:', txSignature);
+                    handleGameEvent("🏴‍☠️ Battle Started! Hoist the colors!");
                   } catch (error) {
                     handleGameError(error, "start game");
                   } finally {
