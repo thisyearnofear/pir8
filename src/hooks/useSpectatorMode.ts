@@ -39,6 +39,7 @@ const generateMockGameState = (gameId: string): GameState => {
   const now = Date.now();
   return {
     gameId,
+    gameMode: 'Casual',
     players: [
       {
         publicKey: 'Player1...xyz',

@@ -176,6 +176,7 @@ export class PirateGameConverter {
   ): GameState {
     return {
       gameId,
+      gameMode: 'Casual',
       players: gameAccount.players.map(this.convertToFrontendPlayer),
       currentPlayerIndex: gameAccount.currentPlayerIndex,
       gameMap: {

@@ -130,7 +130,7 @@ export class PIR8AgentPlugin {
       },
       execute: async ({ gameId }) => {
         const [gamePDA] = getGamePDA(gameId);
-        
+
         const tx = await (this.program as any).methods
           .createGame(new BN(gameId))
           .accounts({
@@ -161,7 +161,7 @@ export class PIR8AgentPlugin {
       },
       execute: async ({ gameId }) => {
         const [gamePDA] = getGamePDA(gameId);
-        
+
         const tx = await (this.program as any).methods
           .joinGame()
           .accounts({
@@ -216,7 +216,7 @@ export class PIR8AgentPlugin {
       execute: async ({ gameId }) => {
         const [gamePDA] = getGamePDA(gameId);
         const rawState = await (this.program as any).account.pirateGame.fetch(gamePDA);
-        
+
         // Transform on-chain state to Engine-compatible state
         const gameState = this.mapOnChainToLocal(rawState as any, gameId.toString());
         const myPK = this.program.provider.publicKey!.toBase58();
@@ -229,7 +229,7 @@ export class PIR8AgentPlugin {
 
         // Use our battle-tested engine to decide
         const decision = PirateGameManager.generateAIDecision(gameState, me);
-        
+
         if (!decision.action) {
           return { success: true, action: 'pass', reason: "No advantageous moves found." };
         }
@@ -251,11 +251,11 @@ export class PIR8AgentPlugin {
             .rpc();
         }
 
-        return { 
-          success: true, 
-          action: type, 
+        return {
+          success: true,
+          action: type,
           reasoning: decision.reasoning.chosenOption?.reason,
-          signature: tx 
+          signature: tx
         };
       }
     };
@@ -267,6 +267,7 @@ export class PIR8AgentPlugin {
   private mapOnChainToLocal(onChain: any, gameId: string): GameState {
     return {
       gameId,
+      gameMode: 'Casual',
       players: onChain.players.map((p: any) => ({
         publicKey: p.pubkey.toBase58(),
         resources: p.resources,
