@@ -70,8 +70,15 @@ export default function LobbyBrowser() {
   };
 
   const handleJoinLobby = async (lobbyAddress: string, gameId?: number) => {
-    if (!publicKey || !wallet) {
-      console.warn('Wallet not connected');
+    // Check wallet connection with detailed logging
+    if (!publicKey) {
+      console.warn('Wallet publicKey not available');
+      alert('Please connect your wallet first. Click the wallet button in the top right.');
+      return;
+    }
+    if (!wallet) {
+      console.warn('Wallet adapter not available');
+      alert('Wallet not ready. Please wait a moment or refresh the page.');
       return;
     }
 
@@ -110,10 +117,13 @@ export default function LobbyBrowser() {
       const joinTx = await joinGame(walletAdapter, targetGameId);
       console.log('Joined lobby:', joinTx);
 
-      // TODO: Update UI to show the joined game state
+      // Refresh lobbies after successful join
+      await fetchLobbies(wallet);
 
     } catch (error) {
       console.error('Failed to join lobby:', error);
+      const errorMessage = error instanceof Error ? error.message : 'Unknown error';
+      alert(`Failed to join: ${errorMessage}`);
     } finally {
       setJoiningLobby(null);
     }
@@ -136,6 +146,29 @@ export default function LobbyBrowser() {
           + NEW ARENA
         </button>
       </div>
+
+      {/* Wallet not connected warning */}
+      {!publicKey && (
+        <div className="mb-6 p-4 bg-yellow-500/10 border border-yellow-500/30 rounded-xl flex items-center justify-between">
+          <div className="flex items-center gap-3">
+            <span className="text-2xl">⚠️</span>
+            <div>
+              <p className="text-yellow-400 font-bold">Wallet Not Connected</p>
+              <p className="text-yellow-400/70 text-sm">Connect your wallet to join battles</p>
+            </div>
+          </div>
+          <button
+            onClick={() => {
+              // Trigger wallet modal
+              const event = new CustomEvent('wallet-modal-open');
+              window.dispatchEvent(event);
+            }}
+            className="bg-yellow-500 hover:bg-yellow-400 text-black font-bold py-2 px-4 rounded-lg text-sm transition-colors"
+          >
+            Connect Wallet
+          </button>
+        </div>
+      )}
 
       {isLoading && lobbies.length === 0 ? (
         <div className="flex flex-col items-center py-12">
@@ -230,10 +263,12 @@ export default function LobbyBrowser() {
                 </div>
                 <button
                   onClick={() => handleJoinLobby(lobby.address, lobby.gameId)}
-                  disabled={!!joiningLobby || !isJoinable || isUserInGame}
+                  disabled={!!joiningLobby || !isJoinable || isUserInGame || !publicKey}
                   className="bg-neon-cyan hover:bg-neon-blue text-black font-bold py-1.5 px-4 rounded-lg text-sm transition-colors disabled:opacity-50"
                 >
-                  {joiningLobby === lobby.address
+                  {!publicKey
+                    ? 'CONNECT WALLET'
+                    : joiningLobby === lobby.address
                     ? 'BOARDING...'
                     : isUserInGame
                     ? isUserGameWaiting
