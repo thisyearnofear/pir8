@@ -2,6 +2,8 @@
 
 > **Strategic fleet warfare meets privacy-first blockchain technology**
 
+**✅ LIVE ON DEVNET**: `EeHyY2FQ3A4GLieZbGbmZtz1iLKzLytXkRcXyzGfmePt`
+
 A multiplayer pirate naval combat game built on Solana with Zcash shielded transactions. Command your fleet, dominate territories, and earn real rewards through skill-based competitive play.
 
 [![Solana](https://img.shields.io/badge/Solana-Devnet-9945FF)](https://solana.com)

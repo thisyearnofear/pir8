@@ -35,6 +35,9 @@ anchor deploy --provider.cluster devnet
 # Note the Program ID from the output
 ```
 
+**✅ DEPLOYED**: The contract is already deployed to devnet at:
+**Program ID**: `EeHyY2FQ3A4GLieZbGbmZtz1iLKzLytXkRcXyzGfmePt`
+
 ### 3. Update Environment Variables
 
 Create `.env.local`:
@@ -42,7 +45,7 @@ Create `.env.local`:
 ```bash
 # Solana Configuration
 NEXT_PUBLIC_SOLANA_NETWORK=devnet
-NEXT_PUBLIC_PROGRAM_ID=YOUR_DEPLOYED_PROGRAM_ID
+NEXT_PUBLIC_PROGRAM_ID=EeHyY2FQ3A4GLieZbGbmZtz1iLKzLytXkRcXyzGfmePt
 NEXT_PUBLIC_HELIUS_RPC_URL=https://devnet.helius-rpc.com/?api-key=YOUR_KEY
 
 # Zcash Privacy (Optional)

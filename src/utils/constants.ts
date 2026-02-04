@@ -17,7 +17,7 @@ export const SOLANA_CONFIG = {
   RPC_URL: process.env.NEXT_PUBLIC_HELIUS_RPC_URL,
   PROGRAM_ID:
     process.env.NEXT_PUBLIC_PROGRAM_ID ||
-    "54S7Pw6cDQKWqW4JkdTGb3vEQqtnHsZ3SvB3LB1fST2V",
+    "EeHyY2FQ3A4GLieZbGbmZtz1iLKzLytXkRcXyzGfmePt",
   TREASURY_ADDRESS: process.env.NEXT_PUBLIC_TREASURY_ADDRESS || "",
 } as const;
 
