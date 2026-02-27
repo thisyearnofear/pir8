@@ -10,7 +10,6 @@
 import { AnchorProvider, Program, Idl, BN } from "@coral-xyz/anchor";
 import { Connection, PublicKey, SystemProgram, Transaction } from "@solana/web3.js";
 import { SOLANA_CONFIG } from "@/utils/constants";
-import { getGlobalGamePDA } from "../anchorUtils";
 import { PROGRAM_ID } from "../anchor";
 import type { WalletAdapter } from "@coral-xyz/anchor";
 
