@@ -187,9 +187,12 @@ export default function LobbyBrowser() {
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
           {lobbies.map((lobby: any) => {
             // Determine if game is joinable
-            const statusKey = lobby.status ? Object.keys(lobby.status)[0] : 'unknown';
-            const isWaiting = statusKey === 'waitingForPlayers';
-            const hasSpace = lobby.playerCount < lobby.maxPlayers;
+            // Anchor enums come back as objects like { waiting: {} } or { active: {} }
+            const statusKey = lobby.status ? Object.keys(lobby.status)[0]?.toLowerCase() : 'unknown';
+            const isWaiting = statusKey === 'waiting';
+            // maxPlayers isn't stored on-chain, use constant from GAME_CONFIG (default 4)
+            const maxPlayers = lobby.maxPlayers || 4;
+            const hasSpace = lobby.playerCount < maxPlayers;
             const isJoinable = isWaiting && hasSpace;
 
             // Check if current user is already in this game
@@ -229,7 +232,7 @@ export default function LobbyBrowser() {
                     {isUserGameWaiting
                       ? 'Awaiting Opponent...'
                       : isWaiting
-                      ? `Waiting (${lobby.playerCount}/${lobby.maxPlayers})`
+                      ? `Waiting (${lobby.playerCount}/${maxPlayers})`
                       : statusKey}
                   </div>
                 </div>
@@ -253,7 +256,7 @@ export default function LobbyBrowser() {
                       +{lobby.playerCount - 4}
                     </div>
                   )}
-                  {Array.from({ length: Math.max(0, (lobby.maxPlayers || 2) - lobby.playerCount) }).map((_, idx) => (
+                  {Array.from({ length: Math.max(0, maxPlayers - lobby.playerCount) }).map((_, idx) => (
                     <div
                       key={`empty-${idx}`}
                       className="w-8 h-8 rounded-full bg-slate-800/50 border-2 border-dashed border-slate-700 flex items-center justify-center text-xs text-slate-600"
