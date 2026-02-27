@@ -19,9 +19,16 @@ target/
 test-ledger/
 .solana/
 
-# IDE
+# IDE and AI coding assistants
 .vscode/
 .idea/
+.kiro/
+.qoder/
+.junie/
+.zencoder/
+.zenflow/
+.cursor/
+.windsurf/
 
 # OS
 .DS_Store
