@@ -59,19 +59,28 @@ export async function getAnchorClient(): Promise<{ program: Program; provider: A
 }
 
 export async function fetchGlobalGameState(gameId: number = 0): Promise<any> {
-  const { program } = await getAnchorClient();
-  const [gamePDA] = getGamePDA(gameId, PROGRAM_ID);
-
+  console.log(`[Anchor Client] Fetching game state for gameId: ${gameId}`);
   try {
-    const rawState = await (program as any).account.pirateGame.fetch(gamePDA);
-    return sanitizeSolanaData(rawState);
-  } catch (error: any) {
-    if (error.message && error.message.includes('Account does not exist')) {
-      console.log(`Game ${gameId} not initialized yet`);
-      return null;
+    const { program } = await getAnchorClient();
+    const programId = program.programId;
+    const [gamePDA] = getGamePDA(gameId, programId);
+    console.log(`[Anchor Client] Derived gamePDA: ${gamePDA.toBase58()} for gameId: ${gameId}`);
+
+    try {
+      const rawState = await (program as any).account.pirateGame.fetch(gamePDA);
+      console.log(`[Anchor Client] Successfully fetched state for game ${gameId}`);
+      return sanitizeSolanaData(rawState);
+    } catch (error: any) {
+      if (error.message && (error.message.includes('Account does not exist') || error.message.includes('could not find account'))) {
+        console.log(`[Anchor Client] Game ${gameId} account not found (PDA: ${gamePDA.toBase58()})`);
+        return null;
+      }
+      console.error(`[Anchor Client] Error fetching game state for ${gameId} (PDA: ${gamePDA.toBase58()}):`, error);
+      throw error;
     }
-    console.error(`Error fetching game state for ${gameId}:`, error);
-    throw error;
+  } catch (outerError: any) {
+    console.error(`[Anchor Client] Critical error in fetchGlobalGameState for ${gameId}:`, outerError);
+    throw outerError;
   }
 }
 
