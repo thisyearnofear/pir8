@@ -11,7 +11,8 @@ import { useSafeWallet } from '@/components/SafeWalletProvider';
 
 export default function LobbyBrowser() {
   const { lobbies, fetchLobbies, isLoading } = usePirateGameState();
-  const { publicKey, wallet } = useSafeWallet();
+  const fullWallet = useSafeWallet();
+  const { publicKey, wallet } = fullWallet;
   const [showCreateModal, setShowCreateModal] = useState(false);
   const [newGameId, setNewGameId] = useState<number>(Math.floor(Math.random() * 1000));
   const [isCreating, setIsCreating] = useState(false);
@@ -36,9 +37,9 @@ export default function LobbyBrowser() {
       const { initializeGame, joinGame, createWalletAdapter, testProgramConnection } = await import("@/lib/client/transactionBuilder");
 
       console.log(`Creating game with seed: ${newGameId}`);
-
+      
       // Create a wallet adapter compatible object
-      const walletAdapter = createWalletAdapter({ ...wallet, publicKey });
+      const walletAdapter = createWalletAdapter(fullWallet);
 
       // Test program connection first
       console.log('Testing program connection...');
@@ -99,7 +100,7 @@ export default function LobbyBrowser() {
       // If gameId not provided, fetch from chain
       if (!targetGameId) {
         console.log(`Fetching gameId from lobby: ${lobbyAddress}`);
-        const walletAdapter = createWalletAdapter({ ...wallet, publicKey });
+        const walletAdapter = createWalletAdapter(fullWallet);
         const program = await getClientProgram(walletAdapter);
         const gameAccount = await (program as any).account.pirateGame.fetchNullable(new PublicKey(lobbyAddress));
         if (!gameAccount) {
@@ -112,7 +113,7 @@ export default function LobbyBrowser() {
       console.log(`Joining lobby: ${lobbyAddress} with gameId: ${targetGameId}`);
 
       // Create a wallet adapter compatible object
-      const walletAdapter = createWalletAdapter({ ...wallet, publicKey });
+      const walletAdapter = createWalletAdapter(fullWallet);
 
       const joinTx = await joinGame(walletAdapter, targetGameId);
       console.log('Joined lobby:', joinTx);

@@ -19,16 +19,25 @@ let cachedIdl: Idl | null = null;
 
 // Helper function to create a wallet adapter compatible object from useWallet hook
 export const createWalletAdapter = (wallet: any, publicKey?: any): WalletAdapter => {
+    console.log('createWalletAdapter called with:', { 
+        hasWallet: !!wallet, 
+        hasPublicKeyArg: !!publicKey,
+        walletPublicKey: wallet?.publicKey?.toString(),
+        adapterPublicKey: wallet?.adapter?.publicKey?.toString()
+    });
+
     // Handle different wallet object structures
     const actualPublicKey = publicKey || wallet?.publicKey || wallet?.adapter?.publicKey;
     const signTransaction = wallet?.signTransaction || wallet?.adapter?.signTransaction;
     const signAllTransactions = wallet?.signAllTransactions || wallet?.adapter?.signAllTransactions;
 
     if (!actualPublicKey) {
+        console.error('createWalletAdapter: No public key found');
         throw new Error("Wallet not connected - no public key found");
     }
 
     if (!signTransaction) {
+        console.error('createWalletAdapter: No signTransaction method found');
         throw new Error("Wallet not connected - no signTransaction method found");
     }
 
@@ -68,7 +77,8 @@ async function getIdl(): Promise<Idl> {
 export const getClientProgram = async (
     wallet: WalletAdapter,
 ): Promise<Program> => {
-    if (!wallet.publicKey) {
+    if (!wallet || !wallet.publicKey) {
+        console.error('getClientProgram: Wallet or publicKey missing', { wallet: !!wallet, publicKey: !!wallet?.publicKey });
         throw new Error("Wallet not connected");
     }
 
@@ -144,7 +154,7 @@ export const getClientProgram = async (
         };
 
         try {
-            const testProgram = new Program(minimalIdl as any, programIdFromString, provider);
+            new Program(minimalIdl as any, programIdFromString, provider);
             console.log('Minimal IDL worked - issue is with the full IDL');
             throw new Error('IDL compatibility issue');
         } catch (minimalError) {
@@ -427,13 +437,14 @@ export const testProgramConnection = async (wallet: WalletAdapter): Promise<bool
 };
 
 export const initializeGame = async (
-    wallet: WalletAdapter,
+    wallet: any,
     gameId?: number,
     mode?: 'Casual' | 'Competitive' | 'AgentArena'
 ): Promise<string> => {
     try {
-        const tx = await buildInitializeGameTx(wallet, gameId, mode);
-        return await executeTransaction(wallet, tx);
+        const walletAdapter = createWalletAdapter(wallet);
+        const tx = await buildInitializeGameTx(walletAdapter, gameId, mode);
+        return await executeTransaction(walletAdapter, tx);
     } catch (error) {
         console.error('Failed to initialize game:', error);
         throw new Error(`Failed to initialize game: ${error instanceof Error ? error.message : 'Unknown error'}`);
@@ -441,12 +452,13 @@ export const initializeGame = async (
 };
 
 export const joinGame = async (
-    wallet: WalletAdapter,
+    wallet: any,
     gameId?: number
 ): Promise<string> => {
     try {
-        const tx = await buildJoinGameTx(wallet, gameId);
-        return await executeTransaction(wallet, tx);
+        const walletAdapter = createWalletAdapter(wallet);
+        const tx = await buildJoinGameTx(walletAdapter, gameId);
+        return await executeTransaction(walletAdapter, tx);
     } catch (error) {
         console.error('Failed to join game:', error);
         throw new Error(`Failed to join game: ${error instanceof Error ? error.message : 'Unknown error'}`);
@@ -454,12 +466,13 @@ export const joinGame = async (
 };
 
 export const startGame = async (
-    wallet: WalletAdapter,
+    wallet: any,
     gameId?: number
 ): Promise<string> => {
     try {
-        const tx = await buildStartGameTx(wallet, gameId);
-        return await executeTransaction(wallet, tx);
+        const walletAdapter = createWalletAdapter(wallet);
+        const tx = await buildStartGameTx(walletAdapter, gameId);
+        return await executeTransaction(walletAdapter, tx);
     } catch (error) {
         console.error('Failed to start game:', error);
         throw new Error(`Failed to start game: ${error instanceof Error ? error.message : 'Unknown error'}`);
@@ -467,85 +480,92 @@ export const startGame = async (
 };
 
 export const moveShip = async (
-    wallet: WalletAdapter,
+    wallet: any,
     shipId: string,
     toX: number,
     toY: number,
 ): Promise<string> => {
-    const tx = await buildMoveShipTx(wallet, shipId, toX, toY);
-    return await executeTransaction(wallet, tx);
+    const walletAdapter = createWalletAdapter(wallet);
+    const tx = await buildMoveShipTx(walletAdapter, shipId, toX, toY);
+    return await executeTransaction(walletAdapter, tx);
 };
 
 export const attackShip = async (
-    wallet: WalletAdapter,
+    wallet: any,
     attackerShipId: string,
     targetShipId: string,
 ): Promise<string> => {
-    const tx = await buildAttackShipTx(wallet, attackerShipId, targetShipId);
-    return await executeTransaction(wallet, tx);
+    const walletAdapter = createWalletAdapter(wallet);
+    const tx = await buildAttackShipTx(walletAdapter, attackerShipId, targetShipId);
+    return await executeTransaction(walletAdapter, tx);
 };
 
 export const claimTerritory = async (
-    wallet: WalletAdapter,
+    wallet: any,
     shipId: string,
 ): Promise<string> => {
-    const tx = await buildClaimTerritoryTx(wallet, shipId);
-    return await executeTransaction(wallet, tx);
+    const walletAdapter = createWalletAdapter(wallet);
+    const tx = await buildClaimTerritoryTx(walletAdapter, shipId);
+    return await executeTransaction(walletAdapter, tx);
 };
 
 export const collectResources = async (
-    wallet: WalletAdapter,
+    wallet: any,
 ): Promise<string> => {
-    const tx = await buildCollectResourcesTx(wallet);
-    return await executeTransaction(wallet, tx);
+    const walletAdapter = createWalletAdapter(wallet);
+    const tx = await buildCollectResourcesTx(walletAdapter);
+    return await executeTransaction(walletAdapter, tx);
 };
 
 export const buildShip = async (
-    wallet: WalletAdapter,
+    wallet: any,
     shipType: 'sloop' | 'frigate' | 'galleon' | 'flagship',
     portX: number,
     portY: number,
 ): Promise<string> => {
-    const tx = await buildBuildShipTx(wallet, shipType, portX, portY);
-    return await executeTransaction(wallet, tx);
+    const walletAdapter = createWalletAdapter(wallet);
+    const tx = await buildBuildShipTx(walletAdapter, shipType, portX, portY);
+    return await executeTransaction(walletAdapter, tx);
 };
 
 // ============================================================================
 // ADDITIONAL GAME FUNCTIONS (for compatibility with existing game state)
 // ============================================================================
 
-export const endTurn = async (wallet: WalletAdapter): Promise<string> => {
-    const program = await getClientProgram(wallet);
+export const endTurn = async (wallet: any): Promise<string> => {
+    const walletAdapter = createWalletAdapter(wallet);
+    const program = await getClientProgram(walletAdapter);
     const [gamePDA] = getGlobalGamePDA(PROGRAM_ID);
 
     const tx = await (program as any).methods
         .endTurn()
         .accounts({
             game: gamePDA,
-            player: wallet.publicKey!,
+            player: walletAdapter.publicKey!,
         })
         .transaction();
 
-    return await executeTransaction(wallet, tx);
+    return await executeTransaction(walletAdapter, tx);
 };
 
 export const scanCoordinate = async (
-    wallet: WalletAdapter,
+    wallet: any,
     x: number,
     y: number,
 ): Promise<string> => {
-    const program = await getClientProgram(wallet);
+    const walletAdapter = createWalletAdapter(wallet);
+    const program = await getClientProgram(walletAdapter);
     const [gamePDA] = getGlobalGamePDA(PROGRAM_ID);
 
     const tx = await (program as any).methods
         .scanCoordinate(x, y)
         .accounts({
             game: gamePDA,
-            player: wallet.publicKey!,
+            player: walletAdapter.publicKey!,
         })
         .transaction();
 
-    return await executeTransaction(wallet, tx);
+    return await executeTransaction(walletAdapter, tx);
 };
 
 // ============================================================================

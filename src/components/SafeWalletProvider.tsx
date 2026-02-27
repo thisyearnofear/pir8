@@ -12,6 +12,8 @@ interface SafeWalletContextType {
     connecting: boolean;
     disconnect: () => Promise<void>;
     connect: () => Promise<void>;
+    signTransaction?: (transaction: any) => Promise<any>;
+    signAllTransactions?: (transactions: any[]) => Promise<any[]>;
 }
 
 const defaultWalletContext: SafeWalletContextType = {
@@ -88,7 +90,7 @@ class WalletErrorBoundary extends React.Component<
 function SafeWalletWrapper({ children }: { children: React.ReactNode }) {
     // Now we can safely call useWallet because we're inside WalletContextProvider
     // If this throws (e.g. context missing), ErrorBoundary will catch it
-    const { publicKey, wallet, connected, connecting, disconnect, connect } = useWallet();
+    const { publicKey, wallet, connected, connecting, disconnect, connect, signTransaction, signAllTransactions } = useWallet();
 
     // Create a clean safe context object to prevent "read property on WalletContext" errors
     // caused by passing the raw full context object which might have internal library checks
@@ -98,7 +100,9 @@ function SafeWalletWrapper({ children }: { children: React.ReactNode }) {
         connected,
         connecting,
         disconnect,
-        connect
+        connect,
+        signTransaction,
+        signAllTransactions
     };
 
     return (
