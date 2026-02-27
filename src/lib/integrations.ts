@@ -4,6 +4,7 @@
  */
 
 import { SOLANA_CONFIG, API_ENDPOINTS, ZCASH_CONFIG } from "../utils/constants";
+import WebSocket from 'ws';
 
 // ENHANCED Helius Integration (based on helius-transaction-monitor.ts)
 export class HeliusMonitor {
@@ -65,7 +66,8 @@ export class HeliusMonitor {
 
     this.ws.onmessage = (event) => {
       try {
-        const data = JSON.parse(event.data);
+        const dataStr = typeof event.data === 'string' ? event.data : event.data.toString();
+        const data = JSON.parse(dataStr);
 
         // Filter and process PIR8 game events
         if (this.isPir8GameTransaction(data)) {
@@ -605,7 +607,8 @@ export class LightwalletdWatcher {
 
     this.ws.onmessage = (event) => {
       try {
-        const data = JSON.parse(event.data);
+        const dataStr = typeof event.data === 'string' ? event.data : event.data.toString();
+        const data = JSON.parse(dataStr);
         this.processZcashTransaction(data);
       } catch (error) {
         this.log("error", "Failed to parse Lightwalletd message");
