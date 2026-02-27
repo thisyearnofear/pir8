@@ -1,9 +1,12 @@
 import { NextResponse } from 'next/server';
 import { fetchGlobalGameState } from '@/lib/server/anchorActions';
 
-export async function GET() {
+export async function GET(request: Request) {
     try {
-        const gameState = await fetchGlobalGameState();
+        const { searchParams } = new URL(request.url);
+        const gameId = parseInt(searchParams.get('gameId') || '0', 10);
+        
+        const gameState = await fetchGlobalGameState(gameId);
         return NextResponse.json({
             success: true,
             gameState

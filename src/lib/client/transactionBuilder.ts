@@ -221,7 +221,7 @@ export const buildInitializeGameTx = async (
 
 export const buildJoinGameTx = async (
     wallet: WalletAdapter,
-    gameId: number = Date.now(),
+    gameId: number = 0,
 ): Promise<Transaction> => {
     const program = await getClientProgram(wallet);
     const [gamePDA] = getGamePDA(gameId);
@@ -238,7 +238,7 @@ export const buildJoinGameTx = async (
 
 export const buildStartGameTx = async (
     wallet: WalletAdapter,
-    gameId: number = Date.now(),
+    gameId: number = 0,
 ): Promise<Transaction> => {
     const program = await getClientProgram(wallet);
     const [gamePDA] = getGamePDA(gameId);
@@ -257,12 +257,13 @@ export const buildMoveShipTx = async (
     shipId: string,
     toX: number,
     toY: number,
+    gameId: number = 0,
 ): Promise<Transaction> => {
     const program = await getClientProgram(wallet);
-    const [gamePDA] = getGlobalGamePDA(PROGRAM_ID);
+    const [gamePDA] = getGamePDA(gameId);
 
     return await (program as any).methods
-        .moveShip(shipId, toX, toY)
+        .moveShip(shipId, toX, toY, null) // Added null for decisionTimeMs option
         .accounts({
             game: gamePDA,
             player: wallet.publicKey!,
@@ -274,9 +275,10 @@ export const buildAttackShipTx = async (
     wallet: WalletAdapter,
     attackerShipId: string,
     targetShipId: string,
+    gameId: number = 0,
 ): Promise<Transaction> => {
     const program = await getClientProgram(wallet);
-    const [gamePDA] = getGlobalGamePDA(PROGRAM_ID);
+    const [gamePDA] = getGamePDA(gameId);
 
     return await (program as any).methods
         .attackShip(attackerShipId, targetShipId)
@@ -290,9 +292,10 @@ export const buildAttackShipTx = async (
 export const buildClaimTerritoryTx = async (
     wallet: WalletAdapter,
     shipId: string,
+    gameId: number = 0,
 ): Promise<Transaction> => {
     const program = await getClientProgram(wallet);
-    const [gamePDA] = getGlobalGamePDA(PROGRAM_ID);
+    const [gamePDA] = getGamePDA(gameId);
 
     return await (program as any).methods
         .claimTerritory(shipId)
@@ -305,9 +308,10 @@ export const buildClaimTerritoryTx = async (
 
 export const buildCollectResourcesTx = async (
     wallet: WalletAdapter,
+    gameId: number = 0,
 ): Promise<Transaction> => {
     const program = await getClientProgram(wallet);
-    const [gamePDA] = getGlobalGamePDA(PROGRAM_ID);
+    const [gamePDA] = getGamePDA(gameId);
 
     return await (program as any).methods
         .collectResources()
@@ -323,12 +327,14 @@ export const buildBuildShipTx = async (
     shipType: 'sloop' | 'frigate' | 'galleon' | 'flagship',
     portX: number,
     portY: number,
+    gameId: number = 0,
 ): Promise<Transaction> => {
     const program = await getClientProgram(wallet);
-    const [gamePDA] = getGlobalGamePDA(PROGRAM_ID);
+    const [gamePDA] = getGamePDA(gameId);
 
-    // Convert shipType to the format expected by the program
-    const shipTypeEnum = { [shipType]: {} };
+    // Convert shipType to the format expected by the program (Capitalized variants)
+    const capitalizedShipType = shipType.charAt(0).toUpperCase() + shipType.slice(1);
+    const shipTypeEnum = { [capitalizedShipType]: {} };
 
     return await (program as any).methods
         .buildShip(shipTypeEnum, portX, portY)
@@ -484,9 +490,10 @@ export const moveShip = async (
     shipId: string,
     toX: number,
     toY: number,
+    gameId: number = 0,
 ): Promise<string> => {
     const walletAdapter = createWalletAdapter(wallet);
-    const tx = await buildMoveShipTx(walletAdapter, shipId, toX, toY);
+    const tx = await buildMoveShipTx(walletAdapter, shipId, toX, toY, gameId);
     return await executeTransaction(walletAdapter, tx);
 };
 
@@ -494,26 +501,29 @@ export const attackShip = async (
     wallet: any,
     attackerShipId: string,
     targetShipId: string,
+    gameId: number = 0,
 ): Promise<string> => {
     const walletAdapter = createWalletAdapter(wallet);
-    const tx = await buildAttackShipTx(walletAdapter, attackerShipId, targetShipId);
+    const tx = await buildAttackShipTx(walletAdapter, attackerShipId, targetShipId, gameId);
     return await executeTransaction(walletAdapter, tx);
 };
 
 export const claimTerritory = async (
     wallet: any,
     shipId: string,
+    gameId: number = 0,
 ): Promise<string> => {
     const walletAdapter = createWalletAdapter(wallet);
-    const tx = await buildClaimTerritoryTx(walletAdapter, shipId);
+    const tx = await buildClaimTerritoryTx(walletAdapter, shipId, gameId);
     return await executeTransaction(walletAdapter, tx);
 };
 
 export const collectResources = async (
     wallet: any,
+    gameId: number = 0,
 ): Promise<string> => {
     const walletAdapter = createWalletAdapter(wallet);
-    const tx = await buildCollectResourcesTx(walletAdapter);
+    const tx = await buildCollectResourcesTx(walletAdapter, gameId);
     return await executeTransaction(walletAdapter, tx);
 };
 
@@ -522,9 +532,10 @@ export const buildShip = async (
     shipType: 'sloop' | 'frigate' | 'galleon' | 'flagship',
     portX: number,
     portY: number,
+    gameId: number = 0,
 ): Promise<string> => {
     const walletAdapter = createWalletAdapter(wallet);
-    const tx = await buildBuildShipTx(walletAdapter, shipType, portX, portY);
+    const tx = await buildBuildShipTx(walletAdapter, shipType, portX, portY, gameId);
     return await executeTransaction(walletAdapter, tx);
 };
 
@@ -532,10 +543,10 @@ export const buildShip = async (
 // ADDITIONAL GAME FUNCTIONS (for compatibility with existing game state)
 // ============================================================================
 
-export const endTurn = async (wallet: any): Promise<string> => {
+export const endTurn = async (wallet: any, gameId: number = 0): Promise<string> => {
     const walletAdapter = createWalletAdapter(wallet);
     const program = await getClientProgram(walletAdapter);
-    const [gamePDA] = getGlobalGamePDA(PROGRAM_ID);
+    const [gamePDA] = getGamePDA(gameId);
 
     const tx = await (program as any).methods
         .endTurn()
@@ -552,10 +563,11 @@ export const scanCoordinate = async (
     wallet: any,
     x: number,
     y: number,
+    gameId: number = 0,
 ): Promise<string> => {
     const walletAdapter = createWalletAdapter(wallet);
     const program = await getClientProgram(walletAdapter);
-    const [gamePDA] = getGlobalGamePDA(PROGRAM_ID);
+    const [gamePDA] = getGamePDA(gameId);
 
     const tx = await (program as any).methods
         .scanCoordinate(x, y)
@@ -572,9 +584,9 @@ export const scanCoordinate = async (
 // READ-ONLY FUNCTIONS (for fetching game state)
 // ============================================================================
 
-export const fetchGameState = async (wallet: WalletAdapter): Promise<any> => {
+export const fetchGameState = async (wallet: WalletAdapter, gameId: number = 0): Promise<any> => {
     const program = await getClientProgram(wallet);
-    const [gamePDA] = getGlobalGamePDA(PROGRAM_ID);
+    const [gamePDA] = getGamePDA(gameId);
 
     try {
         const gameState = await (program as any).account.pirateGame.fetch(gamePDA);

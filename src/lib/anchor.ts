@@ -81,7 +81,7 @@ export const getConfigPDA = (): [PublicKey, number] => {
 export const getGamePDA = (gameId: number): [PublicKey, number] => {
   return PublicKey.findProgramAddressSync(
     [
-      Buffer.from('game'),
+      Buffer.from('pirate_game'),
       new BN(gameId).toArrayLike(Buffer, 'le', 8)
     ],
     PROGRAM_ID

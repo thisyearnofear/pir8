@@ -7,15 +7,18 @@ export const getGamePDA = (gameId: number | BN, programId: PublicKey): [PublicKe
         : gameId.toArrayLike(Buffer, 'le', 8);
 
     return PublicKey.findProgramAddressSync(
-        [Buffer.from("game"), idBuffer],
+        [Buffer.from("pirate_game"), idBuffer],
         programId
     );
 };
 
 // Deprecated: kept for backward compatibility if needed during migration
 export const getGlobalGamePDA = (programId: PublicKey): [PublicKey, number] => {
+    // NOTE: The program uses pirate_game + game_id. 
+    // This helper is for the "default" or "lobby" game if it exists (ID 0)
+    const idBuffer = new BN(0).toArrayLike(Buffer, 'le', 8);
     return PublicKey.findProgramAddressSync(
-        [Buffer.from("global_game")],
+        [Buffer.from("pirate_game"), idBuffer],
         programId
     );
 };

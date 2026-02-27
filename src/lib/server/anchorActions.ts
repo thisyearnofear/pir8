@@ -6,7 +6,7 @@ import fs from 'fs';
 import path from 'path';
 import { SOLANA_CONFIG } from '@/utils/constants';
 import { PROGRAM_ID } from '../anchor';
-import { getGlobalGamePDA } from '../anchorUtils';
+import { getGamePDA } from '../anchorUtils';
 
 // ============================================================================
 // READ-ONLY BLOCKCHAIN QUERIES (No wallet required)
@@ -58,16 +58,20 @@ export async function getAnchorClient(): Promise<{ program: Program; provider: A
   }
 }
 
-export async function fetchGlobalGameState(): Promise<any> {
+export async function fetchGlobalGameState(gameId: number = 0): Promise<any> {
   const { program } = await getAnchorClient();
-  const [gamePDA] = getGlobalGamePDA(PROGRAM_ID);
+  const [gamePDA] = getGamePDA(gameId, PROGRAM_ID);
 
   try {
     const rawState = await (program as any).account.pirateGame.fetch(gamePDA);
     return sanitizeSolanaData(rawState);
-  } catch (error) {
-    console.log('Game not initialized yet');
-    return null;
+  } catch (error: any) {
+    if (error.message && error.message.includes('Account does not exist')) {
+      console.log(`Game ${gameId} not initialized yet`);
+      return null;
+    }
+    console.error(`Error fetching game state for ${gameId}:`, error);
+    throw error;
   }
 }
 
