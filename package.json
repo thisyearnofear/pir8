@@ -16,6 +16,8 @@
     "anchor:build": "anchor build",
     "anchor:deploy": "anchor deploy --provider.cluster devnet",
     "anchor:test": "anchor test",
+    "anchor:sync-idl": "cp target/idl/pir8_game.json public/idl/pir8_game.json",
+    "verify:deployment": "node scripts/verify-deployment.js",
     "clean": "rm -rf .next out dist node_modules/.cache"
   },
   "dependencies": {

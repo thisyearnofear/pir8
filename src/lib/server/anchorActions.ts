@@ -13,17 +13,19 @@ import { getGamePDA } from '../anchorUtils';
 // ============================================================================
 
 function loadIdl(): Idl {
-  const idlPath = process.env.PIR8_IDL_PATH || path.join(process.cwd(), 'target/idl/pir8_game.json');
-  try {
-    if (fs.existsSync(idlPath)) {
-      const json = fs.readFileSync(idlPath, 'utf8');
-      return JSON.parse(json);
+  // Try custom path from env first
+  if (process.env.PIR8_IDL_PATH) {
+    try {
+      if (fs.existsSync(process.env.PIR8_IDL_PATH)) {
+        const json = fs.readFileSync(process.env.PIR8_IDL_PATH, 'utf8');
+        return JSON.parse(json);
+      }
+    } catch (e) {
+      console.warn('[Anchor Client] Failed to load IDL from PIR8_IDL_PATH');
     }
-  } catch (e) {
-    console.warn('[Anchor Client] Failed to load IDL from file, using fallback/empty IDL');
   }
 
-  // Fallback: try public/idl
+  // Try public/idl (production path) first
   const publicIdlPath = path.join(process.cwd(), 'public/idl/pir8_game.json');
   try {
     if (fs.existsSync(publicIdlPath)) {
@@ -34,7 +36,18 @@ function loadIdl(): Idl {
     console.warn('[Anchor Client] Failed to load IDL from public/idl');
   }
 
-  throw new Error(`IDL not found at ${idlPath} or ${publicIdlPath}`);
+  // Fallback: try target/idl (development path)
+  const devIdlPath = path.join(process.cwd(), 'target/idl/pir8_game.json');
+  try {
+    if (fs.existsSync(devIdlPath)) {
+      const json = fs.readFileSync(devIdlPath, 'utf8');
+      return JSON.parse(json);
+    }
+  } catch (e) {
+    console.warn('[Anchor Client] Failed to load IDL from target/idl');
+  }
+
+  throw new Error(`IDL not found at ${publicIdlPath} or ${devIdlPath}`);
 }
 
 export async function getAnchorClient(): Promise<{ program: Program; provider: AnchorProvider }> {
