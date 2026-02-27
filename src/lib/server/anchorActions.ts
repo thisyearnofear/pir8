@@ -13,7 +13,7 @@ import { getGlobalGamePDA } from '../anchorUtils';
 // ============================================================================
 
 function loadIdl(): Idl {
-  const idlPath = process.env.PIR8_IDL_PATH || path.join(process.cwd(), 'programs/pir8-game/target/idl/pir8_game.json');
+  const idlPath = process.env.PIR8_IDL_PATH || path.join(process.cwd(), 'target/idl/pir8_game.json');
   try {
     if (fs.existsSync(idlPath)) {
       const json = fs.readFileSync(idlPath, 'utf8');
