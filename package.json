@@ -1,63 +1,25 @@
 {
-  "name": "pir8",
+  "name": "pir8-monorepo",
   "version": "1.0.0",
   "private": true,
+  "workspaces": [
+    "packages/*"
+  ],
   "scripts": {
-    "dev": "next dev",
-    "build": "next build",
-    "start": "next start",
-    "lint": "next lint",
-    "type-check": "tsc --noEmit",
-    "test": "jest",
-    "test:integration": "npx tsx tests/helius-transaction-monitor.ts && npx tsx tests/pump-token-creator.ts",
-    "test:memo": "npx tsx tests/zcash-memo-watcher.ts",
-    "test:zcash": "node scripts/test-zcash-integration.js",
-    "cli": "npx tsx src/cli/index.ts",
-    "anchor:build": "anchor build",
-    "anchor:deploy": "anchor deploy --provider.cluster devnet",
-    "anchor:test": "anchor test",
-    "anchor:sync-idl": "cp target/idl/pir8_game.json public/idl/pir8_game.json",
-    "verify:deployment": "node scripts/verify-deployment.js",
-    "clean": "rm -rf .next out dist node_modules/.cache"
-  },
-  "dependencies": {
-    "@coral-xyz/anchor": "^0.28.0",
-    "@solana-mobile/wallet-adapter-mobile": "2.2.5",
-    "@solana/wallet-adapter-base": "^0.9.27",
-    "@solana/wallet-adapter-react": "^0.15.39",
-    "@solana/wallet-adapter-react-ui": "^0.9.39",
-    "@solana/wallet-adapter-wallets": "^0.19.37",
-    "@solana/web3.js": "^1.98.4",
-    "clsx": "^2.0.0",
-    "dotenv": "^17.2.3",
-    "framer-motion": "^12.23.25",
-    "lucide-react": "0.563.0",
-    "next": "^16.0.7",
-    "react": "^19.2.1",
-    "react-dom": "^19.2.1",
-    "three": "^0.181.2",
-    "ws": "8.19.0",
-    "zustand": "^5.0.10"
+    "build": "turbo run build",
+    "dev": "turbo run dev",
+    "lint": "turbo run lint",
+    "type-check": "turbo run type-check",
+    "test": "turbo run test",
+    "clean": "turbo run clean && rm -rf node_modules",
+    "format": "prettier --write \"**/*.{ts,tsx,md}\""
   },
   "devDependencies": {
-    "@tailwindcss/typography": "^0.5.10",
-    "@types/jest": "^29.5.8",
-    "@types/node": "^20.10.0",
-    "@types/react": "^19.2.10",
-    "@types/react-dom": "^19.2.3",
-    "@types/three": "^0.181.0",
-    "@types/ws": "8.18.1",
-    "autoprefixer": "^10.4.16",
-    "eslint": "^8.56.0",
-    "eslint-config-next": "14.2.10",
-    "jest": "^29.7.0",
-    "postcss": "^8.4.32",
-    "tailwindcss": "^3.3.6",
-    "tsx": "^4.6.2",
-    "typescript": "^5.3.3"
+    "prettier": "^3.1.1",
+    "turbo": "^2.0.0"
   },
+  "packageManager": "npm@10.2.4",
   "engines": {
-    "node": ">=18.0.0",
-    "npm": ">=8.0.0"
+    "node": ">=18.0.0"
   }
 }
