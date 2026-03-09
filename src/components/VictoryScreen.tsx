@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from 'react';
 import { GameState } from '../types/game';
+import { ConfettiCelebration } from './effects/ConfettiCelebration';
 
 interface VictoryScreenProps {
     gameState: GameState | null;
@@ -149,9 +150,13 @@ export default function VictoryScreen({
              role="dialog" aria-modal="true">
             {/* Epic Confetti & Particle Effects */}
             {showConfetti && (
-                <div className="absolute inset-0 pointer-events-none overflow-hidden">
-                    {/* Confetti */}
-                    {[...Array(100)].map((_, i) => (
+                <>
+                    {/* Canvas-based Confetti Celebration */}
+                    <ConfettiCelebration isActive={showConfetti} />
+                    
+                    {/* Additional Emoji Confetti Layer */}
+                    <div className="absolute inset-0 pointer-events-none overflow-hidden">
+                        {[...Array(50)].map((_, i) => (
                         <div
                             key={`confetti-${i}`}
                             className="absolute animate-bounce"
@@ -167,21 +172,8 @@ export default function VictoryScreen({
                             {['🎉', '🏆', '⚡', '💰', '🏴‍☠️', '⚔️', '🌊', '💎', '👑', '🔥'][Math.floor(Math.random() * 10)]}
                         </div>
                     ))}
-
-                    {/* Fireworks Effect */}
-                    {isWinner && [...Array(20)].map((_, i) => (
-                        <div
-                            key={`firework-${i}`}
-                            className="absolute w-2 h-2 bg-neon-gold rounded-full animate-ping"
-                            style={{
-                                left: `${Math.random() * 100}%`,
-                                top: `${Math.random() * 100}%`,
-                                animationDelay: `${Math.random() * 2}s`,
-                                animationDuration: `${1 + Math.random() * 2}s`
-                            }}
-                        />
-                    ))}
-                </div>
+                    </div>
+                </>
             )}
 
             {/* Main Victory Modal */}

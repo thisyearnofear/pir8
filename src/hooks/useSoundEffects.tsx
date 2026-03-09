@@ -15,6 +15,7 @@
 'use client';
 
 import { useEffect, useRef, useCallback, useState } from 'react';
+import React from 'react';
 
 export type SoundType = 
   | 'attack'
@@ -155,5 +156,5 @@ export function useSoundEffects() {
 // Convenience component for sound provider
 export function SoundProvider({ children }: { children: React.ReactNode }) {
   useSoundEffects(); // Initialize on mount
-  return <>{children}</>;
+  return <div className="sound-provider">{children}</div>;
 }

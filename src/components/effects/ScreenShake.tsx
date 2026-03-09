@@ -7,7 +7,7 @@
 
 'use client';
 
-import { useEffect, useState, useCallback } from 'react';
+import React, { useState, useCallback } from 'react';
 
 export type ShakeIntensity = 'light' | 'medium' | 'heavy' | 'massive';
 
@@ -29,21 +29,15 @@ export function ScreenShake({
   intensity = 'medium',
   duration: customDuration 
 }: ScreenShakeProps) {
-  const [isShaking, setIsShaking] = useState(false);
   const config = SHAKE_CONFIG[intensity];
   const duration = customDuration ?? config.duration;
 
-  const trigger = useCallback(() => {
-    setIsShaking(true);
-    setTimeout(() => setIsShaking(false), duration);
-  }, [duration]);
-
   return (
     <div
-      className={isShaking ? 'shake-active' : ''}
+      className="shake-active"
       style={{
         display: 'contents',
-        animation: isShaking ? `shake-${intensity} ${duration}ms ease-in-out` : undefined,
+        animation: `shake-${intensity} ${duration}ms ease-in-out`,
       }}
     >
       {children}

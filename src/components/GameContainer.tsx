@@ -10,12 +10,14 @@
 
 'use client';
 
-import { useEffect, useCallback } from 'react';
+import { useEffect, useCallback, useState } from 'react';
 import { useMobileOptimized } from '@/hooks/useMobileOptimized';
 import { Haptic } from '@/utils/haptics';
 import { MobileGameLayout } from './GameLayout/MobileGameLayout';
 import { DesktopGameLayout } from './GameLayout/DesktopGameLayout';
 import VictoryScreen from './VictoryScreen';
+import { FirstTimeTutorial } from './onboarding/FirstTimeTutorial';
+import { ContextualHints, HINT_TEMPLATES } from './onboarding/ContextualHints';
 import { GameState, Ship, Player } from '@/types/game';
 import { AIReasoning } from '@/lib/pirateGameEngine';
 
@@ -102,6 +104,13 @@ export default function GameContainer(props: GameContainerProps) {
 
   const { isMobile } = useMobileOptimized();
 
+  // Tutorial state
+  const [showTutorial, setShowTutorial] = useState(false);
+  const [tutorialComplete, setTutorialComplete] = useState(false);
+  
+  // Contextual hints state
+  const [hintTrigger, setHintTrigger] = useState<{type: string, data?: any} | null>(null);
+
   // Get current player
   const getCurrentPlayer = (): Player | null => {
     if (!gameState?.players) return null;
@@ -113,6 +122,62 @@ export default function GameContainer(props: GameContainerProps) {
   };
 
   const currentPlayer = getCurrentPlayer();
+
+  // =============================================================================
+  // TUTORIAL & ONBOARDING
+  // =============================================================================
+
+  useEffect(() => {
+    // Show tutorial on first game start (practice mode)
+    if (gameState.gameStatus === 'active' && !tutorialComplete && isPracticeMode) {
+      const hasSeenTutorial = localStorage.getItem('pir8_tutorial_complete');
+      if (!hasSeenTutorial) {
+        setShowTutorial(true);
+      }
+    }
+  }, [gameState.gameStatus, tutorialComplete, isPracticeMode]);
+
+  const handleTutorialComplete = () => {
+    localStorage.setItem('pir8_tutorial_complete', 'true');
+    setTutorialComplete(true);
+    setShowTutorial(false);
+    Haptic.success();
+  };
+
+  const handleTutorialSkip = () => {
+    localStorage.setItem('pir8_tutorial_complete', 'true');
+    setTutorialComplete(true);
+    setShowTutorial(false);
+    Haptic.light();
+  };
+
+  // =============================================================================
+  // CONTEXTUAL HINTS TRIGGERS
+  // =============================================================================
+
+  useEffect(() => {
+    if (!gameState.gameMap || !isMyTurn || !currentPlayer) return;
+
+    // Trigger hints based on game state
+    if (!hintTrigger) {
+      // First ship selection hint - check if any ship has been selected this turn
+      if (gameState.turnNumber === 1 && !props.selectedShipId) {
+        setHintTrigger({ type: 'FIRST_SHIP_SELECT' });
+      }
+      // Speed bonus reminder on early turns
+      else if (gameState.turnNumber <= 3 && !hintTrigger) {
+        setHintTrigger({ type: 'SPEED_BONUS' });
+      }
+      // Territory control hint
+      else if (currentPlayer.controlledTerritories.length === 0 && gameState.turnNumber > 2) {
+        setHintTrigger({ type: 'TERRITORY_CONTROL' });
+      }
+    }
+  }, [gameState.gameMap, isMyTurn, gameState.turnNumber, currentPlayer, hintTrigger, props.selectedShipId]);
+
+  const handleHintDismiss = () => {
+    setHintTrigger(null);
+  };
 
   // =============================================================================
   // KEYBOARD SHORTCUTS
@@ -182,10 +247,29 @@ export default function GameContainer(props: GameContainerProps) {
       currentPlayer,
     };
 
-    return isMobile ? (
-      <MobileGameLayout {...commonProps} />
-    ) : (
-      <DesktopGameLayout {...commonProps} />
+    return (
+      <>
+        {/* Tutorial Overlay */}
+        <FirstTimeTutorial
+          isVisible={showTutorial}
+          onComplete={handleTutorialComplete}
+          onSkip={handleTutorialSkip}
+        />
+        
+        {/* Contextual Hints */}
+        <ContextualHints
+          hints={hintTrigger ? [HINT_TEMPLATES[hintTrigger.type as keyof typeof HINT_TEMPLATES] as any].filter(Boolean) : []}
+          onDismiss={handleHintDismiss}
+          isVisible={!!hintTrigger}
+        />
+        
+        {/* Platform-specific layout */}
+        {isMobile ? (
+          <MobileGameLayout {...commonProps} />
+        ) : (
+          <DesktopGameLayout {...commonProps} />
+        )}
+      </>
     );
   }
 

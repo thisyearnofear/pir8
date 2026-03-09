@@ -81,6 +81,7 @@ try {
 try {
   const mainnetAdapter = createMobileWalletAdapter({ cluster: 'mainnet-beta' });
   console.log('✓ Successfully created mainnet adapter');
+  void mainnetAdapter; // Use variable to satisfy TypeScript
 } catch (error) {
   console.log('⚠ Mainnet adapter creation failed (expected in dev)');
 }

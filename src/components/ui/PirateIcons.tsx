@@ -17,12 +17,10 @@ import {
   MapPin,
   Sword,
   Shield,
-  Crosshair,
   Flag,
   Trophy,
   Crown,
   Gem,
-  Star,
   Zap,
   Target,
   Compass,
@@ -52,11 +50,12 @@ export function PirateShipIcon({ className = '', size = 24, color }: IconProps) 
 }
 
 export function WarshipIcon({ className = '', size = 28, color }: IconProps) {
+  const numericSize = typeof size === 'string' ? parseInt(size) : size;
   return (
-    <div className={`relative ${className}`} style={{ width: size, height: size }}>
-      <Ship size={size} color={color} strokeWidth={2} />
+    <div className={`relative ${className}`} style={{ width: numericSize, height: numericSize }}>
+      <Ship size={numericSize} color={color} strokeWidth={2} />
       <Sword 
-        size={size * 0.6} 
+        size={Math.floor(numericSize * 0.6)} 
         className="absolute -top-1 -right-1 text-red-500"
         strokeWidth={2.5}
       />
@@ -65,10 +64,11 @@ export function WarshipIcon({ className = '', size = 28, color }: IconProps) {
 }
 
 export function ScoutShipIcon({ className = '', size = 20, color }: IconProps) {
+  const numericSize = typeof size === 'string' ? parseInt(size) : size;
   return (
-    <div className={`relative ${className}`} style={{ width: size, height: size }}>
-      <Waves size={size * 0.7} className="absolute bottom-0 opacity-50" />
-      <Ship size={size} color={color} strokeWidth={1.5} />
+    <div className={`relative ${className}`} style={{ width: numericSize, height: numericSize }}>
+      <Waves size={Math.floor(numericSize * 0.7)} className="absolute bottom-0 opacity-50" />
+      <Ship size={numericSize} color={color} strokeWidth={1.5} />
     </div>
   );
 }
@@ -126,10 +126,11 @@ export function TerritoryIcon({ className = '', size = 24, color }: IconProps) {
 }
 
 export function PortIcon({ className = '', size = 28, color }: IconProps) {
+  const numericSize = typeof size === 'string' ? parseInt(size) : size;
   return (
-    <div className={`relative ${className}`} style={{ width: size, height: size }}>
-      <Anchor size={size} color={color} strokeWidth={2} />
-      <Package size={size * 0.5} className="absolute -bottom-1 -right-1" color="#ffd700" />
+    <div className={`relative ${className}`} style={{ width: numericSize, height: numericSize }}>
+      <Anchor size={numericSize} color={color} strokeWidth={2} />
+      <Package size={Math.floor(numericSize * 0.5)} className="absolute -bottom-1 -right-1" color="#ffd700" />
     </div>
   );
 }
@@ -282,7 +283,7 @@ export function BossIcon({ className = '', size = 32, color = '#ff0000' }: IconP
     <div className={`relative ${className}`} style={{ width: size, height: size }}>
       <Skull size={size} color={color} strokeWidth={2.5} />
       <Crown 
-        size={size * 0.5} 
+        size={typeof size === 'string' ? Math.floor(parseInt(size) * 0.5) : Math.floor(size * 0.5)} 
         className="absolute -top-2 left-1/2 transform -translate-x-1/2"
         color="#ffd700"
         strokeWidth={2}
