@@ -3,72 +3,7 @@
   "name": "pir8_game",
   "instructions": [
     {
-      "name": "registerAgent",
-      "accounts": [
-        {
-          "name": "agent",
-          "isMut": true,
-          "isSigner": false
-        },
-        {
-          "name": "owner",
-          "isMut": true,
-          "isSigner": true
-        },
-        {
-          "name": "systemProgram",
-          "isMut": false,
-          "isSigner": false
-        }
-      ],
-      "args": [
-        {
-          "name": "name",
-          "type": "string"
-        },
-        {
-          "name": "version",
-          "type": "string"
-        },
-        {
-          "name": "twitter",
-          "type": {
-            "option": "string"
-          }
-        },
-        {
-          "name": "website",
-          "type": {
-            "option": "string"
-          }
-        }
-      ]
-    },
-    {
-      "name": "delegateAgentControl",
-      "accounts": [
-        {
-          "name": "agent",
-          "isMut": true,
-          "isSigner": false
-        },
-        {
-          "name": "owner",
-          "isMut": false,
-          "isSigner": true
-        }
-      ],
-      "args": [
-        {
-          "name": "delegate",
-          "type": {
-            "option": "publicKey"
-          }
-        }
-      ]
-    },
-    {
-      "name": "createGame",
+      "name": "initializeGame",
       "accounts": [
         {
           "name": "game",
@@ -88,14 +23,8 @@
       ],
       "args": [
         {
-          "name": "gameId",
-          "type": "u64"
-        },
-        {
-          "name": "mode",
-          "type": {
-            "defined": "GameMode"
-          }
+          "name": "timestamp",
+          "type": "i64"
         }
       ]
     },
@@ -111,11 +40,6 @@
           "name": "player",
           "isMut": true,
           "isSigner": true
-        },
-        {
-          "name": "systemProgram",
-          "isMut": false,
-          "isSigner": false
         }
       ],
       "args": []
@@ -157,17 +81,11 @@
         },
         {
           "name": "toX",
-          "type": "u8"
+          "type": "i32"
         },
         {
           "name": "toY",
-          "type": "u8"
-        },
-        {
-          "name": "decisionTimeMs",
-          "type": {
-            "option": "u64"
-          }
+          "type": "i32"
         }
       ]
     },
@@ -212,8 +130,12 @@
       ],
       "args": [
         {
-          "name": "shipId",
-          "type": "string"
+          "name": "x",
+          "type": "i32"
+        },
+        {
+          "name": "y",
+          "type": "i32"
         }
       ]
     },
@@ -231,7 +153,16 @@
           "isSigner": true
         }
       ],
-      "args": []
+      "args": [
+        {
+          "name": "x",
+          "type": "i32"
+        },
+        {
+          "name": "y",
+          "type": "i32"
+        }
+      ]
     },
     {
       "name": "buildShip",
@@ -250,87 +181,9 @@
       "args": [
         {
           "name": "shipType",
-          "type": {
-            "defined": "ShipType"
-          }
-        },
-        {
-          "name": "portX",
-          "type": "u8"
-        },
-        {
-          "name": "portY",
-          "type": "u8"
+          "type": "string"
         }
       ]
-    },
-    {
-      "name": "scanCoordinate",
-      "accounts": [
-        {
-          "name": "game",
-          "isMut": true,
-          "isSigner": false
-        },
-        {
-          "name": "player",
-          "isMut": false,
-          "isSigner": true
-        }
-      ],
-      "args": [
-        {
-          "name": "coordinateX",
-          "type": "u8"
-        },
-        {
-          "name": "coordinateY",
-          "type": "u8"
-        }
-      ]
-    },
-    {
-      "name": "endTurn",
-      "accounts": [
-        {
-          "name": "game",
-          "isMut": true,
-          "isSigner": false
-        },
-        {
-          "name": "player",
-          "isMut": false,
-          "isSigner": true
-        }
-      ],
-      "args": []
-    },
-    {
-      "name": "checkAndCompleteGame",
-      "accounts": [
-        {
-          "name": "game",
-          "isMut": true,
-          "isSigner": false
-        }
-      ],
-      "args": []
-    },
-    {
-      "name": "resetGame",
-      "accounts": [
-        {
-          "name": "game",
-          "isMut": true,
-          "isSigner": false
-        },
-        {
-          "name": "authority",
-          "isMut": false,
-          "isSigner": true
-        }
-      ],
-      "args": []
     }
   ],
   "accounts": [
@@ -340,36 +193,22 @@
         "kind": "struct",
         "fields": [
           {
-            "name": "gameId",
-            "type": "u64"
-          },
-          {
             "name": "authority",
             "type": "publicKey"
           },
           {
-            "name": "status",
+            "name": "players",
             "type": {
-              "defined": "GameStatus"
+              "vec": "publicKey"
             }
           },
           {
-            "name": "mode",
-            "type": {
-              "defined": "GameMode"
-            }
-          },
-          {
-            "name": "playerCount",
+            "name": "gameState",
             "type": "u8"
           },
           {
-            "name": "currentPlayerIndex",
-            "type": "u8"
-          },
-          {
-            "name": "turnNumber",
-            "type": "u32"
+            "name": "boardSize",
+            "type": "u16"
           },
           {
             "name": "createdAt",
@@ -377,368 +216,143 @@
           },
           {
             "name": "startedAt",
-            "type": {
-              "option": "i64"
-            }
+            "type": "i64"
           },
           {
-            "name": "completedAt",
-            "type": {
-              "option": "i64"
-            }
-          },
-          {
-            "name": "winner",
-            "type": {
-              "option": "publicKey"
-            }
-          },
-          {
-            "name": "weatherType",
-            "type": {
-              "defined": "WeatherType"
-            }
-          },
-          {
-            "name": "weatherDuration",
-            "type": "u8"
-          },
-          {
-            "name": "bump",
-            "type": "u8"
-          },
-          {
-            "name": "players",
-            "type": {
-              "vec": {
-                "defined": "PlayerData"
-              }
-            }
-          },
-          {
-            "name": "territoryMap",
-            "type": {
-              "vec": {
-                "defined": "TerritoryCell"
-              }
-            }
-          }
-        ]
-      }
-    },
-    {
-      "name": "AgentRegistry",
-      "type": {
-        "kind": "struct",
-        "fields": [
-          {
-            "name": "owner",
-            "type": "publicKey"
-          },
-          {
-            "name": "delegate",
-            "type": {
-              "option": "publicKey"
-            }
-          },
-          {
-            "name": "name",
-            "type": "string"
-          },
-          {
-            "name": "version",
-            "type": "string"
-          },
-          {
-            "name": "twitter",
-            "type": {
-              "option": "string"
-            }
-          },
-          {
-            "name": "website",
-            "type": {
-              "option": "string"
-            }
-          },
-          {
-            "name": "gamesPlayed",
-            "type": "u64"
-          },
-          {
-            "name": "wins",
-            "type": "u64"
-          },
-          {
-            "name": "lastActive",
+            "name": "endedAt",
             "type": "i64"
           }
         ]
       }
     }
   ],
-  "types": [
+  "events": [
     {
-      "name": "GameStatus",
-      "type": {
-        "kind": "enum",
-        "variants": [
-          {
-            "name": "Waiting"
-          },
-          {
-            "name": "Active"
-          },
-          {
-            "name": "Completed"
-          }
-        ]
-      }
+      "name": "GameCreated",
+      "fields": [
+        {
+          "name": "gameId",
+          "type": "publicKey",
+          "index": false
+        },
+        {
+          "name": "creator",
+          "type": "publicKey",
+          "index": false
+        },
+        {
+          "name": "timestamp",
+          "type": "i64",
+          "index": false
+        }
+      ]
     },
     {
-      "name": "GameMode",
-      "type": {
-        "kind": "enum",
-        "variants": [
-          {
-            "name": "Casual"
-          },
-          {
-            "name": "Competitive"
-          },
-          {
-            "name": "AgentArena"
-          }
-        ]
-      }
+      "name": "PlayerJoined",
+      "fields": [
+        {
+          "name": "gameId",
+          "type": "publicKey",
+          "index": false
+        },
+        {
+          "name": "player",
+          "type": "publicKey",
+          "index": false
+        },
+        {
+          "name": "timestamp",
+          "type": "i64",
+          "index": false
+        }
+      ]
     },
     {
-      "name": "WeatherType",
-      "type": {
-        "kind": "enum",
-        "variants": [
-          {
-            "name": "Calm"
-          },
-          {
-            "name": "TradeWinds"
-          },
-          {
-            "name": "Storm"
-          },
-          {
-            "name": "Fog"
-          }
-        ]
-      }
+      "name": "GameStarted",
+      "fields": [
+        {
+          "name": "gameId",
+          "type": "publicKey",
+          "index": false
+        },
+        {
+          "name": "timestamp",
+          "type": "i64",
+          "index": false
+        }
+      ]
     },
     {
-      "name": "TerritoryCellType",
-      "type": {
-        "kind": "enum",
-        "variants": [
-          {
-            "name": "Water"
-          },
-          {
-            "name": "Island"
-          },
-          {
-            "name": "Port"
-          },
-          {
-            "name": "Treasure"
-          },
-          {
-            "name": "Storm"
-          },
-          {
-            "name": "Reef"
-          },
-          {
-            "name": "Whirlpool"
-          }
-        ]
-      }
-    },
-    {
-      "name": "PlayerData",
-      "type": {
-        "kind": "struct",
-        "fields": [
-          {
-            "name": "pubkey",
-            "type": "publicKey"
-          },
-          {
-            "name": "resources",
-            "type": {
-              "defined": "Resources"
-            }
-          },
-          {
-            "name": "ships",
-            "type": {
-              "vec": {
-                "defined": "ShipData"
-              }
-            }
-          },
-          {
-            "name": "controlledTerritories",
-            "type": {
-              "vec": "string"
-            }
-          },
-          {
-            "name": "totalScore",
-            "type": "u32"
-          },
-          {
-            "name": "isActive",
-            "type": "bool"
-          },
-          {
-            "name": "scanCharges",
-            "type": "u8"
-          },
-          {
-            "name": "scannedCoordinates",
-            "type": {
-              "vec": "u8"
-            }
-          },
-          {
-            "name": "speedBonusAccumulated",
-            "type": "u64"
-          },
-          {
-            "name": "averageDecisionTimeMs",
-            "type": "u64"
-          },
-          {
-            "name": "totalMoves",
-            "type": "u8"
-          }
-        ]
-      }
-    },
-    {
-      "name": "Resources",
-      "type": {
-        "kind": "struct",
-        "fields": [
-          {
-            "name": "gold",
-            "type": "u32"
-          },
-          {
-            "name": "crew",
-            "type": "u32"
-          },
-          {
-            "name": "cannons",
-            "type": "u32"
-          },
-          {
-            "name": "supplies",
-            "type": "u32"
-          }
-        ]
-      }
-    },
-    {
-      "name": "ShipData",
-      "type": {
-        "kind": "struct",
-        "fields": [
-          {
-            "name": "id",
-            "type": "string"
-          },
-          {
-            "name": "shipType",
-            "type": {
-              "defined": "ShipType"
-            }
-          },
-          {
-            "name": "health",
-            "type": "u32"
-          },
-          {
-            "name": "maxHealth",
-            "type": "u32"
-          },
-          {
-            "name": "attack",
-            "type": "u32"
-          },
-          {
-            "name": "defense",
-            "type": "u32"
-          },
-          {
-            "name": "speed",
-            "type": "u32"
-          },
-          {
-            "name": "positionX",
-            "type": "u8"
-          },
-          {
-            "name": "positionY",
-            "type": "u8"
-          },
-          {
-            "name": "lastActionTurn",
-            "type": "u32"
-          }
-        ]
-      }
-    },
-    {
-      "name": "TerritoryCell",
-      "type": {
-        "kind": "struct",
-        "fields": [
-          {
-            "name": "cellType",
-            "type": {
-              "defined": "TerritoryCellType"
-            }
-          },
-          {
-            "name": "owner",
-            "type": {
-              "option": "publicKey"
-            }
-          }
-        ]
-      }
-    },
-    {
-      "name": "ShipType",
-      "type": {
-        "kind": "enum",
-        "variants": [
-          {
-            "name": "Sloop"
-          },
-          {
-            "name": "Frigate"
-          },
-          {
-            "name": "Galleon"
-          },
-          {
-            "name": "Flagship"
-          }
-        ]
-      }
+      "name": "MoveMade",
+      "fields": [
+        {
+          "name": "gameId",
+          "type": "publicKey",
+          "index": false
+        },
+        {
+          "name": "player",
+          "type": "publicKey",
+          "index": false
+        },
+        {
+          "name": "shipId",
+          "type": "string",
+          "index": false
+        },
+        {
+          "name": "fromX",
+          "type": "i32",
+          "index": false
+        },
+        {
+          "name": "fromY",
+          "type": "i32",
+          "index": false
+        },
+        {
+          "name": "toX",
+          "type": "i32",
+          "index": false
+        },
+        {
+          "name": "toY",
+          "type": "i32",
+          "index": false
+        },
+        {
+          "name": "timestamp",
+          "type": "i64",
+          "index": false
+        }
+      ]
     }
   ],
-  "metadata": {
-    "address": "EeHyY2FQ3A4GLieZbGbmZtz1iLKzLytXkRcXyzGfmePt"
-  }
+  "errors": [
+    {
+      "code": 6000,
+      "name": "GameNotStarted",
+      "msg": "Game has not started yet"
+    },
+    {
+      "code": 6001,
+      "name": "GameAlreadyStarted",
+      "msg": "Game has already started"
+    },
+    {
+      "code": 6002,
+      "name": "GameFull",
+      "msg": "Game is already full"
+    },
+    {
+      "code": 6003,
+      "name": "InvalidMove",
+      "msg": "Invalid move attempted"
+    },
+    {
+      "code": 6004,
+      "name": "PlayerNotFound",
+      "msg": "Player not found in game"
+    }
+  ]
 }

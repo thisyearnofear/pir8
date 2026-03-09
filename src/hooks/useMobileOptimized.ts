@@ -1,4 +1,6 @@
-import { useState, useEffect, useCallback, useRef } from 'react';
+import { useCallback, useRef } from 'react';
+import { triggerHaptic as triggerHapticUtil, type HapticIntensity } from '@/utils/haptics';
+import { useResponsiveSafe } from '@/contexts/ResponsiveContext';
 
 interface TouchPosition {
   x: number;
@@ -20,39 +22,17 @@ export const useMobileOptimized = ({
   hapticFeedback = true,
   preventZoom = true
 }: UseMobileOptimizedProps = {}) => {
-  const [isMobile, setIsMobile] = useState(false);
-  const [screenSize, setScreenSize] = useState<'xs' | 'sm' | 'md' | 'lg'>('lg');
+  // ENHANCED: Use ResponsiveContext instead of custom detection
+  const { isMobile, screenSize, isTouch, prefersReducedMotion } = useResponsiveSafe();
   
   const touchStartPos = useRef<TouchPosition | null>(null);
   const longPressTimer = useRef<NodeJS.Timeout | null>(null);
 
-  // CONSOLIDATED device detection
-  useEffect(() => {
-    const checkDevice = () => {
-      const width = window.innerWidth;
-      const isMobileDevice = /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent);
-      const isSmallScreen = width <= 768;
-      
-      setIsMobile(isMobileDevice || isSmallScreen);
-      
-      if (width < 480) setScreenSize('xs');
-      else if (width < 640) setScreenSize('sm');
-      else if (width < 1024) setScreenSize('md');
-      else setScreenSize('lg');
-    };
-
-    checkDevice();
-    window.addEventListener('resize', checkDevice);
-    return () => window.removeEventListener('resize', checkDevice);
-  }, []);
-
-  // CONSOLIDATED haptic feedback
-  const triggerHaptic = useCallback((intensity: 'light' | 'medium' | 'heavy' = 'light') => {
-    if (!hapticFeedback || !navigator.vibrate) return;
-    
-    const patterns = { light: [10], medium: [25], heavy: [50] };
-    navigator.vibrate(patterns[intensity]);
-  }, [hapticFeedback]);
+  // ENHANCED: Respect reduced motion preference
+  const triggerHaptic = useCallback((intensity: HapticIntensity = 'light') => {
+    if (!hapticFeedback || prefersReducedMotion) return false;
+    return triggerHapticUtil(intensity);
+  }, [hapticFeedback, prefersReducedMotion]);
 
   // CONSOLIDATED touch handlers
   const touchHandlers = {
@@ -131,17 +111,24 @@ export const useMobileOptimized = ({
   return {
     isMobile,
     screenSize,
+    isTouch,
     touchHandlers,
     triggerHaptic,
     
     // CONSOLIDATED responsive utilities
-    getGridSize: () => screenSize === 'xs' ? 7 : screenSize === 'sm' ? 8 : 10,
+    getGridSize: () => {
+      if (screenSize === 'xs') return 7;
+      if (screenSize === 'sm') return 8;
+      return 10;
+    },
     shouldReduceAnimations: () => isMobile && screenSize === 'xs',
     
-    // CONSOLIDATED CSS classes
+    // ENHANCED CSS classes - consistent minimum touch targets
     classes: {
       container: isMobile ? 'touch-manipulation select-none' : '',
-      button: isMobile ? 'active:scale-95 min-h-[44px] min-w-[44px]' : 'hover:scale-105',
+      button: isMobile 
+        ? 'active:scale-95 min-h-[44px] min-w-[44px] touch-target' 
+        : 'hover:scale-105',
       grid: screenSize === 'xs' ? 'gap-0.5' : screenSize === 'sm' ? 'gap-1' : 'gap-2',
       text: screenSize === 'xs' ? 'text-sm' : 'text-base'
     }

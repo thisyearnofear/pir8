@@ -10,13 +10,14 @@ import { usePirateGameState } from '@/hooks/usePirateGameState';
 import { useSafeWallet } from '@/components/SafeWalletProvider';
 
 export default function LobbyBrowser() {
-  const { lobbies, fetchLobbies, isLoading } = usePirateGameState();
+  const { lobbies, fetchLobbies, isLoading, startGame } = usePirateGameState();
   const fullWallet = useSafeWallet();
   const { publicKey, wallet } = fullWallet;
   const [showCreateModal, setShowCreateModal] = useState(false);
   const [newGameId, setNewGameId] = useState<number>(Math.floor(Math.random() * 1000));
   const [isCreating, setIsCreating] = useState(false);
   const [joiningLobby, setJoiningLobby] = useState<string | null>(null);
+  const [startingGameId, setStartingGameId] = useState<string | null>(null);
 
   useEffect(() => {
     if (!publicKey || !wallet) return;
@@ -130,6 +131,50 @@ export default function LobbyBrowser() {
     }
   };
 
+  const handleStartGame = async (lobbyAddress: string, gameId?: number) => {
+    if (!publicKey || !wallet) {
+      alert('Please connect your wallet first');
+      return;
+    }
+    if (startingGameId === lobbyAddress) {
+      return;
+    }
+
+    setStartingGameId(lobbyAddress);
+    try {
+      let targetGameId = gameId;
+      
+      if (!targetGameId) {
+        const { createWalletAdapter } = await import("@/lib/client/transactionBuilder");
+        const { PublicKey } = await import("@solana/web3.js");
+        const walletAdapter = createWalletAdapter(fullWallet);
+        const { getClientProgram } = await import("@/lib/client/transactionBuilder");
+        const program = await getClientProgram(walletAdapter);
+        const gameAccount = await (program as any).account.pirateGame.fetchNullable(new PublicKey(lobbyAddress));
+        if (!gameAccount) {
+          throw new Error('Lobby not found on chain');
+        }
+        targetGameId = gameAccount.gameId.toNumber();
+      }
+
+      console.log(`Starting game: ${lobbyAddress} with gameId: ${targetGameId}`);
+      const success = await startGame(targetGameId, wallet);
+      
+      if (success) {
+        console.log('Game started successfully');
+        await fetchLobbies(wallet);
+      } else {
+        throw new Error('Failed to start game');
+      }
+    } catch (error) {
+      console.error('Failed to start game:', error);
+      const errorMessage = error instanceof Error ? error.message : 'Unknown error';
+      alert(`Failed to start game: ${errorMessage}`);
+    } finally {
+      setStartingGameId(null);
+    }
+  };
+
   return (
     <div className="bg-slate-900/50 backdrop-blur-md rounded-2xl border-2 border-neon-cyan/30 p-6 w-full max-w-4xl mx-auto shadow-2xl">
       <div className="flex items-center justify-between mb-8">
@@ -190,8 +235,8 @@ export default function LobbyBrowser() {
             // Anchor enums come back as objects like { waiting: {} } or { active: {} }
             const statusKey = lobby.status ? Object.keys(lobby.status)[0]?.toLowerCase() : 'unknown';
             const isWaiting = statusKey === 'waiting';
-            // maxPlayers isn't stored on-chain, use constant from GAME_CONFIG (default 4)
-            const maxPlayers = lobby.maxPlayers || 4;
+            // maxPlayers isn't stored on-chain, use constant from GAME_CONFIG (MAX_PLAYERS = 4)
+            const maxPlayers = 4;
             const hasSpace = lobby.playerCount < maxPlayers;
             const isJoinable = isWaiting && hasSpace;
 
@@ -199,6 +244,10 @@ export default function LobbyBrowser() {
             const userWalletPk = publicKey?.toBase58();
             const isUserInGame = userWalletPk && lobby.players?.includes(userWalletPk);
             const isUserGameWaiting = isUserInGame && isWaiting && lobby.playerCount === 1;
+
+            // Check if user is the game creator (authority) and can start the game
+            const isGameCreator = userWalletPk && lobby.authority === userWalletPk;
+            const canStartGame = isGameCreator && isWaiting && lobby.playerCount >= 2;
 
             return (
             <div key={lobby.address} className={`rounded-xl p-4 border transition-all group ${
@@ -265,23 +314,34 @@ export default function LobbyBrowser() {
                     </div>
                   ))}
                 </div>
-                <button
-                  onClick={() => handleJoinLobby(lobby.address, lobby.gameId)}
-                  disabled={!!joiningLobby || !isJoinable || isUserInGame || !publicKey}
-                  className="bg-neon-cyan hover:bg-neon-blue text-black font-bold py-1.5 px-4 rounded-lg text-sm transition-colors disabled:opacity-50"
-                >
-                  {!publicKey
-                    ? 'CONNECT WALLET'
-                    : joiningLobby === lobby.address
-                    ? 'BOARDING...'
-                    : isUserInGame
-                    ? isUserGameWaiting
-                      ? 'WAITING...'
-                      : 'IN GAME'
-                    : isJoinable
-                    ? 'BOARD SHIP'
-                    : 'FULL/STARTED'}
-                </button>
+                <div className="flex gap-2">
+                  {canStartGame && (
+                    <button
+                      onClick={() => handleStartGame(lobby.address, lobby.gameId)}
+                      disabled={!!startingGameId}
+                      className="bg-neon-gold hover:bg-neon-orange text-black font-bold py-1.5 px-4 rounded-lg text-sm transition-colors disabled:opacity-50 animate-pulse"
+                    >
+                      {startingGameId === lobby.address ? 'STARTING...' : 'START GAME'}
+                    </button>
+                  )}
+                  <button
+                    onClick={() => handleJoinLobby(lobby.address, lobby.gameId)}
+                    disabled={!!joiningLobby || !isJoinable || isUserInGame || !publicKey}
+                    className="bg-neon-cyan hover:bg-neon-blue text-black font-bold py-1.5 px-4 rounded-lg text-sm transition-colors disabled:opacity-50"
+                  >
+                    {!publicKey
+                      ? 'CONNECT WALLET'
+                      : joiningLobby === lobby.address
+                      ? 'BOARDING...'
+                      : isUserInGame
+                      ? isUserGameWaiting
+                        ? 'WAITING...'
+                        : 'IN GAME'
+                      : isJoinable
+                      ? 'BOARD SHIP'
+                      : 'FULL/STARTED'}
+                  </button>
+                </div>
               </div>
             </div>
             );

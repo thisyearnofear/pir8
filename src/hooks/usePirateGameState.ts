@@ -249,6 +249,7 @@ export const usePirateGameState = create<PirateGameStore>((set, get) => ({
       const lobbies = games.map((g: any) => ({
         address: g.publicKey.toBase58(),
         gameId: g.account?.gameId?.toNumber?.() || null,
+        authority: g.account?.authority?.toBase58?.() || null,
         status: g.account?.status,
         playerCount: g.account?.playerCount || 0,
         maxPlayers: g.account?.maxPlayers || 2,

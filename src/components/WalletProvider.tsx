@@ -10,6 +10,10 @@ import {
   SolflareWalletAdapter,
 } from "@solana/wallet-adapter-wallets";
 import { clusterApiUrl } from "@solana/web3.js";
+import { 
+  getPlatformWalletAdapter, 
+  isSolanaDappStore 
+} from "@/lib/mobile/walletAdapter";
 
 export function WalletContextProvider({
   children,
@@ -25,10 +29,26 @@ export function WalletContextProvider({
     return clusterApiUrl("devnet");
   }, []);
 
-  const wallets = useMemo(
-    () => [new PhantomWalletAdapter(), new SolflareWalletAdapter()],
-    [],
-  );
+  const wallets = useMemo(() => {
+    // Check if running in Solana dApp Store (Android)
+    const isMobileStore = isSolanaDappStore();
+    
+    if (isMobileStore) {
+      // Use mobile wallet adapter for dApp Store
+      const mobileAdapter = getPlatformWalletAdapter({
+        cluster: 'devnet',
+      });
+      
+      if (mobileAdapter) {
+        console.log('[WalletProvider] Using Solana Mobile Wallet Adapter');
+        return [mobileAdapter];
+      }
+    }
+    
+    // Standard web/iOS wallet adapters
+    console.log('[WalletProvider] Using standard wallet adapters');
+    return [new PhantomWalletAdapter(), new SolflareWalletAdapter()];
+  }, []);
 
   const onError = (error: Error) => {
     console.error("Wallet connection error:", error);
