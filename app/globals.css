@@ -180,13 +180,13 @@
   }
 }
 
-/* Ship movement animations */
+/* Ship movement animations - ENHANCED for cartoon polish */
 .ship-moving {
-  transition: all 0.8s cubic-bezier(0.25, 0.46, 0.45, 0.94);
+  transition: all 0.6s cubic-bezier(0.4, 0, 0.2, 1);
 }
 
 .ship-attacking {
-  animation: attack-shake 0.3s ease-in-out;
+  animation: attack-shake 0.4s ease-in-out;
 }
 
 @keyframes attack-shake {
@@ -3049,4 +3049,115 @@ body.modal-open {
     text-shadow: none;
     font-weight: 900;
   }
+}
+
+/* =============================================================================
+   NEW JUICE ANIMATIONS - Tier 1 Polish
+   ============================================================================= */
+
+/* Damage flash on hit */
+.damage-flash {
+  animation: damage-flash-anim 0.3s ease-out;
+}
+
+@keyframes damage-flash-anim {
+  0% { 
+    filter: brightness(2) sepia(1) hue-rotate(-50deg) saturate(3);
+    transform: scale(1);
+  }
+  50% { 
+    transform: scale(1.05);
+  }
+  100% { 
+    filter: brightness(1);
+    transform: scale(1);
+  }
+}
+
+/* Treasure collection sparkle */
+.treasure-collect {
+  animation: treasure-sparkle 0.6s ease-out;
+}
+
+@keyframes treasure-sparkle {
+  0% { 
+    transform: scale(0.8) rotate(0deg);
+    opacity: 0;
+  }
+  50% { 
+    transform: scale(1.2) rotate(180deg);
+    opacity: 1;
+  }
+  100% { 
+    transform: scale(1) rotate(360deg);
+    opacity: 1;
+  }
+}
+
+/* Button click feedback */
+.button-click {
+  transition: all 0.1s ease-out;
+}
+
+.button-click:active {
+  transform: scale(0.95);
+}
+
+/* Resource gain popup */
+.resource-gain {
+  animation: resource-popup 0.5s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+@keyframes resource-popup {
+  0% { 
+    transform: translateY(10px) scale(0.8);
+    opacity: 0;
+  }
+  50% {
+    transform: translateY(-5px) scale(1.1);
+    opacity: 1;
+  }
+  100% { 
+    transform: translateY(0) scale(1);
+    opacity: 1;
+  }
+}
+
+/* Territory capture celebration */
+.territory-capture {
+  animation: territory-celebrate 1s ease-in-out;
+}
+
+@keyframes territory-celebrate {
+  0%, 100% { 
+    transform: scale(1);
+    filter: brightness(1);
+  }
+  50% { 
+    transform: scale(1.15);
+    filter: brightness(1.3);
+  }
+}
+
+/* Smooth hover effects for cartoon feel */
+.hover-bounce {
+  transition: transform 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.hover-bounce:hover {
+  transform: translateY(-3px) scale(1.05);
+}
+
+/* Utility animations */
+.animate-pulse-slow {
+  animation: pulse 3s cubic-bezier(0.4, 0, 0.6, 1) infinite;
+}
+
+.animate-float {
+  animation: float 3s ease-in-out infinite;
+}
+
+@keyframes float {
+  0%, 100% { transform: translateY(0); }
+  50% { transform: translateY(-10px); }
 }
