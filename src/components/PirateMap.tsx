@@ -223,6 +223,54 @@ export default function PirateMap({
         })}
       </div>
 
+      {/* ENHANCEMENT: Conquest Overlay - Visual territory control */}
+      <div 
+        className="grid absolute inset-0 pointer-events-none"
+        style={{ 
+          gridTemplateColumns: `repeat(${gridSize}, minmax(0, 1fr))`,
+        maxWidth: isMobile ? 'min(98vw, 85vh)' : 'auto',
+          aspectRatio: '1',
+        margin: '0 auto'
+        }}
+      >
+        {Array.from({ length: totalCells }, (_, index) => {
+        const x = index % gridSize;
+        const y = Math.floor(index / gridSize);
+        const coordinate = PirateGameManager.coordinateToString({ x, y });
+        const cell = flatCells.find(c => c.coordinate === coordinate);
+          
+        if (!cell?.owner) return <div key={`overlay-${coordinate}`} />;
+          
+        const isPlayerControlled= cell.owner === currentPlayerPK;
+        const isAIControlled = cell.owner.startsWith('AI_');
+          
+        return (
+            <div
+              key={`conquest-${coordinate}`}
+              className={`relative transition-all duration-500 rounded ${cell.isContested ? 'animate-pulse' : ''}`}
+              style={{
+               backgroundColor: isPlayerControlled 
+                  ? 'rgba(34, 211, 238, 0.15)' 
+                  : isAIControlled 
+                    ? 'rgba(239, 68, 68, 0.15)'
+                    : 'rgba(251, 191, 36, 0.15)',
+              border: `2px solid ${
+                  isPlayerControlled ? '#22d3ee' : 
+                  isAIControlled ? '#ef4444' : '#fbbf24'
+                }`,
+              }}
+            >
+              {isPlayerControlled && !cell.isContested && (
+                <div className="absolute -top-1 -right-1 text-xs animate-float drop-shadow-lg">💰</div>
+              )}
+              {cell.isContested && (
+                <div className="absolute -top-1 -left-1 text-xs drop-shadow-lg">⚔️</div>
+              )}
+            </div>
+          );
+        })}
+      </div>
+
         {hoveredCoordinate && (
           <TerritoryTooltip
             type={flatCells.find(c => c.coordinate === hoveredCoordinate)?.type as any}
@@ -267,5 +315,5 @@ export default function PirateMap({
         )}
 
       </div>
-    );
+  );
 }
