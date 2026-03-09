@@ -6,10 +6,11 @@ const nextConfig = {
   },
   images: {
     formats: ['image/avif', 'image/webp'],
-    deviceSizes: [320, 480, 640, 750, 828, 1080, 1200, 1920, 2048, 3840],
+  deviceSizes: [320,480, 640, 750, 828, 1080, 1200,1920, 2048,3840],
   },
   compress: true,
   staticPageGenerationTimeout: 120,
+  turbopack: {},
 }
 
 module.exports = nextConfig

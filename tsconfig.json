@@ -79,6 +79,7 @@
     "node_modules",
     "target",
     ".anchor",
-    "tests"
+    "tests",
+    "packages/mobile"
   ]
 }
