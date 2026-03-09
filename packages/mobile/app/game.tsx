@@ -5,11 +5,12 @@
  * Implements native React Native UI
  */
 
-import { useState, useCallback } from 'react';
+import { useState, useCallback, useEffect } from 'react';
 import { StyleSheet, Text, View, TouchableOpacity, SafeAreaView, ScrollView } from 'react-native';
 import { LinearGradient } from 'expo-linear-gradient';
 import { useRouter } from 'expo-router';
 import * as Haptics from 'expo-haptics';
+import AsyncStorage from '@react-native-async-storage/async-storage';
 
 // Import shared game logic from core package
 import { 
@@ -20,14 +21,42 @@ import {
   calculateSpeedBonus 
 } from '@pir8/core';
 import GameMap from '@/components/GameMap';
+import FirstTimeTutorial from '@/components/FirstTimeTutorial';
 
 export default function GameScreen() {
   const router= useRouter();
+  
+ // Tutorial state
+  const [showTutorial, setShowTutorial] = useState(false);
   
  // Game state
   const [gameState, setGameState] = useState<GameState | null>(null);
   const [selectedShip, setSelectedShip] = useState<Ship | null>(null);
   const [decisionTime, setDecisionTime] = useState(0);
+
+  // Check if tutorial should be shown on first launch
+  useEffect(() => {
+   const checkTutorialStatus = async () => {
+      try {
+       const tutorialComplete = await AsyncStorage.getItem('pir8_tutorial_complete');
+       if (!tutorialComplete) {
+         setShowTutorial(true);
+        }
+      } catch (error) {
+      console.error('Error checking tutorial status:', error);
+      }
+    };
+
+   checkTutorialStatus();
+  }, []);
+
+  const handleTutorialComplete = useCallback(() => {
+   setShowTutorial(false);
+  }, []);
+
+  const handleTutorialSkip = useCallback(() => {
+   setShowTutorial(false);
+  }, []);
 
  // Mock game map for demonstration (will be replaced with real game state)
   const mockGameMap: GameMapType = {
@@ -216,6 +245,13 @@ export default function GameScreen() {
         </View>
       </SafeAreaView>
     </LinearGradient>
+
+    {/* Tutorial Overlay */}
+    <FirstTimeTutorial
+    isVisible={showTutorial}
+     onComplete={handleTutorialComplete}
+     onSkip={handleTutorialSkip}
+    />
   );
 }
 
