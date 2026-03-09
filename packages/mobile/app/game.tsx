@@ -16,8 +16,10 @@ import {
   PirateGameManager, 
   GameState,
   Ship,
+  GameMap as GameMapType,
   calculateSpeedBonus 
 } from '@pir8/core';
+import GameMap from '@/components/GameMap';
 
 export default function GameScreen() {
   const router= useRouter();
@@ -26,6 +28,49 @@ export default function GameScreen() {
   const [gameState, setGameState] = useState<GameState | null>(null);
   const [selectedShip, setSelectedShip] = useState<Ship | null>(null);
   const [decisionTime, setDecisionTime] = useState(0);
+
+ // Mock game map for demonstration (will be replaced with real game state)
+  const mockGameMap: GameMapType = {
+    cells: Array.from({ length: 10 }, (_, y) =>
+      Array.from({ length: 10 }, (_, x) => ({
+       coordinate: `${x},${y}`,
+         type: x % 3 === 0 ? 'port' : x % 3 === 1 ? 'territory' : 'open_water',
+         owner: x > 5 ? 'AI_player_1' : x < 3 ? currentPlayerPK || 'player' : null,
+      isContested: x === 4 || x === 5,
+      resources: {},
+      }))
+   ),
+    size: 10,
+  };
+
+  const mockShips: Ship[] = [
+   { 
+    id: 'ship-1', 
+      type: 'warship',
+      health: 100,
+    maxHealth: 100,
+    attack: 25,
+    defense: 10,
+      speed: 5,
+      position: { x: 2, y: 3 },
+    resources: { gold: 0, crew: 0, cannons: 0, supplies: 0 },
+      ability: { name: 'Attack', description: 'Basic attack', cooldown: 0 },
+    activeEffects: []
+    },
+   { 
+    id: 'ship-2', 
+      type: 'scout',
+      health: 60,
+    maxHealth: 60,
+    attack: 15,
+    defense: 5,
+      speed: 8,
+      position: { x: 3, y: 4 },
+    resources: { gold: 0, crew: 0, cannons: 0, supplies: 0 },
+      ability: { name: 'Scout', description: 'Reveal area', cooldown: 2 },
+    activeEffects: []
+    },
+  ];
 
  // Haptic feedback using Expo Haptics (native!)
   const triggerHaptic = useCallback(async (intensity: 'light' | 'medium' | 'heavy' | 'success' | 'error') => {
@@ -83,11 +128,21 @@ export default function GameScreen() {
 
         {/* Game Area */}
         <ScrollView style={styles.gameArea} showsVerticalScrollIndicator={false}>
-         {/* Territory Map would go here */}
-          <View style={styles.mapPlaceholder}>
-            <Text style={styles.mapText}>🗺️ Interactive Map</Text>
-            <Text style={styles.mapSubtext}>Territory control visualization</Text>
-          </View>
+         {/* Territory Map with Conquest Overlay */}
+          <GameMap
+           gameMap={mockGameMap}
+           ships={mockShips}
+           currentPlayerPK="player"
+           isMyTurn={true}
+           selectedShipId={selectedShip?.id || null}
+          onCellSelect={(coordinate) => {
+             triggerHaptic('light');
+            console.log(`Selected cell: ${coordinate}`);
+           }}
+          onShipClick={(ship) => {
+             handleShipSelect(ship);
+           }}
+          />
 
          {/* Ships Section */}
           <View style={styles.section}>
