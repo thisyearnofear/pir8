@@ -10,6 +10,7 @@ A multiplayer pirate naval combat game built on Solana with Zcash shielded trans
 [![Next.js](https://img.shields.io/badge/Next.js-14-black)](https://nextjs.org)
 [![TypeScript](https://img.shields.io/badge/TypeScript-5.0-blue)](https://www.typescriptlang.org)
 [![Anchor](https://img.shields.io/badge/Anchor-0.29-purple)](https://www.anchor-lang.com)
+[![Monolith Hackathon](https://img.shields.io/badge/Monolith-Hackathon-orange)](https://devpost.com)
 
 ---
 
