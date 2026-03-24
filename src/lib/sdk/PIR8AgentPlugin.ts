@@ -1,18 +1,18 @@
 /**
  * PIR8 Agent Plugin - Universal Middleware for Solana AI Agents
- * 
+ *
  * Provides high-level tools for autonomous agents to participate in PIR8 battles.
  * Compatible with: Solana Agent Kit (SendAI), ElizaOS (ai16z), and custom LLM loops.
- * 
+ *
  * Principles: MODULAR, CLEAN, ENHANCEMENT FIRST
  */
 
-import { Connection, PublicKey, SystemProgram } from '@solana/web3.js';
-import { Program, BN } from '@coral-xyz/anchor';
-import { PirateGameManager } from '../pirateGameEngine';
-import { getGamePDA } from '../anchor';
-import { GameState } from '../../types/game';
-import { mapOnChainToLocal } from '../../utils/helpers';
+import { Connection, PublicKey, SystemProgram } from "@solana/web3.js";
+import { Program, BN } from "@coral-xyz/anchor";
+import { PirateGameManager } from "../pirateGameEngine";
+import { getGamePDA } from "../anchor";
+import { mapOnChainToLocal } from "../../utils/helpers";
+import { GAME_CONFIG } from "../../utils/constants";
 
 // Define the tool interfaces for agent frameworks
 export interface PIR8AgentTool {
@@ -48,23 +48,36 @@ export class PIR8AgentPlugin {
    */
   private registerAgentTool(): PIR8AgentTool {
     return {
-      name: 'pir8_register_agent',
-      description: 'Registers your identity as an autonomous pirate agent with social metadata.',
+      name: "pir8_register_agent",
+      description:
+        "Registers your identity as an autonomous pirate agent with social metadata.",
       parameters: {
-        type: 'object',
+        type: "object",
         properties: {
-          name: { type: 'string', description: 'The name of your agent (e.g. "DreadBot")' },
-          version: { type: 'string', description: 'Agent version (e.g. "1.0.0")' },
-          twitter: { type: 'string', description: 'Optional: Twitter/X handle' },
-          website: { type: 'string', description: 'Optional: Agent website URL' },
+          name: {
+            type: "string",
+            description: 'The name of your agent (e.g. "DreadBot")',
+          },
+          version: {
+            type: "string",
+            description: 'Agent version (e.g. "1.0.0")',
+          },
+          twitter: {
+            type: "string",
+            description: "Optional: Twitter/X handle",
+          },
+          website: {
+            type: "string",
+            description: "Optional: Agent website URL",
+          },
         },
-        required: ['name', 'version'],
+        required: ["name", "version"],
       },
       execute: async ({ name, version, twitter, website }) => {
         const owner = this.program.provider.publicKey!;
         const [agentPDA] = PublicKey.findProgramAddressSync(
-          [Buffer.from('agent'), (owner as any).toBuffer()],
-          this.program.programId
+          [Buffer.from("agent"), (owner as any).toBuffer()],
+          this.program.programId,
         );
 
         const tx = await (this.program as any).methods
@@ -76,8 +89,12 @@ export class PIR8AgentPlugin {
           })
           .rpc();
 
-        return { success: true, message: `Agent ${name} registered successfully`, signature: tx };
-      }
+        return {
+          success: true,
+          message: `Agent ${name} registered successfully`,
+          signature: tx,
+        };
+      },
     };
   }
 
@@ -86,20 +103,24 @@ export class PIR8AgentPlugin {
    */
   private delegateControlTool(): PIR8AgentTool {
     return {
-      name: 'pir8_delegate_control',
-      description: 'Authorizes a secondary key to make game moves. safer for autonomous loops.',
+      name: "pir8_delegate_control",
+      description:
+        "Authorizes a secondary key to make game moves. safer for autonomous loops.",
       parameters: {
-        type: 'object',
+        type: "object",
         properties: {
-          delegateAddress: { type: 'string', description: 'The public key to authorize' },
+          delegateAddress: {
+            type: "string",
+            description: "The public key to authorize",
+          },
         },
-        required: ['delegateAddress'],
+        required: ["delegateAddress"],
       },
       execute: async ({ delegateAddress }) => {
         const owner = this.program.provider.publicKey!;
         const [agentPDA] = PublicKey.findProgramAddressSync(
-          [Buffer.from('agent'), (owner as any).toBuffer()],
-          this.program.programId
+          [Buffer.from("agent"), (owner as any).toBuffer()],
+          this.program.programId,
         );
 
         const tx = await (this.program as any).methods
@@ -110,8 +131,12 @@ export class PIR8AgentPlugin {
           })
           .rpc();
 
-        return { success: true, message: `Control delegated to ${delegateAddress}`, signature: tx };
-      }
+        return {
+          success: true,
+          message: `Control delegated to ${delegateAddress}`,
+          signature: tx,
+        };
+      },
     };
   }
 
@@ -120,14 +145,18 @@ export class PIR8AgentPlugin {
    */
   private createGameTool(): PIR8AgentTool {
     return {
-      name: 'pir8_create_game',
-      description: 'Creates a new pirate battle arena. Generates a unique game ID.',
+      name: "pir8_create_game",
+      description:
+        "Creates a new pirate battle arena. Generates a unique game ID.",
       parameters: {
-        type: 'object',
+        type: "object",
         properties: {
-          gameId: { type: 'number', description: 'A unique 64-bit number for the game lobby' },
+          gameId: {
+            type: "number",
+            description: "A unique 64-bit number for the game lobby",
+          },
         },
-        required: ['gameId'],
+        required: ["gameId"],
       },
       execute: async ({ gameId }) => {
         const [gamePDA] = getGamePDA(gameId);
@@ -141,8 +170,13 @@ export class PIR8AgentPlugin {
           })
           .rpc();
 
-        return { success: true, gameId, gameAddress: gamePDA.toBase58(), signature: tx };
-      }
+        return {
+          success: true,
+          gameId,
+          gameAddress: gamePDA.toBase58(),
+          signature: tx,
+        };
+      },
     };
   }
 
@@ -151,14 +185,14 @@ export class PIR8AgentPlugin {
    */
   private joinGameTool(): PIR8AgentTool {
     return {
-      name: 'pir8_join_game',
-      description: 'Joins a specific game lobby. Requires 0.1 SOL entry fee.',
+      name: "pir8_join_game",
+      description: `Joins a specific game lobby. Requires ${GAME_CONFIG.ENTRY_FEE} SOL entry fee.`,
       parameters: {
-        type: 'object',
+        type: "object",
         properties: {
-          gameId: { type: 'number', description: 'The ID of the game to join' },
+          gameId: { type: "number", description: "The ID of the game to join" },
         },
-        required: ['gameId'],
+        required: ["gameId"],
       },
       execute: async ({ gameId }) => {
         const [gamePDA] = getGamePDA(gameId);
@@ -172,8 +206,12 @@ export class PIR8AgentPlugin {
           })
           .rpc();
 
-        return { success: true, message: 'Joined game successfully', signature: tx };
-      }
+        return {
+          success: true,
+          message: "Joined game successfully",
+          signature: tx,
+        };
+      },
     };
   }
 
@@ -182,20 +220,23 @@ export class PIR8AgentPlugin {
    */
   private getGameStateTool(): PIR8AgentTool {
     return {
-      name: 'pir8_get_status',
-      description: 'Gets the current map, ship positions, and turn info for a game.',
+      name: "pir8_get_status",
+      description:
+        "Gets the current map, ship positions, and turn info for a game.",
       parameters: {
-        type: 'object',
+        type: "object",
         properties: {
-          gameId: { type: 'number', description: 'The ID of the game' },
+          gameId: { type: "number", description: "The ID of the game" },
         },
-        required: ['gameId'],
+        required: ["gameId"],
       },
       execute: async ({ gameId }) => {
         const [gamePDA] = getGamePDA(gameId);
-        const account = await (this.program as any).account.pirateGame.fetch(gamePDA);
+        const account = await (this.program as any).account.pirateGame.fetch(
+          gamePDA,
+        );
         return { success: true, state: account };
-      }
+      },
     };
   }
 
@@ -205,26 +246,31 @@ export class PIR8AgentPlugin {
    */
   private strategicMoveTool(): PIR8AgentTool {
     return {
-      name: 'pir8_auto_move',
-      description: 'Analyzes the game state and executes the mathematically best move/attack.',
+      name: "pir8_auto_move",
+      description:
+        "Analyzes the game state and executes the mathematically best move/attack.",
       parameters: {
-        type: 'object',
+        type: "object",
         properties: {
-          gameId: { type: 'number', description: 'The ID of the current game' },
+          gameId: { type: "number", description: "The ID of the current game" },
         },
-        required: ['gameId'],
+        required: ["gameId"],
       },
       execute: async ({ gameId }) => {
         const [gamePDA] = getGamePDA(gameId);
-        const rawState = await (this.program as any).account.pirateGame.fetch(gamePDA);
+        const rawState = await (this.program as any).account.pirateGame.fetch(
+          gamePDA,
+        );
 
         // Transform on-chain state to Engine-compatible state
         const gameState = mapOnChainToLocal(rawState as any, gameId.toString());
         const myPK = this.program.provider.publicKey!.toBase58();
-        const me = gameState.players.find(p => p.publicKey === myPK);
+        const me = gameState.players.find((p) => p.publicKey === myPK);
 
         if (!me) throw new Error("Agent not in this game");
-        if (gameState.players[gameState.currentPlayerIndex]?.publicKey !== myPK) {
+        if (
+          gameState.players[gameState.currentPlayerIndex]?.publicKey !== myPK
+        ) {
           return { success: false, message: "It is not your turn yet." };
         }
 
@@ -232,20 +278,29 @@ export class PIR8AgentPlugin {
         const decision = PirateGameManager.generateAIDecision(gameState, me);
 
         if (!decision.action) {
-          return { success: true, action: 'pass', reason: "No advantageous moves found." };
+          return {
+            success: true,
+            action: "pass",
+            reason: "No advantageous moves found.",
+          };
         }
 
         // Execute the decided action on-chain
-        let tx = '';
+        let tx = "";
         const { type, data } = decision.action;
 
-        if (type === 'move_ship') {
-          const [x, y] = (data.toCoordinate || '0,0').split(',').map(Number);
+        if (type === "move_ship") {
+          const [x, y] = (data.toCoordinate || "0,0").split(",").map(Number);
           tx = await (this.program as any).methods
-            .moveShip(data.shipId, x, y, new BN(decision.reasoning.thinkingTime))
+            .moveShip(
+              data.shipId,
+              x,
+              y,
+              new BN(decision.reasoning.thinkingTime),
+            )
             .accounts({ game: gamePDA, player: myPK })
             .rpc();
-        } else if (type === 'attack') {
+        } else if (type === "attack") {
           tx = await (this.program as any).methods
             .attackShip(data.shipId, data.targetShipId)
             .accounts({ game: gamePDA, player: myPK })
@@ -256,10 +311,9 @@ export class PIR8AgentPlugin {
           success: true,
           action: type,
           reasoning: decision.reasoning.chosenOption?.reason,
-          signature: tx
+          signature: tx,
         };
-      }
+      },
     };
   }
-
 }

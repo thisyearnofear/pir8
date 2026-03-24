@@ -35,6 +35,7 @@ import ContextualHints, {
 } from "@/components/ContextualHints";
 import VictoryCelebration from "@/components/VictoryCelebration";
 import { useSound } from "@/utils/SoundManager";
+import { useMobileWallet } from "@/utils/useMobileWallet";
 
 // Mock data for development (replace with real game state)
 const createMockGameMap = (currentPlayerPK: string | null): GameMapType => ({
@@ -96,6 +97,9 @@ const createMockShips = (): Ship[] => [
 export default function GameScreen() {
   const router = useRouter();
 
+  // Wallet connection
+  const wallet = useMobileWallet();
+
   // Sound manager hook
   const { playSound } = useSound();
 
@@ -112,8 +116,8 @@ export default function GameScreen() {
   const { activeHints, showHint, showHints, dismissHint } =
     useContextualHints();
 
-  // Mock data (will be replaced with real game state)
-  const currentPlayerPK = "player";
+  // Use wallet address when connected, fallback to mock
+  const currentPlayerPK = wallet.isConnected ? wallet.address : "player";
   const mockGameMap = createMockGameMap(currentPlayerPK);
   const mockShips = createMockShips();
 
@@ -218,8 +222,34 @@ export default function GameScreen() {
               <Text style={styles.backButtonText}>Back</Text>
             </TouchableOpacity>
             <Text style={styles.headerTitle}>Battle Arena</Text>
-            <View style={styles.placeholder} />
+            <TouchableOpacity
+              onPress={wallet.isConnected ? wallet.disconnect : wallet.connect}
+              style={[
+                styles.walletButton,
+                wallet.isConnected && styles.walletConnected,
+              ]}
+              disabled={wallet.isLoading}
+            >
+              <Text style={styles.walletButtonText}>
+                {wallet.isLoading
+                  ? "..."
+                  : wallet.isConnected
+                    ? `${wallet.address?.slice(0, 4)}...${wallet.address?.slice(-4)}`
+                    : "Connect"}
+              </Text>
+            </TouchableOpacity>
           </View>
+
+          {/* Wallet Error Banner */}
+          {wallet.error && (
+            <TouchableOpacity
+              style={styles.errorBanner}
+              onPress={wallet.clearError}
+            >
+              <Text style={styles.errorText}>{wallet.error}</Text>
+              <Text style={styles.errorDismiss}>Dismiss</Text>
+            </TouchableOpacity>
+          )}
 
           {/* Game Area */}
           <ScrollView
@@ -304,7 +334,14 @@ export default function GameScreen() {
 
           {/* Turn Info */}
           <View style={styles.turnInfo}>
-            <Text style={styles.turnText}>Your Turn</Text>
+            <View style={styles.turnInfoRow}>
+              <Text style={styles.turnText}>Your Turn</Text>
+              {wallet.isConnected && (
+                <Text style={styles.balanceText}>
+                  {wallet.balance.toFixed(2)} SOL
+                </Text>
+              )}
+            </View>
             <Text style={styles.speedBonus}>
               Speed Bonus: +{calculateSpeedBonus(decisionTime)} pts
             </Text>
@@ -362,8 +399,43 @@ const styles = StyleSheet.create({
     fontSize: 18,
     fontWeight: "800",
   },
-  placeholder: {
-    width: 60,
+  walletButton: {
+    backgroundColor: "rgba(34, 211, 238, 0.2)",
+    paddingHorizontal: 12,
+    paddingVertical: 6,
+    borderRadius: 8,
+    borderWidth: 1,
+    borderColor: "#22d3ee",
+  },
+  walletConnected: {
+    backgroundColor: "rgba(34, 197, 94, 0.2)",
+    borderColor: "#22c55e",
+  },
+  walletButtonText: {
+    color: "#22d3ee",
+    fontSize: 12,
+    fontWeight: "600",
+  },
+  errorBanner: {
+    backgroundColor: "rgba(239, 68, 68, 0.2)",
+    borderBottomWidth: 1,
+    borderBottomColor: "#ef4444",
+    paddingHorizontal: 20,
+    paddingVertical: 10,
+    flexDirection: "row",
+    justifyContent: "space-between",
+    alignItems: "center",
+  },
+  errorText: {
+    color: "#ef4444",
+    fontSize: 13,
+    flex: 1,
+  },
+  errorDismiss: {
+    color: "#94a3b8",
+    fontSize: 12,
+    fontWeight: "600",
+    marginLeft: 12,
   },
   gameArea: {
     flex: 1,
@@ -457,12 +529,23 @@ const styles = StyleSheet.create({
     borderTopWidth: 2,
     borderTopColor: "rgba(251, 191, 36, 0.3)",
   },
+  turnInfoRow: {
+    flexDirection: "row",
+    justifyContent: "space-between",
+    alignItems: "center",
+    marginBottom: 4,
+  },
   turnText: {
     color: "#fbbf24",
     fontSize: 18,
     fontWeight: "800",
     textAlign: "center",
-    marginBottom: 4,
+    flex: 1,
+  },
+  balanceText: {
+    color: "#22c55e",
+    fontSize: 14,
+    fontWeight: "600",
   },
   speedBonus: {
     color: "#22d3ee",

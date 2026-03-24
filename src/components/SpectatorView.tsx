@@ -4,13 +4,13 @@
  * Following: ENHANCEMENT FIRST, MODULAR architecture
  */
 
-'use client';
+"use client";
 
-import { useState } from 'react';
-import { useSpectatorMode } from '@/hooks/useSpectatorMode';
-import PirateMap from './PirateMap';
-import PlayerStats from './PlayerStats';
-import BattleInfoPanel from './BattleInfoPanel';
+import { useState } from "react";
+import { useSpectatorMode } from "@/hooks/useSpectatorMode";
+import PirateMap from "./PirateMap";
+import PlayerStats from "./PlayerStats";
+import BattleInfoPanel from "./BattleInfoPanel";
 
 // =============================================================================
 // TYPES
@@ -26,8 +26,13 @@ interface SpectatorViewProps {
 // COMPONENT
 // =============================================================================
 
-export default function SpectatorView({ initialGameId, onClose, onJoinGame }: SpectatorViewProps) {
-  const [gameIdInput, setGameIdInput] = useState(initialGameId || '');
+export default function SpectatorView({
+  initialGameId,
+  onClose,
+  onJoinGame,
+}: SpectatorViewProps) {
+  const [gameIdInput, setGameIdInput] = useState(initialGameId || "");
+  const [copied, setCopied] = useState(false);
 
   const {
     gameState,
@@ -47,14 +52,26 @@ export default function SpectatorView({ initialGameId, onClose, onJoinGame }: Sp
   const handleSearch = (e: React.FormEvent) => {
     e.preventDefault();
     if (!gameIdInput.trim()) return;
-    
+
     setGameId(gameIdInput.trim());
   };
 
+  const handleShare = async () => {
+    const url = `${window.location.origin}?spectate=${gameState?.gameId || gameIdInput}`;
+    try {
+      await navigator.clipboard.writeText(url);
+      setCopied(true);
+      setTimeout(() => setCopied(false), 2000);
+    } catch {
+      // Fallback for older browsers
+      prompt("Copy this link to share:", url);
+    }
+  };
+
   const formatLastUpdate = (timestamp: number) => {
-    if (!timestamp) return 'Never';
+    if (!timestamp) return "Never";
     const seconds = Math.floor((Date.now() - timestamp) / 1000);
-    if (seconds < 5) return 'Just now';
+    if (seconds < 5) return "Just now";
     if (seconds < 60) return `${seconds}s ago`;
     return `${Math.floor(seconds / 60)}m ago`;
   };
@@ -67,8 +84,10 @@ export default function SpectatorView({ initialGameId, onClose, onJoinGame }: Sp
           {/* Header */}
           <div className="text-center mb-8">
             <div className="text-6xl mb-4">👁️</div>
-            <h2 className="text-3xl font-black text-transparent bg-clip-text 
-                           bg-gradient-to-r from-neon-cyan to-neon-gold mb-2">
+            <h2
+              className="text-3xl font-black text-transparent bg-clip-text 
+                           bg-gradient-to-r from-neon-cyan to-neon-gold mb-2"
+            >
               Spectator Mode
             </h2>
             <p className="text-gray-400">
@@ -116,7 +135,7 @@ export default function SpectatorView({ initialGameId, onClose, onJoinGame }: Sp
                   Finding Game...
                 </div>
               ) : (
-                'Watch Game'
+                "Watch Game"
               )}
             </button>
           </form>
@@ -127,7 +146,7 @@ export default function SpectatorView({ initialGameId, onClose, onJoinGame }: Sp
               Popular Active Games
             </h3>
             <div className="space-y-2">
-              {['battle_001', 'pirate_war_42', 'treasure_hunt_7'].map((id) => (
+              {["battle_001", "pirate_war_42", "treasure_hunt_7"].map((id) => (
                 <button
                   key={id}
                   onClick={() => {
@@ -142,7 +161,9 @@ export default function SpectatorView({ initialGameId, onClose, onJoinGame }: Sp
                     <span className="w-2 h-2 bg-green-500 rounded-full animate-pulse" />
                     <span className="font-mono text-neon-cyan">{id}</span>
                   </div>
-                  <span className="text-xs text-gray-500">4 players • Turn 23</span>
+                  <span className="text-xs text-gray-500">
+                    4 players • Turn 23
+                  </span>
                 </button>
               ))}
             </div>
@@ -173,12 +194,14 @@ export default function SpectatorView({ initialGameId, onClose, onJoinGame }: Sp
               <span className="text-2xl">👁️</span>
               <span className="font-bold text-neon-cyan">SPECTATOR MODE</span>
             </div>
-            
+
             {/* Live indicator */}
             <div className="flex items-center gap-2 bg-slate-800 rounded-full px-3 py-1">
-              <span className={`w-2 h-2 rounded-full ${isLive ? 'bg-green-500 animate-pulse' : 'bg-gray-500'}`} />
+              <span
+                className={`w-2 h-2 rounded-full ${isLive ? "bg-green-500 animate-pulse" : "bg-gray-500"}`}
+              />
               <span className="text-xs text-gray-400">
-                {isLive ? 'LIVE' : 'ENDED'}
+                {isLive ? "LIVE" : "ENDED"}
               </span>
             </div>
 
@@ -202,6 +225,17 @@ export default function SpectatorView({ initialGameId, onClose, onJoinGame }: Sp
               ) : (
                 <span className="text-neon-cyan">🔄</span>
               )}
+            </button>
+
+            {/* Share button */}
+            <button
+              onClick={handleShare}
+              className="p-2 rounded-lg bg-slate-800 hover:bg-slate-700 transition-colors"
+              title="Share game link"
+            >
+              <span className={copied ? "text-green-400" : "text-neon-cyan"}>
+                {copied ? "✓" : "🔗"}
+              </span>
             </button>
 
             {/* Join button */}
@@ -232,16 +266,21 @@ export default function SpectatorView({ initialGameId, onClose, onJoinGame }: Sp
         {/* Game info bar */}
         <div className="flex items-center gap-6 mt-3 text-sm">
           <span className="text-gray-400">
-            Game: <span className="font-mono text-neon-cyan">{gameState.gameId}</span>
+            Game:{" "}
+            <span className="font-mono text-neon-cyan">{gameState.gameId}</span>
           </span>
           <span className="text-gray-400">
             Turn: <span className="text-white">{gameState.turnNumber}</span>
           </span>
           <span className="text-gray-400">
-            Players: <span className="text-white">{gameState.players.length}</span>
+            Players:{" "}
+            <span className="text-white">{gameState.players.length}</span>
           </span>
           <span className="text-gray-400">
-            Phase: <span className="capitalize text-white">{gameState.currentPhase}</span>
+            Phase:{" "}
+            <span className="capitalize text-white">
+              {gameState.currentPhase}
+            </span>
           </span>
         </div>
       </div>
@@ -263,14 +302,24 @@ export default function SpectatorView({ initialGameId, onClose, onJoinGame }: Sp
 
           {/* Event Log */}
           <div className="mt-4 bg-slate-900/50 border border-slate-700 rounded-xl p-4">
-            <h3 className="text-sm font-bold text-gray-400 uppercase mb-3">Recent Events</h3>
+            <h3 className="text-sm font-bold text-gray-400 uppercase mb-3">
+              Recent Events
+            </h3>
             <div className="space-y-2 max-h-48 overflow-y-auto">
-              {gameState.eventLog.slice(-5).reverse().map((event) => (
-                <div key={event.id} className="text-xs p-2 bg-slate-800/50 rounded">
-                  <span className="text-gray-500">Turn {event.turnNumber}:</span>
-                  <p className="text-gray-300 mt-1">{event.description}</p>
-                </div>
-              ))}
+              {gameState.eventLog
+                .slice(-5)
+                .reverse()
+                .map((event) => (
+                  <div
+                    key={event.id}
+                    className="text-xs p-2 bg-slate-800/50 rounded"
+                  >
+                    <span className="text-gray-500">
+                      Turn {event.turnNumber}:
+                    </span>
+                    <p className="text-gray-300 mt-1">{event.description}</p>
+                  </div>
+                ))}
             </div>
           </div>
         </div>
@@ -279,7 +328,9 @@ export default function SpectatorView({ initialGameId, onClose, onJoinGame }: Sp
         <div className="lg:col-span-2 flex flex-col">
           <PirateMap
             gameMap={gameState.gameMap}
-            ships={gameState.players.flatMap((p) => p.ships).filter((s) => s.health > 0)}
+            ships={gameState.players
+              .flatMap((p) => p.ships)
+              .filter((s) => s.health > 0)}
             players={gameState.players}
             onCellSelect={() => {}} // No-op in spectator mode
             onShipClick={() => {}} // No-op in spectator mode
@@ -295,8 +346,10 @@ export default function SpectatorView({ initialGameId, onClose, onJoinGame }: Sp
           <BattleInfoPanel gameState={gameState} />
 
           {/* Spectator Call-to-Action */}
-          <div className="mt-4 bg-gradient-to-br from-neon-cyan/20 to-neon-gold/20 
-                          border border-neon-cyan/50 rounded-xl p-4">
+          <div
+            className="mt-4 bg-gradient-to-br from-neon-cyan/20 to-neon-gold/20 
+                          border border-neon-cyan/50 rounded-xl p-4"
+          >
             <h3 className="font-bold text-neon-cyan mb-2">Want to Play?</h3>
             <p className="text-sm text-gray-300 mb-3">
               Connect your wallet to join battles and earn real rewards!

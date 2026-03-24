@@ -51,9 +51,7 @@ const mapTerritoryMap = (onChain: any) => {
   }
 
   const inferredSize = Math.sqrt(flatMap.length);
-  const size = Number.isInteger(inferredSize)
-    ? inferredSize
-    : DEFAULT_MAP_SIZE;
+  const size = Number.isInteger(inferredSize) ? inferredSize : DEFAULT_MAP_SIZE;
 
   const cells = Array.from({ length: size }, (_, x) =>
     Array.from({ length: size }, (_, y) => {
@@ -109,9 +107,14 @@ export function mapOnChainToLocal(onChain: any, gameId: string): GameState {
         wood: 0,
         rum: 0,
       },
-      ability: PirateGameManager.getShipAbility(
-        (getEnumKey(s.shipType).toLowerCase() as any) || "sloop",
-      ),
+      ability: {
+        name: "Attack",
+        description: "Basic attack",
+        cooldown: 0,
+        currentCooldown: 0,
+        isReady: true,
+        type: "offensive" as const,
+      },
       activeEffects: [],
     })),
     controlledTerritories: p.controlledTerritories || [],
@@ -122,6 +125,12 @@ export function mapOnChainToLocal(onChain: any, gameId: string): GameState {
     speedBonusAccumulated: p.speedBonusAccumulated || 0,
     averageDecisionTimeMs: p.averageDecisionTimeMs || 0,
     totalMoves: p.totalMoves || 0,
+    consecutiveAttacks: 0,
+    lastActionWasAttack: false,
+    eloRating: p.eloRating || 1200,
+    gamesPlayed: p.gamesPlayed || 0,
+    wins: p.wins || 0,
+    losses: p.losses || 0,
   }));
 
   const rawStatus = onChain.status ? Object.keys(onChain.status)[0] : "waiting";

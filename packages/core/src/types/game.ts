@@ -111,6 +111,12 @@ export interface Player {
   // Momentum system: consecutive attacks build bonus
   consecutiveAttacks: number;
   lastActionWasAttack: boolean;
+
+  // ===== COMPETITIVE RATING =====
+  eloRating: number;
+  gamesPlayed: number;
+  wins: number;
+  losses: number;
 }
 
 export type OnChainGameMode = "Casual" | "Competitive" | "AgentArena";
