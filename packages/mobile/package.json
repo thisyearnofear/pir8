@@ -13,7 +13,7 @@
     "type-check": "tsc --noEmit"
   },
   "dependencies": {
-    "@pir8/core": "*",
+    "@pir8/core": "workspace:*",
     "@react-native-async-storage/async-storage": "1.23.1",
     "@solana-mobile/wallet-adapter-mobile": "^2.2.5",
     "@solana/wallet-adapter-base": "^0.9.27",
