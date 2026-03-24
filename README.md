@@ -189,10 +189,10 @@ Token Distribution:
 
 | Document | Description |
 |----------|-------------|
-| [GETTING_STARTED.md](./docs/GETTING_STARTED.md) | Installation, setup, and basic usage |
-| [ARCHITECTURE.md](./docs/ARCHITECTURE.md) | System architecture, technology stack, and implementation details |
-| [DEVELOPMENT.md](./docs/DEVELOPMENT.md) | Development workflow, testing, and contribution guidelines |
-| [VISION.md](./docs/VISION.md) | Project vision, roadmap, and strategic direction |
+| [docs/GETTING_STARTED.md](./docs/GETTING_STARTED.md) | Installation, setup, and quick start |
+| [docs/ARCHITECTURE.md](./docs/ARCHITECTURE.md) | System architecture and technical details |
+| [docs/DEVELOPMENT.md](./docs/DEVELOPMENT.md) | Development workflow and contributing |
+| [docs/VISION.md](./docs/VISION.md) | Project vision and roadmap |
 
 ---
 
