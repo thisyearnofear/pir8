@@ -7,7 +7,6 @@
 
 // Types
 export * from './types/game';
-export * from './types/gameMap';
 
 // Game Engine
 export * from './lib/pirateGameEngine';
@@ -16,10 +15,5 @@ export * from './lib/pirateGameEngine';
 export * from './utils/haptics';
 export * from './utils/time';
 export * from './utils/constants';
-
-// Territory Bonuses
-export { 
-  calculateActiveBonuses, 
-  calculateNextBonus,
-  TERRITORY_BONUSES 
-} from './lib/territoryBonuses';
+export * from './utils/helpers';
+export * from './utils/validation';

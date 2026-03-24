@@ -5,12 +5,8 @@
     "paths": {
       "@/*": ["./*"],
       "@pir8/core": ["../core/src/index.ts"]
-    }
+    },
+    "typeRoots": ["./node_modules/@types", "../core/node_modules/@types"]
   },
-  "include": [
-    "**/*.ts",
-    "**/*.tsx",
-    ".expo/types/**/*.ts",
-    "expo-env.d.ts"
-  ]
+  "include": ["**/*.ts", "**/*.tsx", ".expo/types/**/*.ts", "expo-env.d.ts"]
 }

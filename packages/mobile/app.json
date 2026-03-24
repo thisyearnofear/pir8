@@ -23,7 +23,9 @@
         "backgroundColor": "#0f172a"
       },
       "package": "com.pir8.battlearena",
-      "permissions": []
+      "permissions": [],
+      "versionCode": 1,
+      "minSdkVersion": 24
     },
     "web": {
       "bundler": "metro",
