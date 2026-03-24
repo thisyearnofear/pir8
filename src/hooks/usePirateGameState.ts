@@ -363,6 +363,7 @@ export const usePirateGameState = create<PirateGameStore>((set, get) => ({
         initializeGame,
         fetchGameState,
         fetchLobbies,
+        joinGame,
       } = await import("../lib/client/transactionBuilder");
       const { mapOnChainToLocal } = await import("../utils/helpers");
 
@@ -412,11 +413,10 @@ export const usePirateGameState = create<PirateGameStore>((set, get) => ({
         const matchId = bestMatch.account.gameId.toNumber();
 
         console.log(`Found matching game ${matchId}, joining...`);
-        // TODO: Implement proper join game with game ID
-        console.log('Join game with specific ID not yet implemented');
+        await joinGame(wallet, matchId);
 
         // Fetch state
-        const onChainState = await fetchGameState(wallet);
+        const onChainState = await fetchGameState(wallet, matchId);
         if (onChainState) {
           const mappedState = mapOnChainToLocal(
             onChainState,
@@ -433,7 +433,7 @@ export const usePirateGameState = create<PirateGameStore>((set, get) => ({
         await initializeGame(wallet);
 
         // Fetch state
-        const onChainState = await fetchGameState(wallet);
+        const onChainState = await fetchGameState(wallet, newGameId);
         if (onChainState) {
           const mappedState = mapOnChainToLocal(
             onChainState,

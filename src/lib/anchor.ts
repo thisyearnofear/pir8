@@ -102,19 +102,45 @@ export const numberToBN = (num: number): BN => {
 
 // Event parsing helpers
 export const parseGameEvents = (logs: string[]): any[] => {
-  // Parse program events from transaction logs
   const events: any[] = [];
+  const eventNames = [
+    'GameCreated',
+    'PlayerJoined',
+    'GameStarted',
+    'ShipMoved',
+    'ShipAttacked',
+    'TerritoryClaimed',
+    'ResourcesCollected',
+    'ShipBuilt',
+    'CoordinateScanned',
+    'MoveExecuted',
+    'GameCompleted',
+  ];
+
+  const extractJsonPayload = (log: string) => {
+    const start = log.indexOf('{');
+    const end = log.lastIndexOf('}');
+    if (start === -1 || end === -1 || end <= start) return null;
+    const payload = log.slice(start, end + 1);
+    try {
+      return JSON.parse(payload);
+    } catch {
+      return null;
+    }
+  };
 
   for (const log of logs) {
-    if (log.includes('GameCreated')) {
-      // Parse GameCreated event
-    } else if (log.includes('PlayerJoined')) {
-      // Parse PlayerJoined event
-    } else if (log.includes('MoveMade')) {
-      // Parse MoveMade event
-    } else if (log.includes('GameCompleted')) {
-      // Parse GameCompleted event
+    const matchedName = eventNames.find((name) => log.includes(name));
+    if (!matchedName) {
+      continue;
     }
+
+    const data = extractJsonPayload(log);
+    events.push({
+      type: matchedName,
+      data,
+      rawLog: log,
+    });
   }
 
   return events;

@@ -12,6 +12,7 @@ import { Program, BN } from '@coral-xyz/anchor';
 import { PirateGameManager } from '../pirateGameEngine';
 import { getGamePDA } from '../anchor';
 import { GameState } from '../../types/game';
+import { mapOnChainToLocal } from '../../utils/helpers';
 
 // Define the tool interfaces for agent frameworks
 export interface PIR8AgentTool {
@@ -218,7 +219,7 @@ export class PIR8AgentPlugin {
         const rawState = await (this.program as any).account.pirateGame.fetch(gamePDA);
 
         // Transform on-chain state to Engine-compatible state
-        const gameState = this.mapOnChainToLocal(rawState as any, gameId.toString());
+        const gameState = mapOnChainToLocal(rawState as any, gameId.toString());
         const myPK = this.program.provider.publicKey!.toBase58();
         const me = gameState.players.find(p => p.publicKey === myPK);
 
@@ -261,37 +262,4 @@ export class PIR8AgentPlugin {
     };
   }
 
-  /**
-   * Private helper to map Anchor account data to our Game Engine types
-   */
-  private mapOnChainToLocal(onChain: any, gameId: string): GameState {
-    return {
-      gameId,
-      gameMode: 'Casual',
-      players: onChain.players.map((p: any) => ({
-        publicKey: p.pubkey.toBase58(),
-        resources: p.resources,
-        ships: p.ships.map((s: any) => ({
-          id: s.id,
-          type: Object.keys(s.shipType || {})[0]?.toLowerCase() || 'sloop',
-          health: s.health,
-          maxHealth: s.maxHealth,
-          attack: s.attack,
-          defense: s.defense,
-          speed: s.speed,
-          position: { x: s.positionX, y: s.positionY },
-        })),
-        controlledTerritories: p.controlledTerritories,
-        totalScore: p.totalScore,
-        isActive: p.isActive,
-      })),
-      currentPlayerIndex: onChain.currentPlayerIndex,
-      gameMap: PirateGameManager.createGameMap(5), // Placeholder for map sync
-      gameStatus: Object.keys(onChain.status || {})[0]?.toLowerCase() as any || 'waiting',
-      turnNumber: onChain.turnNumber,
-      currentPhase: 'deployment', // Default for engine
-      pendingActions: [],
-      eventLog: [],
-    };
-  }
 }
