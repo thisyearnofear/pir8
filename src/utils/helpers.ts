@@ -3,7 +3,7 @@
  * Following: DRY, AGGRESSIVE CONSOLIDATION
  */
 
-import { GameState, Player } from "../types/game";
+import { GameState, Player, TerritoryCellType } from "../types/game";
 import { PirateGameManager } from "../lib/pirateGameEngine";
 import { GAME_CONFIG } from "./constants";
 
@@ -19,7 +19,7 @@ const getEnumKey = (value: unknown): string => {
   return "";
 };
 
-const normalizeTerritoryType = (rawType: unknown) => {
+const normalizeTerritoryType = (rawType: unknown): TerritoryCellType => {
   const normalized = getEnumKey(rawType).toLowerCase();
   if (
     normalized === "water" ||
