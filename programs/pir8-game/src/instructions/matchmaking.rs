@@ -120,6 +120,10 @@ pub fn join_game(ctx: Context<JoinGame>) -> Result<()> {
         is_active: true,
         scan_charges: 3,
         scanned_coordinates: Vec::new(),
+        // Ghost Fleet fields
+        is_ghost_fleet: false,
+        ghost_fleet_turns_remaining: 0,
+        total_ghosts_activated: 0,
         speed_bonus_accumulated: 0,
         average_decision_time_ms: 0,
         total_moves: 0,

@@ -2,14 +2,14 @@
 
 ## Overview
 
-PIR8 is a privacy-first strategic naval combat platform combining Zcash shielded transactions with skill-based competitive gameplay on Solana.
+PIR8 is a privacy-first strategic naval combat platform combining session key privacy architecture with skill-based competitive gameplay on Solana.
 
 ## Prerequisites
 
 - Node.js 18+ installed
-- Rust 1.70+ (for Anchor contract development)
-- Solana CLI 1.18+ installed
-- Anchor CLI 0.29+ installed
+- Rust 1.75+ (for Anchor contract development)
+- Solana CLI 3.1+ installed
+- Anchor CLI 0.30+ installed
 - Solana wallet (Phantom, Solflare, or Backpack)
 - ~1 SOL on Devnet (for testing)
 
@@ -32,47 +32,34 @@ cp .env.local.example .env.local
 Add these variables to your `.env.local` file:
 
 ```bash
-# Helius RPC URL (get from helius.dev)
+# Solana RPC URL (get from helius.dev)
 NEXT_PUBLIC_HELIUS_RPC=https://devnet.helius-rpc.com/?api-key=YOUR_KEY
 
-# Program ID (from deployment)
-NEXT_PUBLIC_PROGRAM_ID=EeHyY2FQ3A4GLieZbGbmZtz1iLKzLytXkRcXyzGfmePt
+# Program ID (deployed to devnet)
+NEXT_PUBLIC_PROGRAM_ID=DkkuBQySAxKTADdxQVyx8rjxudZVSwA7ZjRCqRquH5FU
 
 # Solana network
 NEXT_PUBLIC_SOLANA_NETWORK=devnet
-
-# Zcash Privacy Integration
-NEXT_PUBLIC_LIGHTWALLETD_URL=https://lightwalletd.com:9067
-NEXT_PUBLIC_ZCASH_SHIELDED_ADDR=zs1your_shielded_address_here
-NEXT_PUBLIC_ZCASH_ENABLED=true
-NEXT_PUBLIC_LOG_LEVEL=info
 ```
 
 ## Quick Start
 
-### Build & Test Contracts
+### Build & Deploy Contracts
 
 ```bash
-# Build Anchor program
-cd contracts/pir8-game
-cargo build --release
+# Build program binary (note: anchor build IDL step has a known toolchain issue)
+cd programs/pir8-game
+cargo build-sbf
+
+# Deploy to devnet
+export PATH="$HOME/.local/share/solana/install/active_release/bin:$PATH"
+solana config set --url devnet
+solana program deploy target/deploy/pir8_game.so
 
 # Run the frontend
-pnpm run dev
+cd ../..
+npm run dev
 # Opens http://localhost:3000 with wallet connection UI
-```
-
-### Deploy to Devnet
-
-```bash
-# Configure Solana CLI for devnet
-solana config set --url devnet
-
-# Airdrop SOL for deployment
-solana airdrop 2
-
-# Deploy program
-anchor deploy --provider.cluster devnet
 ```
 
 ## Development Commands
@@ -137,49 +124,28 @@ pnpm run cli -- start 0
 pnpm run cli -- monitor
 ```
 
-## Zcash Privacy Integration
+## Session Key Privacy
 
 ### Overview
 
-PIR8 uses Zcash shielded transactions for **private tournament entry**:
+PIR8 uses **ephemeral session keys** for private gameplay — no cross-chain bridge or server-side signing required:
 
-1. Player creates memo with game entry data
-2. Sends ZEC to PIR8 shielded address with memo
-3. Memo gets parsed on Solana side
-4. `join_game` instruction executes automatically
-5. **Privacy preserved**: Zcash tx identity never appears on Solana
+1. Player generates an ephemeral keypair in-browser
+2. Player calls `delegate_agent_control(session_pubkey)` from their main wallet (one signature)
+3. Player funds the session key with a small amount of SOL for gas
+4. Session key joins and plays the game — main wallet never touches the game PDA
+5. At game end, rewards are claimable back to the main wallet via the AgentRegistry link
+6. **Privacy preserved**: Session key is unlinkable to main wallet on-chain
 
-### Creating a Tournament Entry Memo
+### Why Session Keys Instead of Cross-Chain Bridges?
 
-```typescript
-import { ZcashMemoBridge } from '@/lib/integrations';
-
-const gameId = 'game_0';
-const playerPubkey = 'your_solana_pubkey';
-
-// Create memo for Zcash transaction
-const memo = ZcashMemoBridge.createMemo({
-  gameId,
-  action: 'join',
-  solanaPubkey: playerPubkey,
-});
-
-// Output:
-// {"v":1,"gameId":"game_0","action":"join","solanaPubkey":"...","timestamp":1234567890}
-```
-
-### Manual Tournament Entry
-
-```bash
-# 1. Generate memo for your wallet
-pnpm run cli -- memo --game game_0 --action join
-
-# 2. Send ZEC to PIR8 shielded address with the memo
-#    Address: zs1m2n3o4p5... (see ZCASH_CONFIG)
-
-# 3. Monitor entry
-pnpm run cli -- monitor
-```
+| | Session Keys | Cross-Chain Bridge |
+|---|---|---|
+| **Join time** | ~2 seconds | ~2 minutes |
+| **Server cost** | Zero (user pays gas) | Requires funded relay wallet |
+| **Privacy model** | Unlinkable ephemeral identity | Bridge server knows both identities |
+| **Complexity** | Solana-native, no external deps | Requires Zcash node + gRPC + relay |
+| **User experience** | One extra signature | Send Zcash tx, wait, hope it works |
 
 ## Key Concepts
 

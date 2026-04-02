@@ -33,7 +33,7 @@ export async function joinGame(_program: Program, _provider: AnchorProvider, _ga
 }
 
 /**
- * Handle Zcash memo: create new game or join existing
+ * Handle shielded/privacy memo: create new game or join existing
  * Returns onchain_<address> format for consistency with watcher
  */
 export async function handleShieldedMemo(
@@ -45,6 +45,6 @@ export async function handleShieldedMemo(
   return {
     success: false,
     action: 'status',
-    error: 'Zcash memo handling deprecated - use web interface with connected wallet for proper Web3 architecture'
+    error: 'Memo-based game handling deprecated - use web interface with connected wallet for proper Web3 architecture'
   };
 }

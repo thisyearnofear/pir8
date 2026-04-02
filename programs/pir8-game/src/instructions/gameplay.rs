@@ -49,6 +49,58 @@ pub struct MakeMove<'info> {
     pub player: Signer<'info>,
 }
 
+// ============================================================================
+// SESSION KEY / DELEGATE INSTRUCTIONS
+// ============================================================================
+
+/// Join a game via a delegated session key
+/// The session key must be registered as a delegate in the player's AgentRegistry account
+#[derive(Accounts)]
+#[instruction(game_id: u64)]
+pub struct JoinGameViaDelegate<'info> {
+    #[account(
+        mut,
+        seeds = [GAME_SEED, game_id.to_le_bytes().as_ref()],
+        bump = game.bump
+    )]
+    pub game: Account<'info, PirateGame>,
+    /// Session key acting as signer - must be delegate of the owner
+    pub session_key: Signer<'info>,
+    /// The original owner who set the delegate - used to derive AgentRegistry PDA
+    #[account(
+        seeds = [b"agent", owner.key().as_ref()],
+        bump,
+        has_one = owner
+    )]
+    pub agent: Account<'info, AgentRegistry>,
+    /// CHECK: owner is validated via has_one constraint on the agent account
+    pub owner: UncheckedAccount<'info>,
+    pub system_program: Program<'info, System>,
+}
+
+/// Make a move via a delegated session key
+/// The session key must be registered as a delegate in the player's AgentRegistry account
+#[derive(Accounts)]
+pub struct MakeMoveViaDelegate<'info> {
+    #[account(
+        mut,
+        seeds = [GAME_SEED, game.game_id.to_le_bytes().as_ref()],
+        bump = game.bump
+    )]
+    pub game: Account<'info, PirateGame>,
+    /// Session key acting as signer - must be delegate of the owner
+    pub session_key: Signer<'info>,
+    /// The original owner who set the delegate - used to derive AgentRegistry PDA
+    #[account(
+        seeds = [b"agent", owner.key().as_ref()],
+        bump,
+        has_one = owner
+    )]
+    pub agent: Account<'info, AgentRegistry>,
+    /// CHECK: owner is validated via has_one constraint on the agent account
+    pub owner: UncheckedAccount<'info>,
+}
+
 pub fn register_agent(
     ctx: Context<RegisterAgent>,
     name: String,
@@ -82,6 +134,237 @@ pub fn delegate_agent_control(
     } else {
         msg!("Agent control revoked");
     }
+
+    Ok(())
+}
+
+/// Join a game using a delegated session key
+/// The session key must be authorized in the player's AgentRegistry
+pub fn join_game_via_delegate(ctx: Context<JoinGameViaDelegate>) -> Result<()> {
+    // ============================================================================
+    // Get all keys and account infos FIRST, before any mutable borrows
+    // ============================================================================
+    let game_key = ctx.accounts.game.key();
+    let session_key = ctx.accounts.session_key.key();
+    let owner_key = ctx.accounts.owner.key();
+    
+    // Get account infos before mutable borrow of game
+    let session_key_info = ctx.accounts.session_key.to_account_info();
+    let game_info = ctx.accounts.game.to_account_info();
+    let system_program_info = ctx.accounts.system_program.to_account_info();
+    
+    // ============================================================================
+    // Now we can safely get mutable reference to game
+    // ============================================================================
+    let game = &mut ctx.accounts.game;
+
+    // Validate game state
+    require!(
+        game.status == GameStatus::Waiting,
+        GameError::GameNotJoinable
+    );
+    require!(game.player_count < MAX_PLAYERS, GameError::GameFull);
+
+    // Validate the session key is the delegate in the AgentRegistry
+    let agent = &ctx.accounts.agent;
+    require!(
+        agent.delegate == Some(session_key),
+        GameError::UnauthorizedDelegate
+    );
+
+    // Check if player already joined (by owner key)
+    if game.players.iter().any(|p| p.pubkey == owner_key) {
+        return Err(GameError::GameNotJoinable.into());
+    }
+
+    // Transfer Entry Fee (0.1 SOL) using pre-fetched account infos
+    let entry_fee = 100_000_000; // 0.1 SOL in lamports
+
+    let transfer_instruction = anchor_lang::solana_program::system_instruction::transfer(
+        &session_key,
+        &game_key,
+        entry_fee,
+    );
+
+    anchor_lang::solana_program::program::invoke(
+        &transfer_instruction,
+        &[
+            session_key_info,
+            game_info,
+            system_program_info,
+        ],
+    )?;
+
+    // Add player using the owner's pubkey (session key is just for signing)
+    game.players.push(crate::state::player::PlayerData {
+        pubkey: owner_key, // The actual player is the owner, not session key
+        resources: crate::state::player::Resources {
+            gold: 1000,
+            crew: 50,
+            cannons: 10,
+            supplies: 100,
+        },
+        ships: Vec::new(),
+        controlled_territories: Vec::new(),
+        total_score: 0,
+        is_active: true,
+        scan_charges: 3,
+        scanned_coordinates: Vec::new(),
+        // Ghost Fleet fields
+        is_ghost_fleet: false,
+        ghost_fleet_turns_remaining: 0,
+        total_ghosts_activated: 0,
+        speed_bonus_accumulated: 0,
+        average_decision_time_ms: 0,
+        total_moves: 0,
+    });
+
+    game.player_count += 1;
+
+    emit!(crate::events::PlayerJoined {
+        player: owner_key,
+        player_count: game.player_count,
+    });
+
+    // AUTO-START LOGIC
+    if game.player_count >= MAX_PLAYERS {
+        msg!("Auto-starting game {} via delegate...", game.game_id);
+
+        let clock = Clock::get()?;
+        let seed = clock.unix_timestamp as u64;
+
+        game.territory_map = crate::state::map::generate_strategic_map(seed);
+        crate::state::game::deploy_starting_fleets(game)?;
+
+        game.status = GameStatus::Active;
+        game.started_at = Some(clock.unix_timestamp);
+        game.turn_number = 1;
+
+        emit!(crate::events::GameStarted {
+            player_count: game.player_count,
+        });
+    }
+
+    msg!("Player {} joined game {} via session key {}", owner_key, game.game_id, session_key);
+    Ok(())
+}
+
+/// Make a move using a delegated session key
+/// The session key must be authorized in the player's AgentRegistry
+pub fn move_ship_via_delegate(
+    ctx: Context<MakeMoveViaDelegate>,
+    ship_id: String,
+    to_x: u8,
+    to_y: u8,
+    decision_time_ms: Option<u64>,
+) -> Result<()> {
+    let game = &mut ctx.accounts.game;
+    let session_key = ctx.accounts.session_key.key();
+    let owner_key = ctx.accounts.owner.key();
+
+    // Validate game state
+    require!(game.status == GameStatus::Active, GameError::GameNotActive);
+
+    // Validate the session key is the delegate in the AgentRegistry
+    let agent = &ctx.accounts.agent;
+    require!(
+        agent.delegate == Some(session_key),
+        GameError::UnauthorizedDelegate
+    );
+
+    // Validate it's the owner's turn (not the session key's turn)
+    let current_player = game.get_current_player().ok_or(GameError::NotPlayerTurn)?;
+    require!(
+        current_player.pubkey == owner_key,
+        GameError::NotPlayerTurn
+    );
+
+    // Validate coordinates
+    require!(
+        to_x < MAP_SIZE as u8 && to_y < MAP_SIZE as u8,
+        GameError::InvalidCoordinate
+    );
+
+    // First, find the ship and validate move distance (immutable borrow)
+    let (from_x, from_y, ship_speed) = {
+        let player = game
+            .players
+            .iter()
+            .find(|p| p.pubkey == owner_key)
+            .ok_or(GameError::NotPlayerTurn)?;
+
+        let ship = player
+            .ships
+            .iter()
+            .find(|s| s.id == ship_id)
+            .ok_or(GameError::ShipNotFound)?;
+
+        (ship.position_x, ship.position_y, ship.speed)
+    };
+
+    // Validate move distance
+    let distance =
+        ((to_x as i16 - from_x as i16).abs() + (to_y as i16 - from_y as i16).abs()) as u32;
+    require!(distance <= ship_speed, GameError::InvalidCoordinate);
+
+    // Check if position is occupied
+    for p in game.players.iter() {
+        for s in p.ships.iter() {
+            if s.position_x == to_x && s.position_y == to_y && s.id != ship_id {
+                return Err(GameError::PositionOccupied.into());
+            }
+        }
+    }
+
+    let current_turn = game.turn_number;
+    let game_id = game.game_id;
+
+    // Now get mutable reference and update ship
+    let player = game
+        .get_player_mut(&owner_key)
+        .ok_or(GameError::NotPlayerTurn)?;
+
+    let ship = player
+        .ships
+        .iter_mut()
+        .find(|s| s.id == ship_id)
+        .ok_or(GameError::ShipNotFound)?;
+
+    // Move the ship
+    ship.position_x = to_x;
+    ship.position_y = to_y;
+    ship.last_action_turn = current_turn;
+
+    // Apply timing bonus if provided
+    if let Some(time_ms) = decision_time_ms {
+        let bonus = crate::state::player::calculate_speed_bonus(time_ms);
+        player.speed_bonus_accumulated += bonus;
+        crate::state::player::update_average_decision_time(player, time_ms);
+
+        emit!(crate::events::MoveExecuted {
+            game_id,
+            player: owner_key,
+            decision_time_ms: time_ms,
+            speed_bonus_awarded: bonus,
+            new_total_score: player.total_score as u64 + player.speed_bonus_accumulated,
+        });
+    }
+
+    emit!(crate::events::ShipMoved {
+        game_id,
+        player: owner_key,
+        ship_id: ship_id.clone(),
+        from_x,
+        from_y,
+        to_x,
+        to_y,
+    });
+
+    msg!("Session key {} moved ship {} for player {} via delegate", 
+         session_key, ship_id, owner_key);
+
+    // Advance turn
+    game.advance_turn();
 
     Ok(())
 }
@@ -230,6 +513,16 @@ pub fn attack_ship(
 
     require!(attacker_attack > 0, GameError::ShipNotFound);
 
+    // ============================================================================
+    // GHOST FLEET MECHANICS: Get ambush bonus BEFORE mutable borrow
+    // ============================================================================
+    // Get the attacker's Ghost Fleet bonus (if attacking from stealth)
+    // Must do this before any mutable borrows
+    let attacker_player = game
+        .get_player(&player_pubkey)
+        .ok_or(GameError::NotPlayerTurn)?;
+    let ambush_bonus = crate::state::player::get_ambush_damage_bonus(attacker_player);
+
     // Find and damage target ship
     let mut target_found = false;
     let mut target_destroyed = false;
@@ -250,8 +543,11 @@ pub fn attack_ship(
                     as u32;
                 require!(distance <= 1, GameError::ShipsNotInRange);
 
-                // Calculate damage (attack - defense, minimum 1)
-                damage_dealt = attacker_attack.saturating_sub(ship.defense).max(1);
+                // Calculate base damage (attack - defense, minimum 1)
+                let base_damage = attacker_attack.saturating_sub(ship.defense).max(1);
+                
+                // Apply ambush bonus
+                damage_dealt = (base_damage as f32 * ambush_bonus) as u32;
 
                 // Apply damage
                 if ship.health <= damage_dealt {
@@ -571,6 +867,35 @@ pub fn scan_coordinate(ctx: Context<MakeMove>, coordinate_x: u8, coordinate_y: u
         GameError::CoordinateAlreadyScanned
     );
 
+    // ============================================================================
+    // GHOST FLEET MECHANICS: Check effective scan range
+    // ============================================================================
+    let effective_scan_range = crate::state::player::get_effective_scan_range(player);
+    
+    // Find the player's primary ship position for range calculation
+    let player_ship_x = player.ships.first().map(|s| s.position_x).unwrap_or(0);
+    let player_ship_y = player.ships.first().map(|s| s.position_y).unwrap_or(0);
+    
+    // Calculate distance from player to scanned coordinate
+    let dx = if coordinate_x >= player_ship_x {
+        coordinate_x - player_ship_x
+    } else {
+        player_ship_x - coordinate_x
+    };
+    let dy = if coordinate_y >= player_ship_y {
+        coordinate_y - player_ship_y
+    } else {
+        player_ship_y - coordinate_y
+    };
+    
+    // Check if coordinate is within effective scan range
+    // Use Chebyshev distance (max of dx, dy) for grid movement
+    let distance = dx.max(dy) as u8;
+    require!(
+        distance <= effective_scan_range,
+        GameError::ShipsNotInRange
+    );
+
     // Mark as scanned
     mark_coordinate_scanned(&mut player.scanned_coordinates, coordinate_x, coordinate_y)?;
     player.scan_charges -= 1;
@@ -603,6 +928,15 @@ pub fn end_turn(ctx: Context<MakeMove>) -> Result<()> {
         current_player.pubkey == player_pubkey,
         GameError::NotPlayerTurn
     );
+
+    // ============================================================================
+    // GHOST FLEET MECHANICS: Decrement turn counter for all Ghost Fleet players
+    // ============================================================================
+    for player in game.players.iter_mut() {
+        if player.is_active {
+            crate::state::player::tick_ghost_fleet(player);
+        }
+    }
 
     // Advance turn
     game.advance_turn();
@@ -738,6 +1072,56 @@ pub fn check_and_complete_game(ctx: Context<MakeMove>) -> Result<()> {
 
         msg!("Game completed! Winner: {}", winner_pubkey);
     }
+
+    Ok(())
+}
+
+// ============================================================================
+// GHOST FLEET INSTRUCTION
+// ============================================================================
+
+/// Activate Ghost Fleet mode - strategic stealth ability
+/// Cost: 200 gold, Duration: 3 turns
+/// Effect: Reduced scan range (harder to be scanned), ambush damage bonus
+#[derive(Accounts)]
+pub struct ActivateGhostFleet<'info> {
+    #[account(
+        mut,
+        seeds = [GAME_SEED, game.game_id.to_le_bytes().as_ref()],
+        bump = game.bump
+    )]
+    pub game: Account<'info, PirateGame>,
+    pub player: Signer<'info>,
+}
+
+pub fn activate_ghost_fleet_instruction(ctx: Context<ActivateGhostFleet>) -> Result<()> {
+    let game = &mut ctx.accounts.game;
+    let player_pubkey = ctx.accounts.player.key();
+
+    // Validate game state
+    require!(game.status == GameStatus::Active, GameError::GameNotActive);
+
+    // Validate it's the player's turn
+    let current_player = game.get_current_player().ok_or(GameError::NotPlayerTurn)?;
+    require!(
+        current_player.pubkey == player_pubkey,
+        GameError::NotPlayerTurn
+    );
+
+    // Activate Ghost Fleet using the helper
+    let player = game.get_player_mut(&player_pubkey).ok_or(GameError::NotPlayerTurn)?;
+    crate::state::player::activate_ghost_fleet(player)?;
+
+    emit!(crate::events::GhostFleetActivated {
+        game_id: game.game_id,
+        player: player_pubkey,
+        turns_remaining: crate::state::player::GHOST_FLEET_DURATION,
+    });
+
+    msg!("Ghost Fleet activated by {} for {} turns", player_pubkey, crate::state::player::GHOST_FLEET_DURATION);
+
+    // Advance turn
+    game.advance_turn();
 
     Ok(())
 }

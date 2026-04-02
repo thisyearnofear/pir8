@@ -7,7 +7,7 @@ Transform practice mode from a simple "demo" into an **educational experience** 
 
 Instead of just telling users "privacy is good," we let them experience:
 1. **The Transparent World** (Practice Mode) - Everything is visible, predictable, exploitable
-2. **The Private World** (On-Chain + Zcash) - Strategic depth, true unpredictability, fair play
+2. **The Private World** (On-Chain + Session Keys) - Strategic depth, true unpredictability, fair play
 
 ---
 
@@ -113,7 +113,7 @@ interface LeakageMeter {
 **Visual Design**:
 - Sidebar meter: "🔓 Information Leaked: 73%"
 - Breakdown chart showing what's visible to AI
-- Compare to: "🔒 With Zcash Privacy: 0% leakage"
+- Compare to: "🔒 With Session Key Privacy: 0% leakage"
 
 ### 4. The "Ghost Fleet" Tutorial (Privacy Feature Preview)
 
@@ -141,7 +141,7 @@ interface GhostFleetTutorial {
 2. Player's next 3 moves are hidden from AI
 3. AI makes "mistakes" because it can't predict
 4. Player wins the engagement
-5. Reveal: "This is what Zcash shielded transactions enable - true strategic surprise"
+5. Reveal: "This is what session key privacy enables - true strategic surprise. Your main wallet identity never appears on the game."
 
 ### 5. The "Whale Watching" Scenario (MEV Demo)
 
@@ -169,7 +169,7 @@ interface WhaleWatchingScenario {
 2. AI immediately claims adjacent high-value territory
 3. Message: "⚡ AI Pirate front-ran your expansion!"
 4. Explanation: "On transparent chains, bots can see your transactions before they're confirmed and act first"
-5. Solution preview: "With Zcash, your moves are invisible until confirmed"
+5. Solution preview: "With session key privacy, your identity is invisible — opponents can't link your moves to your main wallet"
 
 ---
 
@@ -334,7 +334,7 @@ interface PracticeModeMetadata {
 │                                         │
 │  🔒 UPGRADE TO FULL PIRACY:             │
 │                                         │
-│  • Zcash shielded moves (100% privacy)  │
+│  • Session key privacy (unlinkable ID)  │
 │  • True strategic surprise              │
 │  • Fair play - no AI prediction         │
 │  • Real rewards on Solana               │

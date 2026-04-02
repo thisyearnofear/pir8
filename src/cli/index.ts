@@ -6,7 +6,7 @@ import path from 'path';
 dotenv.config({ path: path.join(process.cwd(), '.env.local') });
 
 import { getAnchorClient } from '../lib/server/anchorActions';
-import { createGame, joinGame, handleShieldedMemo, GameCommandResult } from './commands/game';
+import { createGame, joinGame, GameCommandResult } from './commands/game';
 import { monitorHelius, HeliusMonitorResult } from './commands/monitoring';
 import { createWinnerToken, TokenCreateResult } from './commands/token';
 import { launchAgent } from './commands/agent';
@@ -14,7 +14,6 @@ import { launchAgent } from './commands/agent';
 interface CliArgs {
   command?: string;
   positional: string[];
-  memo?: string;
   gameId?: string;
   help?: boolean;
 }
@@ -25,10 +24,7 @@ function parseArgs(): CliArgs {
 
   for (let i = 0; i < argv.length; i++) {
     const arg = argv[i];
-    if (arg === '--memo' && argv[i + 1]) {
-      args.memo = argv[i + 1];
-      i++;
-    } else if (arg === '--game-id' && argv[i + 1]) {
+    if (arg === '--game-id' && argv[i + 1]) {
       args.gameId = argv[i + 1];
       i++;
     } else if (arg === '--help' || arg === '-h') {
@@ -56,7 +52,6 @@ Commands:
     init              Initialize game config (required before create/join)
     create            Create a new game on-chain
     join <gameId>     Join an existing game (gameId format: number or onchain_<number>)
-    memo              Handle Zcash shielded memo (requires --memo flag)
 
   Monitoring & Tokens:
     monitor           Monitor Helius for treasury transactions
@@ -64,7 +59,6 @@ Commands:
     agent <gameId>    Launch an autonomous agent for a specific game lobby
 
 Options:
-  --memo <json>     Zcash memo JSON (e.g., '{"v":"1","gameId":"demo_game",...}')
   --game-id <id>    Game ID for join command
   --help, -h        Show this help message
 
@@ -72,7 +66,6 @@ Examples:
   pir8-cli init
   pir8-cli create
   pir8-cli join 0
-  pir8-cli memo --memo '{"v":"1","gameId":"demo_game","solanaPubkey":"...","amountZEC":0.1}'
   pir8-cli monitor
   pir8-cli token 0
 `);
@@ -109,35 +102,6 @@ async function main() {
           ? gameId.replace('onchain_', '')
           : gameId;
         result = await joinGame(program, provider, gameAddress);
-        break;
-      }
-
-      case 'memo': {
-        if (!args.memo) {
-          console.error('Error: memo command requires --memo flag');
-          console.log('Example: pir8-cli memo --memo \'{"v":"1","gameId":"pirate_7","action":"join","solanaPubkey":"...","timestamp":1234567890000}\'');
-          process.exit(1);
-        }
-        try {
-          console.log('Parsing memo data:', args.memo);
-          const memoData = JSON.parse(args.memo);
-
-          // Validate required fields
-          if (!memoData.gameId || !memoData.solanaPubkey) {
-            console.error('Error: memo JSON must contain "gameId" and "solanaPubkey" fields');
-            process.exit(1);
-          }
-
-          const { program, provider } = await getAnchorClient();
-          result = await handleShieldedMemo(program, provider, memoData.gameId);
-          // Add Zcash-specific fields to result
-          result = { ...result, ...memoData };
-        } catch (e) {
-          console.error('Error: invalid memo JSON');
-          console.error('Details:', e instanceof Error ? e.message : String(e));
-          console.log('Please ensure your JSON is properly escaped and formatted');
-          process.exit(1);
-        }
         break;
       }
 

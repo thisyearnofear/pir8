@@ -2,14 +2,14 @@
 
 ## System Overview
 
-PIR8 is a full-stack Web3 gaming platform built on Solana with privacy features powered by Zcash. The architecture prioritizes speed, security, and skill-based gameplay.
+PIR8 is a full-stack Web3 gaming platform built on Solana with privacy features powered by session key architecture. The architecture prioritizes speed, security, and skill-based gameplay.
 
 ## Technology Stack
 
 ### Blockchain Layer
 - **Solana Devnet/Mainnet**: Primary execution layer
-- **Anchor Framework 0.29+**: Smart contract development
-- **Zcash**: Privacy-preserving tournament entry
+- **Anchor Framework 0.30+**: Smart contract development
+- **Session Keys**: Ephemeral identity via AgentRegistry delegate pattern
 - **Helius RPC**: Enhanced transaction monitoring
 
 ### Frontend
@@ -21,7 +21,6 @@ PIR8 is a full-stack Web3 gaming platform built on Solana with privacy features 
 ### Backend Services
 - **Node.js**: CLI tools and automation
 - **Helius WebSocket**: Real-time game monitoring
-- **Zcash Lightwalletd**: Shielded memo watching
 
 ## Smart Contract Architecture
 
@@ -173,12 +172,12 @@ src/
 │
 ├── hooks/
 │   ├── usePirateGameState.ts
-│   ├── useZcashBridge.ts
+│   ├── useSessionKey.ts      # Privacy via ephemeral wallets
 │   ├── useOnChainSync.ts
 │   └── useHeliusMonitor.ts
 │
 ├── lib/
-│   ├── integrations.ts       # Helius/Pump/Zcash
+│   ├── integrations.ts       # Helius/Pump integrations
 │   ├── anchorClient.ts       # Anchor transactions
 │   ├── gameLogic.ts          # Core game rules
 │   └── pirateGameEngine.ts
@@ -246,39 +245,49 @@ const { heliusConnected, lastSync } = useOnChainSync(gameState?.gameId);
 
 ## Privacy Layer
 
-### Zcash Integration
+### Session Key Architecture
 
-**Shielded Memo Schema**:
-```json
-{
-  "v": "1",                    // Schema version
-  "gameId": "game_123",        // Target game ID
-  "action": "join",            // Action: join or create
-  "solanaPubkey": "ABC...",    // Player Solana address
-  "timestamp": 1704067200000   // Memo creation time
+PIR8 achieves privacy without cross-chain bridges or server-side signing by leveraging the existing `AgentRegistry` delegate pattern already deployed in the Solana program.
+
+**How It Works**:
+```
+1. Player generates ephemeral keypair in-browser (session key)
+   ↓
+2. Player calls delegate_agent_control(session_pubkey) from main wallet
+   ↓
+3. Session key joins and plays the game — main wallet never touches game PDA
+   ↓
+4. All gameplay transactions signed by session key (user funds it with small SOL amount)
+   ↓
+5. At game end, rewards claimable back to main wallet via AgentRegistry link
+   ↓
+6. AgentRegistry PDA can be closed after game — session key becomes unlinkable
+```
+
+**Why This Works**:
+- **~2 second** join time (vs ~2 minutes with cross-chain bridge)
+- **Zero server cost** — user pays their own gas with the session key
+- **Real privacy** — session key is unlinkable to main wallet on-chain
+- **Self-custody** — user controls both keys, no trust in server
+
+**On-Chain Contract Support** (already deployed):
+```rust
+// programs/pir8-game/src/instructions/gameplay.rs
+pub struct AgentRegistry {
+    pub owner: Pubkey,
+    pub delegate: Option<Pubkey>,  // ← Session key goes here
+    // ...
 }
-```
 
-**Complete Entry Flow**:
-```
-1. Player sends shielded ZEC with JSON memo
-   ↓
-2. LightwalletdWatcher (WebSocket) detects tx
-   ↓
-3. Extracts and decodes memo
-   ↓
-4. ZcashMemoBridge validates schema & freshness
-   ↓
-5. joinGamePrivateViaZcash() executes join_game
-   ↓
-6. Player joins game (Solana address on-chain, Zcash identity private)
+pub fn delegate_agent_control(ctx, delegate: Option<Pubkey>) -> Result<()>
 ```
 
 **Architecture Components**:
-1. **ZcashMemoBridge**: Memo parsing and validation
-2. **LightwalletdWatcher**: WebSocket transaction monitoring
-3. **joinGamePrivateViaZcash()**: Anchor client integration
-4. **useZcashBridge**: React hook for bridge lifecycle
+1. **Session Key Generator**: In-browser ephemeral keypair creation
+2. **AgentRegistry**: On-chain delegate pattern (already deployed)
+3. **PrivacySimulator**: Educational privacy layer for practice mode (Ghost Fleet, Leakage Meter, Bounty Board)
+
+**Future Enhancement**: `JoinGameViaDelegate` and `MakeMoveViaDelegate` instruction variants that accept a session key signer whose `AgentRegistry.delegate` matches are already implemented and deployed. The frontend "Play Privately" toggle wires this flow end-to-end.
 
 ## Agentic Infrastructure
 

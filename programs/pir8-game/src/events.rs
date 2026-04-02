@@ -84,3 +84,10 @@ pub struct MoveExecuted {
     pub speed_bonus_awarded: u64,
     pub new_total_score: u64,
 }
+
+#[event]
+pub struct GhostFleetActivated {
+    pub game_id: u64,
+    pub player: Pubkey,
+    pub turns_remaining: u8,
+}

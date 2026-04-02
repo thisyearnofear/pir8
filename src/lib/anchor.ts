@@ -9,7 +9,7 @@ import { BN } from '@coral-xyz/anchor';
 import { PublicKey } from '@solana/web3.js';
 
 // Program ID - Deployed to devnet
-export const PROGRAM_ID = new PublicKey(process.env.NEXT_PUBLIC_PROGRAM_ID || 'EeHyY2FQ3A4GLieZbGbmZtz1iLKzLytXkRcXyzGfmePt');
+export const PROGRAM_ID = new PublicKey(process.env.NEXT_PUBLIC_PROGRAM_ID || 'DkkuBQySAxKTADdxQVyx8rjxudZVSwA7ZjRCqRquH5FU');
 
 // Program IDL type definitions
 export interface PIR8Program {

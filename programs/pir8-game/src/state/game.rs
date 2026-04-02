@@ -1,7 +1,7 @@
 use crate::constants::*;
 use crate::errors::GameError;
 use crate::state::map::TerritoryCell;
-use crate::state::player::{PlayerData, ShipData, ShipType};
+use crate::state::player::{PlayerData, ShipData, ShipType, tick_ghost_fleet};
 use anchor_lang::prelude::*;
 
 #[derive(AnchorSerialize, AnchorDeserialize, Clone, Debug, PartialEq)]
@@ -56,12 +56,24 @@ impl PirateGame {
             self.current_player_index = (self.current_player_index + 1) % self.player_count;
             if self.current_player_index == 0 {
                 self.turn_number += 1;
+                // Decrement ghost fleet turns at end of full round
+                for player in &mut self.players {
+                    if player.is_active {
+                        tick_ghost_fleet(player);
+                    }
+                }
             }
         }
     }
 
     pub fn get_current_player(&self) -> Option<&PlayerData> {
         self.players.get(self.current_player_index as usize)
+    }
+
+    pub fn get_player(&self, pubkey: &Pubkey) -> Option<&PlayerData> {
+        self.players
+            .iter()
+            .find(|p| p.pubkey == *pubkey && p.is_active)
     }
 
     pub fn get_player_mut(&mut self, pubkey: &Pubkey) -> Option<&mut PlayerData> {

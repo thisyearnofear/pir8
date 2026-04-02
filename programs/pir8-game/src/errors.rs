@@ -38,4 +38,8 @@ pub enum GameError {
     NoScansRemaining,
     #[msg("Coordinate already scanned")]
     CoordinateAlreadyScanned,
+    #[msg("Session key is not an authorized delegate")]
+    UnauthorizedDelegate,
+    #[msg("Ghost Fleet is already active")]
+    GhostFleetAlreadyActive,
 }

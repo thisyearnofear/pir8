@@ -8,16 +8,20 @@
 import { useState, useEffect } from 'react';
 import { usePirateGameState } from '@/hooks/usePirateGameState';
 import { useSafeWallet } from '@/components/SafeWalletProvider';
+import { useSessionKey } from '@/hooks/useSessionKey';
 
 export default function LobbyBrowser() {
   const { lobbies, fetchLobbies, isLoading, startGame } = usePirateGameState();
   const fullWallet = useSafeWallet();
   const { publicKey, wallet } = fullWallet;
+  const { state: sessionState, createSession, clearSession } = useSessionKey();
   const [showCreateModal, setShowCreateModal] = useState(false);
   const [newGameId, setNewGameId] = useState<number>(Math.floor(Math.random() * 1000));
   const [isCreating, setIsCreating] = useState(false);
   const [joiningLobby, setJoiningLobby] = useState<string | null>(null);
   const [startingGameId, setStartingGameId] = useState<string | null>(null);
+  const [privateMode, setPrivateMode] = useState(false);
+  const [arenaFilter, setArenaFilter] = useState<'all' | 'shadow'>('all');
 
   useEffect(() => {
     if (!publicKey || !wallet) return;
@@ -93,7 +97,7 @@ export default function LobbyBrowser() {
     setJoiningLobby(lobbyAddress);
     try {
       // Use proper client-side transaction building
-      const { joinGame, createWalletAdapter, getClientProgram } = await import("@/lib/client/transactionBuilder");
+      const { joinGame, joinGameViaDelegate, createWalletAdapter, getClientProgram } = await import("@/lib/client/transactionBuilder");
       const { PublicKey } = await import("@solana/web3.js");
 
       let targetGameId = gameId;
@@ -111,13 +115,22 @@ export default function LobbyBrowser() {
         console.log(`Found gameId: ${targetGameId}`);
       }
 
-      console.log(`Joining lobby: ${lobbyAddress} with gameId: ${targetGameId}`);
+      console.log(`Joining lobby: ${lobbyAddress} with gameId: ${targetGameId}, privateMode: ${privateMode}`);
 
       // Create a wallet adapter compatible object
       const walletAdapter = createWalletAdapter(fullWallet);
 
-      const joinTx = await joinGame(walletAdapter, targetGameId);
-      console.log('Joined lobby:', joinTx);
+      // Use session key for private mode, otherwise use regular join
+      if (!targetGameId) throw new Error('Could not resolve gameId');
+
+      if (privateMode && sessionState.keypair) {
+        console.log('Joining via delegate (session key)');
+        const joinTx = await joinGameViaDelegate(walletAdapter, targetGameId, sessionState.keypair);
+        console.log('Joined lobby via delegate:', joinTx);
+      } else {
+        const joinTx = await joinGame(walletAdapter, targetGameId);
+        console.log('Joined lobby:', joinTx);
+      }
 
       // Refresh lobbies after successful join
       await fetchLobbies(wallet);
@@ -193,6 +206,70 @@ export default function LobbyBrowser() {
         </button>
       </div>
 
+      {/* Play Privately Toggle */}
+      <div className="mb-6 flex items-center gap-4 p-4 bg-slate-800/50 rounded-xl border border-slate-700">
+        <label className="flex items-center gap-3 cursor-pointer">
+          <div className="relative">
+            <input
+              type="checkbox"
+              checked={privateMode}
+              onChange={(e) => {
+                if (e.target.checked && !sessionState.isActive) {
+                  createSession();
+                } else if (!e.target.checked) {
+                  clearSession();
+                }
+                setPrivateMode(e.target.checked);
+              }}
+              className="sr-only"
+            />
+            <div className={`w-12 h-6 rounded-full transition-colors ${
+              privateMode ? 'bg-neon-purple' : 'bg-slate-600'
+            }`}>
+              <div className={`absolute top-1 w-4 h-4 bg-white rounded-full transition-transform ${
+                privateMode ? 'translate-x-7' : 'translate-x-1'
+              }`} />
+            </div>
+          </div>
+          <div>
+            <span className="text-white font-bold">Play Privately</span>
+            <p className="text-xs text-gray-400">Use session key to hide your identity</p>
+          </div>
+        </label>
+        {sessionState.isActive && (
+          <div className="ml-auto flex items-center gap-2">
+            <span className="w-2 h-2 bg-neon-purple rounded-full animate-pulse" />
+            <span className="text-xs text-neon-purple font-mono">
+              Session: {sessionState.publicKey?.toBase58().slice(0, 8)}...
+            </span>
+          </div>
+        )}
+      </div>
+
+      {/* Arena Type Tabs */}
+      <div className="mb-6 flex gap-2 p-1 bg-slate-800/50 rounded-xl border border-slate-700 inline-flex">
+        <button
+          onClick={() => setArenaFilter('all')}
+          className={`px-4 py-2 rounded-lg font-bold text-sm transition-all ${
+            arenaFilter === 'all'
+              ? 'bg-neon-cyan text-black'
+              : 'text-gray-400 hover:text-white hover:bg-slate-700'
+          }`}
+        >
+          🌊 PUBLIC ARENA
+        </button>
+        <button
+          onClick={() => setArenaFilter('shadow')}
+          className={`px-4 py-2 rounded-lg font-bold text-sm transition-all ${
+            arenaFilter === 'shadow'
+              ? 'bg-neon-purple text-white'
+              : 'text-gray-400 hover:text-white hover:bg-slate-700'
+          }`}
+        >
+          👻 SHADOW ARENA
+        </button>
+      </div>
+
       {/* Wallet not connected warning */}
       {!publicKey && (
         <div className="mb-6 p-4 bg-yellow-500/10 border border-yellow-500/30 rounded-xl flex items-center justify-between">
@@ -230,7 +307,15 @@ export default function LobbyBrowser() {
         </div>
       ) : (
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-          {lobbies.map((lobby: any) => {
+          {lobbies
+            .filter((lobby: any) => {
+              // Shadow Arena: filter by private game or hidden flag
+              if (arenaFilter === 'shadow') {
+                return lobby.isPrivate || lobby.hidden;
+              }
+              return true; // Show all in public arena
+            })
+            .map((lobby: any) => {
             // Determine if game is joinable
             // Anchor enums come back as objects like { waiting: {} } or { active: {} }
             const statusKey = lobby.status ? Object.keys(lobby.status)[0]?.toLowerCase() : 'unknown';
@@ -289,12 +374,32 @@ export default function LobbyBrowser() {
 
               <div className="flex items-center justify-between">
                 <div className="flex -space-x-2">
-                  {lobby.players?.slice(0, 4).map((player: string, idx: number) => (
-                    <div
-                      key={idx}
-                      className={`w-8 h-8 rounded-full border-2 border-slate-900 flex items-center justify-center text-xs ${
-                        player === userWalletPk ? 'bg-neon-cyan text-black' : 'bg-slate-700'
-                      }`}
+                  {/* Shadow Arena: Hide player identities until game starts */}
+                  {arenaFilter === 'shadow' && statusKey === 'waiting' ? (
+                    // Show anonymous avatars in Shadow Arena waiting lobbies
+                    <>
+                      {Array.from({ length: Math.max(0, maxPlayers) }).map((_, idx) => (
+                        <div
+                          key={idx}
+                          className={`w-8 h-8 rounded-full border-2 border-slate-900 flex items-center justify-center text-xs ${
+                            idx < lobby.playerCount
+                              ? 'bg-neon-purple/50 border-neon-purple animate-pulse'
+                              : 'bg-slate-800/50 border-slate-700 border-dashed'
+                          }`}
+                        >
+                          {idx < lobby.playerCount ? '?' : '+'}
+                        </div>
+                      ))}
+                    </>
+                  ) : (
+                    // Show actual player avatars
+                    <>
+                      {lobby.players?.slice(0, 4).map((player: string, idx: number) => (
+                        <div
+                          key={idx}
+                          className={`w-8 h-8 rounded-full border-2 border-slate-900 flex items-center justify-center text-xs ${
+                            player === userWalletPk ? 'bg-neon-cyan text-black' : 'bg-slate-700'
+                          }`}
                       title={player === userWalletPk ? 'You' : `Player ${idx + 1}`}
                     >
                       {player === userWalletPk ? '👤' : '🏴‍☠️'}
@@ -313,6 +418,8 @@ export default function LobbyBrowser() {
                       ?
                     </div>
                   ))}
+                    </>
+                  )}
                 </div>
                 <div className="flex gap-2">
                   {canStartGame && (

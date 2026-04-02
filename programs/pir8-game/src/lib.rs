@@ -54,6 +54,24 @@ pub mod pir8_game {
     }
 
     // ============================================================================
+    // SESSION KEY / DELEGATE SUPPORT
+    // ============================================================================
+
+    pub fn join_game_via_delegate(ctx: Context<JoinGameViaDelegate>) -> Result<()> {
+        instructions::join_game_via_delegate(ctx)
+    }
+
+    pub fn move_ship_via_delegate(
+        ctx: Context<MakeMoveViaDelegate>,
+        ship_id: String,
+        to_x: u8,
+        to_y: u8,
+        decision_time_ms: Option<u64>,
+    ) -> Result<()> {
+        instructions::move_ship_via_delegate(ctx, ship_id, to_x, to_y, decision_time_ms)
+    }
+
+    // ============================================================================
     // GAMEPLAY (MOVES)
     // ============================================================================
 
@@ -98,6 +116,10 @@ pub mod pir8_game {
         coordinate_y: u8,
     ) -> Result<()> {
         instructions::scan_coordinate(ctx, coordinate_x, coordinate_y)
+    }
+
+    pub fn activate_ghost_fleet(ctx: Context<ActivateGhostFleet>) -> Result<()> {
+        instructions::activate_ghost_fleet_instruction(ctx)
     }
 
     pub fn end_turn(ctx: Context<MakeMove>) -> Result<()> {

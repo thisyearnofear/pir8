@@ -2,15 +2,15 @@
 
 ## Overview
 
-PIR8 is a **privacy-first strategic naval combat platform** combining Zcash shielded transactions with skill-based competitive gameplay on Solana.
+PIR8 is a **privacy-first strategic naval combat platform** combining session key privacy architecture with skill-based competitive gameplay on Solana.
 
 **Core Mission**: Transform Web3 gaming from luck-based speculation to skill-based competition with privacy-first principles.
 
 ## Core Pillars
 
 ### 1. Privacy-First Gaming
-- **Zcash Integration**: Anonymous tournament entry via shielded memos
-- **Private Moves**: Zero-knowledge proofs for competitive integrity
+- **Session Key Architecture**: Anonymous gameplay via ephemeral wallet identities (no server signing required)
+- **Private Moves**: Session keys ensure main wallet identity never appears on game PDAs
 - **Regulatory Compliance**: Privacy without compromising legal requirements
 
 ### 2. Skill + Luck Balance (70% Skill / 30% Luck)
@@ -43,7 +43,7 @@ PIR8 is a **privacy-first strategic naval combat platform** combining Zcash shie
 2. **Sustainable Economics**: Tournament pools with real liquidity
 3. **Deep Gameplay**: Multiple skill layers and meta-game
 4. **Seamless UX**: Solana speed + familiar game interface
-5. **Privacy Options**: Zcash for anonymous competitive play
+5. **Privacy Options**: Session key architecture for anonymous competitive play (zero server cost)
 
 ## Product Strategy
 
@@ -57,7 +57,7 @@ PIR8 is a **privacy-first strategic naval combat platform** combining Zcash shie
 - ✅ Core instructions (move, attack, claim, build)
 - ✅ Wallet integration (Phantom, Solflare, Backpack)
 - ✅ Helius real-time monitoring
-- ✅ Zcash memo parser (ready to integrate)
+- ✅ Session key privacy (leveraging existing AgentRegistry delegate pattern)
 - ✅ Resource economy (framework ready)
 - ✅ Skill mechanics (scanning system, timing bonuses)
 
@@ -85,7 +85,7 @@ PIR8 is a **privacy-first strategic naval combat platform** combining Zcash shie
 - 🔲 **Sponsorships**: Brand partnerships for prize pools
 - 🔲 **Creator Tools**: Streaming, content creation, coaching
 - 🔲 **Mobile App**: Cross-platform accessibility
-- 🔲 **Advanced Privacy**: Full ZK-proof integration
+- 🔲 **Advanced Privacy**: ZK-proof integration for session key ↔ main wallet reward claiming
 
 ## Competitive Advantages
 
@@ -93,7 +93,7 @@ PIR8 is a **privacy-first strategic naval combat platform** combining Zcash shie
 - **Solana**: Sub-second finality, low fees
 - **Anchor Framework**: Type-safe, auditable contracts
 - **Helius**: Enhanced RPC, real-time monitoring
-- **Zcash**: Privacy without compromising speed
+- **Session Keys**: Privacy via ephemeral identities, no cross-chain dependency
 - **Next.js**: Modern, performant frontend
 
 ### 2. Game Design
@@ -169,7 +169,7 @@ Distribution:
 ### Technical Risks
 - **Smart Contract Bugs**: Extensive testing, audits before mainnet
 - **Scalability**: Solana handles 65k TPS, we need <100
-- **Privacy Complexity**: Start with Zcash entry, expand gradually
+- **Privacy Complexity**: Start with session key delegation, expand to full ZK reward claiming
 
 ### Market Risks
 - **Player Acquisition**: Focus on crypto-native communities first

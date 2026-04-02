@@ -135,6 +135,7 @@ declare module '@solana/web3.js' {
   }
 
   export class Keypair {
+    static generate(): Keypair;
     static fromSecretKey(secretKey: Uint8Array): Keypair;
     publicKey: PublicKey;
     secretKey: Uint8Array;

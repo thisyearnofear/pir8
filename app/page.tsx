@@ -22,7 +22,6 @@ import SpectatorView from "@/components/SpectatorView";
 import OnboardingModal from "@/components/OnboardingModal";
 import { ManualSyncButton } from "@/components/ManualSyncButton";
 import { GameSyncStatus } from "@/components/GameSyncRecovery";
-import PrivacyStatusIndicator from "@/components/PrivacyStatusIndicator";
 import ViralEventModal from "@/components/ViralEventModal";
 import SocialModal from "@/components/SocialModal";
 import LobbyBrowser from "@/components/LobbyBrowser";
@@ -1119,8 +1118,7 @@ export default function Home() {
                   </div>
                 </button>
 
-                {/* Privacy Indicator */}
-                <PrivacyStatusIndicator />
+                
 
                 {/* Wallet Button */}
                 <div className="relative">

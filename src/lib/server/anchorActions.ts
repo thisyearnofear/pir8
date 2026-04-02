@@ -186,25 +186,3 @@ export async function buildShip(
   throw new Error('DEPRECATED: Server should not execute user transactions. Use client-side wallet signing.');
 }
 
-// ============================================================================
-// ZCASH BRIDGE INTEGRATION (Special case - privacy requires server processing)
-// ============================================================================
-
-export async function joinGamePrivateViaZcash(params: {
-  gameId: string;
-  solanaPubkey: string;
-  zcashTxHash?: string;
-  blockHeight?: number;
-}): Promise<string> {
-  // NOTE: This is a special case where server processing is required for privacy
-  // The Zcash memo contains the user's intent, but server executes to maintain privacy
-  console.log('[Zcash Bridge] Privacy-preserving join requested:', {
-    gameId: params.gameId,
-    player: params.solanaPubkey,
-    zcashTx: params.zcashTxHash,
-  });
-
-  // TODO: Implement proper Zcash bridge with privacy-preserving server execution
-  // This is the ONLY legitimate use case for server-side transactions
-  throw new Error('Zcash bridge not yet implemented - requires privacy-preserving server execution');
-}

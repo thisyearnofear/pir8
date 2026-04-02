@@ -2,21 +2,21 @@
 
 > **Strategic fleet warfare meets privacy-first blockchain technology**
 
-**✅ LIVE ON DEVNET**: `EeHyY2FQ3A4GLieZbGbmZtz1iLKzLytXkRcXyzGfmePt`
+**✅ LIVE ON DEVNET**: `DkkuBQySAxKTADdxQVyx8rjxudZVSwA7ZjRCqRquH5FU`
 
-A multiplayer pirate naval combat game built on Solana with Zcash shielded transactions. Command your fleet, dominate territories, and earn real rewards through skill-based competitive play.
+A multiplayer pirate naval combat game built on Solana with privacy-first session key architecture. Command your fleet, dominate territories, and earn real rewards through skill-based competitive play.
 
 [![Solana](https://img.shields.io/badge/Solana-Devnet-9945FF)](https://solana.com)
 [![Next.js](https://img.shields.io/badge/Next.js-14-black)](https://nextjs.org)
 [![TypeScript](https://img.shields.io/badge/TypeScript-5.0-blue)](https://www.typescriptlang.org)
-[![Anchor](https://img.shields.io/badge/Anchor-0.29-purple)](https://www.anchor-lang.com)
+[![Anchor](https://img.shields.io/badge/Anchor-0.30-purple)](https://www.anchor-lang.com)
 [![Monolith Hackathon](https://img.shields.io/badge/Monolith-Hackathon-orange)](https://devpost.com)
 
 ---
 
 ## 🎮 What is PIR8?
 
-PIR8 is a **skill-based strategic naval warfare game** where players command pirate fleets across a 5x5 battle map to claim territories, control resources, and eliminate enemy ships. Unlike traditional Web3 games, PIR8 emphasizes **70% strategic skill, 30% tactical luck**, with multiple layers of depth:
+PIR8 is a **skill-based strategic naval warfare game** where players command pirate fleets across a 10x10 battle map to claim territories, control resources, and eliminate enemy ships. Unlike traditional Web3 games, PIR8 emphasizes **70% strategic skill, 30% tactical luck**, with multiple layers of depth:
 
 - **Fleet Management**: Build and position ships strategically (Sloop, Frigate, Galleon, Flagship)
 - **Territorial Control**: Claim ports, islands, and treasure sites for passive resource generation
@@ -68,7 +68,7 @@ Open [http://localhost:3000](http://localhost:3000) and connect your Solana wall
 - ✅ **Victory Conditions** - Fleet dominance, territory control, economic victory
 - ✅ **Real-Time Updates** - Helius WebSocket monitoring integration
 - ✅ **Multi-Wallet Support** - Phantom, Solflare, Backpack via Wallet Adapter
-- 🏗️ **Zcash Privacy Bridge** - Shielded memo integration for private tournament entry (design ready)
+- 🏗️ **Session Key Privacy** - Ephemeral identity system for private gameplay (leveraging existing AgentRegistry delegate pattern)
 
 ### In Progress (Phase 1B - Final Polish)
 - 🔧 **Contract Deployment** - Deploy updated contract to devnet
@@ -170,7 +170,7 @@ Token Distribution:
 - **Solana**: Sub-second finality, low fees, 65k TPS capacity
 - **Anchor Framework**: Type-safe smart contracts in Rust
 - **Helius**: Enhanced RPC, real-time WebSocket monitoring
-- **Zcash**: Shielded transactions for private tournament entry (Zypherpunk focus)
+- **Session Keys**: Ephemeral wallet identity for private gameplay (leveraging AgentRegistry delegate pattern)
 
 ### Frontend
 - **Next.js 14**: React framework with App Router
@@ -181,7 +181,6 @@ Token Distribution:
 ### Infrastructure
 - **Vercel**: Frontend hosting
 - **Helius WebSocket**: Real-time game updates
-- **Zcash Lightwalletd**: Shielded memo watching
 
 ---
 
@@ -244,74 +243,26 @@ npm run test
 
 ## 🎯 Current Status
 
-### Phase 1B: MVP Deployed & Working (December 2024)
+### Phase 1B: MVP Deployed & Working (April 2026)
 
 **✅ Deployed to Solana Devnet:**
-- **Program ID**: `54S7Pw6cDQKWqW4JkdTGb3vEQqtnHsZ3SvB3LB1fST2V`
-- **Architecture**: Single global game (simplified for iterative testing)
-- **Working Instructions**: `initializeGame`, `joinGame`, `startGame`, `resetGame`
-- **Frontend**: Auto-initialization, join flow, error handling
-- **Account Size**: 10KB (optimized for Solana realloc limits)
+- **Program ID**: `DkkuBQySAxKTADdxQVyx8rjxudZVSwA7ZjRCqRquH5FU`
+- **Anchor**: 0.30 / Solana CLI 3.1.12
+- **Working Instructions**: full game lifecycle + session key delegate instructions
+- **Frontend**: TypeScript clean, session key flow wired end-to-end
 
 **✅ What Works Right Now:**
-- Connect wallet and join the global game
-- Auto-initialization on first use
-- Multiple players can join
-- Ready for gameplay implementation
+- Connect wallet → create lobby → join game
+- "Play Privately" toggle: generates ephemeral session key, delegates via AgentRegistry, joins game without exposing main wallet
+- Real-time updates via Helius WebSocket
+- Multi-wallet support (Phantom, Solflare, Backpack)
 
-**🚧 In Progress (Next 7 Days):**
-1. **Core Game Instructions** (Days 1-3)
-   - Implement `move_ship`, `attack_ship`, `claim_territory`
-   - Test full gameplay loop with 2+ players
-   
-2. **State Synchronization** (Days 4-5)
-   - Fetch on-chain game state
-   - Display map, ships, and territories
-   - Real-time updates via Helius
-
-3. **Victory & Reset** (Days 6-7)
-   - Implement victory conditions
-   - Polish reset flow for testing
-   - Complete MVP game loop
-
-**📋 Architecture Decisions:**
-- **Single Global Game**: Simplified from multi-game to single game for MVP
-  - Easier testing and iteration
-  - Can expand to multiple games later
-  - Reset capability for development
-  
-- **10KB Account Size**: Optimized for Solana's realloc limits
-  - Supports 4 players with ships and territories
-  - 5x5 map (25 cells)
-  - Can expand with account versioning if needed
-
-**🔮 Future Enhancements (Post-MVP):**
-- Multiple concurrent games
-- Zcash privacy integration
-- Tournament system
-- Resource generation and ship building
-- Weather effects
-- Fog of war
-
-### Immediate Next Steps (Zypherpunk Timeline)
-
-**Days 1-2**: Deploy & Secure
-1. ✅ Fix & deploy contracts to Devnet
-2. ✅ Update Program ID in config
-3. Test create_game → join_game → move_ship flow
-
-**Days 3-4**: Privacy Configuration
-1. Set up Zcash infrastructure (Lightwalletd endpoint)
-2. Generate shielded address for memo receiving
-3. Configure NEXT_PUBLIC_LIGHTWALLETD_URL and NEXT_PUBLIC_ZCASH_SHIELDED_ADDR
-4. Wire useZcashBridge hook to app
-5. Test private entry: memo → join_game execution
-
-**Days 5-6**: MVP Playability + Privacy Demo
-1. Implement resource generation from territories
-2. Complete ship building system
-3. Create UI for "Private Entry via Zcash" flow
-4. Demo: Player joins game privately, then plays publicly
+**🚧 Next Up:**
+1. End-to-end session key smoke test with live users
+2. Ghost Fleet game design (privacy as a mechanic: ambush bonus, reduced scan range)
+3. Lobby split: Public Arena / Shadow Arena
+3. Create UI for "Private Entry via Session Key" flow
+4. Demo: Player joins game with ephemeral identity, main wallet unlinkable
 
 **Days 7+**: Polish & Zypherpunk Submission
 1. Tournament bracket UI
@@ -350,7 +301,7 @@ npm run test
 - Skill-based competition
 - Liquidity-backed tokens
 - Strategic depth (70% skill / 30% luck)
-- Zcash privacy integration
+- Session key privacy (no server signing required)
 - Solana speed + familiar UI
 
 ### Competitive Advantages
@@ -397,11 +348,11 @@ This project is licensed under the MIT License - see [LICENSE](./License.txt) fo
 - Original Pirate Game concept
 - Solana ecosystem and developer tools
 - Helius for enhanced RPC infrastructure
-- Zcash for privacy technology
+- Zero-knowledge proof research for privacy inspiration
 - Anchor framework team
 
 ---
 
-**Built with ⚡ Solana, 🔥 Helius, 🔒 Zcash, and 🏴‍☠️ Pirate Spirit**
+**Built with ⚡ Solana, 🔥 Helius, 🔒 Privacy, and 🏴‍☠️ Pirate Spirit**
 
 *Join the crew. Master the seas. Earn real treasure.*

@@ -25,11 +25,11 @@ pir8/
 │   │
 │   ├── hooks/               # Custom React hooks
 │   │   ├── usePirateGameState.ts
-│   │   ├── useZcashBridge.ts
+│   │   ├── useSessionKey.ts     # Privacy via ephemeral wallets
 │   │   └── ...
 │   │
 │   ├── lib/                 # Core libraries
-│   │   ├── integrations.ts  # Helius/Pump/Zcash
+│   │   ├── integrations.ts  # Helius/Pump integrations
 │   │   ├── anchorClient.ts  # Blockchain interactions
 │   │   ├── gameLogic.ts     # Game rules engine
 │   │   └── ...
@@ -77,18 +77,25 @@ anchor test --skip-deploy -- --test test_create_game
 
 #### Deploy to Devnet
 ```bash
-# Configure Solana CLI for devnet
+# Install Solana CLI (if not already installed)
+sh -c "$(curl -sSfL https://release.anza.xyz/stable/install)"
+export PATH="$HOME/.local/share/solana/install/active_release/bin:$PATH"
+
+# Configure for devnet
 solana config set --url devnet
 
-# Airdrop SOL for deployment
-solana airdrop 2
+# Build program binary
+cd programs/pir8-game
+cargo build-sbf
 
-# Deploy program
-anchor deploy --provider.cluster devnet
+# Deploy (note: use cargo build-sbf + solana program deploy, not anchor deploy)
+solana program deploy target/deploy/pir8_game.so
 
 # Verify deployment
-solana program show <PROGRAM_ID>
+solana program show DkkuBQySAxKTADdxQVyx8rjxudZVSwA7ZjRCqRquH5FU
 ```
+
+> **Note**: `anchor build` IDL generation has a known incompatibility between `anchor-syn 0.30.1` and the Rust edition 2024 toolchain bundled with Solana CLI 3.x. Use `cargo build-sbf` directly to build the program binary.
 
 ### Frontend Development
 

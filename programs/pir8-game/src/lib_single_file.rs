@@ -206,6 +206,8 @@ pub struct PlayerData {
     pub speed_bonus_accumulated: u64,
     pub average_decision_time_ms: u64,
     pub total_moves: u8,
+    pub ghost_fleet_active: bool, // Ghost Fleet: player-specific stealth mode
+    pub ghost_fleet_turns_remaining: u8, // Turns remaining in Ghost Fleet mode
 }
 
 impl Default for PlayerData {
@@ -222,6 +224,8 @@ impl Default for PlayerData {
             speed_bonus_accumulated: 0,
             average_decision_time_ms: 0,
             total_moves: 0,
+            ghost_fleet_active: false,
+            ghost_fleet_turns_remaining: 0,
         }
     }
 }
@@ -283,6 +287,7 @@ pub struct PirateGame {
     pub bump: u8,
     pub players: Vec<PlayerData>,
     pub territory_map: Vec<TerritoryCell>,
+    pub is_ghost_fleet_active: bool, // Ghost Fleet: reduced scan range, ambush bonus
 }
 
 impl PirateGame {
@@ -293,6 +298,18 @@ impl PirateGame {
             self.current_player_index = (self.current_player_index + 1) % self.player_count;
             if self.current_player_index == 0 {
                 self.turn_number += 1;
+                // Decrement ghost fleet turns for all active players
+                for player in self.players.iter_mut() {
+                    if player.ghost_fleet_active {
+                        if player.ghost_fleet_turns_remaining > 0 {
+                            player.ghost_fleet_turns_remaining -= 1;
+                        }
+                        if player.ghost_fleet_turns_remaining == 0 {
+                            player.ghost_fleet_active = false;
+                            msg!("Ghost Fleet mode expired for player");
+                        }
+                    }
+                }
             }
         }
     }
@@ -630,6 +647,7 @@ pub mod pir8_game {
         game.bump = ctx.bumps.game;
         game.players = Vec::new();
         game.territory_map = Vec::new();
+        game.is_ghost_fleet_active = false; // Ghost Fleet starts inactive
 
         msg!("Game {} created", game_id);
         Ok(())
@@ -670,6 +688,8 @@ pub mod pir8_game {
             speed_bonus_accumulated: 0,
             average_decision_time_ms: 0,
             total_moves: 0,
+            ghost_fleet_active: false,
+            ghost_fleet_turns_remaining: 0,
         });
 
         game.player_count += 1;
@@ -794,8 +814,9 @@ pub mod pir8_game {
         let current_player = game.get_current_player().ok_or(GameError::NotPlayerTurn)?;
         require!(current_player.pubkey == player_key, GameError::NotPlayerTurn);
 
-        // Get game_id before any mutable borrows
+        // Get game_id and attacker ghost fleet status before any mutable borrows
         let game_id = game.game_id;
+        let attacker_ghost_fleet = current_player.ghost_fleet_active;
 
         // Find attacker ship
         let attacker_pos = {
@@ -814,7 +835,17 @@ pub mod pir8_game {
                                (target_ship.position_y as i32 - attacker_pos.1 as i32).abs()) as u32;
                 require!(distance <= 2, GameError::ShipsNotInRange); // Attack range = 2
 
+                // Base damage calculation
                 damage_dealt = attacker_pos.2.saturating_sub(target_ship.defense);
+
+                // GHOST FLEET MECHANIC: Ambush bonus - 50% extra damage when opponent has Ghost Fleet active
+                // This simulates the advantage of striking from stealth
+                if target_player.ghost_fleet_active && !attacker_ghost_fleet {
+                    damage_dealt = damage_dealt.saturating_add(damage_dealt / 2); // +50% damage
+                    msg!("Ambush bonus! +{} damage from stealth attack", damage_dealt / 2);
+                }
+                // If both players have Ghost Fleet active, no bonus (fair fight)
+
                 target_ship.health = target_ship.health.saturating_sub(damage_dealt);
                 
                 if target_ship.health == 0 {
@@ -1017,11 +1048,23 @@ pub mod pir8_game {
         // Get values we need before mutable borrows
         let game_id = game.game_id;
         let territory_map = game.territory_map.clone();
+        let ghost_fleet_active = current_player.ghost_fleet_active;
 
         let player = game.get_player_mut(&player_key).ok_or(GameError::NotPlayerTurn)?;
         require!(player.scan_charges > 0, GameError::NoScansRemaining);
         require!(!is_coordinate_scanned(&player.scanned_coordinates, coordinate_x, coordinate_y), 
                 GameError::CoordinateAlreadyScanned);
+
+        // GHOST FLEET MECHANIC: Reduced scan range when active
+        // Player can only scan within 3 tiles of their ships (vs normal 5 tiles)
+        let scan_range = if ghost_fleet_active { 3 } else { 5 };
+        let can_scan = player.ships.iter().any(|ship| {
+            let dist_x = ship.position_x as i32 - coordinate_x as i32;
+            let dist_y = ship.position_y as i32 - coordinate_y as i32;
+            let distance = dist_x.abs() + dist_y.abs();
+            distance <= scan_range as i32
+        });
+        require!(can_scan, GameError::InvalidCoordinate);
 
         player.scan_charges -= 1;
         mark_coordinate_scanned(&mut player.scanned_coordinates, coordinate_x, coordinate_y)?;
@@ -1054,6 +1097,37 @@ pub mod pir8_game {
         
         let current_player = game.get_current_player().ok_or(GameError::NotPlayerTurn)?;
         require!(current_player.pubkey == player_key, GameError::NotPlayerTurn);
+
+        game.advance_turn();
+        Ok(())
+    }
+
+    /// Toggle Ghost Fleet mode - activates stealth for ambush, but reduces scan range
+    pub fn toggle_ghost_fleet(ctx: Context<MakeMove>, activate: bool) -> Result<()> {
+        let game = &mut ctx.accounts.game;
+        let player_key = ctx.accounts.player.key();
+
+        require!(game.status == GameStatus::Active, GameError::GameNotActive);
+        
+        let current_player = game.get_current_player().ok_or(GameError::NotPlayerTurn)?;
+        require!(current_player.pubkey == player_key, GameError::NotPlayerTurn);
+
+        // Get player mutably to update ghost fleet state
+        let player = game.get_player_mut(&player_key).ok_or(GameError::NotPlayerTurn)?;
+        
+        if activate {
+            // Cost: 50 gold to activate Ghost Fleet
+            require!(player.resources.gold >= 50, GameError::InsufficientResources);
+            player.resources.gold = player.resources.gold.saturating_sub(50);
+            player.ghost_fleet_active = true;
+            player.ghost_fleet_turns_remaining = 3; // Lasts 3 turns
+            msg!("Ghost Fleet activated for 3 turns (cost: 50 gold)");
+        } else {
+            // Deactivate early
+            player.ghost_fleet_active = false;
+            player.ghost_fleet_turns_remaining = 0;
+            msg!("Ghost Fleet deactivated early");
+        }
 
         game.advance_turn();
         Ok(())

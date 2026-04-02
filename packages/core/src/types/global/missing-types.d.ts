@@ -175,8 +175,6 @@ declare namespace NodeJS {
     NEXT_PUBLIC_PROGRAM_ID?: string;
     NEXT_PUBLIC_TREASURY_ADDRESS?: string;
     NEXT_PUBLIC_LOG_LEVEL?: string;
-    NEXT_PUBLIC_LIGHTWALLETD_URL?: string;
-    NEXT_PUBLIC_ZCASH_SHIELDED_ADDR?: string;
     PIR8_IDL_PATH?: string;
     NEXT_PUBLIC_PROGAM_ID?: string;
   }

@@ -1,4 +1,5 @@
 use crate::constants::*;
+use crate::errors::GameError;
 use anchor_lang::prelude::*;
 
 #[derive(AnchorSerialize, AnchorDeserialize, Clone, Debug, Default)]
@@ -45,6 +46,12 @@ pub struct PlayerData {
     pub scan_charges: u8,             // Remaining scans (starts with 3)
     pub scanned_coordinates: Vec<u8>, // Bit-packed indices of 10x10 grid (max 13 bytes)
 
+    // ===== GHOST FLEET MECHANICS =====
+    // Private/stealth mode for strategic advantage
+    pub is_ghost_fleet: bool,         // Whether Ghost Fleet is active
+    pub ghost_fleet_turns_remaining: u8, // Turns remaining in Ghost Fleet mode
+    pub total_ghosts_activated: u8,   // Total times Ghost Fleet was activated
+
     // Timing bonuses
     pub speed_bonus_accumulated: u64,  // Total timing bonus points
     pub average_decision_time_ms: u64, // Running average decision time
@@ -62,6 +69,10 @@ impl Default for PlayerData {
             is_active: false,
             scan_charges: 3,                 // Start with 3 scans
             scanned_coordinates: Vec::new(), // No scanned tiles initially
+            // Ghost Fleet - starts inactive
+            is_ghost_fleet: false,
+            ghost_fleet_turns_remaining: 0,
+            total_ghosts_activated: 0,
             speed_bonus_accumulated: 0,      // No bonuses yet
             average_decision_time_ms: 0,     // No moves yet
             total_moves: 0,                  // No moves yet
@@ -163,4 +174,83 @@ pub fn update_average_decision_time(player: &mut PlayerData, new_decision_time_m
         player.average_decision_time_ms = combined / move_count;
     }
     player.total_moves = player.total_moves.saturating_add(1);
+}
+
+// ============================================================================
+// GHOST FLEET MECHANICS
+// ============================================================================
+
+/// Base scan range for players
+pub const BASE_SCAN_RANGE: u8 = 3;
+
+/// Reduced scan range when Ghost Fleet is active
+pub const GHOST_FLEET_SCAN_RANGE: u8 = 1;
+
+/// Ghost Fleet activation cost in gold
+pub const GHOST_FLEET_COST_GOLD: u32 = 200;
+
+/// Ghost Fleet duration in turns
+pub const GHOST_FLEET_DURATION: u8 = 3;
+
+/// Get the effective scan range for a player
+/// Ghost Fleet players have reduced scan range (cost of stealth)
+pub fn get_effective_scan_range(player: &PlayerData) -> u8 {
+    if player.is_ghost_fleet && player.ghost_fleet_turns_remaining > 0 {
+        GHOST_FLEET_SCAN_RANGE
+    } else {
+        BASE_SCAN_RANGE
+    }
+}
+
+/// Check if it's harder to scan against a Ghost Fleet player
+/// Returns true if the target player has Ghost Fleet active
+pub fn is_harder_to_scan(target: &PlayerData) -> bool {
+    target.is_ghost_fleet && target.ghost_fleet_turns_remaining > 0
+}
+
+/// Ambush damage bonus multiplier when attacking from Ghost Fleet
+pub const AMBUSH_DAMAGE_BONUS: f32 = 1.5;
+
+/// Get the attack damage bonus for being in Ghost Fleet mode
+/// Ghost Fleet enables ambush damage bonus from stealth
+pub fn get_ambush_damage_bonus(player: &PlayerData) -> f32 {
+    if player.is_ghost_fleet && player.ghost_fleet_turns_remaining > 0 {
+        AMBUSH_DAMAGE_BONUS
+    } else {
+        1.0 // No bonus
+    }
+}
+
+/// Check if player can afford to activate Ghost Fleet
+pub fn can_afford_ghost_fleet(player: &PlayerData) -> bool {
+    player.resources.gold >= GHOST_FLEET_COST_GOLD
+}
+
+/// Activate Ghost Fleet mode
+pub fn activate_ghost_fleet(player: &mut PlayerData) -> Result<()> {
+    require!(!player.is_ghost_fleet, GameError::GhostFleetAlreadyActive);
+    require!(player.resources.gold >= GHOST_FLEET_COST_GOLD, GameError::InsufficientResources);
+
+    player.resources.gold -= GHOST_FLEET_COST_GOLD;
+    player.is_ghost_fleet = true;
+    player.ghost_fleet_turns_remaining = GHOST_FLEET_DURATION;
+    player.total_ghosts_activated = player.total_ghosts_activated.saturating_add(1);
+
+    Ok(())
+}
+
+/// Deactivate Ghost Fleet mode (called when duration expires)
+pub fn deactivate_ghost_fleet(player: &mut PlayerData) {
+    player.is_ghost_fleet = false;
+    player.ghost_fleet_turns_remaining = 0;
+}
+
+/// Decrement Ghost Fleet turn counter and deactivate if expired
+pub fn tick_ghost_fleet(player: &mut PlayerData) {
+    if player.ghost_fleet_turns_remaining > 0 {
+        player.ghost_fleet_turns_remaining -= 1;
+        if player.ghost_fleet_turns_remaining == 0 {
+            player.is_ghost_fleet = false;
+        }
+    }
 }

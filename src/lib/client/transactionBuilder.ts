@@ -98,7 +98,7 @@ export const getClientProgram = async (
     console.log('Using program ID:', PROGRAM_ID.toString());
     console.log('Program ID type:', typeof PROGRAM_ID, PROGRAM_ID.constructor.name);
 
-    const programIdString = "EeHyY2FQ3A4GLieZbGbmZtz1iLKzLytXkRcXyzGfmePt";
+    const programIdString = "DkkuBQySAxKTADdxQVyx8rjxudZVSwA7ZjRCqRquH5FU";
     const programIdFromString = new PublicKey(programIdString);
     
     try {
@@ -604,5 +604,114 @@ export const fetchLobbies = async (wallet: WalletAdapter): Promise<any[]> => {
     } catch (e) {
         console.warn('Error fetching lobbies:', e);
         return [];
+    }
+};
+
+// ============================================================================
+// DELEGATE / SESSION KEY FUNCTIONS
+// ============================================================================
+
+export const buildJoinGameViaDelegateTx = async (
+    wallet: WalletAdapter,
+    gameId: number,
+    delegatePubkey: PublicKey
+): Promise<Transaction> => {
+    const program = await getClientProgram(wallet);
+    const [gamePDA] = getGamePDA(gameId);
+
+    console.log('Building join game via delegate transaction:', {
+        gameId,
+        gamePDA: gamePDA.toString(),
+        delegate: delegatePubkey.toString(),
+    });
+
+    const tx = await (program as any).methods
+        .joinGameViaDelegate({ delegate: delegatePubkey })
+        .accounts({
+            game: gamePDA,
+            player: wallet.publicKey!,
+            delegate: delegatePubkey,
+            systemProgram: SystemProgram.programId,
+        })
+        .transaction();
+
+    return tx;
+};
+
+export const joinGameViaDelegate = async (
+    wallet: any,
+    gameId: number,
+    delegateKeypair: any
+): Promise<string> => {
+    try {
+        const walletAdapter = createWalletAdapter(wallet);
+        // For delegate transactions, we need special handling since the delegate
+        // needs to sign as well. In this implementation, the wallet authorizes
+        // the delegate to act on their behalf.
+        const tx = await buildJoinGameViaDelegateTx(
+            walletAdapter, 
+            gameId, 
+            delegateKeypair.publicKey
+        );
+        return await executeTransaction(walletAdapter, tx);
+    } catch (error) {
+        console.error('Failed to join game via delegate:', error);
+        throw new Error(`Failed to join game via delegate: ${error instanceof Error ? error.message : 'Unknown error'}`);
+    }
+};
+
+export const buildMoveShipViaDelegateTx = async (
+    wallet: WalletAdapter,
+    gameId: number,
+    shipId: string,
+    toX: number,
+    toY: number,
+    delegatePubkey: PublicKey
+): Promise<Transaction> => {
+    const program = await getClientProgram(wallet);
+    const [gamePDA] = getGamePDA(gameId);
+
+    console.log('Building move ship via delegate transaction:', {
+        gameId,
+        shipId,
+        toX,
+        toY,
+        delegate: delegatePubkey.toString(),
+    });
+
+    const tx = await (program as any).methods
+        .moveShipViaDelegate(shipId, toX, toY, null)
+        .accounts({
+            game: gamePDA,
+            player: wallet.publicKey!,
+            delegate: delegatePubkey,
+        })
+        .transaction();
+
+    return tx;
+};
+
+export const moveShipViaDelegate = async (
+    wallet: any,
+    gameId: number,
+    shipId: string,
+    toX: number,
+    toY: number,
+    delegateKeypair: any
+): Promise<string> => {
+    try {
+        const walletAdapter = createWalletAdapter(wallet);
+        const tx = await buildMoveShipViaDelegateTx(
+            walletAdapter,
+            gameId,
+            shipId,
+            toX,
+            toY,
+            delegateKeypair.publicKey
+        );
+        return await executeTransaction(walletAdapter, tx);
+    } catch (error) {
+        console.error('Failed to move ship via delegate:', error);
+        throw new Error(`Failed to move ship via delegate: ${error instanceof Error ? error.message : 'Unknown error'}`);
     }
 };
