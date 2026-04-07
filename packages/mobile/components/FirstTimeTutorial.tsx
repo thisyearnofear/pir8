@@ -241,7 +241,7 @@ export const FirstTimeTutorial: React.FC<FirstTimeTutorialProps> = ({
                 {!step.action && (
                   <View style={styles.demo}>
                     <Text style={styles.demoEmoji}>🎮</Text>
-                    <Text style={styles.demoText}>Let's get started!</Text>
+                    <Text style={styles.demoText}>Let&apos;s get started!</Text>
                   </View>
                 )}
               </View>

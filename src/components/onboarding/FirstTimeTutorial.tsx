@@ -223,7 +223,7 @@ export function FirstTimeTutorial({
             {!step?.action && (
               <div className="text-center">
                 <div className="text-5xl mb-2">🏴‍☠️</div>
-                <div className="text-sm text-neon-cyan">Let's begin!</div>
+                <div className="text-sm text-neon-cyan">Let&apos;s begin!</div>
               </div>
             )}
           </div>

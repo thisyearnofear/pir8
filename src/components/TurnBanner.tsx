@@ -11,7 +11,6 @@ export default function TurnBanner({
   isMyTurn, 
   decisionTimeMs, 
   currentPlayerName = 'opponent',
-  // eslint-disable-next-line @typescript-eslint/no-unused-vars
   isPracticeMode: _isPracticeMode = false 
 }: TurnBannerProps) {
   

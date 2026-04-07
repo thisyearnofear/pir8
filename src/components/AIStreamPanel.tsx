@@ -117,7 +117,7 @@ function ReasoningCard({ reasoning, isLatest }: { reasoning: AIReasoning; isLate
               {chosenOption.type.replace('_', ' ')}
             </div>
             <p className="text-[11px] text-slate-400 leading-relaxed italic line-clamp-2">
-              "{chosenOption.reason}"
+              &quot;{chosenOption.reason}&quot;
             </p>
             {chosenOption.target && (
               <div className="text-[9px] text-slate-500 mt-1 font-mono uppercase">

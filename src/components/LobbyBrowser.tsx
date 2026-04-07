@@ -346,7 +346,7 @@ export default function LobbyBrowser() {
                     LOBBY ID
                     {isUserInGame && (
                       <span className="bg-neon-cyan text-black text-[10px] px-1.5 py-0.5 rounded font-bold">
-                        YOU'RE IN
+                        YOU&apos;RE IN
                       </span>
                     )}
                   </div>

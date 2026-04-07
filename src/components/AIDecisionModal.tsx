@@ -33,7 +33,7 @@ export default function AIDecisionModal({
           <div>
             <h2 className="text-2xl font-black text-neon-cyan flex items-center gap-2">
               <span>🤖</span>
-              <span>{playerName}'s Turn</span>
+              <span>{playerName}&apos;s Turn</span>
             </h2>
             <p className="text-sm text-gray-400 mt-1">
               {difficulty.name} • Thinking time: {thinkingTime}ms

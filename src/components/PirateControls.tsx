@@ -704,7 +704,7 @@ export default function PirateControls({
               <div className="relative text-center mb-4">
                 <h4 className="text-xl font-black text-transparent bg-clip-text 
                                bg-gradient-to-r from-neon-magenta via-neon-cyan to-neon-magenta">
-                  ⏱️ CAPTAIN'S REFLEXES
+                  ⏱️ CAPTAIN&apos;S REFLEXES
                 </h4>
                 <p className="text-xs text-gray-400 mt-1">Speed determines your bonus points</p>
               </div>
