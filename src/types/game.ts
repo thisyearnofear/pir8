@@ -111,6 +111,9 @@ export interface Player {
   // Momentum system: consecutive attacks build bonus
   consecutiveAttacks: number;
   lastActionWasAttack: boolean;
+
+  // ===== FOG OF WAR =====
+  revealedCoordinates?: string[]; // Coordinates this player has revealed
 }
 
 export type OnChainGameMode = "Casual" | "Competitive" | "AgentArena";

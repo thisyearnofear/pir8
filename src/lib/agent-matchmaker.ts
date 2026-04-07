@@ -347,10 +347,47 @@ export class AgentMatchmaker {
 
     this.activeLobbies.set(lobbyId, lobby);
 
-    // TODO: Notify agents about the match
-    console.log(`Created lobby ${lobbyId} with ${lobby.agents.length} agents`);
+    // Notify agents about the match via localStorage events (cross-tab communication)
+    this.notifyAgentsOfMatch(lobby);
 
     return lobby;
+  }
+
+  /**
+   * Notify agents about a new match using BroadcastChannel API for cross-tab communication
+   */
+  private notifyAgentsOfMatch(lobby: GameLobby): void {
+    try {
+      // Store match notification in localStorage for agents to poll
+      const matchNotification = {
+        type: "match_found",
+        lobbyId: lobby.id,
+        gameId: lobby.gameId,
+        agents: lobby.agents.map((a) => a.publicKey),
+        skillLevel: lobby.skillLevel,
+        gameType: lobby.gameType,
+        createdAt: lobby.createdAt.toISOString(),
+        estimatedStartTime: lobby.estimatedStartTime?.toISOString(),
+      };
+
+      localStorage.setItem(
+        `pir8_match_${lobby.id}`,
+        JSON.stringify(matchNotification),
+      );
+
+      // Broadcast to other tabs using BroadcastChannel if available
+      if (typeof BroadcastChannel !== "undefined") {
+        const channel = new BroadcastChannel("pir8_matchmaking");
+        channel.postMessage(matchNotification);
+        channel.close();
+      }
+
+      console.log(
+        `🏴‍☠️ Match notification sent for lobby ${lobby.id} with ${lobby.agents.length} agents`,
+      );
+    } catch (error) {
+      console.warn("Failed to send match notification:", error);
+    }
   }
 
   /**

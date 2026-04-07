@@ -1,6 +1,6 @@
 /**
  * Ship Abilities System
- * 
+ *
  * Core Principles Applied:
  * - DRY: Single source of truth for all ship abilities
  * - MODULAR: Each ability is self-contained and testable
@@ -8,43 +8,54 @@
  * - ORGANIZED: Domain-driven design (ships domain)
  */
 
-import { ShipType, ShipAbility, Ship, GameState, ShipEffect } from '@/types/game';
+import {
+  ShipType,
+  ShipAbility,
+  Ship,
+  GameState,
+  ShipEffect,
+} from "@/types/game";
 
 /**
  * SINGLE SOURCE OF TRUTH: All ship ability definitions
  * MODULAR: Each ability is a complete, testable unit
  */
-export const SHIP_ABILITIES: Record<ShipType, Omit<ShipAbility, 'currentCooldown' | 'isReady'>> = {
+export const SHIP_ABILITIES: Record<
+  ShipType,
+  Omit<ShipAbility, "currentCooldown" | "isReady">
+> = {
   sloop: {
-    name: 'Spy Glass',
-    description: 'Reveal a 5x5 area of fog of war, spotting hidden enemies and treasures',
+    name: "Spy Glass",
+    description:
+      "Reveal a 5x5 area of fog of war, spotting hidden enemies and treasures",
     cooldown: 2,
     cost: { gold: 50 },
-    type: 'utility',
+    type: "utility",
     range: 2,
   },
   frigate: {
-    name: 'Broadside',
-    description: 'Fire all guns, attacking up to 2 enemy ships within range 3',
+    name: "Broadside",
+    description: "Fire all guns, attacking up to 2 enemy ships within range 3",
     cooldown: 3,
     cost: { cannons: 2 },
-    type: 'offensive',
+    type: "offensive",
     range: 3,
   },
   galleon: {
-    name: 'Fortress Mode',
-    description: '+50% defense for 2 turns, but cannot move during this time',
+    name: "Fortress Mode",
+    description: "+50% defense for 2 turns, but cannot move during this time",
     cooldown: 3,
     cost: { supplies: 30 },
-    type: 'defensive',
+    type: "defensive",
     range: 0,
   },
   flagship: {
-    name: 'Devastating Volley',
-    description: 'Unleash a massive attack dealing 2x damage to a single target within range 2',
+    name: "Devastating Volley",
+    description:
+      "Unleash a massive attack dealing 2x damage to a single target within range 2",
     cooldown: 4,
     cost: { cannons: 4, supplies: 20 },
-    type: 'offensive',
+    type: "offensive",
     range: 2,
   },
 };
@@ -64,13 +75,19 @@ export function initializeShipAbility(shipType: ShipType): ShipAbility {
 /**
  * Check if ship can use its ability (MODULAR: Single responsibility)
  */
-export function canUseAbility(ship: Ship, playerResources: any): { canUse: boolean; reason?: string } {
+export function canUseAbility(
+  ship: Ship,
+  playerResources: any,
+): { canUse: boolean; reason?: string } {
   if (!ship.ability.isReady) {
-    return { canUse: false, reason: `On cooldown for ${ship.ability.currentCooldown} more turns` };
+    return {
+      canUse: false,
+      reason: `On cooldown for ${ship.ability.currentCooldown} more turns`,
+    };
   }
 
   if (ship.health <= 0) {
-    return { canUse: false, reason: 'Ship destroyed' };
+    return { canUse: false, reason: "Ship destroyed" };
   }
 
   // Check resource costs
@@ -91,7 +108,7 @@ export function canUseAbility(ship: Ship, playerResources: any): { canUse: boole
 export function useShipAbility(
   ship: Ship,
   gameState: GameState,
-  targetData?: any
+  targetData?: any,
 ): {
   success: boolean;
   updatedShip: Ship;
@@ -113,18 +130,39 @@ export function useShipAbility(
 
   let updatedGameState = { ...gameState };
   let effects: ShipEffect[] = [];
-  let message = '';
+  let message = "";
 
   // Execute ability based on ship type (MODULAR: Strategy pattern)
   switch (ship.type) {
-    case 'sloop':
+    case "sloop":
       // Spy Glass: Reveal fog of war
       const revealed = revealFogOfWar(ship.position, gameState);
+
+      // Add revealed coordinates to current player's revealed list
+      const currentPlayerIndex = gameState.players.findIndex((p) =>
+        p.ships.some((s) => s.id === ship.id),
+      );
+      if (currentPlayerIndex !== -1) {
+        const currentPlayer = gameState.players[currentPlayerIndex];
+        const existingRevealed = new Set(
+          currentPlayer?.revealedCoordinates || [],
+        );
+        revealed.revealed.forEach((coord) => existingRevealed.add(coord));
+
+        updatedGameState = {
+          ...updatedGameState,
+          players: gameState.players.map((p, i) =>
+            i === currentPlayerIndex
+              ? { ...p, revealedCoordinates: Array.from(existingRevealed) }
+              : p,
+          ),
+        };
+      }
+
       message = `Spy Glass revealed ${revealed.treasures} treasures and ${revealed.enemies} enemy ships!`;
-      // Note: Fog of war system would need to be implemented
       break;
 
-    case 'frigate':
+    case "frigate":
       // Broadside: Attack 2 targets within range
       const range = ship.ability.range || 1;
       const targets = findEnemiesInRange(ship, gameState, range, 2);
@@ -133,64 +171,67 @@ export function useShipAbility(
           success: false,
           updatedShip: ship, // Don't use cooldown if no targets
           updatedGameState: gameState,
-          message: 'No enemy ships in range for Broadside',
+          message: "No enemy ships in range for Broadside",
         };
       }
       message = `Broadside hit ${targets.length} enemy ships!`;
       // Damage would be applied in game engine
       break;
 
-    case 'galleon':
+    case "galleon":
       // Fortress Mode: +50% defense, immobile
       effects = [
         {
-          type: 'defense_buff',
+          type: "defense_buff",
           duration: 2,
           magnitude: 0.5,
           source: ship.id,
         },
         {
-          type: 'immobile',
+          type: "immobile",
           duration: 2,
           magnitude: 1,
           source: ship.id,
         },
       ];
-      updatedShip.activeEffects = [...(updatedShip.activeEffects || []), ...effects];
-      message = 'Fortress Mode activated! +50% defense for 2 turns';
+      updatedShip.activeEffects = [
+        ...(updatedShip.activeEffects || []),
+        ...effects,
+      ];
+      message = "Fortress Mode activated! +50% defense for 2 turns";
       break;
 
-    case 'flagship':
+    case "flagship":
       // Devastating Volley: 2x damage attack
       if (!targetData?.targetShipId) {
         return {
           success: false,
           updatedShip: ship,
           updatedGameState: gameState,
-          message: 'No target selected for Devastating Volley',
+          message: "No target selected for Devastating Volley",
         };
       }
-      
+
       // Check range
       const volleyRange = ship.ability.range || 1;
       const targetShip = findShipById(gameState, targetData.targetShipId);
       if (!targetShip) {
-         return {
+        return {
           success: false,
           updatedShip: ship,
           updatedGameState: gameState,
-          message: 'Target ship not found',
+          message: "Target ship not found",
         };
       }
-      
+
       const dist = Math.sqrt(
-        Math.pow(targetShip.position.x - ship.position.x, 2) + 
-        Math.pow(targetShip.position.y - ship.position.y, 2)
+        Math.pow(targetShip.position.x - ship.position.x, 2) +
+          Math.pow(targetShip.position.y - ship.position.y, 2),
       );
-      
+
       // Allow diagonals logic (range * 1.5)
       if (dist > volleyRange * 1.5) {
-         return {
+        return {
           success: false,
           updatedShip: ship,
           updatedGameState: gameState,
@@ -198,7 +239,7 @@ export function useShipAbility(
         };
       }
 
-      message = 'Devastating Volley unleashed! 2x damage dealt!';
+      message = "Devastating Volley unleashed! 2x damage dealt!";
       // Damage would be applied in game engine
       break;
   }
@@ -234,8 +275,8 @@ export function tickAbilityCooldown(ship: Ship): Ship {
  */
 export function tickShipEffects(ship: Ship): Ship {
   const updatedEffects = ship.activeEffects
-    .map(effect => ({ ...effect, duration: effect.duration - 1 }))
-    .filter(effect => effect.duration > 0);
+    .map((effect) => ({ ...effect, duration: effect.duration - 1 }))
+    .filter((effect) => effect.duration > 0);
 
   return {
     ...ship,
@@ -257,13 +298,13 @@ export function getEffectiveStats(ship: Ship): {
 
   for (const effect of ship.activeEffects) {
     switch (effect.type) {
-      case 'attack_buff':
-        attack *= (1 + effect.magnitude);
+      case "attack_buff":
+        attack *= 1 + effect.magnitude;
         break;
-      case 'defense_buff':
-        defense *= (1 + effect.magnitude);
+      case "defense_buff":
+        defense *= 1 + effect.magnitude;
         break;
-      case 'immobile':
+      case "immobile":
         canMove = false;
         break;
     }
@@ -274,40 +315,87 @@ export function getEffectiveStats(ship: Ship): {
 
 // HELPER FUNCTIONS (MODULAR: Single responsibility)
 
-function revealFogOfWar(_position: any, _gameState: GameState): { treasures: number; enemies: number } {
-  // TODO: Implement fog of war system
-  // For now, return placeholder
-  return { treasures: 2, enemies: 1 };
+function revealFogOfWar(
+  position: { x: number; y: number },
+  gameState: GameState,
+): { treasures: number; enemies: number; revealed: string[] } {
+  const revealRadius = 2; // 5x5 area
+  const revealed: string[] = [];
+  let treasures = 0;
+  let enemies = 0;
+
+  for (let dx = -revealRadius; dx <= revealRadius; dx++) {
+    for (let dy = -revealRadius; dy <= revealRadius; dy++) {
+      const x = position.x + dx;
+      const y = position.y + dy;
+
+      if (
+        x < 0 ||
+        x >= gameState.gameMap.size ||
+        y < 0 ||
+        y >= gameState.gameMap.size
+      ) {
+        continue;
+      }
+
+      const coord = `${x},${y}`;
+      revealed.push(coord);
+
+      const cell = gameState.gameMap.cells[x]?.[y];
+      if (cell) {
+        if (cell.type === "treasure") treasures++;
+      }
+
+      for (const player of gameState.players) {
+        for (const ship of player.ships) {
+          if (
+            ship.position.x === x &&
+            ship.position.y === y &&
+            ship.health > 0
+          ) {
+            enemies++;
+          }
+        }
+      }
+    }
+  }
+
+  return { treasures, enemies, revealed };
 }
 
 function findShipById(gameState: GameState, shipId: string): Ship | undefined {
   for (const player of gameState.players) {
-    const ship = player.ships.find(s => s.id === shipId);
+    const ship = player.ships.find((s) => s.id === shipId);
     if (ship) return ship;
   }
   return undefined;
 }
 
-function findEnemiesInRange(ship: Ship, gameState: GameState, range: number, maxTargets: number): Ship[] {
+function findEnemiesInRange(
+  ship: Ship,
+  gameState: GameState,
+  range: number,
+  maxTargets: number,
+): Ship[] {
   const enemies: Ship[] = [];
-  
+
   for (const player of gameState.players) {
-    if (player.publicKey === ship.id.split('_')[0]) continue; // Skip own player
-    
+    if (player.publicKey === ship.id.split("_")[0]) continue; // Skip own player
+
     for (const enemyShip of player.ships) {
       if (enemyShip.health <= 0) continue;
-      
+
       const distance = Math.sqrt(
-        Math.pow(ship.position.x - enemyShip.position.x, 2) + 
-        Math.pow(ship.position.y - enemyShip.position.y, 2)
+        Math.pow(ship.position.x - enemyShip.position.x, 2) +
+          Math.pow(ship.position.y - enemyShip.position.y, 2),
       );
-      
+
       // Allow diagonals logic
       if (distance <= range * 1.5 && enemies.length < maxTargets) {
         enemies.push(enemyShip);
       }
     }
   }
-  
+
   return enemies;
 }
