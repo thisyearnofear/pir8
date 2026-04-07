@@ -386,6 +386,7 @@ export default function Visualization3D({
         rendererRef.current.dispose();
       }
     };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   return <div ref={containerRef} style={{ width: "100%", height: "100%" }} />;

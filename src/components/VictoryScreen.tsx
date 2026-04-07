@@ -36,6 +36,7 @@ export default function VictoryScreen({
             // Generate epic moment and share text
             generateEpicContent();
         }
+        // eslint-disable-next-line react-hooks/exhaustive-deps
     }, [gameState?.gameStatus]);
 
     const generateEpicContent = () => {

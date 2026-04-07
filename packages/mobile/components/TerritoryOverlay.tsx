@@ -38,7 +38,7 @@ export const TerritoryOverlay: React.FC<TerritoryOverlayProps> = React.memo(({
   const scale = useSharedValue(1);
   
   React.useEffect(() => {
-   if (isContested) {
+    if (isContested) {
       scale.value = withRepeat(
         withTiming(1.15, {
           duration: 600,
@@ -50,6 +50,7 @@ export const TerritoryOverlay: React.FC<TerritoryOverlayProps> = React.memo(({
     } else {
       scale.value = 1;
     }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [isContested]);
 
   const animatedStyle = useAnimatedStyle(() => ({

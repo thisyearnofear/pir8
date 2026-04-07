@@ -94,6 +94,26 @@ export const ContextualHints: React.FC<ContextualHintsProps> = ({
   const [activeHints, setActiveHints] = useState<Hint[]>([]);
   const animations = useRef<Map<string, Animated.Value>>(new Map());
 
+  // Handle dismiss must be defined before useEffect that uses it
+  const handleDismiss = useCallback(
+    async (hintId: string) => {
+      const anim = animations.current.get(hintId);
+      if (anim) {
+        Animated.timing(anim, {
+          toValue: 0,
+          duration: 200,
+          useNativeDriver: true,
+        }).start(() => {
+          setActiveHints((prev) => prev.filter((h) => h.id !== hintId));
+          animations.current.delete(hintId);
+        });
+      }
+      await Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+      onDismiss?.(hintId);
+    },
+    [onDismiss],
+  );
+
   // Filter and sort hints by priority when hints prop changes
   useEffect(() => {
     if (!isVisible || !hints.length) return;
@@ -127,26 +147,8 @@ export const ContextualHints: React.FC<ContextualHintsProps> = ({
         setTimeout(() => handleDismiss(hint.id), hint.duration);
       }
     });
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [hints, isVisible]);
-
-  const handleDismiss = useCallback(
-    async (hintId: string) => {
-      const anim = animations.current.get(hintId);
-      if (anim) {
-        Animated.timing(anim, {
-          toValue: 0,
-          duration: 200,
-          useNativeDriver: true,
-        }).start(() => {
-          setActiveHints((prev) => prev.filter((h) => h.id !== hintId));
-          animations.current.delete(hintId);
-        });
-      }
-      await Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
-      onDismiss?.(hintId);
-    },
-    [onDismiss],
-  );
 
   if (!isVisible || activeHints.length === 0) return null;
 

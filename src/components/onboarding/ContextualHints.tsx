@@ -33,6 +33,13 @@ export function ContextualHints({
   const [activeHints, setActiveHints] = useState<Hint[]>([]);
   const { play } = useSoundEffects();
 
+  // Must define handleDismiss before useEffect that uses it
+  const handleDismiss = useCallback((hintId: string) => {
+    play('button_click');
+    onDismiss?.(hintId);
+    setActiveHints(prev => prev.filter(h => h.id !== hintId));
+  }, [onDismiss, play]);
+
   useEffect(() => {
     if (!isVisible) return;
 
@@ -53,13 +60,8 @@ export function ContextualHints({
         }, hint.duration);
       }
     });
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [hints, isVisible]);
-
-  const handleDismiss = useCallback((hintId: string) => {
-    play('button_click');
-    onDismiss?.(hintId);
-    setActiveHints(prev => prev.filter(h => h.id !== hintId));
-  }, [onDismiss, play]);
 
   if (!isVisible || activeHints.length === 0) return null;
 

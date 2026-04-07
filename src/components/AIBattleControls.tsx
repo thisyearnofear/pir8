@@ -45,6 +45,7 @@ export default function AIBattleControls({
       if (prev.length > 0 && prev[0] === newCommentary) return prev;
       return [newCommentary, ...prev].slice(0, 5);
     });
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [gameState?.turnNumber, gameState?.currentPlayerIndex, isAIvsAIMode]);
 
   if (!isAIvsAIMode) return null;

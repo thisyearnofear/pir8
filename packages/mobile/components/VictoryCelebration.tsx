@@ -82,6 +82,7 @@ export const VictoryCelebration: React.FC<VictoryCelebrationProps> = ({
       scale.value = withTiming(0.8, { duration: 300 });
       slideY.value = withTiming(50, { duration: 300 });
     }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [isVisible, onComplete, duration]);
 
   if (!isVisible) return null;
@@ -121,6 +122,7 @@ const ConfettiPieceView: React.FC<{ piece: ConfettiPiece }> = ({ piece }) => {
       -1,
       false,
     );
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   const animatedStyle = useAnimatedStyle(() => ({

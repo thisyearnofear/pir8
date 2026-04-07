@@ -21,6 +21,7 @@ export function Toast({ message, type = 'info', duration = 5000, onClose }: Toas
       setIsVisible(false);
       onClose?.();
     }, 300);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [onClose]);
 
   useEffect(() => {
@@ -45,6 +46,7 @@ export function Toast({ message, type = 'info', duration = 5000, onClose }: Toas
       setIsVisible(false);
     }
     return undefined; // Explicit return for when condition is false
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [message, type, duration, isMobile, triggerHaptic]);
 
 

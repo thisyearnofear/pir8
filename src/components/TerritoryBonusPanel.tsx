@@ -30,12 +30,12 @@ export default function TerritoryBonusPanel({
   // PERFORMANT: Memoize expensive calculations
   const activeBonuses = useMemo(
     () => calculateActiveBonuses(player, gameState),
-    [player.controlledTerritories, gameState.gameMap]
+    [player, gameState]
   );
 
   const nextBonus = useMemo(
     () => calculateNextBonus(player, gameState),
-    [player.controlledTerritories, gameState.gameMap]
+    [player, gameState]
   );
 
   const tierColors = {

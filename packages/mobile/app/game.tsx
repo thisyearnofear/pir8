@@ -145,6 +145,7 @@ export default function GameScreen() {
         HINT_TEMPLATES.TERRITORY_CONTROL,
       ]);
     }, 1000);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   const handleTutorialComplete = useCallback(() => {

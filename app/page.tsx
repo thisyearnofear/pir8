@@ -259,6 +259,7 @@ export default function Home() {
   ]);
 
   // Practice mode handlers - memoized with useCallback to prevent re-creations
+  // Note: handleGameEvent intentionally not in deps to avoid stale closures in game loops
   const handleStartPractice = useCallback(
     (difficulty: "novice" | "pirate" | "captain" | "admiral") => {
       // Create a temporary player for practice mode
@@ -292,10 +293,12 @@ export default function Home() {
         handleGameEvent(`⚔️ Practice mode: ${difficulty} AI opponent!`);
       }
     },
+    // eslint-disable-next-line react-hooks/exhaustive-deps
     [publicKey, startPracticeGame],
   );
 
   // AI vs AI mode handler
+  // Note: handleGameEvent intentionally not in deps to avoid stale closures in game loops
   const handleStartAIBattle = useCallback(
     (difficulty1: string, difficulty2: string, speed: number) => {
       const success = startAIvsAIGame(
@@ -307,6 +310,7 @@ export default function Home() {
         handleGameEvent(`⚔️ AI Battle: ${difficulty1} vs ${difficulty2}!`);
       }
     },
+    // eslint-disable-next-line react-hooks/exhaustive-deps
     [startAIvsAIGame],
   );
 
