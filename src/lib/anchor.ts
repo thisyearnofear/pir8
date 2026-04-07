@@ -5,11 +5,14 @@
  * React hooks are in useAnchorProgram.ts
  */
 
-import { BN } from '@coral-xyz/anchor';
-import { PublicKey } from '@solana/web3.js';
+import { BN } from "@coral-xyz/anchor";
+import { PublicKey } from "@solana/web3.js";
 
 // Program ID - Deployed to devnet
-export const PROGRAM_ID = new PublicKey(process.env.NEXT_PUBLIC_PROGRAM_ID || 'DkkuBQySAxKTADdxQVyx8rjxudZVSwA7ZjRCqRquH5FU');
+export const PROGRAM_ID = new PublicKey(
+  process.env.NEXT_PUBLIC_PROGRAM_ID ||
+    "DkkuBQySAxKTADdxQVyx8rjxudZVSwA7ZjRCqRquH5FU",
+);
 
 // Program IDL type definitions
 export interface PIR8Program {
@@ -57,10 +60,10 @@ export interface PlayerState {
 }
 
 export enum GameStatus {
-  Waiting = 'Waiting',
-  Active = 'Active',
-  Completed = 'Completed',
-  Cancelled = 'Cancelled',
+  Waiting = "Waiting",
+  Active = "Active",
+  Completed = "Completed",
+  Cancelled = "Cancelled",
 }
 
 export interface GameMetadata {
@@ -71,24 +74,48 @@ export interface GameMetadata {
 }
 
 // PDA derivation helpers
+// Config PDA - for game configuration
 export const getConfigPDA = (): [PublicKey, number] => {
+  return PublicKey.findProgramAddressSync([Buffer.from("config")], PROGRAM_ID);
+};
+
+// Game PDA - accepts number or BN, optional programId (defaults to PROGRAM_ID)
+export const getGamePDA = (
+  gameId: number | BN,
+  programId: PublicKey = PROGRAM_ID,
+): [PublicKey, number] => {
+  const idBuffer =
+    typeof gameId === "number"
+      ? new BN(gameId).toArrayLike(Buffer, "le", 8)
+      : gameId.toArrayLike(Buffer, "le", 8);
+
   return PublicKey.findProgramAddressSync(
-    [Buffer.from('config')],
-    PROGRAM_ID
+    [Buffer.from("pirate_game"), idBuffer],
+    programId,
   );
 };
 
-export const getGamePDA = (gameId: number): [PublicKey, number] => {
+// Player PDA derivation
+export const getPlayerPDA = (
+  programId: PublicKey,
+  playerPubkey: PublicKey,
+): [PublicKey, number] => {
   return PublicKey.findProgramAddressSync(
-    [
-      Buffer.from('pirate_game'),
-      new BN(gameId).toArrayLike(Buffer, 'le', 8)
-    ],
-    PROGRAM_ID
+    [Buffer.from("player"), playerPubkey.toBytes()],
+    programId,
   );
 };
 
-
+// Ship PDA derivation
+export const getShipPDA = (
+  programId: PublicKey,
+  shipId: string,
+): [PublicKey, number] => {
+  return PublicKey.findProgramAddressSync(
+    [Buffer.from("ship"), Buffer.from(shipId)],
+    programId,
+  );
+};
 
 // Helper to convert BN to number safely
 export const bnToNumber = (bn: BN): number => {
@@ -100,26 +127,33 @@ export const numberToBN = (num: number): BN => {
   return new BN(num);
 };
 
+// Generate a unique game ID based on timestamp + random component
+export const generateGameId = (): number => {
+  const timestamp = Math.floor(Date.now() / 1000);
+  const random = Math.floor(Math.random() * 10000);
+  return timestamp * 10000 + random;
+};
+
 // Event parsing helpers
 export const parseGameEvents = (logs: string[]): any[] => {
   const events: any[] = [];
   const eventNames = [
-    'GameCreated',
-    'PlayerJoined',
-    'GameStarted',
-    'ShipMoved',
-    'ShipAttacked',
-    'TerritoryClaimed',
-    'ResourcesCollected',
-    'ShipBuilt',
-    'CoordinateScanned',
-    'MoveExecuted',
-    'GameCompleted',
+    "GameCreated",
+    "PlayerJoined",
+    "GameStarted",
+    "ShipMoved",
+    "ShipAttacked",
+    "TerritoryClaimed",
+    "ResourcesCollected",
+    "ShipBuilt",
+    "CoordinateScanned",
+    "MoveExecuted",
+    "GameCompleted",
   ];
 
   const extractJsonPayload = (log: string) => {
-    const start = log.indexOf('{');
-    const end = log.lastIndexOf('}');
+    const start = log.indexOf("{");
+    const end = log.lastIndexOf("}");
     if (start === -1 || end === -1 || end <= start) return null;
     const payload = log.slice(start, end + 1);
     try {

@@ -11,6 +11,7 @@ import {
   getAgentRegistry,
 } from "./agent-registry";
 import { GAME_CONFIG } from "../utils/constants";
+import { generateGameId } from "./anchor";
 
 export interface GameLobby {
   id: string;
@@ -329,7 +330,7 @@ export class AgentMatchmaker {
     skillLevel: string,
   ): Promise<GameLobby> {
     const lobbyId = `lobby_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
-    const gameId = Math.floor(Math.random() * 1000000); // TODO: Use proper game ID generation
+    const gameId = generateGameId();
 
     const lobby: GameLobby = {
       id: lobbyId,
@@ -387,7 +388,7 @@ export class AgentMatchmaker {
     }
 
     const lobbyId = `manual_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
-    const gameId = Math.floor(Math.random() * 1000000);
+    const gameId = generateGameId();
 
     // Determine skill level
     const avgElo =
