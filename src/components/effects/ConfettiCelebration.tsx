@@ -7,7 +7,7 @@
 
 'use client';
 
-import { useEffect, useRef, useCallback } from 'react';
+import { useEffect, useRef, useCallback, useState } from 'react';
 
 interface Particle {
   x: number;
@@ -50,6 +50,19 @@ export function ConfettiCelebration({
   const particlesRef = useRef<Particle[]>([]);
   const animationFrameRef = useRef<number | undefined>(undefined);
   const startTimeRef = useRef<number | undefined>(undefined);
+  
+  // Use state to track reduced motion after initial render (hooks must be called unconditionally)
+  const [reducedMotion, setReducedMotion] = useState(false);
+
+  // Initialize reduced motion check
+  useEffect(() => {
+    const mediaQuery = window.matchMedia('(prefers-reduced-motion: reduce)');
+    setReducedMotion(mediaQuery.matches);
+    
+    const handler = (e: MediaQueryListEvent) => setReducedMotion(e.matches);
+    mediaQuery.addEventListener('change', handler);
+    return () => mediaQuery.removeEventListener('change', handler);
+  }, []);
 
   const createParticle = useCallback((canvasWidth: number, canvasHeight: number): Particle => {
     const colorIndex = Math.floor(Math.random() * colors.length);
@@ -167,6 +180,11 @@ export function ConfettiCelebration({
   }, [isActive, particleCount, duration, colors, createParticle, updateParticle, drawParticle, onComplete]);
 
   if (!isActive) return null;
+
+  // Skip rendering if reduced motion is preferred
+  if (reducedMotion) {
+    return null;
+  }
 
   return (
     <canvas

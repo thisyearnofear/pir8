@@ -69,6 +69,17 @@ export function usePrivacySimulation(
     const [mode, setMode] = useState<PrivacySimulationMode>('transparent');
     const [turnNumber, setTurnNumber] = useState(0);
 
+    // Sync React state with simulator state (defined before initialize to avoid dependency issues)
+    const syncState = useCallback(() => {
+        if (!simulatorRef.current) return;
+
+        const state = simulatorRef.current.getState();
+        setMode(state.ghostFleet.isActive ? 'ghost_fleet' : 'transparent');
+        setGhostFleetStatus(state.ghostFleet);
+        setDossier(state.playerDossier);
+        setLeakageReport(state.informationLeakage);
+    }, [setMode, setGhostFleetStatus, setDossier, setLeakageReport]);
+
     // Initialize simulator
     const initialize = useCallback(() => {
         if (!enabled) return;
@@ -78,18 +89,7 @@ export function usePrivacySimulation(
 
         // Sync React state with simulator
         syncState();
-    }, [enabled]);
-
-    // Sync React state with simulator state
-    const syncState = useCallback(() => {
-        if (!simulatorRef.current) return;
-
-        const state = simulatorRef.current.getState();
-        setMode(state.ghostFleet.isActive ? 'ghost_fleet' : 'transparent');
-        setGhostFleetStatus(state.ghostFleet);
-        setDossier(state.playerDossier);
-        setLeakageReport(state.informationLeakage);
-    }, []);
+    }, [enabled, syncState]);
 
     // Reset simulator
     const reset = useCallback(() => {

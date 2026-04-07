@@ -3,6 +3,7 @@
 import { useEffect, useState } from 'react';
 import { GameState } from '../types/game';
 import { ConfettiCelebration } from './effects/ConfettiCelebration';
+import { useAccessibility } from '../hooks/useAccessibility';
 
 interface VictoryScreenProps {
     gameState: GameState | null;
@@ -25,19 +26,26 @@ export default function VictoryScreen({
     const [shareText, setShareText] = useState('');
     const [epicMoment, setEpicMoment] = useState('');
     const [showEpicAnimation, setShowEpicAnimation] = useState(false);
+    const { reducedMotion } = useAccessibility();
 
     useEffect(() => {
         if (gameState?.gameStatus === 'completed') {
-            setShowConfetti(true);
-            setShowEpicAnimation(true);
-            setTimeout(() => setShowStats(true), 1500);
-            setTimeout(() => setShowConfetti(false), 8000);
+            // Respect reduced motion preference
+            const animationDelay = reducedMotion ? 0 : 1500;
+            const confettiDuration = reducedMotion ? 0 : 8000;
+            
+            setShowConfetti(!reducedMotion);
+            setShowEpicAnimation(!reducedMotion);
+            setTimeout(() => setShowStats(true), animationDelay);
+            if (!reducedMotion) {
+                setTimeout(() => setShowConfetti(false), confettiDuration);
+            }
 
             // Generate epic moment and share text
             generateEpicContent();
         }
         // eslint-disable-next-line react-hooks/exhaustive-deps
-    }, [gameState?.gameStatus]);
+    }, [gameState?.gameStatus, reducedMotion]);
 
     const generateEpicContent = () => {
         if (!gameState) return;

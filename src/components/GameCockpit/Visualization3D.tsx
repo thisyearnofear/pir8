@@ -1,8 +1,9 @@
 "use client";
 
-import { useEffect, useRef } from "react";
+import { useEffect, useRef, useState } from "react";
 import * as THREE from "three";
 import { OrbitControls } from "three/examples/jsm/controls/OrbitControls";
+import { useAccessibility } from "../../hooks/useAccessibility";
 
 interface Visualization3DProps {
   audioAnalyser?: AnalyserNode;
@@ -31,6 +32,9 @@ export default function Visualization3D({
   const uniformsRef = useRef<any>(null);
   const animationIdRef = useRef<number | null>(null);
   const frequencyDataRef = useRef<Uint8Array | null>(null);
+  const [isLoading, setIsLoading] = useState(true);
+  
+  const { reducedMotion } = useAccessibility();
 
   // Initialize frequency data array
   useEffect(() => {
@@ -265,9 +269,17 @@ export default function Visualization3D({
     sphereGroupRef.current = sphereGroup;
     uniformsRef.current = uniforms;
 
+    // Mark initialization complete
+    setIsLoading(false);
+
     // Animation loop
     const animate = () => {
       animationIdRef.current = requestAnimationFrame(animate);
+
+      // Skip animation for reduced motion preference
+      if (reducedMotion) {
+        return;
+      }
 
       if (uniformsRef.current) {
         uniformsRef.current.u_time.value += 0.05;
@@ -389,5 +401,36 @@ export default function Visualization3D({
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
-  return <div ref={containerRef} style={{ width: "100%", height: "100%" }} />;
+  // Show loading state while WebGL initializes
+  if (isLoading) {
+    return (
+      <div 
+        ref={containerRef} 
+        style={{ width: "100%", height: "100%" }}
+        role="img"
+        aria-label="Loading 3D game visualization"
+      />
+    );
+  }
+
+  // Reduced motion - show static representation
+  if (reducedMotion) {
+    return (
+      <div 
+        ref={containerRef} 
+        style={{ width: "100%", height: "100%" }}
+        role="img"
+        aria-label="Static game map view"
+      />
+    );
+  }
+
+  return (
+    <div 
+      ref={containerRef} 
+      style={{ width: "100%", height: "100%" }}
+      role="img"
+      aria-label="3D interactive game visualization"
+    />
+  );
 }
