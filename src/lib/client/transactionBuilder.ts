@@ -203,39 +203,25 @@ export const buildInitializeGameTx = async (
     programId: program.programId.toString(),
   });
 
-  // Try multiple enum formats to find the one that works
-  const enumFormats = [
-    { [mode.toLowerCase()]: {} }, // { casual: {} }
-    { [mode]: {} }, // { Casual: {} }
-    mode, // "Casual"
-    mode.toLowerCase(), // "casual"
-  ];
+  // The IDL only expects a timestamp parameter
+  const timestamp = new BN(Date.now());
 
-  for (let i = 0; i < enumFormats.length; i++) {
-    const gameMode = enumFormats[i];
-    console.log(`Trying enum format ${i + 1}:`, gameMode);
+  try {
+    const tx = await (program as any).methods
+      .initializeGame(timestamp)
+      .accounts({
+        game: gamePDA,
+        authority: wallet.publicKey!,
+        systemProgram: SystemProgram.programId,
+      })
+      .transaction();
 
-    try {
-      const tx = await (program as any).methods
-        .initializeGame(new BN(gameId), gameMode)
-        .accounts({
-          game: gamePDA,
-          authority: wallet.publicKey!,
-          systemProgram: SystemProgram.programId,
-        })
-        .transaction();
-
-      console.log(`Success with enum format ${i + 1}:`, gameMode);
-      return tx;
-    } catch (error: any) {
-      console.log(`Failed with enum format ${i + 1}:`, error.message);
-      if (i === enumFormats.length - 1) {
-        throw error; // Re-throw the last error if all formats fail
-      }
-    }
+    console.log("Initialize game transaction built successfully");
+    return tx;
+  } catch (error: any) {
+    console.error("Failed to build initialize game transaction:", error);
+    throw error;
   }
-
-  throw new Error("All enum formats failed");
 };
 
 export const buildJoinGameTx = async (
@@ -282,7 +268,7 @@ export const buildMoveShipTx = async (
   const [gamePDA] = getGamePDA(gameId);
 
   return await (program as any).methods
-    .moveShip(shipId, toX, toY, null) // Added null for decisionTimeMs option
+    .moveShip(shipId, toX, toY)
     .accounts({
       game: gamePDA,
       player: wallet.publicKey!,
@@ -310,14 +296,17 @@ export const buildAttackShipTx = async (
 
 export const buildClaimTerritoryTx = async (
   wallet: WalletAdapter,
-  shipId: string,
+  _shipId: string, // Kept for API compatibility but not used in IDL
+  x: number,
+  y: number,
   gameId: number = 0,
 ): Promise<Transaction> => {
   const program = await getClientProgram(wallet);
   const [gamePDA] = getGamePDA(gameId);
 
+  // Note: IDL only expects x,y coordinates, not shipId
   return await (program as any).methods
-    .claimTerritory(shipId)
+    .claimTerritory(x, y)
     .accounts({
       game: gamePDA,
       player: wallet.publicKey!,
@@ -327,13 +316,15 @@ export const buildClaimTerritoryTx = async (
 
 export const buildCollectResourcesTx = async (
   wallet: WalletAdapter,
+  x: number,
+  y: number,
   gameId: number = 0,
 ): Promise<Transaction> => {
   const program = await getClientProgram(wallet);
   const [gamePDA] = getGamePDA(gameId);
 
   return await (program as any).methods
-    .collectResources()
+    .collectResources(x, y)
     .accounts({
       game: gamePDA,
       player: wallet.publicKey!,
@@ -344,20 +335,16 @@ export const buildCollectResourcesTx = async (
 export const buildBuildShipTx = async (
   wallet: WalletAdapter,
   shipType: "sloop" | "frigate" | "galleon" | "flagship",
-  portX: number,
-  portY: number,
+  _portX: number, // Kept for API compatibility but not used in IDL
+  _portY: number, // Kept for API compatibility but not used in IDL
   gameId: number = 0,
 ): Promise<Transaction> => {
   const program = await getClientProgram(wallet);
   const [gamePDA] = getGamePDA(gameId);
 
-  // Convert shipType to the format expected by the program (Capitalized variants)
-  const capitalizedShipType =
-    shipType.charAt(0).toUpperCase() + shipType.slice(1);
-  const shipTypeEnum = { [capitalizedShipType]: {} };
-
+  // Note: IDL only expects shipType string, not port coordinates
   return await (program as any).methods
-    .buildShip(shipTypeEnum, portX, portY)
+    .buildShip(shipType)
     .accounts({
       game: gamePDA,
       player: wallet.publicKey!,
@@ -548,19 +535,23 @@ export const attackShip = async (
 export const claimTerritory = async (
   wallet: any,
   shipId: string,
+  x: number,
+  y: number,
   gameId: number = 0,
 ): Promise<string> => {
   const walletAdapter = createWalletAdapter(wallet);
-  const tx = await buildClaimTerritoryTx(walletAdapter, shipId, gameId);
+  const tx = await buildClaimTerritoryTx(walletAdapter, shipId, x, y, gameId);
   return await executeTransaction(walletAdapter, tx);
 };
 
 export const collectResources = async (
   wallet: any,
+  x: number,
+  y: number,
   gameId: number = 0,
 ): Promise<string> => {
   const walletAdapter = createWalletAdapter(wallet);
-  const tx = await buildCollectResourcesTx(walletAdapter, gameId);
+  const tx = await buildCollectResourcesTx(walletAdapter, x, y, gameId);
   return await executeTransaction(walletAdapter, tx);
 };
 

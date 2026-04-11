@@ -506,14 +506,29 @@ export const usePirateGameState = create<PirateGameStore>((set, get) => ({
   ): Promise<boolean> => {
     try {
       set({ isLoading: true, error: null });
+      
+      // Get ship position from game state
+      const state = get().gameState;
+      if (!state) {
+        throw new Error("No game state");
+      }
+      
+      const ship = state.players
+        .flatMap((p: any) => p.ships)
+        .find((s: any) => s.id === shipId);
+      
+      if (!ship) {
+        throw new Error("Ship not found");
+      }
+      
       const { claimTerritory, createWalletAdapter } = await import(
         "../lib/client/transactionBuilder"
       );
       const walletAdapter = createWalletAdapter(wallet);
-      await claimTerritory(walletAdapter, shipId);
+      await claimTerritory(walletAdapter, shipId, ship.position.x, ship.position.y);
 
-      const state = await get().fetchGameState(gameId, wallet);
-      if (state) set({ gameState: state });
+      const newState = await get().fetchGameState(gameId, wallet);
+      if (newState) set({ gameState: newState });
       set({ isLoading: false });
       return true;
     } catch (error) {
@@ -530,7 +545,9 @@ export const usePirateGameState = create<PirateGameStore>((set, get) => ({
         "../lib/client/transactionBuilder"
       );
       const walletAdapter = createWalletAdapter(wallet);
-      await collectResources(walletAdapter);
+      // TODO: The IDL expects x,y coordinates but the game logic wants to collect from all territories
+      // For now, using 0,0 as placeholder - this needs to be fixed in the smart contract
+      await collectResources(walletAdapter, 0, 0);
 
       const state = await get().fetchGameState(gameId, wallet);
       if (state) set({ gameState: state });
