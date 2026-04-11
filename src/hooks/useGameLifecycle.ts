@@ -8,7 +8,6 @@ import { useState, useEffect, useCallback, useRef } from 'react';
 import { usePirateGameState, pirateGameStore } from './usePirateGameState';
 import { useHeliusMonitor, GameEvent } from './useHeliusMonitor';
 import { Player, GameState } from '@/types/game';
-import { getAnchorClient } from '@/lib/server/anchorActions';
 import { getGamePDA, getConfigPDA } from '@/lib/anchor';
 
 // =============================================================================
@@ -50,7 +49,18 @@ export interface GameLifecycleActions {
 
 async function checkGamePlayerCount(gameId: string, expectedCount: number): Promise<boolean> {
   try {
-    const { program } = await getAnchorClient();
+    const { Connection, PublicKey } = await import('@solana/web3.js');
+    const { Program, AnchorProvider } = await import('@coral-xyz/anchor');
+    const { SOLANA_CONFIG } = await import('@/utils/constants');
+    const { PROGRAM_ID } = await import('@/lib/anchor');
+    const idlJson = await import('@/../public/idl/pir8_game.json');
+    
+    const rpcUrl = SOLANA_CONFIG.RPC_URL || "https://api.devnet.solana.com";
+    const connection = new Connection(rpcUrl, "confirmed");
+    const provider = new AnchorProvider(connection, {} as any, { commitment: "confirmed" });
+    const programId = SOLANA_CONFIG.PROGRAM_ID ? new PublicKey(SOLANA_CONFIG.PROGRAM_ID) : PROGRAM_ID;
+    const program = new Program(idlJson as any, programId, provider);
+    
     const gameIdNum = parseInt(gameId.replace(/[^\d]/g, ''), 10);
     if (isNaN(gameIdNum)) return false;
 
@@ -69,7 +79,18 @@ async function checkGamePlayerCount(gameId: string, expectedCount: number): Prom
 
 async function findCorrectGameId(expectedCount: number): Promise<string | null> {
   try {
-    const { program } = await getAnchorClient();
+    const { Connection, PublicKey } = await import('@solana/web3.js');
+    const { Program, AnchorProvider } = await import('@coral-xyz/anchor');
+    const { SOLANA_CONFIG } = await import('@/utils/constants');
+    const { PROGRAM_ID } = await import('@/lib/anchor');
+    const idlJson = await import('@/../public/idl/pir8_game.json');
+    
+    const rpcUrl = SOLANA_CONFIG.RPC_URL || "https://api.devnet.solana.com";
+    const connection = new Connection(rpcUrl, "confirmed");
+    const provider = new AnchorProvider(connection, {} as any, { commitment: "confirmed" });
+    const programId = SOLANA_CONFIG.PROGRAM_ID ? new PublicKey(SOLANA_CONFIG.PROGRAM_ID) : PROGRAM_ID;
+    const program = new Program(idlJson as any, programId, provider);
+    
     const [configPDA] = getConfigPDA();
     const configAccount = await (program as any).account.gameConfig.fetch(configPDA);
     const totalGames = configAccount.totalGames.toNumber();
@@ -153,8 +174,9 @@ export function useGameLifecycle(options: GameLifecycleOptions = {}): GameLifecy
     try {
       setIsSyncing(true);
 
-      const { fetchGlobalGameState } = await import('../lib/server/anchorActions');
-      const onChainState = await fetchGlobalGameState();
+      const { fetchGameStateClient } = await import('../lib/client/gameStateClient');
+      const gameIdNum = parseInt(gameId.replace(/[^\d]/g, ''), 10);
+      const onChainState = await fetchGameStateClient(gameIdNum);
 
       if (!onChainState) return;
 

@@ -53,15 +53,13 @@ export function useSpectatorMode(
 
   const intervalRef = useRef<NodeJS.Timeout | null>(null);
 
-  // Fetch game state from API
+  // Fetch game state from blockchain (client-side)
   const fetchGameState = useCallback(
     async (targetGameId: string): Promise<GameState | null> => {
-      const response = await fetch(`/api/game?gameId=${targetGameId}`);
-      if (!response.ok) {
-        throw new Error(`Failed to fetch game state: ${response.statusText}`);
-      }
-      const data = await response.json();
-      return data.success ? data.gameState : null;
+      // Use client-side fetching instead of API route (Cloudflare Workers compatible)
+      const { fetchGameStateClient } = await import('@/lib/client/gameStateClient');
+      const gameState = await fetchGameStateClient(parseInt(targetGameId, 10));
+      return gameState;
     },
     [],
   );
