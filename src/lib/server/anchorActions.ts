@@ -2,51 +2,18 @@
 
 import { AnchorProvider, Program, Idl } from "@coral-xyz/anchor";
 import { Connection, PublicKey } from "@solana/web3.js";
-import fs from "fs";
-import path from "path";
 import { SOLANA_CONFIG } from "@/utils/constants";
 import { PROGRAM_ID, getGamePDA } from "../anchor";
+// Import IDL directly as JSON module (works in Cloudflare Workers)
+import idlJson from "@/../public/idl/pir8_game.json";
 
 // ============================================================================
 // READ-ONLY BLOCKCHAIN QUERIES (No wallet required)
 // ============================================================================
 
 function loadIdl(): Idl {
-  // Try custom path from env first
-  if (process.env.PIR8_IDL_PATH) {
-    try {
-      if (fs.existsSync(process.env.PIR8_IDL_PATH)) {
-        const json = fs.readFileSync(process.env.PIR8_IDL_PATH, "utf8");
-        return JSON.parse(json);
-      }
-    } catch (e) {
-      console.warn("[Anchor Client] Failed to load IDL from PIR8_IDL_PATH");
-    }
-  }
-
-  // Try public/idl (production path) first
-  const publicIdlPath = path.join(process.cwd(), "public/idl/pir8_game.json");
-  try {
-    if (fs.existsSync(publicIdlPath)) {
-      const json = fs.readFileSync(publicIdlPath, "utf8");
-      return JSON.parse(json);
-    }
-  } catch (e) {
-    console.warn("[Anchor Client] Failed to load IDL from public/idl");
-  }
-
-  // Fallback: try target/idl (development path)
-  const devIdlPath = path.join(process.cwd(), "target/idl/pir8_game.json");
-  try {
-    if (fs.existsSync(devIdlPath)) {
-      const json = fs.readFileSync(devIdlPath, "utf8");
-      return JSON.parse(json);
-    }
-  } catch (e) {
-    console.warn("[Anchor Client] Failed to load IDL from target/idl");
-  }
-
-  throw new Error(`IDL not found at ${publicIdlPath} or ${devIdlPath}`);
+  // Use imported IDL JSON (works in serverless environments like Cloudflare Workers)
+  return idlJson as Idl;
 }
 
 export async function getAnchorClient(): Promise<{

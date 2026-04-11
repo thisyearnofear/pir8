@@ -35,9 +35,6 @@
     "noUncheckedIndexedAccess": true,
     "noUnusedLocals": true,
     "noUnusedParameters": true,
-    "types": [
-      "node"
-    ],
     "plugins": [
       {
         "name": "next"
