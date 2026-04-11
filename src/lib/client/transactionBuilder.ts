@@ -217,7 +217,7 @@ export const buildInitializeGameTx = async (
 
     try {
       const tx = await (program as any).methods
-        .createGame(new BN(gameId), gameMode)
+        .initializeGame(new BN(gameId), gameMode)
         .accounts({
           game: gamePDA,
           authority: wallet.publicKey!,
