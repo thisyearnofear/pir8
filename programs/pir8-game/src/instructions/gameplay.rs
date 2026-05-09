@@ -521,7 +521,7 @@ pub fn attack_ship(
     let attacker_player = game
         .get_player(&player_pubkey)
         .ok_or(GameError::NotPlayerTurn)?;
-    let ambush_bonus = crate::state::player::get_ambush_damage_bonus(attacker_player);
+    let ambush_bonus_bp = crate::state::player::get_ambush_damage_bonus_bp(attacker_player);
 
     // Find and damage target ship
     let mut target_found = false;
@@ -546,8 +546,8 @@ pub fn attack_ship(
                 // Calculate base damage (attack - defense, minimum 1)
                 let base_damage = attacker_attack.saturating_sub(ship.defense).max(1);
                 
-                // Apply ambush bonus
-                damage_dealt = (base_damage as f32 * ambush_bonus) as u32;
+                // Apply ambush bonus using integer basis-point math (150 = 1.5x)
+                damage_dealt = (base_damage * ambush_bonus_bp) / 100;
 
                 // Apply damage
                 if ship.health <= damage_dealt {
@@ -929,16 +929,7 @@ pub fn end_turn(ctx: Context<MakeMove>) -> Result<()> {
         GameError::NotPlayerTurn
     );
 
-    // ============================================================================
-    // GHOST FLEET MECHANICS: Decrement turn counter for all Ghost Fleet players
-    // ============================================================================
-    for player in game.players.iter_mut() {
-        if player.is_active {
-            crate::state::player::tick_ghost_fleet(player);
-        }
-    }
-
-    // Advance turn
+    // Advance turn (ghost fleet ticks handled exclusively by advance_turn at round boundaries)
     game.advance_turn();
 
     Ok(())
@@ -1122,6 +1113,77 @@ pub fn activate_ghost_fleet_instruction(ctx: Context<ActivateGhostFleet>) -> Res
 
     // Advance turn
     game.advance_turn();
+
+    Ok(())
+}
+
+// ============================================================================
+// CLAIM WINNINGS
+// ============================================================================
+
+#[derive(Accounts)]
+pub struct ClaimWinnings<'info> {
+    #[account(
+        mut,
+        seeds = [GAME_SEED, game.game_id.to_le_bytes().as_ref()],
+        bump = game.bump
+    )]
+    pub game: Account<'info, PirateGame>,
+    #[account(mut)]
+    pub winner: Signer<'info>,
+    pub system_program: Program<'info, System>,
+}
+
+/// Claim SOL winnings from a completed game.
+/// Only the declared winner can call this. Transfers the entire game PDA balance to the winner.
+pub fn claim_winnings(ctx: Context<ClaimWinnings>) -> Result<()> {
+    let game = &mut ctx.accounts.game;
+    let winner_pubkey = ctx.accounts.winner.key();
+
+    // Game must be completed
+    require!(game.status == GameStatus::Completed, GameError::GameNotActive);
+
+    // Only the winner can claim
+    require!(
+        game.winner == Some(winner_pubkey),
+        GameError::Unauthorized
+    );
+
+    // Calculate lamports to transfer (leave rent-exempt minimum for account to stay alive)
+    let game_account_info = game.to_account_info();
+    let rent = Rent::get()?;
+    let min_rent = rent.minimum_balance(game_account_info.data_len());
+    let current_lamports = game_account_info.lamports();
+
+    let transfer_amount = current_lamports.saturating_sub(min_rent);
+    require!(transfer_amount > 0, GameError::InsufficientResources);
+
+    // Transfer SOL from game PDA to winner using PDA signer seeds
+    let game_id_bytes = game.game_id.to_le_bytes();
+    let seeds = &[GAME_SEED, game_id_bytes.as_ref(), &[game.bump]];
+    let signer_seeds = &[&seeds[..]];
+
+    anchor_lang::solana_program::program::invoke_signed(
+        &anchor_lang::solana_program::system_instruction::transfer(
+            game_account_info.key,
+            &winner_pubkey,
+            transfer_amount,
+        ),
+        &[
+            game_account_info.clone(),
+            ctx.accounts.winner.to_account_info().clone(),
+            ctx.accounts.system_program.to_account_info().clone(),
+        ],
+        signer_seeds,
+    )?;
+
+    emit!(WinningsClaimed {
+        game_id: game.game_id,
+        winner: winner_pubkey,
+        amount: transfer_amount,
+    });
+
+    msg!("Winner {} claimed {} lamports from game {}", winner_pubkey, transfer_amount, game.game_id);
 
     Ok(())
 }

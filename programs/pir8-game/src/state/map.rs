@@ -82,20 +82,31 @@ pub fn has_adjacent_controlled_port(player: &PlayerData, x: u8, y: u8) -> bool {
 pub fn generate_strategic_map(seed: u64) -> Vec<TerritoryCell> {
     let mut map: Vec<TerritoryCell> = Vec::with_capacity(MAP_SIZE * MAP_SIZE);
 
-    // Dynamic center calculation based on MAP_SIZE
-    let center = (MAP_SIZE as f32 - 1.0) / 2.0;
-    // Scale zones based on map size (baseline 5x5)
-    let scale = MAP_SIZE as f32 / 5.0;
+    // Integer-based center and scale (multiply by 10 to avoid floats)
+    // center = (MAP_SIZE - 1) / 2 = 4 for MAP_SIZE=10, scaled by 10 = 45
+    let center_x: i32 = ((MAP_SIZE as i32 - 1) * 10) / 2;
+    let center_y: i32 = center_x;
+    // scale = MAP_SIZE / 5 = 2 for MAP_SIZE=10, scaled by 10 = 20
+    let scale: i32 = (MAP_SIZE as i32 * 10) / 5;
 
     // Generate strategic layout
     for x in 0..MAP_SIZE {
         for y in 0..MAP_SIZE {
-            let distance_from_center =
-                ((x as f32 - center).powi(2) + (y as f32 - center).powi(2)).sqrt();
+            // Squared distance from center, scaled by 100 (10*10)
+            let dx = (x as i32 * 10) - center_x;
+            let dy = (y as i32 * 10) - center_y;
+            let dist_sq = dx * dx + dy * dy;
+
+            // Thresholds squared: 1.5*scale = 30, 2.5*scale = 50
+            let inner_threshold = 3 * scale; // 1.5 * scale
+            let outer_threshold = 5 * scale; // 2.5 * scale
+            let inner_threshold_sq = inner_threshold * inner_threshold;
+            let outer_threshold_sq = outer_threshold * outer_threshold;
+
             let cell_seed = seed.wrapping_add((x * MAP_SIZE + y) as u64);
             let rand_val = (cell_seed * 1103515245 + 12345) % 100;
 
-            let cell_type = if distance_from_center < (1.5 * scale) {
+            let cell_type = if dist_sq < inner_threshold_sq {
                 // Center - valuable territories
                 if rand_val < 40 {
                     TerritoryCellType::Treasure
@@ -104,7 +115,7 @@ pub fn generate_strategic_map(seed: u64) -> Vec<TerritoryCell> {
                 } else {
                     TerritoryCellType::Water
                 }
-            } else if distance_from_center < (2.5 * scale) {
+            } else if dist_sq < outer_threshold_sq {
                 // Mid area - mixed
                 if rand_val < 20 {
                     TerritoryCellType::Island

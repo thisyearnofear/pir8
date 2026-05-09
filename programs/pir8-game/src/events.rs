@@ -91,3 +91,10 @@ pub struct GhostFleetActivated {
     pub player: Pubkey,
     pub turns_remaining: u8,
 }
+
+#[event]
+pub struct WinningsClaimed {
+    pub game_id: u64,
+    pub winner: Pubkey,
+    pub amount: u64,
+}

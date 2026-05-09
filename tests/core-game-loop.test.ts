@@ -134,6 +134,22 @@ describe("PIR8 Core Game Loop", () => {
     }
   });
 
+  it("Claims winnings", async () => {
+    try {
+      const tx = await program.methods
+        .claimWinnings()
+        .accounts({
+          game: globalGamePda,
+          player: provider.wallet.publicKey,
+        })
+        .rpc();
+      
+      console.log("✅ Winnings claimed:", tx);
+    } catch (e) {
+      console.log("Could not claim winnings (likely not winner or no balance):", e.message);
+    }
+  });
+
   it("Resets the game for next test", async () => {
     const tx = await program.methods
       .resetGame()

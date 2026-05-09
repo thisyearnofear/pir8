@@ -10,7 +10,7 @@ use instructions::*;
 use state::game::GameMode;
 use state::player::ShipType;
 
-declare_id!("EeHyY2FQ3A4GLieZbGbmZtz1iLKzLytXkRcXyzGfmePt");
+declare_id!("DkkuBQySAxKTADdxQVyx8rjxudZVSwA7ZjRCqRquH5FU");
 
 #[program]
 pub mod pir8_game {
@@ -128,6 +128,10 @@ pub mod pir8_game {
 
     pub fn check_and_complete_game(ctx: Context<MakeMove>) -> Result<()> {
         instructions::check_and_complete_game(ctx)
+    }
+
+    pub fn claim_winnings(ctx: Context<ClaimWinnings>) -> Result<()> {
+        instructions::claim_winnings(ctx)
     }
 
     // ============================================================================

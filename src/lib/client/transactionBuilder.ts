@@ -1,10 +1,8 @@
 /**
  * Client-side transaction builder for PIR8 game
  *
- * This is the CORRECT Web3 architecture:
- * - Users sign their own transactions
- * - Users pay their own gas fees
- * - Server only reads blockchain state
+ * Users sign their own transactions and pay their own gas fees.
+ * All instruction calls match the actual Rust program in programs/pir8-game/src/lib.rs.
  */
 
 import { AnchorProvider, Program, Idl, BN } from "@coral-xyz/anchor";
@@ -15,48 +13,14 @@ import {
   Transaction,
 } from "@solana/web3.js";
 import { SOLANA_CONFIG } from "@/utils/constants";
-import { PROGRAM_ID, getGamePDA } from "../anchor";
+import { PROGRAM_ID, getGamePDA, getAgentRegistryPDA } from "../anchor";
 import type { WalletAdapter } from "@coral-xyz/anchor";
 
-// Import IDL - we'll need to generate this after building the contract
+// ============================================================================
+// IDL LOADING
+// ============================================================================
+
 let cachedIdl: Idl | null = null;
-
-// Helper function to create a wallet adapter compatible object from useWallet hook
-export const createWalletAdapter = (
-  wallet: any,
-  publicKey?: any,
-): WalletAdapter => {
-  console.log("createWalletAdapter called with:", {
-    hasWallet: !!wallet,
-    hasPublicKeyArg: !!publicKey,
-    walletPublicKey: wallet?.publicKey?.toString(),
-    adapterPublicKey: wallet?.adapter?.publicKey?.toString(),
-  });
-
-  // Handle different wallet object structures
-  const actualPublicKey =
-    publicKey || wallet?.publicKey || wallet?.adapter?.publicKey;
-  const signTransaction =
-    wallet?.signTransaction || wallet?.adapter?.signTransaction;
-  const signAllTransactions =
-    wallet?.signAllTransactions || wallet?.adapter?.signAllTransactions;
-
-  if (!actualPublicKey) {
-    console.error("createWalletAdapter: No public key found");
-    throw new Error("Wallet not connected - no public key found");
-  }
-
-  if (!signTransaction) {
-    console.error("createWalletAdapter: No signTransaction method found");
-    throw new Error("Wallet not connected - no signTransaction method found");
-  }
-
-  return {
-    publicKey: actualPublicKey,
-    signTransaction: signTransaction.bind(wallet?.adapter || wallet),
-    signAllTransactions: signAllTransactions?.bind(wallet?.adapter || wallet),
-  } as WalletAdapter;
-};
 
 async function getIdl(): Promise<Idl> {
   if (cachedIdl) return cachedIdl;
@@ -68,170 +32,116 @@ async function getIdl(): Promise<Idl> {
       return cachedIdl!;
     }
   } catch (error) {
-    console.warn("Could not load IDL from public folder");
+    console.warn("Could not load IDL from public folder:", error);
   }
 
   throw new Error(
-    "Could not load program IDL. Make sure the program is deployed.",
+    "Could not load program IDL. Make sure anchor build has been run and public/idl/pir8_game.json exists.",
   );
 }
+
+// ============================================================================
+// WALLET ADAPTER HELPER
+// ============================================================================
+
+/**
+ * Create a WalletAdapter-compatible object from useWallet hook output.
+ * Handles different wallet object structures (Phantom, Solflare, etc.)
+ */
+export const createWalletAdapter = (
+  wallet: { publicKey?: PublicKey | null; adapter?: { publicKey?: PublicKey | null; signTransaction?: Function; signAllTransactions?: Function }; signTransaction?: Function; signAllTransactions?: Function },
+  publicKey?: PublicKey | null,
+): WalletAdapter => {
+  const actualPublicKey =
+    publicKey || wallet?.publicKey || wallet?.adapter?.publicKey;
+  const signTransaction =
+    wallet?.signTransaction || wallet?.adapter?.signTransaction;
+  const signAllTransactions =
+    wallet?.signAllTransactions || wallet?.adapter?.signAllTransactions;
+
+  if (!actualPublicKey) {
+    throw new Error("Wallet not connected - no public key found");
+  }
+
+  if (!signTransaction) {
+    throw new Error("Wallet not connected - no signTransaction method found");
+  }
+
+  return {
+    publicKey: actualPublicKey,
+    signTransaction: signTransaction.bind(wallet?.adapter || wallet),
+    signAllTransactions: signAllTransactions?.bind(wallet?.adapter || wallet),
+  } as WalletAdapter;
+};
+
+// ============================================================================
+// PROGRAM INITIALIZATION
+// ============================================================================
 
 export const getClientProgram = async (
   wallet: WalletAdapter,
 ): Promise<Program> => {
   if (!wallet || !wallet.publicKey) {
-    console.error("getClientProgram: Wallet or publicKey missing", {
-      wallet: !!wallet,
-      publicKey: !!wallet?.publicKey,
-    });
     throw new Error("Wallet not connected");
   }
 
-  // Use default devnet RPC for now since Helius is returning 403
-  const connection = new Connection(
-    "https://api.devnet.solana.com",
-    "confirmed",
-  );
-  console.log("Using devnet RPC connection");
+  const rpcUrl =
+    SOLANA_CONFIG.RPC_URL && !SOLANA_CONFIG.RPC_URL.includes("YOUR_API_KEY")
+      ? SOLANA_CONFIG.RPC_URL
+      : "https://api.devnet.solana.com";
 
-  console.log("Creating provider with wallet:", wallet.publicKey.toString());
+  const connection = new Connection(rpcUrl, "confirmed");
   const provider = new AnchorProvider(connection, wallet, {
     commitment: "confirmed",
   });
 
-  console.log("Loading IDL...");
   const idl = await getIdl();
-  console.log("IDL loaded successfully");
 
-  // Use the PROGRAM_ID that's already a PublicKey object
-  console.log("Using program ID:", PROGRAM_ID.toString());
-  console.log(
-    "Program ID type:",
-    typeof PROGRAM_ID,
-    PROGRAM_ID.constructor.name,
-  );
+  // Anchor 0.30 expects the address in metadata
+  const rawIdl = idl as Record<string, unknown>;
+  const transformedIdl = {
+    ...rawIdl,
+    metadata: {
+      ...(rawIdl.metadata as Record<string, unknown> || {}),
+      address: PROGRAM_ID.toString(),
+    },
+  };
 
-  const programIdString = "DkkuBQySAxKTADdxQVyx8rjxudZVSwA7ZjRCqRquH5FU";
-  const programIdFromString = new PublicKey(programIdString);
-
-  try {
-    // Try creating a fresh PublicKey from the string to see if that works
-    console.log(
-      "Fresh PublicKey created successfully:",
-      programIdFromString.toString(),
-    );
-
-    // Transform IDL to Anchor 0.28 format
-    // Anchor 0.28 expects address under metadata, not top level
-    const rawIdl = idl as any;
-    const transformedIdl = {
-      version: rawIdl.version,
-      name: rawIdl.name,
-      instructions: rawIdl.instructions,
-      types: rawIdl.types,
-      accounts: rawIdl.accounts || [],
-      events: rawIdl.events || [],
-      errors: rawIdl.errors || [],
-      metadata: {
-        ...rawIdl.metadata,
-        address: programIdString,
-      },
-    };
-
-    console.log("Raw IDL types count:", rawIdl.types?.length);
-
-    const program = new Program(
-      transformedIdl as any,
-      programIdFromString,
-      provider,
-    );
-    console.log("Program created successfully");
-    return program;
-  } catch (error) {
-    console.error("Failed to create Program:", error);
-    console.log("IDL structure:", Object.keys(idl));
-    console.log("IDL version:", (idl as any).version);
-    console.log("IDL name:", (idl as any).name);
-    console.log("Provider details:", {
-      connection: !!provider.connection,
-      wallet: !!provider.wallet,
-      publicKey: provider.wallet.publicKey?.toString(),
-    });
-
-    // Try with a completely minimal IDL to test if it's an IDL issue
-    console.log("Trying with minimal IDL...");
-    // Anchor 0.28 expects address under metadata
-    const minimalIdl = {
-      version: "0.1.0",
-      name: "pir8_game",
-      instructions: [],
-      accounts: [],
-      types: [],
-      metadata: {
-        address: programIdString,
-      },
-    };
-
-    try {
-      new Program(minimalIdl as any, programIdFromString, provider);
-      console.log("Minimal IDL worked - issue is with the full IDL");
-      throw new Error("IDL compatibility issue");
-    } catch (minimalError) {
-      console.log("Even minimal IDL failed:", minimalError);
-      throw error;
-    }
-  }
+  return new Program(transformedIdl as Idl, PROGRAM_ID, provider);
 };
 
 // ============================================================================
-// CLIENT-SIDE TRANSACTION BUILDERS
+// GAME LIFECYCLE TRANSACTION BUILDERS
 // ============================================================================
 
-export const buildInitializeGameTx = async (
+/** Create a new game lobby */
+export const buildCreateGameTx = async (
   wallet: WalletAdapter,
-  gameId: number = Date.now(),
+  gameId: number,
   mode: "Casual" | "Competitive" | "AgentArena" = "Casual",
 ): Promise<Transaction> => {
   const program = await getClientProgram(wallet);
   const [gamePDA] = getGamePDA(gameId);
 
-  console.log("Building initialize game transaction:", {
-    gameId,
-    mode,
-    gamePDA: gamePDA.toString(),
-    authority: wallet.publicKey!.toString(),
-    programId: program.programId.toString(),
-  });
-
-  // The IDL only expects a timestamp parameter
-  const timestamp = new BN(Date.now());
-
-  try {
-    const tx = await (program as any).methods
-      .initializeGame(timestamp)
-      .accounts({
-        game: gamePDA,
-        authority: wallet.publicKey!,
-        systemProgram: SystemProgram.programId,
-      })
-      .transaction();
-
-    console.log("Initialize game transaction built successfully");
-    return tx;
-  } catch (error: any) {
-    console.error("Failed to build initialize game transaction:", error);
-    throw error;
-  }
+  return await program.methods
+    .createGame(new BN(gameId), { [mode.toLowerCase()]: {} } as never)
+    .accounts({
+      game: gamePDA,
+      authority: wallet.publicKey!,
+      systemProgram: SystemProgram.programId,
+    })
+    .transaction();
 };
 
+/** Join an existing game lobby */
 export const buildJoinGameTx = async (
   wallet: WalletAdapter,
-  gameId: number = 0,
+  gameId: number,
 ): Promise<Transaction> => {
   const program = await getClientProgram(wallet);
   const [gamePDA] = getGamePDA(gameId);
 
-  return await (program as any).methods
+  return await program.methods
     .joinGame()
     .accounts({
       game: gamePDA,
@@ -241,14 +151,15 @@ export const buildJoinGameTx = async (
     .transaction();
 };
 
+/** Start a game (authority only, requires MIN_PLAYERS) */
 export const buildStartGameTx = async (
   wallet: WalletAdapter,
-  gameId: number = 0,
+  gameId: number,
 ): Promise<Transaction> => {
   const program = await getClientProgram(wallet);
   const [gamePDA] = getGamePDA(gameId);
 
-  return await (program as any).methods
+  return await program.methods
     .startGame()
     .accounts({
       game: gamePDA,
@@ -257,18 +168,24 @@ export const buildStartGameTx = async (
     .transaction();
 };
 
+// ============================================================================
+// GAMEPLAY TRANSACTION BUILDERS
+// ============================================================================
+
+/** Move a ship to a new position */
 export const buildMoveShipTx = async (
   wallet: WalletAdapter,
+  gameId: number,
   shipId: string,
   toX: number,
   toY: number,
-  gameId: number = 0,
+  decisionTimeMs?: number,
 ): Promise<Transaction> => {
   const program = await getClientProgram(wallet);
   const [gamePDA] = getGamePDA(gameId);
 
-  return await (program as any).methods
-    .moveShip(shipId, toX, toY)
+  return await program.methods
+    .moveShip(shipId, toX, toY, decisionTimeMs ? new BN(decisionTimeMs) : null)
     .accounts({
       game: gamePDA,
       player: wallet.publicKey!,
@@ -276,16 +193,17 @@ export const buildMoveShipTx = async (
     .transaction();
 };
 
+/** Attack an enemy ship */
 export const buildAttackShipTx = async (
   wallet: WalletAdapter,
+  gameId: number,
   attackerShipId: string,
   targetShipId: string,
-  gameId: number = 0,
 ): Promise<Transaction> => {
   const program = await getClientProgram(wallet);
   const [gamePDA] = getGamePDA(gameId);
 
-  return await (program as any).methods
+  return await program.methods
     .attackShip(attackerShipId, targetShipId)
     .accounts({
       game: gamePDA,
@@ -294,19 +212,17 @@ export const buildAttackShipTx = async (
     .transaction();
 };
 
+/** Claim a territory (ship must be on the tile) */
 export const buildClaimTerritoryTx = async (
   wallet: WalletAdapter,
-  _shipId: string, // Kept for API compatibility but not used in IDL
-  x: number,
-  y: number,
-  gameId: number = 0,
+  gameId: number,
+  shipId: string,
 ): Promise<Transaction> => {
   const program = await getClientProgram(wallet);
   const [gamePDA] = getGamePDA(gameId);
 
-  // Note: IDL only expects x,y coordinates, not shipId
-  return await (program as any).methods
-    .claimTerritory(x, y)
+  return await program.methods
+    .claimTerritory(shipId)
     .accounts({
       game: gamePDA,
       player: wallet.publicKey!,
@@ -314,17 +230,16 @@ export const buildClaimTerritoryTx = async (
     .transaction();
 };
 
+/** Collect resources from all controlled territories */
 export const buildCollectResourcesTx = async (
   wallet: WalletAdapter,
-  x: number,
-  y: number,
-  gameId: number = 0,
+  gameId: number,
 ): Promise<Transaction> => {
   const program = await getClientProgram(wallet);
   const [gamePDA] = getGamePDA(gameId);
 
-  return await (program as any).methods
-    .collectResources(x, y)
+  return await program.methods
+    .collectResources()
     .accounts({
       game: gamePDA,
       player: wallet.publicKey!,
@@ -332,28 +247,219 @@ export const buildCollectResourcesTx = async (
     .transaction();
 };
 
+/** Build a new ship at a controlled port */
 export const buildBuildShipTx = async (
   wallet: WalletAdapter,
+  gameId: number,
   shipType: "sloop" | "frigate" | "galleon" | "flagship",
-  _portX: number, // Kept for API compatibility but not used in IDL
-  _portY: number, // Kept for API compatibility but not used in IDL
-  gameId: number = 0,
+  portX: number,
+  portY: number,
 ): Promise<Transaction> => {
   const program = await getClientProgram(wallet);
   const [gamePDA] = getGamePDA(gameId);
 
-  // Note: IDL only expects shipType string, not port coordinates
-  return await (program as any).methods
-    .buildShip(shipType)
+  const shipTypeEnum = { [shipType]: {} } as never;
+
+  return await program.methods
+    .buildShip(shipTypeEnum, portX, portY)
     .accounts({
       game: gamePDA,
       player: wallet.publicKey!,
+    })
+    .transaction();
+};
+
+/** Scan a coordinate to reveal its type */
+export const buildScanCoordinateTx = async (
+  wallet: WalletAdapter,
+  gameId: number,
+  coordinateX: number,
+  coordinateY: number,
+): Promise<Transaction> => {
+  const program = await getClientProgram(wallet);
+  const [gamePDA] = getGamePDA(gameId);
+
+  return await program.methods
+    .scanCoordinate(coordinateX, coordinateY)
+    .accounts({
+      game: gamePDA,
+      player: wallet.publicKey!,
+    })
+    .transaction();
+};
+
+/** Activate Ghost Fleet stealth mode (costs 200 gold) */
+export const buildActivateGhostFleetTx = async (
+  wallet: WalletAdapter,
+  gameId: number,
+): Promise<Transaction> => {
+  const program = await getClientProgram(wallet);
+  const [gamePDA] = getGamePDA(gameId);
+
+  return await program.methods
+    .activateGhostFleet()
+    .accounts({
+      game: gamePDA,
+      player: wallet.publicKey!,
+    })
+    .transaction();
+};
+
+/** End the current turn */
+export const buildEndTurnTx = async (
+  wallet: WalletAdapter,
+  gameId: number,
+): Promise<Transaction> => {
+  const program = await getClientProgram(wallet);
+  const [gamePDA] = getGamePDA(gameId);
+
+  return await program.methods
+    .endTurn()
+    .accounts({
+      game: gamePDA,
+      player: wallet.publicKey!,
+    })
+    .transaction();
+};
+
+/** Check and complete game if victory conditions are met */
+export const buildCheckAndCompleteGameTx = async (
+  wallet: WalletAdapter,
+  gameId: number,
+): Promise<Transaction> => {
+  const program = await getClientProgram(wallet);
+  const [gamePDA] = getGamePDA(gameId);
+
+  return await program.methods
+    .checkAndCompleteGame()
+    .accounts({
+      game: gamePDA,
+      player: wallet.publicKey!,
+    })
+    .transaction();
+};
+
+/** Claim winnings from a completed game (winner only) */
+export const buildClaimWinningsTx = async (
+  wallet: WalletAdapter,
+  gameId: number,
+): Promise<Transaction> => {
+  const program = await getClientProgram(wallet);
+  const [gamePDA] = getGamePDA(gameId);
+
+  return await program.methods
+    .claimWinnings()
+    .accounts({
+      game: gamePDA,
+      winner: wallet.publicKey!,
+      systemProgram: SystemProgram.programId,
     })
     .transaction();
 };
 
 // ============================================================================
-// TRANSACTION EXECUTION HELPERS
+// SESSION KEY / DELEGATE TRANSACTION BUILDERS
+// ============================================================================
+
+/** Join a game via a delegated session key */
+export const buildJoinGameViaDelegateTx = async (
+  wallet: WalletAdapter,
+  gameId: number,
+  sessionKeyPubkey: PublicKey,
+  ownerPubkey: PublicKey,
+): Promise<Transaction> => {
+  const program = await getClientProgram(wallet);
+  const [gamePDA] = getGamePDA(gameId);
+  const [agentPDA] = getAgentRegistryPDA(ownerPubkey);
+
+  return await program.methods
+    .joinGameViaDelegate()
+    .accounts({
+      game: gamePDA,
+      sessionKey: sessionKeyPubkey,
+      agent: agentPDA,
+      owner: ownerPubkey,
+      systemProgram: SystemProgram.programId,
+    })
+    .transaction();
+};
+
+/** Move a ship via a delegated session key */
+export const buildMoveShipViaDelegateTx = async (
+  wallet: WalletAdapter,
+  gameId: number,
+  shipId: string,
+  toX: number,
+  toY: number,
+  sessionKeyPubkey: PublicKey,
+  ownerPubkey: PublicKey,
+  decisionTimeMs?: number,
+): Promise<Transaction> => {
+  const program = await getClientProgram(wallet);
+  const [gamePDA] = getGamePDA(gameId);
+  const [agentPDA] = getAgentRegistryPDA(ownerPubkey);
+
+  return await program.methods
+    .moveShipViaDelegate(
+      shipId,
+      toX,
+      toY,
+      decisionTimeMs ? new BN(decisionTimeMs) : null,
+    )
+    .accounts({
+      game: gamePDA,
+      sessionKey: sessionKeyPubkey,
+      agent: agentPDA,
+      owner: ownerPubkey,
+      systemProgram: SystemProgram.programId,
+    })
+    .transaction();
+};
+
+// ============================================================================
+// AGENT REGISTRATION
+// ============================================================================
+
+/** Register an agent (creates AgentRegistry PDA) */
+export const buildRegisterAgentTx = async (
+  wallet: WalletAdapter,
+  name: string,
+  version: string,
+  twitter?: string,
+  website?: string,
+): Promise<Transaction> => {
+  const program = await getClientProgram(wallet);
+  const [agentPDA] = getAgentRegistryPDA(wallet.publicKey!);
+
+  return await program.methods
+    .registerAgent(name, version, twitter ?? null, website ?? null)
+    .accounts({
+      agent: agentPDA,
+      owner: wallet.publicKey!,
+      systemProgram: SystemProgram.programId,
+    })
+    .transaction();
+};
+
+/** Set or clear delegate for an agent */
+export const buildDelegateAgentControlTx = async (
+  wallet: WalletAdapter,
+  delegatePubkey: PublicKey | null,
+): Promise<Transaction> => {
+  const program = await getClientProgram(wallet);
+  const [agentPDA] = getAgentRegistryPDA(wallet.publicKey!);
+
+  return await program.methods
+    .delegateAgentControl(delegatePubkey)
+    .accounts({
+      agent: agentPDA,
+      owner: wallet.publicKey!,
+    })
+    .transaction();
+};
+
+// ============================================================================
+// TRANSACTION EXECUTION
 // ============================================================================
 
 export const executeTransaction = async (
@@ -364,399 +470,165 @@ export const executeTransaction = async (
     throw new Error("Wallet not connected");
   }
 
-  // Try Helius first, fallback to default devnet RPC
-  let connection;
-  try {
-    connection = new Connection(
-      SOLANA_CONFIG.RPC_URL || "https://api.devnet.solana.com",
-      "confirmed",
-    );
-  } catch (rpcError) {
-    console.warn("Failed to connect to Helius, using default devnet RPC");
-    connection = new Connection("https://api.devnet.solana.com", "confirmed");
-  }
+  const rpcUrl =
+    SOLANA_CONFIG.RPC_URL && !SOLANA_CONFIG.RPC_URL.includes("YOUR_API_KEY")
+      ? SOLANA_CONFIG.RPC_URL
+      : "https://api.devnet.solana.com";
 
-  try {
-    // Get recent blockhash
-    const { blockhash } = await connection.getLatestBlockhash();
-    (transaction as any).recentBlockhash = blockhash;
-    (transaction as any).feePayer = wallet.publicKey;
+  const connection = new Connection(rpcUrl, "confirmed");
 
-    console.log("Transaction before signing:", {
-      feePayer: (transaction as any).feePayer?.toString(),
-      recentBlockhash: (transaction as any).recentBlockhash,
-      instructions: (transaction as any).instructions?.length || 0,
-    });
+  const { blockhash } = await connection.getLatestBlockhash();
+  transaction.recentBlockhash = blockhash;
+  transaction.feePayer = wallet.publicKey;
 
-    // Sign transaction with user's wallet
-    const signedTx = await wallet.signTransaction!(transaction);
+  const signedTx = await wallet.signTransaction!(transaction);
+  const rawTransaction = signedTx.serialize();
+  const signature = await connection.sendRawTransaction(rawTransaction);
 
-    console.log("Transaction signed successfully");
+  await connection.confirmTransaction(signature, "confirmed");
 
-    // Send the serialized transaction (already signed by wallet)
-    const rawTransaction = signedTx.serialize();
-    const signature = await (connection as any).sendRawTransaction(
-      rawTransaction,
-    );
-
-    console.log("Transaction sent:", signature);
-
-    // Confirm with block height for better reliability
-    await connection.confirmTransaction(signature, "confirmed");
-
-    console.log("Transaction confirmed:", signature);
-    return signature;
-  } catch (error) {
-    console.error("Transaction execution failed:", error);
-    throw error;
-  }
+  return signature;
 };
 
-export const testProgramConnection = async (
+// ============================================================================
+// CONVENIENCE FUNCTIONS (wrap build + execute)
+// ============================================================================
+
+export const createGame = async (
   wallet: WalletAdapter,
-): Promise<boolean> => {
-  try {
-    console.log("Testing program connection...");
-    console.log("Program ID:", PROGRAM_ID.toString());
-    console.log("Environment PROGRAM_ID:", process.env.NEXT_PUBLIC_PROGRAM_ID);
-
-    const program = await getClientProgram(wallet);
-    console.log("Program loaded successfully:", program.programId.toString());
-
-    // Try to get the program account info
-    const connection = new Connection(
-      SOLANA_CONFIG.RPC_URL || "https://api.devnet.solana.com",
-      "confirmed",
-    );
-    const programInfo = await connection.getAccountInfo(program.programId);
-    console.log("Program account info:", {
-      exists: !!programInfo,
-      executable: programInfo?.executable,
-      owner: programInfo?.owner?.toString(),
-      dataLength: programInfo?.data?.length,
-    });
-
-    if (!programInfo) {
-      console.error(
-        "Program account not found on-chain. Check if program is deployed.",
-      );
-      return false;
-    }
-
-    if (!programInfo.executable) {
-      console.error("Program account exists but is not executable.");
-      return false;
-    }
-
-    return true;
-  } catch (error) {
-    console.error("Program connection test failed:", error);
-    return false;
-  }
-};
-
-export const initializeGame = async (
-  wallet: any,
-  gameId?: number,
-  mode?: "Casual" | "Competitive" | "AgentArena",
+  gameId: number,
+  mode: "Casual" | "Competitive" | "AgentArena" = "Casual",
 ): Promise<string> => {
-  try {
-    const walletAdapter = createWalletAdapter(wallet);
-    const tx = await buildInitializeGameTx(walletAdapter, gameId, mode);
-    return await executeTransaction(walletAdapter, tx);
-  } catch (error) {
-    console.error("Failed to initialize game:", error);
-    throw new Error(
-      `Failed to initialize game: ${error instanceof Error ? error.message : "Unknown error"}`,
-    );
-  }
+  const tx = await buildCreateGameTx(wallet, gameId, mode);
+  return await executeTransaction(wallet, tx);
 };
 
 export const joinGame = async (
-  wallet: any,
-  gameId?: number,
+  wallet: WalletAdapter,
+  gameId: number,
 ): Promise<string> => {
-  try {
-    const walletAdapter = createWalletAdapter(wallet);
-    const tx = await buildJoinGameTx(walletAdapter, gameId);
-    return await executeTransaction(walletAdapter, tx);
-  } catch (error) {
-    console.error("Failed to join game:", error);
-    throw new Error(
-      `Failed to join game: ${error instanceof Error ? error.message : "Unknown error"}`,
-    );
-  }
+  const tx = await buildJoinGameTx(wallet, gameId);
+  return await executeTransaction(wallet, tx);
 };
 
 export const startGame = async (
-  wallet: any,
-  gameId?: number,
+  wallet: WalletAdapter,
+  gameId: number,
 ): Promise<string> => {
-  try {
-    const walletAdapter = createWalletAdapter(wallet);
-    const tx = await buildStartGameTx(walletAdapter, gameId);
-    return await executeTransaction(walletAdapter, tx);
-  } catch (error) {
-    console.error("Failed to start game:", error);
-    throw new Error(
-      `Failed to start game: ${error instanceof Error ? error.message : "Unknown error"}`,
-    );
-  }
+  const tx = await buildStartGameTx(wallet, gameId);
+  return await executeTransaction(wallet, tx);
 };
 
 export const moveShip = async (
-  wallet: any,
+  wallet: WalletAdapter,
+  gameId: number,
   shipId: string,
   toX: number,
   toY: number,
-  gameId: number = 0,
+  decisionTimeMs?: number,
 ): Promise<string> => {
-  const walletAdapter = createWalletAdapter(wallet);
-  const tx = await buildMoveShipTx(walletAdapter, shipId, toX, toY, gameId);
-  return await executeTransaction(walletAdapter, tx);
+  const tx = await buildMoveShipTx(wallet, gameId, shipId, toX, toY, decisionTimeMs);
+  return await executeTransaction(wallet, tx);
 };
 
 export const attackShip = async (
-  wallet: any,
+  wallet: WalletAdapter,
+  gameId: number,
   attackerShipId: string,
   targetShipId: string,
-  gameId: number = 0,
 ): Promise<string> => {
-  const walletAdapter = createWalletAdapter(wallet);
-  const tx = await buildAttackShipTx(
-    walletAdapter,
-    attackerShipId,
-    targetShipId,
-    gameId,
-  );
-  return await executeTransaction(walletAdapter, tx);
+  const tx = await buildAttackShipTx(wallet, gameId, attackerShipId, targetShipId);
+  return await executeTransaction(wallet, tx);
 };
 
 export const claimTerritory = async (
-  wallet: any,
+  wallet: WalletAdapter,
+  gameId: number,
   shipId: string,
-  x: number,
-  y: number,
-  gameId: number = 0,
 ): Promise<string> => {
-  const walletAdapter = createWalletAdapter(wallet);
-  const tx = await buildClaimTerritoryTx(walletAdapter, shipId, x, y, gameId);
-  return await executeTransaction(walletAdapter, tx);
+  const tx = await buildClaimTerritoryTx(wallet, gameId, shipId);
+  return await executeTransaction(wallet, tx);
 };
 
 export const collectResources = async (
-  wallet: any,
-  x: number,
-  y: number,
-  gameId: number = 0,
+  wallet: WalletAdapter,
+  gameId: number,
 ): Promise<string> => {
-  const walletAdapter = createWalletAdapter(wallet);
-  const tx = await buildCollectResourcesTx(walletAdapter, x, y, gameId);
-  return await executeTransaction(walletAdapter, tx);
+  const tx = await buildCollectResourcesTx(wallet, gameId);
+  return await executeTransaction(wallet, tx);
 };
 
 export const buildShip = async (
-  wallet: any,
+  wallet: WalletAdapter,
+  gameId: number,
   shipType: "sloop" | "frigate" | "galleon" | "flagship",
   portX: number,
   portY: number,
-  gameId: number = 0,
 ): Promise<string> => {
-  const walletAdapter = createWalletAdapter(wallet);
-  const tx = await buildBuildShipTx(
-    walletAdapter,
-    shipType,
-    portX,
-    portY,
-    gameId,
-  );
-  return await executeTransaction(walletAdapter, tx);
+  const tx = await buildBuildShipTx(wallet, gameId, shipType, portX, portY);
+  return await executeTransaction(wallet, tx);
 };
 
-// ============================================================================
-// ADDITIONAL GAME FUNCTIONS (for compatibility with existing game state)
-// ============================================================================
-
 export const endTurn = async (
-  wallet: any,
-  gameId: number = 0,
+  wallet: WalletAdapter,
+  gameId: number,
 ): Promise<string> => {
-  const walletAdapter = createWalletAdapter(wallet);
-  const program = await getClientProgram(walletAdapter);
-  const [gamePDA] = getGamePDA(gameId);
-
-  const tx = await (program as any).methods
-    .endTurn()
-    .accounts({
-      game: gamePDA,
-      player: walletAdapter.publicKey!,
-    })
-    .transaction();
-
-  return await executeTransaction(walletAdapter, tx);
+  const tx = await buildEndTurnTx(wallet, gameId);
+  return await executeTransaction(wallet, tx);
 };
 
 export const scanCoordinate = async (
-  wallet: any,
+  wallet: WalletAdapter,
+  gameId: number,
   x: number,
   y: number,
-  gameId: number = 0,
 ): Promise<string> => {
-  const walletAdapter = createWalletAdapter(wallet);
-  const program = await getClientProgram(walletAdapter);
-  const [gamePDA] = getGamePDA(gameId);
+  const tx = await buildScanCoordinateTx(wallet, gameId, x, y);
+  return await executeTransaction(wallet, tx);
+};
 
-  const tx = await (program as any).methods
-    .scanCoordinate(x, y)
-    .accounts({
-      game: gamePDA,
-      player: walletAdapter.publicKey!,
-    })
-    .transaction();
-
-  return await executeTransaction(walletAdapter, tx);
+export const claimWinnings = async (
+  wallet: WalletAdapter,
+  gameId: number,
+): Promise<string> => {
+  const tx = await buildClaimWinningsTx(wallet, gameId);
+  return await executeTransaction(wallet, tx);
 };
 
 // ============================================================================
-// READ-ONLY FUNCTIONS (for fetching game state)
+// READ-ONLY FUNCTIONS
 // ============================================================================
 
+import type { OnChainGameState } from "@/types/onChain";
+import { onChainToGameState } from "./typeAdapters";
+
+/** Fetch game state from chain and convert to client format */
 export const fetchGameState = async (
   wallet: WalletAdapter,
-  gameId: number = 0,
-): Promise<any> => {
+  gameId: number,
+): Promise<ReturnType<typeof onChainToGameState> | null> => {
   const program = await getClientProgram(wallet);
   const [gamePDA] = getGamePDA(gameId);
 
   try {
-    const gameState = await (program as any).account.pirateGame.fetch(gamePDA);
-    return gameState;
-  } catch (error) {
-    console.log("Game not initialized yet");
+    const raw = await (program.account as Record<string, { fetch: (pk: PublicKey) => Promise<unknown> }>).pirateGame.fetch(gamePDA);
+    return onChainToGameState(raw as OnChainGameState);
+  } catch {
     return null;
   }
 };
 
-export const fetchLobbies = async (wallet: WalletAdapter): Promise<any[]> => {
+/** Fetch all game lobbies */
+export const fetchLobbies = async (
+  wallet: WalletAdapter,
+): Promise<Array<{ publicKey: PublicKey; account: OnChainGameState }>> => {
+  const program = await getClientProgram(wallet);
+
   try {
-    const program = await getClientProgram(wallet);
-    const games = await (program as any).account.pirateGame.all();
-    return games;
+    const games = await (program.account as Record<string, { all: () => Promise<Array<{ publicKey: PublicKey; account: unknown }>> }>).pirateGame.all();
+    return games as Array<{ publicKey: PublicKey; account: OnChainGameState }>;
   } catch (e) {
     console.warn("Error fetching lobbies:", e);
     return [];
-  }
-};
-
-// ============================================================================
-// DELEGATE / SESSION KEY FUNCTIONS
-// ============================================================================
-
-export const buildJoinGameViaDelegateTx = async (
-  wallet: WalletAdapter,
-  gameId: number,
-  delegatePubkey: PublicKey,
-): Promise<Transaction> => {
-  const program = await getClientProgram(wallet);
-  const [gamePDA] = getGamePDA(gameId);
-
-  console.log("Building join game via delegate transaction:", {
-    gameId,
-    gamePDA: gamePDA.toString(),
-    delegate: delegatePubkey.toString(),
-  });
-
-  const tx = await (program as any).methods
-    .joinGameViaDelegate({ delegate: delegatePubkey })
-    .accounts({
-      game: gamePDA,
-      player: wallet.publicKey!,
-      delegate: delegatePubkey,
-      systemProgram: SystemProgram.programId,
-    })
-    .transaction();
-
-  return tx;
-};
-
-export const joinGameViaDelegate = async (
-  wallet: any,
-  gameId: number,
-  delegateKeypair: any,
-): Promise<string> => {
-  try {
-    const walletAdapter = createWalletAdapter(wallet);
-    // For delegate transactions, we need special handling since the delegate
-    // needs to sign as well. In this implementation, the wallet authorizes
-    // the delegate to act on their behalf.
-    const tx = await buildJoinGameViaDelegateTx(
-      walletAdapter,
-      gameId,
-      delegateKeypair.publicKey,
-    );
-    return await executeTransaction(walletAdapter, tx);
-  } catch (error) {
-    console.error("Failed to join game via delegate:", error);
-    throw new Error(
-      `Failed to join game via delegate: ${error instanceof Error ? error.message : "Unknown error"}`,
-    );
-  }
-};
-
-export const buildMoveShipViaDelegateTx = async (
-  wallet: WalletAdapter,
-  gameId: number,
-  shipId: string,
-  toX: number,
-  toY: number,
-  delegatePubkey: PublicKey,
-): Promise<Transaction> => {
-  const program = await getClientProgram(wallet);
-  const [gamePDA] = getGamePDA(gameId);
-
-  console.log("Building move ship via delegate transaction:", {
-    gameId,
-    shipId,
-    toX,
-    toY,
-    delegate: delegatePubkey.toString(),
-  });
-
-  const tx = await (program as any).methods
-    .moveShipViaDelegate(shipId, toX, toY, null)
-    .accounts({
-      game: gamePDA,
-      player: wallet.publicKey!,
-      delegate: delegatePubkey,
-    })
-    .transaction();
-
-  return tx;
-};
-
-export const moveShipViaDelegate = async (
-  wallet: any,
-  gameId: number,
-  shipId: string,
-  toX: number,
-  toY: number,
-  delegateKeypair: any,
-): Promise<string> => {
-  try {
-    const walletAdapter = createWalletAdapter(wallet);
-    const tx = await buildMoveShipViaDelegateTx(
-      walletAdapter,
-      gameId,
-      shipId,
-      toX,
-      toY,
-      delegateKeypair.publicKey,
-    );
-    return await executeTransaction(walletAdapter, tx);
-  } catch (error) {
-    console.error("Failed to move ship via delegate:", error);
-    throw new Error(
-      `Failed to move ship via delegate: ${error instanceof Error ? error.message : "Unknown error"}`,
-    );
   }
 };

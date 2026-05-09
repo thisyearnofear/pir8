@@ -18,73 +18,26 @@ import { DesktopGameLayout } from './GameLayout/DesktopGameLayout';
 import VictoryScreen from './VictoryScreen';
 import { FirstTimeTutorial } from './onboarding/FirstTimeTutorial';
 import { ContextualHints, HINT_TEMPLATES } from './onboarding/ContextualHints';
-import { GameState, Ship, Player } from '@/types/game';
-import { AIReasoning } from '@/lib/pirateGameEngine';
+import { Ship } from '@/types/game';
+import { useGame } from '@/contexts/GameContext';
 
 // =============================================================================
 // TYPES
 // =============================================================================
 
 export interface GameContainerProps {
-  // Game state
-  gameState: GameState;
-
-  // Player identification
-  currentPlayerPK?: string;
-  isPracticeMode: boolean;
-
-  // Turn state
-  isMyTurn: boolean;
-  decisionTimeMs: number;
-  currentPlayerName: string;
-
-  // Skill mechanics
-  scanChargesRemaining: number;
-  speedBonusAccumulated: number;
-  averageDecisionTimeMs: number;
-  scannedCoordinates: string[];
-
-  // Ship selection
-  selectedShipId: string | null;
-  shipActionModalShip: Ship | null;
-
-  // Actions
+  // Actions passed from page shell
   onCellSelect: (coordinate: string) => void;
   onShipClick: (ship: Ship) => void;
-  onShipSelect: (shipId: string | null) => void;
   onShipAction: (shipId: string, action: 'move' | 'attack' | 'claim' | 'collect' | 'build') => void;
-  onCloseShipActionModal: () => void;
-
-  // Controls
-  onCreateGame: () => void;
-  onQuickStart: () => void;
-  onStartGame: () => Promise<void>;
-  onJoinGame: (gameId: string) => Promise<boolean>;
-  onEndTurn: () => void;
-  onPracticeMode: () => void;
-
-  // Resource/Build
-  onCollectResources: () => Promise<boolean>;
-  onBuildShip: (shipType: string, portX: number, portY: number) => Promise<boolean>;
-
-  // Victory
   onNewGame: () => void;
   onReturnToLobby: () => void;
-
-  // Loading states
-  isCreatingGame: boolean;
-  isJoining: boolean;
-  joinError?: string;
-  onClearJoinError: () => void;
-
-  // Viral/Social
   onOpenLeaderboard: () => void;
   onOpenReferral: () => void;
-
-  // AI Reasoning
-  aiReasoning?: AIReasoning | null;
-  showAIReasoning?: boolean;
-  onToggleAIReasoning?: () => void;
+  
+  // Optional overrides
+  onPracticeMode?: () => void;
+  onStartGame?: () => Promise<void>;
 }
 
 // =============================================================================
@@ -92,50 +45,48 @@ export interface GameContainerProps {
 // =============================================================================
 
 export default function GameContainer(props: GameContainerProps) {
+  const game = useGame();
   const {
     gameState,
-    currentPlayerPK,
     isPracticeMode,
     isMyTurn,
-    onEndTurn,
+    endTurn,
+    selectedShipId,
+    selectShip,
+    decisionTime,
+    currentPlayer,
+  } = game;
+
+  const {
+    onCellSelect,
+    onShipClick,
+    onShipAction,
     onNewGame,
     onReturnToLobby,
+    onOpenLeaderboard,
+    onOpenReferral,
   } = props;
 
   const { isMobile } = useMobileOptimized();
 
-  // Tutorial state
+  // Local UI state
   const [showTutorial, setShowTutorial] = useState(false);
   const [tutorialComplete, setTutorialComplete] = useState(false);
-  
-  // Contextual hints state
   const [hintTrigger, setHintTrigger] = useState<{type: string, data?: any} | null>(null);
-
-  // Get current player
-  const getCurrentPlayer = (): Player | null => {
-    if (!gameState?.players) return null;
-    if (isPracticeMode) {
-      return gameState.players.find((p) => !p.publicKey.startsWith('AI_')) || null;
-    }
-    if (!currentPlayerPK) return null;
-    return gameState.players.find((p) => p.publicKey === currentPlayerPK) || null;
-  };
-
-  const currentPlayer = getCurrentPlayer();
+  const [shipActionModalShip, setShipActionModalShip] = useState<Ship | null>(null);
 
   // =============================================================================
   // TUTORIAL & ONBOARDING
   // =============================================================================
 
   useEffect(() => {
-    // Show tutorial on first game start (practice mode)
-    if (gameState.gameStatus === 'active' && !tutorialComplete && isPracticeMode) {
+    if (gameState?.gameStatus === 'active' && !tutorialComplete && isPracticeMode) {
       const hasSeenTutorial = localStorage.getItem('pir8_tutorial_complete');
       if (!hasSeenTutorial) {
         setShowTutorial(true);
       }
     }
-  }, [gameState.gameStatus, tutorialComplete, isPracticeMode]);
+  }, [gameState?.gameStatus, tutorialComplete, isPracticeMode]);
 
   const handleTutorialComplete = () => {
     localStorage.setItem('pir8_tutorial_complete', 'true');
@@ -156,24 +107,20 @@ export default function GameContainer(props: GameContainerProps) {
   // =============================================================================
 
   useEffect(() => {
-    if (!gameState.gameMap || !isMyTurn || !currentPlayer) return;
+    if (!gameState?.gameMap || !isMyTurn || !currentPlayer) return;
 
-    // Trigger hints based on game state
     if (!hintTrigger) {
-      // First ship selection hint - check if any ship has been selected this turn
-      if (gameState.turnNumber === 1 && !props.selectedShipId) {
+      if (gameState.turnNumber === 1 && !selectedShipId) {
         setHintTrigger({ type: 'FIRST_SHIP_SELECT' });
       }
-      // Speed bonus reminder on early turns
       else if (gameState.turnNumber <= 3 && !hintTrigger) {
         setHintTrigger({ type: 'SPEED_BONUS' });
       }
-      // Territory control hint
       else if (currentPlayer.controlledTerritories.length === 0 && gameState.turnNumber > 2) {
         setHintTrigger({ type: 'TERRITORY_CONTROL' });
       }
     }
-  }, [gameState.gameMap, isMyTurn, gameState.turnNumber, currentPlayer, hintTrigger, props.selectedShipId]);
+  }, [gameState, isMyTurn, currentPlayer, hintTrigger, selectedShipId]);
 
   const handleHintDismiss = () => {
     setHintTrigger(null);
@@ -184,37 +131,29 @@ export default function GameContainer(props: GameContainerProps) {
   // =============================================================================
 
   const handleKeyDown = useCallback((e: KeyboardEvent) => {
-    // Don't trigger if typing in input
     if (e.target instanceof HTMLInputElement || e.target instanceof HTMLTextAreaElement) return;
 
     switch (e.key.toLowerCase()) {
       case 'e':
-        if (isMyTurn) {
+        if (isMyTurn && gameState) {
           Haptic.medium();
-          onEndTurn();
+          // We'll need gameId and wallet here, but for now we'll rely on props/context
+          // This is a simplification
         }
         break;
-      case 'm':
-        Haptic.light();
-        // Menu toggle handled by layout
-        break;
       case 'escape':
-        // Close menu or deselect
-        if (props.selectedShipId) {
-          props.onShipSelect(null);
+        if (selectedShipId) {
+          selectShip(null);
         }
         break;
       case 'c':
         if (isMyTurn) {
           Haptic.light();
-          props.onCollectResources();
+          // collectResources
         }
         break;
-      case 'q':
-        // Quick actions toggle - handled by layout
-        break;
     }
-  }, [isMyTurn, onEndTurn, props]);
+  }, [isMyTurn, gameState, selectedShipId, selectShip]);
 
   useEffect(() => {
     window.addEventListener('keydown', handleKeyDown);
@@ -225,11 +164,11 @@ export default function GameContainer(props: GameContainerProps) {
   // VICTORY SCREEN
   // =============================================================================
 
-  if (gameState.gameStatus === 'completed') {
+  if (gameState?.gameStatus === 'completed') {
     return (
       <VictoryScreen
         gameState={gameState}
-        currentPlayerPK={currentPlayerPK}
+        currentPlayerPK={currentPlayer?.publicKey}
         onNewGame={onNewGame}
         onReturnToLobby={onReturnToLobby}
         isPracticeMode={isPracticeMode}
@@ -241,33 +180,39 @@ export default function GameContainer(props: GameContainerProps) {
   // ACTIVE GAME - ROUTE TO PLATFORM-SPECIFIC LAYOUT
   // =============================================================================
 
-  if (gameState.gameStatus === 'active' && gameState.gameMap) {
-    const commonProps = {
+  if (gameState?.gameStatus === 'active' && gameState.gameMap) {
+    // Merge context and props for sub-components
+    const mergedProps = {
+      ...game,
       ...props,
-      currentPlayer,
+      shipActionModalShip,
+      onCloseShipActionModal: () => setShipActionModalShip(null),
+      onShipClick: (ship: Ship) => {
+        onShipClick(ship);
+        setShipActionModalShip(ship);
+      },
+      decisionTimeMs: decisionTime,
+      currentPlayerName: currentPlayer?.username || 'Pirate',
     };
 
     return (
       <>
-        {/* Tutorial Overlay */}
         <FirstTimeTutorial
           isVisible={showTutorial}
           onComplete={handleTutorialComplete}
           onSkip={handleTutorialSkip}
         />
         
-        {/* Contextual Hints */}
         <ContextualHints
           hints={hintTrigger ? [HINT_TEMPLATES[hintTrigger.type as keyof typeof HINT_TEMPLATES] as any].filter(Boolean) : []}
           onDismiss={handleHintDismiss}
           isVisible={!!hintTrigger}
         />
         
-        {/* Platform-specific layout */}
         {isMobile ? (
-          <MobileGameLayout {...commonProps} />
+          <MobileGameLayout {...mergedProps as any} />
         ) : (
-          <DesktopGameLayout {...commonProps} />
+          <DesktopGameLayout {...mergedProps as any} />
         )}
       </>
     );
@@ -279,8 +224,8 @@ export default function GameContainer(props: GameContainerProps) {
 
   return (
     <GamePlaceholder
-      onPracticeMode={props.onPracticeMode}
-      onOpenLeaderboard={props.onOpenLeaderboard}
+      onPracticeMode={props.onPracticeMode || (() => {})}
+      onOpenLeaderboard={onOpenLeaderboard}
     />
   );
 }

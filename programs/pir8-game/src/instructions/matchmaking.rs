@@ -142,7 +142,11 @@ pub fn join_game(ctx: Context<JoinGame>) -> Result<()> {
         msg!("Auto-starting game {}...", game.game_id);
 
         let clock = Clock::get()?;
-        let seed = clock.unix_timestamp as u64;
+        // Combine multiple entropy sources for less predictable map generation
+        let seed = (clock.unix_timestamp as u64)
+            .wrapping_mul(clock.slot)
+            .wrapping_add(game.game_id)
+            .wrapping_add((game.player_count as u64) << 48);
 
         // Generate map
         game.territory_map = generate_strategic_map(seed);
@@ -175,8 +179,11 @@ pub fn start_game(ctx: Context<StartGame>) -> Result<()> {
         GameError::NotEnoughPlayers
     );
 
-    // Generate map
-    let seed = clock.unix_timestamp as u64;
+    // Generate map with combined entropy
+    let seed = (clock.unix_timestamp as u64)
+        .wrapping_mul(clock.slot)
+        .wrapping_add(game.game_id)
+        .wrapping_add((game.player_count as u64) << 48);
     game.territory_map = generate_strategic_map(seed);
 
     // Deploy starting fleets

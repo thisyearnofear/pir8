@@ -55,11 +55,13 @@ export function SafeWalletProvider({ children }: { children: React.ReactNode }) 
 
 class WalletErrorBoundary extends React.Component<
     { children: React.ReactNode },
-    { hasError: boolean }
+    { hasError: boolean; retryCount: number }
 > {
+    private maxRetries = 3;
+
     constructor(props: { children: React.ReactNode }) {
         super(props);
-        this.state = { hasError: false };
+        this.state = { hasError: false, retryCount: 0 };
     }
 
     static getDerivedStateFromError() {
@@ -67,17 +69,41 @@ class WalletErrorBoundary extends React.Component<
     }
 
     override componentDidCatch(error: Error) {
-        // Only log if it's not the known context error
         if (!error.message.includes('WalletContext')) {
             console.warn('Wallet error caught:', error);
         }
     }
 
+    handleRetry = () => {
+        this.setState(prev => ({ hasError: false, retryCount: prev.retryCount + 1 }));
+    };
+
     override render() {
         if (this.state.hasError) {
-            // Provide safe default context if useWallet fails
+            if (this.state.retryCount >= this.maxRetries) {
+                return (
+                    <SafeWalletContext.Provider value={defaultWalletContext}>
+                        <div className="fixed bottom-4 right-4 z-50 bg-red-900/90 border border-red-500/50 rounded-xl p-4 text-sm text-red-200 max-w-xs">
+                            <p className="font-bold mb-1">Wallet Connection Failed</p>
+                            <p className="text-red-300 text-xs mb-2">Unable to connect after {this.maxRetries} attempts.</p>
+                            <button onClick={() => window.location.reload()} className="text-xs bg-red-700 hover:bg-red-600 px-3 py-1 rounded">
+                                Reload Page
+                            </button>
+                        </div>
+                        {this.props.children}
+                    </SafeWalletContext.Provider>
+                );
+            }
+
             return (
                 <SafeWalletContext.Provider value={defaultWalletContext}>
+                    <div className="fixed bottom-4 right-4 z-50 bg-yellow-900/90 border border-yellow-500/50 rounded-xl p-4 text-sm text-yellow-200 max-w-xs">
+                        <p className="font-bold mb-1">Wallet Disconnected</p>
+                        <p className="text-yellow-300 text-xs mb-2">Connection lost. Reconnect to continue playing.</p>
+                        <button onClick={this.handleRetry} className="text-xs bg-yellow-700 hover:bg-yellow-600 px-3 py-1 rounded">
+                            Reconnect Wallet
+                        </button>
+                    </div>
                     {this.props.children}
                 </SafeWalletContext.Provider>
             );

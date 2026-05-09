@@ -12,6 +12,7 @@ export type ResourceType = "gold" | "crew" | "cannons" | "supplies";
 
 // Ship represents a player's fleet unit
 // ENHANCEMENT: Ship abilities system (MODULAR, DRY)
+// CLIENT-ONLY: ability and activeEffects are not persisted on-chain
 export interface ShipAbility {
   name: string;
   description: string;
@@ -39,12 +40,14 @@ export interface Ship {
   defense: number;
   speed: number;
   position: Coordinate;
+  // CLIENT-ONLY: resources, ability, activeEffects are not persisted on-chain
   resources: Resources;
-  ability: ShipAbility; // ENHANCEMENT: Each ship has unique ability
-  activeEffects: ShipEffect[]; // ENHANCEMENT: Buffs/debuffs tracking
+  ability: ShipAbility;
+  activeEffects: ShipEffect[];
 }
 
 // Territory cell on the game map
+// CLIENT-ONLY: coordinate, resources, isContested, weatherEffect are not on-chain
 export interface TerritoryCell {
   coordinate: string;
   type: TerritoryCellType;
@@ -109,14 +112,17 @@ export interface Player {
   totalMoves: number;
 
   // Momentum system: consecutive attacks build bonus
+  // CLIENT-ONLY: not persisted on-chain
   consecutiveAttacks: number;
   lastActionWasAttack: boolean;
 
   // ===== FOG OF WAR =====
+  // CLIENT-ONLY: not persisted on-chain
   revealedCoordinates?: string[]; // Coordinates this player has revealed
 }
 
 export type OnChainGameMode = "Casual" | "Competitive" | "AgentArena";
+export type GameMode = "on-chain" | "practice" | "spectator";
 
 export interface GameState {
   gameId: string;
@@ -126,8 +132,9 @@ export interface GameState {
   gameMap: GameMap;
   gameStatus: "waiting" | "active" | "completed";
   winner?: string;
-  currentPhase: "deployment" | "movement" | "combat" | "resource_collection";
   turnNumber: number;
+  // CLIENT-ONLY: currentPhase, pendingActions, globalWeather, eventLog, turnTimeRemaining are not on-chain
+  currentPhase: "deployment" | "movement" | "combat" | "resource_collection";
   turnTimeRemaining?: number;
   pendingActions: GameAction[];
   globalWeather?: WeatherEffect;
@@ -234,9 +241,9 @@ export const TERRITORY_RESOURCE_GENERATION: Record<
   Partial<Resources>
 > = {
   water: {},
-  island: { supplies: 2 },
-  port: { gold: 3, crew: 1 },
-  treasure: { gold: 5 },
+  island: { supplies: 3 },
+  port: { gold: 5, crew: 2 },
+  treasure: { gold: 10 },
   storm: {},
   reef: {},
   whirlpool: {},

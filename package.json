@@ -14,7 +14,7 @@
     "clean": "rm -rf .next out dist node_modules/.cache"
   },
   "dependencies": {
-    "@coral-xyz/anchor": "^0.28.0",
+    "@coral-xyz/anchor": "^0.30.0",
     "@solana-mobile/wallet-adapter-mobile": "2.2.5",
     "@solana/wallet-adapter-base": "^0.9.27",
     "@solana/wallet-adapter-react": "^0.15.39",

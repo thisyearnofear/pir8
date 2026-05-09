@@ -24,6 +24,7 @@ export default function LobbyBrowser() {
   const [startingGameId, setStartingGameId] = useState<string | null>(null);
   const [privateMode, setPrivateMode] = useState(false);
   const [arenaFilter, setArenaFilter] = useState<"all" | "shadow">("all");
+  const [localError, setLocalError] = useState<string | null>(null);
 
   useEffect(() => {
     if (!publicKey || !wallet) return;
@@ -78,10 +79,7 @@ export default function LobbyBrowser() {
       fetchLobbies(wallet);
     } catch (error) {
       console.error("Failed to create game:", error);
-      // Show user-friendly error message
-      alert(
-        `Failed to create game: ${error instanceof Error ? error.message : "Unknown error"}`,
-      );
+      setLocalError(`Failed to create game: ${error instanceof Error ? error.message : "Unknown error"}`);
     } finally {
       setIsCreating(false);
     }
@@ -91,14 +89,12 @@ export default function LobbyBrowser() {
     // Check wallet connection with detailed logging
     if (!publicKey) {
       console.warn("Wallet publicKey not available");
-      alert(
-        "Please connect your wallet first. Click the wallet button in the top right.",
-      );
+      setLocalError("Please connect your wallet first. Click the wallet button in the top right.");
       return;
     }
     if (!wallet) {
       console.warn("Wallet adapter not available");
-      alert("Wallet not ready. Please wait a moment or refresh the page.");
+      setLocalError("Wallet not ready. Please wait a moment or refresh the page.");
       return;
     }
 
@@ -165,7 +161,7 @@ export default function LobbyBrowser() {
       console.error("Failed to join lobby:", error);
       const errorMessage =
         error instanceof Error ? error.message : "Unknown error";
-      alert(`Failed to join: ${errorMessage}`);
+      setLocalError(`Failed to join: ${errorMessage}`);
     } finally {
       setJoiningLobby(null);
     }
@@ -173,7 +169,7 @@ export default function LobbyBrowser() {
 
   const handleStartGame = async (lobbyAddress: string, gameId?: number) => {
     if (!publicKey || !wallet) {
-      alert("Please connect your wallet first");
+      setLocalError("Please connect your wallet first");
       return;
     }
     if (startingGameId === lobbyAddress) {
@@ -216,7 +212,7 @@ export default function LobbyBrowser() {
       console.error("Failed to start game:", error);
       const errorMessage =
         error instanceof Error ? error.message : "Unknown error";
-      alert(`Failed to start game: ${errorMessage}`);
+      setLocalError(`Failed to start game: ${errorMessage}`);
     } finally {
       setStartingGameId(null);
     }
@@ -224,6 +220,13 @@ export default function LobbyBrowser() {
 
   return (
     <div className="bg-slate-900/50 backdrop-blur-md rounded-2xl border-2 border-neon-cyan/30 p-6 w-full max-w-4xl mx-auto shadow-2xl">
+      {/* Error toast */}
+      {localError && (
+        <div className="mb-4 p-3 bg-red-500/20 border border-red-500/50 rounded-xl text-red-300 text-sm flex items-center justify-between" role="alert">
+          <span>{localError}</span>
+          <button onClick={() => setLocalError(null)} className="ml-2 text-red-400 hover:text-red-200" aria-label="Dismiss error">&times;</button>
+        </div>
+      )}
       <div className="flex items-center justify-between mb-8">
         <div>
           <h2 className="text-3xl font-black text-transparent bg-clip-text bg-gradient-to-r from-neon-cyan to-neon-blue">

@@ -139,12 +139,13 @@ pub fn get_ship_costs(ship_type: &ShipType) -> Resources {
     }
 }
 
-pub fn get_ship_resource_multiplier(ship_type: &ShipType) -> f32 {
+/// Returns resource multiplier in basis points (100 = 1.0x, 120 = 1.2x, etc.)
+pub fn get_ship_resource_multiplier_bp(ship_type: &ShipType) -> u32 {
     match ship_type {
-        ShipType::Sloop => 1.0,
-        ShipType::Frigate => 1.2,
-        ShipType::Galleon => 1.5,
-        ShipType::Flagship => 1.3,
+        ShipType::Sloop => 100,
+        ShipType::Frigate => 120,
+        ShipType::Galleon => 150,
+        ShipType::Flagship => 130,
     }
 }
 
@@ -208,16 +209,17 @@ pub fn is_harder_to_scan(target: &PlayerData) -> bool {
     target.is_ghost_fleet && target.ghost_fleet_turns_remaining > 0
 }
 
-/// Ambush damage bonus multiplier when attacking from Ghost Fleet
-pub const AMBUSH_DAMAGE_BONUS: f32 = 1.5;
+/// Ambush damage bonus in basis points (150 = 1.5x)
+pub const AMBUSH_DAMAGE_BONUS_BP: u32 = 150;
 
-/// Get the attack damage bonus for being in Ghost Fleet mode
+/// Get the attack damage bonus for being in Ghost Fleet mode (in basis points)
 /// Ghost Fleet enables ambush damage bonus from stealth
-pub fn get_ambush_damage_bonus(player: &PlayerData) -> f32 {
+/// Returns 150 for ghost fleet (1.5x), 100 for normal (1.0x)
+pub fn get_ambush_damage_bonus_bp(player: &PlayerData) -> u32 {
     if player.is_ghost_fleet && player.ghost_fleet_turns_remaining > 0 {
-        AMBUSH_DAMAGE_BONUS
+        AMBUSH_DAMAGE_BONUS_BP
     } else {
-        1.0 // No bonus
+        100 // No bonus (1.0x)
     }
 }
 

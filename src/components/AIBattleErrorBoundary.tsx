@@ -5,6 +5,7 @@ import React from 'react';
 interface AIBattleErrorBoundaryState {
     hasError: boolean;
     error?: Error;
+    retryCount: number;
 }
 
 interface AIBattleErrorBoundaryProps {
@@ -12,31 +13,37 @@ interface AIBattleErrorBoundaryProps {
 }
 
 export class AIBattleErrorBoundary extends React.Component<AIBattleErrorBoundaryProps, AIBattleErrorBoundaryState> {
+    private maxRetries = 3;
+
     constructor(props: AIBattleErrorBoundaryProps) {
         super(props);
-        this.state = { hasError: false };
+        this.state = { hasError: false, retryCount: 0 };
     }
 
     static getDerivedStateFromError(error: Error): AIBattleErrorBoundaryState {
-        return { hasError: true, error };
+        return { hasError: true, error, retryCount: 0 };
     }
 
     override componentDidCatch(error: Error, errorInfo: React.ErrorInfo) {
+        // Only auto-recover if we haven't exceeded max retries
+        if (this.state.retryCount >= this.maxRetries) {
+            console.error('AI Battle: Max retries exceeded', error, errorInfo);
+            return;
+        }
+
         // Handle specific AI vs AI errors
         if (error.message.includes('ethereum') || error.message.includes('Cannot set property')) {
             console.warn('AI Battle: Ethereum provider conflict detected, attempting recovery');
-            // Auto-recover from ethereum provider conflicts
             setTimeout(() => {
-                this.setState({ hasError: false, error: undefined });
+                this.setState(prev => ({ hasError: false, error: undefined, retryCount: prev.retryCount + 1 }));
             }, 1000);
             return;
         }
 
         if (error.message.includes('length') || error.message.includes('undefined')) {
             console.warn('AI Battle: Array access error detected, attempting recovery');
-            // Auto-recover from undefined array access
             setTimeout(() => {
-                this.setState({ hasError: false, error: undefined });
+                this.setState(prev => ({ hasError: false, error: undefined, retryCount: prev.retryCount + 1 }));
             }, 500);
             return;
         }

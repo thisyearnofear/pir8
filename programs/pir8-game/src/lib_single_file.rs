@@ -8,7 +8,7 @@
 use anchor_lang::prelude::*;
 use anchor_lang::solana_program::{program::invoke, system_instruction};
 
-declare_id!("EeHyY2FQ3A4GLieZbGbmZtz1iLKzLytXkRcXyzGfmePt");
+declare_id!("DkkuBQySAxKTADdxQVyx8rjxudZVSwA7ZjRCqRquH5FU");
 
 // ============================================================================
 // CONSTANTS

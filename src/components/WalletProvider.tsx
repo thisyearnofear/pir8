@@ -1,18 +1,16 @@
 "use client";
 
 import React, { useMemo } from "react";
-import * as walletAdapterReact from "@solana/wallet-adapter-react";
-
-const { ConnectionProvider, WalletProvider } = walletAdapterReact as any;
+import { ConnectionProvider, WalletProvider } from "@solana/wallet-adapter-react";
 import { WalletModalProvider } from "@solana/wallet-adapter-react-ui";
 import {
   PhantomWalletAdapter,
   SolflareWalletAdapter,
 } from "@solana/wallet-adapter-wallets";
 import { clusterApiUrl } from "@solana/web3.js";
-import { 
-  getPlatformWalletAdapter, 
-  isSolanaDappStore 
+import {
+  getPlatformWalletAdapter,
+  isSolanaDappStore
 } from "@/lib/mobile/walletAdapter";
 
 export function WalletContextProvider({
