@@ -10,7 +10,7 @@ use instructions::*;
 use state::game::GameMode;
 use state::player::ShipType;
 
-declare_id!("DkkuBQySAxKTADdxQVyx8rjxudZVSwA7ZjRCqRquH5FU");
+declare_id!("B8iZB76A6umsmc9Ctc8psmtAZhzxgAEP41uoAsyU2mrC");
 
 #[program]
 pub mod pir8_game {

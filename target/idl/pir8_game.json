@@ -1,358 +1,2114 @@
 {
-  "version": "0.1.0",
-  "name": "pir8_game",
+  "address": "B8iZB76A6umsmc9Ctc8psmtAZhzxgAEP41uoAsyU2mrC",
+  "metadata": {
+    "name": "pir8_game",
+    "version": "0.1.0",
+    "spec": "0.1.0",
+    "description": "PIR8 - Privacy-First Gaming on Solana"
+  },
   "instructions": [
     {
-      "name": "initializeGame",
-      "accounts": [
-        {
-          "name": "game",
-          "isMut": true,
-          "isSigner": false
-        },
-        {
-          "name": "authority",
-          "isMut": true,
-          "isSigner": true
-        },
-        {
-          "name": "systemProgram",
-          "isMut": false,
-          "isSigner": false
-        }
+      "name": "activate_ghost_fleet",
+      "discriminator": [
+        170,
+        39,
+        1,
+        36,
+        40,
+        198,
+        85,
+        247
       ],
-      "args": [
-        {
-          "name": "timestamp",
-          "type": "i64"
-        }
-      ]
-    },
-    {
-      "name": "joinGame",
       "accounts": [
         {
           "name": "game",
-          "isMut": true,
-          "isSigner": false
+          "writable": true,
+          "pda": {
+            "seeds": [
+              {
+                "kind": "const",
+                "value": [
+                  112,
+                  105,
+                  114,
+                  97,
+                  116,
+                  101,
+                  95,
+                  103,
+                  97,
+                  109,
+                  101
+                ]
+              },
+              {
+                "kind": "account",
+                "path": "game.game_id",
+                "account": "PirateGame"
+              }
+            ]
+          }
         },
         {
           "name": "player",
-          "isMut": true,
-          "isSigner": true
+          "signer": true
         }
       ],
       "args": []
     },
     {
-      "name": "startGame",
+      "name": "attack_ship",
+      "discriminator": [
+        163,
+        146,
+        122,
+        23,
+        170,
+        146,
+        60,
+        216
+      ],
       "accounts": [
         {
           "name": "game",
-          "isMut": true,
-          "isSigner": false
+          "writable": true,
+          "pda": {
+            "seeds": [
+              {
+                "kind": "const",
+                "value": [
+                  112,
+                  105,
+                  114,
+                  97,
+                  116,
+                  101,
+                  95,
+                  103,
+                  97,
+                  109,
+                  101
+                ]
+              },
+              {
+                "kind": "account",
+                "path": "game.game_id",
+                "account": "PirateGame"
+              }
+            ]
+          }
         },
         {
-          "name": "authority",
-          "isMut": false,
-          "isSigner": true
+          "name": "player",
+          "signer": true
+        }
+      ],
+      "args": [
+        {
+          "name": "attacker_ship_id",
+          "type": "string"
+        },
+        {
+          "name": "target_ship_id",
+          "type": "string"
+        }
+      ]
+    },
+    {
+      "name": "build_ship",
+      "discriminator": [
+        213,
+        16,
+        198,
+        123,
+        106,
+        214,
+        120,
+        157
+      ],
+      "accounts": [
+        {
+          "name": "game",
+          "writable": true,
+          "pda": {
+            "seeds": [
+              {
+                "kind": "const",
+                "value": [
+                  112,
+                  105,
+                  114,
+                  97,
+                  116,
+                  101,
+                  95,
+                  103,
+                  97,
+                  109,
+                  101
+                ]
+              },
+              {
+                "kind": "account",
+                "path": "game.game_id",
+                "account": "PirateGame"
+              }
+            ]
+          }
+        },
+        {
+          "name": "player",
+          "signer": true
+        }
+      ],
+      "args": [
+        {
+          "name": "ship_type",
+          "type": {
+            "defined": {
+              "name": "ShipType"
+            }
+          }
+        },
+        {
+          "name": "port_x",
+          "type": "u8"
+        },
+        {
+          "name": "port_y",
+          "type": "u8"
+        }
+      ]
+    },
+    {
+      "name": "check_and_complete_game",
+      "discriminator": [
+        246,
+        228,
+        111,
+        150,
+        184,
+        101,
+        136,
+        240
+      ],
+      "accounts": [
+        {
+          "name": "game",
+          "writable": true,
+          "pda": {
+            "seeds": [
+              {
+                "kind": "const",
+                "value": [
+                  112,
+                  105,
+                  114,
+                  97,
+                  116,
+                  101,
+                  95,
+                  103,
+                  97,
+                  109,
+                  101
+                ]
+              },
+              {
+                "kind": "account",
+                "path": "game.game_id",
+                "account": "PirateGame"
+              }
+            ]
+          }
+        },
+        {
+          "name": "player",
+          "signer": true
         }
       ],
       "args": []
     },
     {
-      "name": "moveShip",
+      "name": "claim_territory",
+      "discriminator": [
+        187,
+        166,
+        174,
+        42,
+        9,
+        148,
+        254,
+        52
+      ],
       "accounts": [
         {
           "name": "game",
-          "isMut": true,
-          "isSigner": false
+          "writable": true,
+          "pda": {
+            "seeds": [
+              {
+                "kind": "const",
+                "value": [
+                  112,
+                  105,
+                  114,
+                  97,
+                  116,
+                  101,
+                  95,
+                  103,
+                  97,
+                  109,
+                  101
+                ]
+              },
+              {
+                "kind": "account",
+                "path": "game.game_id",
+                "account": "PirateGame"
+              }
+            ]
+          }
         },
         {
           "name": "player",
-          "isMut": false,
-          "isSigner": true
+          "signer": true
         }
       ],
       "args": [
         {
-          "name": "shipId",
+          "name": "ship_id",
           "type": "string"
-        },
-        {
-          "name": "toX",
-          "type": "i32"
-        },
-        {
-          "name": "toY",
-          "type": "i32"
         }
       ]
     },
     {
-      "name": "attackShip",
+      "name": "claim_winnings",
+      "discriminator": [
+        161,
+        215,
+        24,
+        59,
+        14,
+        236,
+        242,
+        221
+      ],
       "accounts": [
         {
           "name": "game",
-          "isMut": true,
-          "isSigner": false
+          "writable": true,
+          "pda": {
+            "seeds": [
+              {
+                "kind": "const",
+                "value": [
+                  112,
+                  105,
+                  114,
+                  97,
+                  116,
+                  101,
+                  95,
+                  103,
+                  97,
+                  109,
+                  101
+                ]
+              },
+              {
+                "kind": "account",
+                "path": "game.game_id",
+                "account": "PirateGame"
+              }
+            ]
+          }
+        },
+        {
+          "name": "winner",
+          "writable": true,
+          "signer": true
+        },
+        {
+          "name": "system_program",
+          "address": "11111111111111111111111111111111"
+        }
+      ],
+      "args": []
+    },
+    {
+      "name": "collect_resources",
+      "discriminator": [
+        80,
+        180,
+        84,
+        6,
+        25,
+        165,
+        77,
+        252
+      ],
+      "accounts": [
+        {
+          "name": "game",
+          "writable": true,
+          "pda": {
+            "seeds": [
+              {
+                "kind": "const",
+                "value": [
+                  112,
+                  105,
+                  114,
+                  97,
+                  116,
+                  101,
+                  95,
+                  103,
+                  97,
+                  109,
+                  101
+                ]
+              },
+              {
+                "kind": "account",
+                "path": "game.game_id",
+                "account": "PirateGame"
+              }
+            ]
+          }
         },
         {
           "name": "player",
-          "isMut": false,
-          "isSigner": true
+          "signer": true
+        }
+      ],
+      "args": []
+    },
+    {
+      "name": "create_game",
+      "discriminator": [
+        124,
+        69,
+        75,
+        66,
+        184,
+        220,
+        72,
+        206
+      ],
+      "accounts": [
+        {
+          "name": "game",
+          "writable": true,
+          "pda": {
+            "seeds": [
+              {
+                "kind": "const",
+                "value": [
+                  112,
+                  105,
+                  114,
+                  97,
+                  116,
+                  101,
+                  95,
+                  103,
+                  97,
+                  109,
+                  101
+                ]
+              },
+              {
+                "kind": "arg",
+                "path": "game_id"
+              }
+            ]
+          }
+        },
+        {
+          "name": "authority",
+          "writable": true,
+          "signer": true
+        },
+        {
+          "name": "system_program",
+          "address": "11111111111111111111111111111111"
         }
       ],
       "args": [
         {
-          "name": "attackerShipId",
-          "type": "string"
+          "name": "game_id",
+          "type": "u64"
         },
         {
-          "name": "targetShipId",
-          "type": "string"
+          "name": "mode",
+          "type": {
+            "defined": {
+              "name": "GameMode"
+            }
+          }
         }
       ]
     },
     {
-      "name": "claimTerritory",
+      "name": "delegate_agent_control",
+      "discriminator": [
+        144,
+        153,
+        218,
+        134,
+        16,
+        66,
+        148,
+        153
+      ],
       "accounts": [
         {
-          "name": "game",
-          "isMut": true,
-          "isSigner": false
+          "name": "agent",
+          "writable": true,
+          "pda": {
+            "seeds": [
+              {
+                "kind": "const",
+                "value": [
+                  97,
+                  103,
+                  101,
+                  110,
+                  116
+                ]
+              },
+              {
+                "kind": "account",
+                "path": "owner"
+              }
+            ]
+          }
         },
         {
-          "name": "player",
-          "isMut": false,
-          "isSigner": true
+          "name": "owner",
+          "signer": true,
+          "relations": [
+            "agent"
+          ]
         }
       ],
       "args": [
         {
-          "name": "x",
-          "type": "i32"
-        },
-        {
-          "name": "y",
-          "type": "i32"
+          "name": "delegate",
+          "type": {
+            "option": "pubkey"
+          }
         }
       ]
     },
     {
-      "name": "collectResources",
+      "name": "end_turn",
+      "discriminator": [
+        34,
+        247,
+        56,
+        118,
+        182,
+        41,
+        186,
+        237
+      ],
       "accounts": [
         {
           "name": "game",
-          "isMut": true,
-          "isSigner": false
+          "writable": true,
+          "pda": {
+            "seeds": [
+              {
+                "kind": "const",
+                "value": [
+                  112,
+                  105,
+                  114,
+                  97,
+                  116,
+                  101,
+                  95,
+                  103,
+                  97,
+                  109,
+                  101
+                ]
+              },
+              {
+                "kind": "account",
+                "path": "game.game_id",
+                "account": "PirateGame"
+              }
+            ]
+          }
         },
         {
           "name": "player",
-          "isMut": false,
-          "isSigner": true
+          "signer": true
         }
       ],
-      "args": [
-        {
-          "name": "x",
-          "type": "i32"
-        },
-        {
-          "name": "y",
-          "type": "i32"
-        }
-      ]
+      "args": []
     },
     {
-      "name": "buildShip",
+      "name": "join_game",
+      "discriminator": [
+        107,
+        112,
+        18,
+        38,
+        56,
+        173,
+        60,
+        128
+      ],
       "accounts": [
         {
           "name": "game",
-          "isMut": true,
-          "isSigner": false
+          "writable": true,
+          "pda": {
+            "seeds": [
+              {
+                "kind": "const",
+                "value": [
+                  112,
+                  105,
+                  114,
+                  97,
+                  116,
+                  101,
+                  95,
+                  103,
+                  97,
+                  109,
+                  101
+                ]
+              },
+              {
+                "kind": "account",
+                "path": "game.game_id",
+                "account": "PirateGame"
+              }
+            ]
+          }
         },
         {
           "name": "player",
-          "isMut": false,
-          "isSigner": true
+          "writable": true,
+          "signer": true
+        },
+        {
+          "name": "system_program",
+          "address": "11111111111111111111111111111111"
+        }
+      ],
+      "args": []
+    },
+    {
+      "name": "join_game_via_delegate",
+      "discriminator": [
+        4,
+        233,
+        184,
+        169,
+        1,
+        230,
+        94,
+        195
+      ],
+      "accounts": [
+        {
+          "name": "game",
+          "writable": true,
+          "pda": {
+            "seeds": [
+              {
+                "kind": "const",
+                "value": [
+                  112,
+                  105,
+                  114,
+                  97,
+                  116,
+                  101,
+                  95,
+                  103,
+                  97,
+                  109,
+                  101
+                ]
+              },
+              {
+                "kind": "arg",
+                "path": "game_id"
+              }
+            ]
+          }
+        },
+        {
+          "name": "session_key",
+          "docs": [
+            "Session key acting as signer - must be delegate of the owner"
+          ],
+          "signer": true
+        },
+        {
+          "name": "agent",
+          "docs": [
+            "The original owner who set the delegate - used to derive AgentRegistry PDA"
+          ],
+          "pda": {
+            "seeds": [
+              {
+                "kind": "const",
+                "value": [
+                  97,
+                  103,
+                  101,
+                  110,
+                  116
+                ]
+              },
+              {
+                "kind": "account",
+                "path": "owner"
+              }
+            ]
+          }
+        },
+        {
+          "name": "owner",
+          "relations": [
+            "agent"
+          ]
+        },
+        {
+          "name": "system_program",
+          "address": "11111111111111111111111111111111"
+        }
+      ],
+      "args": []
+    },
+    {
+      "name": "move_ship",
+      "discriminator": [
+        85,
+        196,
+        190,
+        46,
+        231,
+        131,
+        247,
+        32
+      ],
+      "accounts": [
+        {
+          "name": "game",
+          "writable": true,
+          "pda": {
+            "seeds": [
+              {
+                "kind": "const",
+                "value": [
+                  112,
+                  105,
+                  114,
+                  97,
+                  116,
+                  101,
+                  95,
+                  103,
+                  97,
+                  109,
+                  101
+                ]
+              },
+              {
+                "kind": "account",
+                "path": "game.game_id",
+                "account": "PirateGame"
+              }
+            ]
+          }
+        },
+        {
+          "name": "player",
+          "signer": true
         }
       ],
       "args": [
         {
-          "name": "shipType",
+          "name": "ship_id",
           "type": "string"
+        },
+        {
+          "name": "to_x",
+          "type": "u8"
+        },
+        {
+          "name": "to_y",
+          "type": "u8"
+        },
+        {
+          "name": "decision_time_ms",
+          "type": {
+            "option": "u64"
+          }
         }
       ]
+    },
+    {
+      "name": "move_ship_via_delegate",
+      "discriminator": [
+        5,
+        178,
+        241,
+        20,
+        11,
+        188,
+        98,
+        124
+      ],
+      "accounts": [
+        {
+          "name": "game",
+          "writable": true,
+          "pda": {
+            "seeds": [
+              {
+                "kind": "const",
+                "value": [
+                  112,
+                  105,
+                  114,
+                  97,
+                  116,
+                  101,
+                  95,
+                  103,
+                  97,
+                  109,
+                  101
+                ]
+              },
+              {
+                "kind": "account",
+                "path": "game.game_id",
+                "account": "PirateGame"
+              }
+            ]
+          }
+        },
+        {
+          "name": "session_key",
+          "docs": [
+            "Session key acting as signer - must be delegate of the owner"
+          ],
+          "signer": true
+        },
+        {
+          "name": "agent",
+          "docs": [
+            "The original owner who set the delegate - used to derive AgentRegistry PDA"
+          ],
+          "pda": {
+            "seeds": [
+              {
+                "kind": "const",
+                "value": [
+                  97,
+                  103,
+                  101,
+                  110,
+                  116
+                ]
+              },
+              {
+                "kind": "account",
+                "path": "owner"
+              }
+            ]
+          }
+        },
+        {
+          "name": "owner",
+          "relations": [
+            "agent"
+          ]
+        }
+      ],
+      "args": [
+        {
+          "name": "ship_id",
+          "type": "string"
+        },
+        {
+          "name": "to_x",
+          "type": "u8"
+        },
+        {
+          "name": "to_y",
+          "type": "u8"
+        },
+        {
+          "name": "decision_time_ms",
+          "type": {
+            "option": "u64"
+          }
+        }
+      ]
+    },
+    {
+      "name": "register_agent",
+      "discriminator": [
+        135,
+        157,
+        66,
+        195,
+        2,
+        113,
+        175,
+        30
+      ],
+      "accounts": [
+        {
+          "name": "agent",
+          "writable": true,
+          "pda": {
+            "seeds": [
+              {
+                "kind": "const",
+                "value": [
+                  97,
+                  103,
+                  101,
+                  110,
+                  116
+                ]
+              },
+              {
+                "kind": "account",
+                "path": "owner"
+              }
+            ]
+          }
+        },
+        {
+          "name": "owner",
+          "writable": true,
+          "signer": true
+        },
+        {
+          "name": "system_program",
+          "address": "11111111111111111111111111111111"
+        }
+      ],
+      "args": [
+        {
+          "name": "name",
+          "type": "string"
+        },
+        {
+          "name": "version",
+          "type": "string"
+        },
+        {
+          "name": "twitter",
+          "type": {
+            "option": "string"
+          }
+        },
+        {
+          "name": "website",
+          "type": {
+            "option": "string"
+          }
+        }
+      ]
+    },
+    {
+      "name": "reset_game",
+      "discriminator": [
+        97,
+        146,
+        71,
+        156,
+        110,
+        206,
+        124,
+        224
+      ],
+      "accounts": [
+        {
+          "name": "game",
+          "writable": true,
+          "pda": {
+            "seeds": [
+              {
+                "kind": "const",
+                "value": [
+                  112,
+                  105,
+                  114,
+                  97,
+                  116,
+                  101,
+                  95,
+                  103,
+                  97,
+                  109,
+                  101
+                ]
+              },
+              {
+                "kind": "account",
+                "path": "game.game_id",
+                "account": "PirateGame"
+              }
+            ]
+          }
+        },
+        {
+          "name": "authority",
+          "signer": true,
+          "relations": [
+            "game"
+          ]
+        }
+      ],
+      "args": []
+    },
+    {
+      "name": "scan_coordinate",
+      "discriminator": [
+        225,
+        142,
+        171,
+        176,
+        29,
+        89,
+        195,
+        255
+      ],
+      "accounts": [
+        {
+          "name": "game",
+          "writable": true,
+          "pda": {
+            "seeds": [
+              {
+                "kind": "const",
+                "value": [
+                  112,
+                  105,
+                  114,
+                  97,
+                  116,
+                  101,
+                  95,
+                  103,
+                  97,
+                  109,
+                  101
+                ]
+              },
+              {
+                "kind": "account",
+                "path": "game.game_id",
+                "account": "PirateGame"
+              }
+            ]
+          }
+        },
+        {
+          "name": "player",
+          "signer": true
+        }
+      ],
+      "args": [
+        {
+          "name": "coordinate_x",
+          "type": "u8"
+        },
+        {
+          "name": "coordinate_y",
+          "type": "u8"
+        }
+      ]
+    },
+    {
+      "name": "start_game",
+      "discriminator": [
+        249,
+        47,
+        252,
+        172,
+        184,
+        162,
+        245,
+        14
+      ],
+      "accounts": [
+        {
+          "name": "game",
+          "writable": true,
+          "pda": {
+            "seeds": [
+              {
+                "kind": "const",
+                "value": [
+                  112,
+                  105,
+                  114,
+                  97,
+                  116,
+                  101,
+                  95,
+                  103,
+                  97,
+                  109,
+                  101
+                ]
+              },
+              {
+                "kind": "account",
+                "path": "game.game_id",
+                "account": "PirateGame"
+              }
+            ]
+          }
+        },
+        {
+          "name": "authority",
+          "signer": true,
+          "relations": [
+            "game"
+          ]
+        }
+      ],
+      "args": []
     }
   ],
   "accounts": [
     {
+      "name": "AgentRegistry",
+      "discriminator": [
+        6,
+        34,
+        128,
+        124,
+        33,
+        136,
+        199,
+        171
+      ]
+    },
+    {
       "name": "PirateGame",
-      "type": {
-        "kind": "struct",
-        "fields": [
-          {
-            "name": "authority",
-            "type": "publicKey"
-          },
-          {
-            "name": "players",
-            "type": {
-              "vec": "publicKey"
-            }
-          },
-          {
-            "name": "gameState",
-            "type": "u8"
-          },
-          {
-            "name": "boardSize",
-            "type": "u16"
-          },
-          {
-            "name": "createdAt",
-            "type": "i64"
-          },
-          {
-            "name": "startedAt",
-            "type": "i64"
-          },
-          {
-            "name": "endedAt",
-            "type": "i64"
-          }
-        ]
-      }
+      "discriminator": [
+        241,
+        180,
+        238,
+        245,
+        94,
+        66,
+        115,
+        85
+      ]
     }
   ],
   "events": [
     {
-      "name": "GameCreated",
-      "fields": [
-        {
-          "name": "gameId",
-          "type": "publicKey",
-          "index": false
-        },
-        {
-          "name": "creator",
-          "type": "publicKey",
-          "index": false
-        },
-        {
-          "name": "timestamp",
-          "type": "i64",
-          "index": false
-        }
+      "name": "CoordinateScanned",
+      "discriminator": [
+        137,
+        65,
+        31,
+        191,
+        3,
+        6,
+        252,
+        232
       ]
     },
     {
-      "name": "PlayerJoined",
-      "fields": [
-        {
-          "name": "gameId",
-          "type": "publicKey",
-          "index": false
-        },
-        {
-          "name": "player",
-          "type": "publicKey",
-          "index": false
-        },
-        {
-          "name": "timestamp",
-          "type": "i64",
-          "index": false
-        }
+      "name": "GameCompleted",
+      "discriminator": [
+        103,
+        26,
+        106,
+        108,
+        240,
+        191,
+        179,
+        120
       ]
     },
     {
       "name": "GameStarted",
-      "fields": [
-        {
-          "name": "gameId",
-          "type": "publicKey",
-          "index": false
-        },
-        {
-          "name": "timestamp",
-          "type": "i64",
-          "index": false
-        }
+      "discriminator": [
+        222,
+        247,
+        78,
+        255,
+        61,
+        184,
+        156,
+        41
       ]
     },
     {
-      "name": "MoveMade",
-      "fields": [
-        {
-          "name": "gameId",
-          "type": "publicKey",
-          "index": false
-        },
-        {
-          "name": "player",
-          "type": "publicKey",
-          "index": false
-        },
-        {
-          "name": "shipId",
-          "type": "string",
-          "index": false
-        },
-        {
-          "name": "fromX",
-          "type": "i32",
-          "index": false
-        },
-        {
-          "name": "fromY",
-          "type": "i32",
-          "index": false
-        },
-        {
-          "name": "toX",
-          "type": "i32",
-          "index": false
-        },
-        {
-          "name": "toY",
-          "type": "i32",
-          "index": false
-        },
-        {
-          "name": "timestamp",
-          "type": "i64",
-          "index": false
-        }
+      "name": "GhostFleetActivated",
+      "discriminator": [
+        93,
+        105,
+        124,
+        62,
+        37,
+        137,
+        190,
+        30
+      ]
+    },
+    {
+      "name": "MoveExecuted",
+      "discriminator": [
+        220,
+        142,
+        168,
+        169,
+        147,
+        29,
+        80,
+        82
+      ]
+    },
+    {
+      "name": "PlayerJoined",
+      "discriminator": [
+        39,
+        144,
+        49,
+        106,
+        108,
+        210,
+        183,
+        38
+      ]
+    },
+    {
+      "name": "ResourcesCollected",
+      "discriminator": [
+        177,
+        8,
+        81,
+        108,
+        255,
+        30,
+        112,
+        122
+      ]
+    },
+    {
+      "name": "ShipAttacked",
+      "discriminator": [
+        92,
+        240,
+        188,
+        156,
+        131,
+        235,
+        148,
+        13
+      ]
+    },
+    {
+      "name": "ShipBuilt",
+      "discriminator": [
+        211,
+        172,
+        85,
+        255,
+        48,
+        45,
+        168,
+        38
+      ]
+    },
+    {
+      "name": "ShipMoved",
+      "discriminator": [
+        154,
+        13,
+        86,
+        46,
+        37,
+        189,
+        4,
+        72
+      ]
+    },
+    {
+      "name": "TerritoryClaimed",
+      "discriminator": [
+        121,
+        234,
+        16,
+        184,
+        57,
+        40,
+        162,
+        201
+      ]
+    },
+    {
+      "name": "WinningsClaimed",
+      "discriminator": [
+        187,
+        184,
+        29,
+        196,
+        54,
+        117,
+        70,
+        150
       ]
     }
   ],
   "errors": [
     {
       "code": 6000,
-      "name": "GameNotStarted",
-      "msg": "Game has not started yet"
+      "name": "GameNotActive",
+      "msg": "Game is not active"
     },
     {
       "code": 6001,
-      "name": "GameAlreadyStarted",
-      "msg": "Game has already started"
+      "name": "GameFull",
+      "msg": "Game is full"
     },
     {
       "code": 6002,
-      "name": "GameFull",
-      "msg": "Game is already full"
+      "name": "NotEnoughPlayers",
+      "msg": "Not enough players to start"
     },
     {
       "code": 6003,
-      "name": "InvalidMove",
-      "msg": "Invalid move attempted"
+      "name": "GameAlreadyStarted",
+      "msg": "Game already started"
     },
     {
       "code": 6004,
-      "name": "PlayerNotFound",
-      "msg": "Player not found in game"
+      "name": "NotPlayerTurn",
+      "msg": "Not your turn"
+    },
+    {
+      "code": 6005,
+      "name": "ShipNotFound",
+      "msg": "Ship not found"
+    },
+    {
+      "code": 6006,
+      "name": "ShipNotAtLocation",
+      "msg": "Ship not at specified location"
+    },
+    {
+      "code": 6007,
+      "name": "TerritoryNotControlled",
+      "msg": "Territory not controlled by player"
+    },
+    {
+      "code": 6008,
+      "name": "InsufficientResources",
+      "msg": "Insufficient resources"
+    },
+    {
+      "code": 6009,
+      "name": "FleetSizeLimit",
+      "msg": "Fleet size limit reached"
+    },
+    {
+      "code": 6010,
+      "name": "NoAdjacentPort",
+      "msg": "No adjacent controlled port"
+    },
+    {
+      "code": 6011,
+      "name": "PositionOccupied",
+      "msg": "Position occupied"
+    },
+    {
+      "code": 6012,
+      "name": "GameNotJoinable",
+      "msg": "Game not joinable"
+    },
+    {
+      "code": 6013,
+      "name": "InvalidCoordinate",
+      "msg": "Invalid coordinate"
+    },
+    {
+      "code": 6014,
+      "name": "ShipsNotInRange",
+      "msg": "Ships not in range"
+    },
+    {
+      "code": 6015,
+      "name": "Unauthorized",
+      "msg": "Unauthorized"
+    },
+    {
+      "code": 6016,
+      "name": "NoScansRemaining",
+      "msg": "No scan charges remaining"
+    },
+    {
+      "code": 6017,
+      "name": "CoordinateAlreadyScanned",
+      "msg": "Coordinate already scanned"
+    },
+    {
+      "code": 6018,
+      "name": "UnauthorizedDelegate",
+      "msg": "Session key is not an authorized delegate"
+    },
+    {
+      "code": 6019,
+      "name": "GhostFleetAlreadyActive",
+      "msg": "Ghost Fleet is already active"
+    }
+  ],
+  "types": [
+    {
+      "name": "AgentRegistry",
+      "type": {
+        "kind": "struct",
+        "fields": [
+          {
+            "name": "owner",
+            "type": "pubkey"
+          },
+          {
+            "name": "delegate",
+            "type": {
+              "option": "pubkey"
+            }
+          },
+          {
+            "name": "name",
+            "type": "string"
+          },
+          {
+            "name": "version",
+            "type": "string"
+          },
+          {
+            "name": "twitter",
+            "type": {
+              "option": "string"
+            }
+          },
+          {
+            "name": "website",
+            "type": {
+              "option": "string"
+            }
+          },
+          {
+            "name": "games_played",
+            "type": "u64"
+          },
+          {
+            "name": "wins",
+            "type": "u64"
+          },
+          {
+            "name": "last_active",
+            "type": "i64"
+          }
+        ]
+      }
+    },
+    {
+      "name": "CoordinateScanned",
+      "type": {
+        "kind": "struct",
+        "fields": [
+          {
+            "name": "game_id",
+            "type": "u64"
+          },
+          {
+            "name": "player",
+            "type": "pubkey"
+          },
+          {
+            "name": "coordinate_x",
+            "type": "u8"
+          },
+          {
+            "name": "coordinate_y",
+            "type": "u8"
+          },
+          {
+            "name": "tile_type",
+            "type": "string"
+          },
+          {
+            "name": "scan_charges_remaining",
+            "type": "u8"
+          }
+        ]
+      }
+    },
+    {
+      "name": "GameCompleted",
+      "type": {
+        "kind": "struct",
+        "fields": [
+          {
+            "name": "game_id",
+            "type": "u64"
+          },
+          {
+            "name": "winner",
+            "type": "pubkey"
+          },
+          {
+            "name": "victory_type",
+            "type": "string"
+          }
+        ]
+      }
+    },
+    {
+      "name": "GameMode",
+      "type": {
+        "kind": "enum",
+        "variants": [
+          {
+            "name": "Casual"
+          },
+          {
+            "name": "Competitive"
+          },
+          {
+            "name": "AgentArena"
+          }
+        ]
+      }
+    },
+    {
+      "name": "GameStarted",
+      "type": {
+        "kind": "struct",
+        "fields": [
+          {
+            "name": "player_count",
+            "type": "u8"
+          }
+        ]
+      }
+    },
+    {
+      "name": "GameStatus",
+      "type": {
+        "kind": "enum",
+        "variants": [
+          {
+            "name": "Waiting"
+          },
+          {
+            "name": "Active"
+          },
+          {
+            "name": "Completed"
+          }
+        ]
+      }
+    },
+    {
+      "name": "GhostFleetActivated",
+      "type": {
+        "kind": "struct",
+        "fields": [
+          {
+            "name": "game_id",
+            "type": "u64"
+          },
+          {
+            "name": "player",
+            "type": "pubkey"
+          },
+          {
+            "name": "turns_remaining",
+            "type": "u8"
+          }
+        ]
+      }
+    },
+    {
+      "name": "MoveExecuted",
+      "type": {
+        "kind": "struct",
+        "fields": [
+          {
+            "name": "game_id",
+            "type": "u64"
+          },
+          {
+            "name": "player",
+            "type": "pubkey"
+          },
+          {
+            "name": "decision_time_ms",
+            "type": "u64"
+          },
+          {
+            "name": "speed_bonus_awarded",
+            "type": "u64"
+          },
+          {
+            "name": "new_total_score",
+            "type": "u64"
+          }
+        ]
+      }
+    },
+    {
+      "name": "PirateGame",
+      "type": {
+        "kind": "struct",
+        "fields": [
+          {
+            "name": "game_id",
+            "type": "u64"
+          },
+          {
+            "name": "authority",
+            "type": "pubkey"
+          },
+          {
+            "name": "status",
+            "type": {
+              "defined": {
+                "name": "GameStatus"
+              }
+            }
+          },
+          {
+            "name": "mode",
+            "type": {
+              "defined": {
+                "name": "GameMode"
+              }
+            }
+          },
+          {
+            "name": "player_count",
+            "type": "u8"
+          },
+          {
+            "name": "current_player_index",
+            "type": "u8"
+          },
+          {
+            "name": "turn_number",
+            "type": "u32"
+          },
+          {
+            "name": "created_at",
+            "type": "i64"
+          },
+          {
+            "name": "started_at",
+            "type": {
+              "option": "i64"
+            }
+          },
+          {
+            "name": "completed_at",
+            "type": {
+              "option": "i64"
+            }
+          },
+          {
+            "name": "winner",
+            "type": {
+              "option": "pubkey"
+            }
+          },
+          {
+            "name": "weather_type",
+            "type": {
+              "defined": {
+                "name": "WeatherType"
+              }
+            }
+          },
+          {
+            "name": "weather_duration",
+            "type": "u8"
+          },
+          {
+            "name": "bump",
+            "type": "u8"
+          },
+          {
+            "name": "players",
+            "type": {
+              "vec": {
+                "defined": {
+                  "name": "PlayerData"
+                }
+              }
+            }
+          },
+          {
+            "name": "territory_map",
+            "type": {
+              "vec": {
+                "defined": {
+                  "name": "TerritoryCell"
+                }
+              }
+            }
+          }
+        ]
+      }
+    },
+    {
+      "name": "PlayerData",
+      "type": {
+        "kind": "struct",
+        "fields": [
+          {
+            "name": "pubkey",
+            "type": "pubkey"
+          },
+          {
+            "name": "resources",
+            "type": {
+              "defined": {
+                "name": "Resources"
+              }
+            }
+          },
+          {
+            "name": "ships",
+            "type": {
+              "vec": {
+                "defined": {
+                  "name": "ShipData"
+                }
+              }
+            }
+          },
+          {
+            "name": "controlled_territories",
+            "type": {
+              "vec": "string"
+            }
+          },
+          {
+            "name": "total_score",
+            "type": "u32"
+          },
+          {
+            "name": "is_active",
+            "type": "bool"
+          },
+          {
+            "name": "scan_charges",
+            "type": "u8"
+          },
+          {
+            "name": "scanned_coordinates",
+            "type": "bytes"
+          },
+          {
+            "name": "is_ghost_fleet",
+            "type": "bool"
+          },
+          {
+            "name": "ghost_fleet_turns_remaining",
+            "type": "u8"
+          },
+          {
+            "name": "total_ghosts_activated",
+            "type": "u8"
+          },
+          {
+            "name": "speed_bonus_accumulated",
+            "type": "u64"
+          },
+          {
+            "name": "average_decision_time_ms",
+            "type": "u64"
+          },
+          {
+            "name": "total_moves",
+            "type": "u8"
+          }
+        ]
+      }
+    },
+    {
+      "name": "PlayerJoined",
+      "type": {
+        "kind": "struct",
+        "fields": [
+          {
+            "name": "player",
+            "type": "pubkey"
+          },
+          {
+            "name": "player_count",
+            "type": "u8"
+          }
+        ]
+      }
+    },
+    {
+      "name": "Resources",
+      "type": {
+        "kind": "struct",
+        "fields": [
+          {
+            "name": "gold",
+            "type": "u32"
+          },
+          {
+            "name": "crew",
+            "type": "u32"
+          },
+          {
+            "name": "cannons",
+            "type": "u32"
+          },
+          {
+            "name": "supplies",
+            "type": "u32"
+          }
+        ]
+      }
+    },
+    {
+      "name": "ResourcesCollected",
+      "type": {
+        "kind": "struct",
+        "fields": [
+          {
+            "name": "game_id",
+            "type": "u64"
+          },
+          {
+            "name": "player",
+            "type": "pubkey"
+          },
+          {
+            "name": "gold_collected",
+            "type": "u32"
+          },
+          {
+            "name": "crew_collected",
+            "type": "u32"
+          },
+          {
+            "name": "supplies_collected",
+            "type": "u32"
+          }
+        ]
+      }
+    },
+    {
+      "name": "ShipAttacked",
+      "type": {
+        "kind": "struct",
+        "fields": [
+          {
+            "name": "game_id",
+            "type": "u64"
+          },
+          {
+            "name": "attacker",
+            "type": "pubkey"
+          },
+          {
+            "name": "attacker_ship_id",
+            "type": "string"
+          },
+          {
+            "name": "target_ship_id",
+            "type": "string"
+          },
+          {
+            "name": "damage",
+            "type": "u32"
+          },
+          {
+            "name": "ship_destroyed",
+            "type": "bool"
+          }
+        ]
+      }
+    },
+    {
+      "name": "ShipBuilt",
+      "type": {
+        "kind": "struct",
+        "fields": [
+          {
+            "name": "game_id",
+            "type": "u64"
+          },
+          {
+            "name": "player",
+            "type": "pubkey"
+          },
+          {
+            "name": "ship_type",
+            "type": {
+              "defined": {
+                "name": "ShipType"
+              }
+            }
+          },
+          {
+            "name": "position_x",
+            "type": "u8"
+          },
+          {
+            "name": "position_y",
+            "type": "u8"
+          }
+        ]
+      }
+    },
+    {
+      "name": "ShipData",
+      "type": {
+        "kind": "struct",
+        "fields": [
+          {
+            "name": "id",
+            "type": "string"
+          },
+          {
+            "name": "ship_type",
+            "type": {
+              "defined": {
+                "name": "ShipType"
+              }
+            }
+          },
+          {
+            "name": "health",
+            "type": "u32"
+          },
+          {
+            "name": "max_health",
+            "type": "u32"
+          },
+          {
+            "name": "attack",
+            "type": "u32"
+          },
+          {
+            "name": "defense",
+            "type": "u32"
+          },
+          {
+            "name": "speed",
+            "type": "u32"
+          },
+          {
+            "name": "position_x",
+            "type": "u8"
+          },
+          {
+            "name": "position_y",
+            "type": "u8"
+          },
+          {
+            "name": "last_action_turn",
+            "type": "u32"
+          }
+        ]
+      }
+    },
+    {
+      "name": "ShipMoved",
+      "type": {
+        "kind": "struct",
+        "fields": [
+          {
+            "name": "game_id",
+            "type": "u64"
+          },
+          {
+            "name": "player",
+            "type": "pubkey"
+          },
+          {
+            "name": "ship_id",
+            "type": "string"
+          },
+          {
+            "name": "from_x",
+            "type": "u8"
+          },
+          {
+            "name": "from_y",
+            "type": "u8"
+          },
+          {
+            "name": "to_x",
+            "type": "u8"
+          },
+          {
+            "name": "to_y",
+            "type": "u8"
+          }
+        ]
+      }
+    },
+    {
+      "name": "ShipType",
+      "type": {
+        "kind": "enum",
+        "variants": [
+          {
+            "name": "Sloop"
+          },
+          {
+            "name": "Frigate"
+          },
+          {
+            "name": "Galleon"
+          },
+          {
+            "name": "Flagship"
+          }
+        ]
+      }
+    },
+    {
+      "name": "TerritoryCell",
+      "type": {
+        "kind": "struct",
+        "fields": [
+          {
+            "name": "cell_type",
+            "type": {
+              "defined": {
+                "name": "TerritoryCellType"
+              }
+            }
+          },
+          {
+            "name": "owner",
+            "type": {
+              "option": "pubkey"
+            }
+          }
+        ]
+      }
+    },
+    {
+      "name": "TerritoryCellType",
+      "type": {
+        "kind": "enum",
+        "variants": [
+          {
+            "name": "Water"
+          },
+          {
+            "name": "Island"
+          },
+          {
+            "name": "Port"
+          },
+          {
+            "name": "Treasure"
+          },
+          {
+            "name": "Storm"
+          },
+          {
+            "name": "Reef"
+          },
+          {
+            "name": "Whirlpool"
+          }
+        ]
+      }
+    },
+    {
+      "name": "TerritoryClaimed",
+      "type": {
+        "kind": "struct",
+        "fields": [
+          {
+            "name": "game_id",
+            "type": "u64"
+          },
+          {
+            "name": "player",
+            "type": "pubkey"
+          },
+          {
+            "name": "territory_x",
+            "type": "u8"
+          },
+          {
+            "name": "territory_y",
+            "type": "u8"
+          }
+        ]
+      }
+    },
+    {
+      "name": "WeatherType",
+      "type": {
+        "kind": "enum",
+        "variants": [
+          {
+            "name": "Calm"
+          },
+          {
+            "name": "TradeWinds"
+          },
+          {
+            "name": "Storm"
+          },
+          {
+            "name": "Fog"
+          }
+        ]
+      }
+    },
+    {
+      "name": "WinningsClaimed",
+      "type": {
+        "kind": "struct",
+        "fields": [
+          {
+            "name": "game_id",
+            "type": "u64"
+          },
+          {
+            "name": "winner",
+            "type": "pubkey"
+          },
+          {
+            "name": "amount",
+            "type": "u64"
+          }
+        ]
+      }
     }
   ]
 }
