@@ -57,7 +57,6 @@ export default function Home() {
     error,
     showMessage,
     selectedShipId,
-    speedBonusAccumulated,
     averageDecisionTimeMs,
     joinGame,
     findOrCreateGame,
