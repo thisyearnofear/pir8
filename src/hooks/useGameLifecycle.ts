@@ -8,7 +8,7 @@ import { useState, useEffect, useCallback, useRef } from 'react';
 import { usePirateGameState, pirateGameStore } from './usePirateGameState';
 import { useHeliusMonitor, GameEvent } from './useHeliusMonitor';
 import { Player, GameState } from '@/types/game';
-import { getGamePDA, getConfigPDA } from '@/lib/anchor';
+import { getGamePDA } from '@/lib/anchor';
 
 // =============================================================================
 // TYPES
