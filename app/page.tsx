@@ -70,7 +70,6 @@ export default function Home() {
     isMyTurn,
     getAllShips,
     startTurn,
-    getScannedCoordinates,
     // Practice mode actions
     startPracticeGame,
     makePracticeMove,
