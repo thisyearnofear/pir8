@@ -284,6 +284,14 @@ export class PirateGameManager {
       };
     }
 
+    // Apply weather modifier to movement
+    const baseSpeed = ship.speed;
+    const modifiedSpeed = WeatherEngine.applyWeatherModifiers(
+      baseSpeed,
+      "movement",
+      gameState.globalWeather
+    );
+
     const moveResult = {
       success: true,
       updatedShip: { ...ship, position: { x: toPosition.x, y: toPosition.y } },
