@@ -1,27 +1,21 @@
 import { StateCreator } from "zustand";
 import { PirateGameStore, GameSlice } from "./types";
-import { GameMode, GameState, Player, Ship } from "../types/game";
 
-export const createGameSlice: StateCreator<
-  PirateGameStore,
-  [],
-  [],
-  GameSlice
-> = (set, get) => ({
+export const createGameSlice: StateCreator<PirateGameStore, [], [], GameSlice> = (set, get) => ({
   gameState: null,
-  gameMode: "on-chain" as GameMode,
+  gameMode: "on-chain",
   isLoading: false,
   error: null,
   showMessage: null,
   selectedShipId: null,
 
-  setGameState: (gameState: GameState | null) => set({ gameState }),
-  setGameMode: (mode: GameMode) => set({ gameMode: mode }),
-  setIsLoading: (isLoading: boolean) => set({ isLoading }),
-  setError: (error: string | null) => set({ error }),
-  setMessage: (message: string | null) => set({ showMessage: message }),
+  setGameState: (gameState) => set({ gameState }),
+  setGameMode: (mode) => set({ gameMode: mode }),
+  setIsLoading: (isLoading) => set({ isLoading }),
+  setError: (error) => set({ error }),
+  setMessage: (message) => set({ showMessage: message }),
   clearError: () => set({ error: null }),
-  selectShip: (shipId: string | null) => set({ selectedShipId: shipId }),
+  selectShip: (shipId) => set({ selectedShipId: shipId }),
 
   getCurrentPlayer: () => {
     const { gameState } = get();
@@ -29,18 +23,15 @@ export const createGameSlice: StateCreator<
     return gameState.players[gameState.currentPlayerIndex] || null;
   },
 
-  getMyShips: (playerPK: string) => {
+  getMyShips: (playerPK) => {
     const { gameState } = get();
     if (!gameState) return [];
-
-    const player = gameState.players.find((p) => p.publicKey === playerPK);
-    return player?.ships.filter((ship) => ship.health > 0) || [];
+    return gameState.players.find((p) => p.publicKey === playerPK)?.ships.filter((s) => s.health > 0) || [];
   },
 
-  isMyTurn: (walletPk?: string) => {
+  isMyTurn: (walletPk) => {
     const { gameState } = get();
-    if (!gameState || gameState.gameStatus !== "active") return false;
-    if (!walletPk) return false;
+    if (!gameState || gameState.gameStatus !== "active" || !walletPk) return false;
     const current = gameState.players[gameState.currentPlayerIndex];
     return current?.publicKey === walletPk;
   },
@@ -48,9 +39,6 @@ export const createGameSlice: StateCreator<
   getAllShips: () => {
     const { gameState } = get();
     if (!gameState) return [];
-
-    return gameState.players
-      .flatMap((player) => player.ships)
-      .filter((ship) => ship.health > 0);
+    return gameState.players.flatMap((p) => p.ships).filter((s) => s.health > 0);
   },
 });

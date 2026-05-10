@@ -5,7 +5,7 @@ import { createOnChainSlice } from "./onChainSlice";
 import { createPracticeSlice } from "./practiceSlice";
 import { createSkillSlice } from "./skillSlice";
 
-export const usePirateGameStore = create<PirateGameStore>()((...a) => ({
+export const usePirateGameStore = create<PirateGameStore>((...a) => ({
   ...createGameSlice(...a),
   ...createOnChainSlice(...a),
   ...createPracticeSlice(...a),
