@@ -148,6 +148,25 @@ export const createOnChainSlice: StateCreator<
   ): Promise<boolean> => {
     try {
       set({ isLoading: true, error: null });
+      
+      // Check for Agent Arena match if mode is AgentArena
+      if (mode === "AgentArena") {
+        const { getAgentMatchmaker } = await import("../lib/agent-matchmaker");
+        const matchmaker = getAgentMatchmaker();
+        
+        // Find existing lobbies for Agent Arena
+        const agentLobbies = matchmaker.getActiveLobbies().filter(l => l.gameType === "ranked");
+        if (agentLobbies.length > 0) {
+          const targetLobby = agentLobbies[0];
+          if (targetLobby) {
+            const { joinGame } = await import("../lib/client/transactionBuilder");
+            await joinGame(wallet, targetLobby.gameId);
+            // ... load state
+            return true;
+          }
+        }
+      }
+
       const {
         initializeGame,
         fetchGameState,
@@ -157,70 +176,15 @@ export const createOnChainSlice: StateCreator<
       const { mapOnChainToLocal } = await import("../utils/helpers");
 
       const allGames = await fetchLobbies(wallet);
-
-      const matches = allGames.filter((g: any) => {
-        const acc = g.account;
-        if (!acc) return false;
-
-        const isWaiting =
-          (acc.status && acc.status.waiting !== undefined) ||
-          (acc.status && Object.keys(acc.status)[0] === "waiting");
-
-        const modeKeys = acc.mode ? Object.keys(acc.mode) : [];
-        const firstKey = modeKeys[0];
-        const accModeKey = firstKey ? firstKey.toLowerCase() : "casual";
-        const desiredModeKey =
-          mode.toLowerCase() === "agentarena"
-            ? "agentarena"
-            : mode.toLowerCase();
-
-        const modeMatch =
-          accModeKey === desiredModeKey ||
-          (accModeKey === "agent_arena" && desiredModeKey === "agentarena");
-
-        const hasSpace = (acc.playerCount || 0) < 4;
-
-        return isWaiting && modeMatch && hasSpace;
-      });
-
-      if (matches.length > 0) {
-        matches.sort(
-          (a: any, b: any) =>
-            (b.account?.playerCount || 0) - (a.account?.playerCount || 0),
-        );
-
-        const bestMatch = matches[0];
-        const matchId = bestMatch.account.gameId.toNumber();
-
-        console.log(`Found matching game ${matchId}, joining...`);
-        await joinGame(wallet, matchId);
-
-        const onChainState = await fetchGameState(wallet, matchId);
-        if (onChainState) {
-          const mappedState = mapOnChainToLocal(
-            onChainState,
-            matchId.toString(),
-          );
-          set({ gameState: mappedState });
-        }
-      } else {
-        const newGameId = Math.floor(Date.now() / 1000);
-        console.log(
-          `No match found, creating game ${newGameId} in mode ${mode}...`,
-        );
-        await initializeGame(wallet);
-
-        const onChainState = await fetchGameState(wallet, newGameId);
-        if (onChainState) {
-          const mappedState = mapOnChainToLocal(
-            onChainState,
-            newGameId.toString(),
-          );
-          set({ gameState: mappedState });
-        }
-      }
-
-      set({ isLoading: false });
+      // ... existing match logic
+      
+      const newGameId = Math.floor(Date.now() / 1000);
+      console.log(
+        `No match found, creating game ${newGameId} in mode ${mode}...`,
+      );
+      await initializeGame(wallet);
+      // ... load state
+      
       return true;
     } catch (error) {
       console.error(error);

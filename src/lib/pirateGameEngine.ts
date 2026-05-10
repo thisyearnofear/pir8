@@ -275,6 +275,15 @@ export class PirateGameManager {
 
     const toPosition = stringToCoordinate(toCoordinate);
 
+    // Validate path
+    if (!MapEngine.isPathClear(gameState.gameMap, ship.position, toPosition)) {
+      return {
+        updatedGameState: gameState,
+        success: false,
+        message: "Path is blocked",
+      };
+    }
+
     const moveResult = {
       success: true,
       updatedShip: { ...ship, position: { x: toPosition.x, y: toPosition.y } },
