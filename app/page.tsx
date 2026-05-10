@@ -65,7 +65,6 @@ export default function Home() {
     collectResources,
     buildShip,
     selectShip,
-    endTurn,
     setMessage,
     clearError,
     isMyTurn,
