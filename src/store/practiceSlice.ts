@@ -1,6 +1,6 @@
 import { StateCreator } from "zustand";
 import { PirateGameStore, PracticeSlice } from "./types";
-import { GameAction, Player } from "../types/game";
+import { GameAction } from "../types/game";
 import { PirateGameManager } from "../lib/pirateGameEngine";
 import { getVisibleCoordinates } from "../utils/helpers";
 

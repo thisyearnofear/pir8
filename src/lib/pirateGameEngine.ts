@@ -286,7 +286,7 @@ export class PirateGameManager {
 
     // Apply weather modifier to movement
     const baseSpeed = ship.speed;
-    const modifiedSpeed = WeatherEngine.applyWeatherModifiers(
+    const _modifiedSpeed = WeatherEngine.applyWeatherModifiers(
       baseSpeed,
       "movement",
       gameState.globalWeather

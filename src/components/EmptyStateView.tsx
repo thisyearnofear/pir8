@@ -13,7 +13,7 @@ interface EmptyStateViewProps {
 export default function EmptyStateView({
   isConnected,
   onPracticeMode,
-  onCreateGame,
+  onCreateGame: _onCreateGame,
   onSpectatorMode,
   onAIBattle,
 }: EmptyStateViewProps) {

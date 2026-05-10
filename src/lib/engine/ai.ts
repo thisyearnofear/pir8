@@ -1,7 +1,6 @@
 import {
   Player,
   GameState,
-  Ship,
   ShipType,
   Coordinate,
   GameAction,

@@ -86,10 +86,10 @@ export default function Home() {
     aiReasoningHistory,
   } = usePirateGameState();
 
-  const [isCreatingGame, setIsCreatingGame] = useState(false);
-  const [isJoining, setIsJoining] = useState(false);
-  const [joinError, setJoinError] = useState<string | undefined>();
-  const [shipActionModalShip, setShipActionModalShip] = useState<Ship | null>(
+  const [_isCreatingGame, setIsCreatingGame] = useState(false);
+  const [_isJoining, setIsJoining] = useState(false);
+  const [_joinError, setJoinError] = useState<string | undefined>();
+  const [_shipActionModalShip, setShipActionModalShip] = useState<Ship | null>(
     null,
   );
   const [showModeSelect, setShowModeSelect] = useState(false);
@@ -169,7 +169,7 @@ export default function Home() {
   }, [gameState, isPracticeMode]);
 
   // Get current player name for TurnBanner
-  const getCurrentPlayerName = () => {
+  const _getCurrentPlayerName = () => {
     if (!gameState?.players) return "opponent";
     const currentPlayer = gameState.players[gameState.currentPlayerIndex];
     return (
@@ -195,7 +195,7 @@ export default function Home() {
   };
 
   // Handle ship building
-  const handleBuildShip = async (
+  const _handleBuildShip = async (
     shipType: string,
     portX: number,
     portY: number,
@@ -409,7 +409,7 @@ export default function Home() {
     }
   };
 
-  const handleQuickStart = async () => {
+  const _handleQuickStart = async () => {
     if (!gameState || !publicKey) return;
 
     try {
@@ -444,7 +444,12 @@ export default function Home() {
       const walletAdapter = createWalletAdapter({ ...wallet, publicKey });
 
       console.log(`Joining game: ${gameIdInput}`);
-      const txSignature = await joinGame(walletAdapter);
+      const gameIdNum = parseInt(gameIdInput, 10);
+      if (isNaN(gameIdNum)) {
+        setJoinError("Invalid game ID");
+        return false;
+      }
+      const txSignature = await joinGame(walletAdapter, gameIdNum);
       console.log('Joined game:', txSignature);
 
       handleGameEvent(`🏴‍☠️ Joined battle ${gameIdInput}!`);
@@ -674,7 +679,7 @@ export default function Home() {
     setShipActionModalShip(ship);
   };
 
-  const clearJoinError = () => setJoinError(undefined);
+  const _clearJoinError = () => setJoinError(undefined);
 
   return (
     <ErrorBoundary>

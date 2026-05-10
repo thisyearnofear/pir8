@@ -503,6 +503,33 @@ export const createGame = async (
   return await executeTransaction(wallet, tx);
 };
 
+// Alias for backwards compatibility
+export const initializeGame = createGame;
+
+// Alias for backwards compatibility
+export const joinGameViaDelegate = async (
+  wallet: WalletAdapter,
+  gameId: number,
+  sessionKeyPubkey: PublicKey,
+  ownerPubkey: PublicKey,
+): Promise<string> => {
+  const tx = await buildJoinGameViaDelegateTx(wallet, gameId, sessionKeyPubkey, ownerPubkey);
+  return await executeTransaction(wallet, tx);
+};
+
+// Connection test helper
+export const testProgramConnection = async (
+  wallet: WalletAdapter,
+): Promise<boolean> => {
+  try {
+    const program = await getClientProgram(wallet);
+    const idl = await program.idl;
+    return !!idl;
+  } catch {
+    return false;
+  }
+};
+
 export const joinGame = async (
   wallet: WalletAdapter,
   gameId: number,

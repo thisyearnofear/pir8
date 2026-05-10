@@ -7,8 +7,6 @@
  * This file provides bidirectional conversion functions.
  */
 
-import { BN } from "@coral-xyz/anchor";
-import { PublicKey } from "@solana/web3.js";
 import type {
   OnChainGameState,
   OnChainPlayerData,

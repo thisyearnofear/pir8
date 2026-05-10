@@ -169,13 +169,13 @@ export const createOnChainSlice: StateCreator<
 
       const {
         initializeGame,
-        fetchGameState,
+        fetchGameState: _fetchGameState,
         fetchLobbies,
-        joinGame,
+        joinGame: _joinGame,
       } = await import("../lib/client/transactionBuilder");
-      const { mapOnChainToLocal } = await import("../utils/helpers");
+      const { mapOnChainToLocal: _mapOnChainToLocal } = await import("../utils/helpers");
 
-      const allGames = await fetchLobbies(wallet);
+      const _allGames = await fetchLobbies(wallet);
       // ... existing match logic
       
       const newGameId = Math.floor(Date.now() / 1000);

@@ -1,4 +1,4 @@
-import { GameState, Player, GameAction, Ship, GameMode, OnChainGameMode } from "../types/game";
+import { GameState, Player, Ship, GameMode, OnChainGameMode } from "../types/game";
 
 export interface GameSlice {
   gameState: GameState | null;

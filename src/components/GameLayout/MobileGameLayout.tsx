@@ -26,7 +26,6 @@ import QuickActionsBar from '../QuickActionsBar';
 import { useMobileOptimized } from '@/hooks/useMobileOptimized';
 import { Haptic } from '@/utils/haptics';
 import { GameState, Ship, Player } from '@/types/game';
-import { Tooltip } from '@/components/Tooltip';
 
 interface MobileGameLayoutProps {
   // Game state
@@ -101,7 +100,8 @@ export function MobileGameLayout({
   showAIReasoning,
   onToggleAIReasoning,
   onPracticeMode,
-  onOpenLeaderboard,
+  onOpenLeaderboard: _onOpenLeaderboard,
+  onOpenReferral: _onOpenReferral,
 }: MobileGameLayoutProps) {
   const [menuOpen, setMenuOpen] = useState(false);
   const [activeTab, setActiveTab] = useState<'stats' | 'actions' | 'build' | 'ai'>('stats');

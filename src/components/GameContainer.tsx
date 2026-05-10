@@ -50,7 +50,7 @@ export default function GameContainer(props: GameContainerProps) {
     gameState,
     isPracticeMode,
     isMyTurn,
-    endTurn,
+    endTurn: _endTurn,
     selectedShipId,
     selectShip,
     decisionTime,
@@ -58,13 +58,13 @@ export default function GameContainer(props: GameContainerProps) {
   } = game;
 
   const {
-    onCellSelect,
+    onCellSelect: _onCellSelect,
     onShipClick,
-    onShipAction,
+    onShipAction: _onShipAction,
     onNewGame,
     onReturnToLobby,
     onOpenLeaderboard,
-    onOpenReferral,
+    onOpenReferral: _onOpenReferral,
   } = props;
 
   const { isMobile } = useMobileOptimized();
