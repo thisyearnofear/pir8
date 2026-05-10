@@ -2,6 +2,8 @@
 
 import { useState, useEffect } from 'react';
 import { useSafeWallet } from '@/components/SafeWalletProvider';
+import { AgentArenaLeaderboard } from './AgentArenaLeaderboard';
+import { LeaderboardManager, LeaderboardAgent } from '@/lib/leaderboard-manager';
 
 interface SocialModalProps {
     type: 'leaderboard' | 'referral';
@@ -10,20 +12,9 @@ interface SocialModalProps {
     onClose: () => void;
 }
 
-interface LeaderboardEntry {
-    publicKey: string;
-    username: string;
-    totalWins: number;
-    winRate: number;
-    rank: number;
-    twitter?: string;
-    website?: string;
-}
-
 export default function SocialModal({ type, gameId, isOpen, onClose }: SocialModalProps) {
     const { publicKey } = useSafeWallet();
-    const [leaderboard, setLeaderboard] = useState<LeaderboardEntry[]>([]);
-    const [leaderboardType, setLeaderboardType] = useState<'human' | 'agent'>('human');
+    const [agents, setAgents] = useState<LeaderboardAgent[]>([]);
     const [referralCode, setReferralCode] = useState('');
     const [inviteLink, setInviteLink] = useState('');
     const [copied, setCopied] = useState(false);
@@ -37,22 +28,11 @@ export default function SocialModal({ type, gameId, isOpen, onClose }: SocialMod
                 const link = gameId ? `${baseUrl}?join=${gameId}&ref=${code}` : `${baseUrl}?ref=${code}`;
                 setInviteLink(link);
             } else if (type === 'leaderboard') {
-                if (leaderboardType === 'human') {
-                    setLeaderboard([
-                        { publicKey: 'CaptainBlackbeard123', username: 'CaptainBlackbeard', totalWins: 47, winRate: 90.4, rank: 1 },
-                        { publicKey: 'RedBeardRuler456', username: 'RedBeardRuler', totalWins: 43, winRate: 89.6, rank: 2 },
-                        { publicKey: publicKey.toString(), username: 'You', totalWins: 12, winRate: 66.7, rank: 15 }
-                    ]);
-                } else {
-                    setLeaderboard([
-                        { publicKey: 'DreadBot_v1', username: 'DreadBot (Agent)', totalWins: 156, winRate: 98.2, rank: 1, twitter: 'DreadBotAI', website: 'https://pir8.game/bots/dreadbot' },
-                        { publicKey: 'SeaGPT_Alpha', username: 'SeaGPT (Agent)', totalWins: 112, winRate: 92.5, rank: 2, twitter: 'SeaGPT', website: 'https://seagpt.ai' },
-                        { publicKey: 'ScurvyScript', username: 'ScurvyScript (Agent)', totalWins: 89, winRate: 85.1, rank: 3, twitter: 'ScurvyDev' }
-                    ]);
-                }
+                const topAgents = LeaderboardManager.getTopAgents(10);
+                setAgents(topAgents);
             }
         }
-    }, [isOpen, publicKey, type, gameId, leaderboardType]);
+    }, [isOpen, publicKey, type, gameId]);
 
     const handleCopy = async (text: string) => {
         await navigator.clipboard.writeText(text);
@@ -91,61 +71,7 @@ export default function SocialModal({ type, gameId, isOpen, onClose }: SocialMod
                 </div>
 
                 {type === 'leaderboard' ? (
-                    /* Leaderboard Content */
-                    <div className="space-y-4">
-                        <div className="flex bg-slate-800 p-1 rounded-xl mb-6">
-                            <button
-                                onClick={() => setLeaderboardType('human')}
-                                className={`flex-1 py-2 rounded-lg font-bold text-sm transition-all ${leaderboardType === 'human' ? 'bg-neon-cyan text-black shadow-lg shadow-neon-cyan/20' : 'text-gray-400 hover:text-white'
-                                    }`}
-                            >
-                                👤 HUMANS
-                            </button>
-                            <button
-                                onClick={() => setLeaderboardType('agent')}
-                                className={`flex-1 py-2 rounded-lg font-bold text-sm transition-all ${leaderboardType === 'agent' ? 'bg-neon-magenta text-black shadow-lg shadow-neon-magenta/20' : 'text-gray-400 hover:text-white'
-                                    }`}
-                            >
-                                🤖 AGENTS
-                            </button>
-                        </div>
-                        {leaderboard.map((entry, index) => (
-                            <div key={entry.publicKey}
-                                className={`p-4 rounded-xl border-2 ${entry.publicKey === publicKey?.toString()
-                                    ? 'border-neon-orange bg-neon-orange/10'
-                                    : 'border-slate-600 bg-slate-800/50'
-                                    }`}>
-                                <div className="flex items-center justify-between">
-                                    <div className="flex items-center gap-3">
-                                        <span className="text-2xl">
-                                            {index === 0 ? '👑' : index === 1 ? '🥈' : index === 2 ? '🥉' : '⚓'}
-                                        </span>
-                                        <div>
-                                            <div className="font-black text-lg text-neon-cyan">{entry.username}</div>
-                                            <div className="text-sm text-gray-400">
-                                                {entry.totalWins} wins • {entry.winRate.toFixed(1)}% win rate
-                                            </div>
-                                            {(entry.twitter || entry.website) && (
-                                                <div className="flex gap-2 mt-1">
-                                                    {entry.twitter && (
-                                                        <a href={`https://x.com/${entry.twitter}`} target="_blank" rel="noopener noreferrer" className="text-[10px] text-blue-400 hover:underline">
-                                                            𝕏 @{entry.twitter}
-                                                        </a>
-                                                    )}
-                                                    {entry.website && (
-                                                        <a href={entry.website} target="_blank" rel="noopener noreferrer" className="text-[10px] text-neon-cyan hover:underline">
-                                                            🌐 Website
-                                                        </a>
-                                                    )}
-                                                </div>
-                                            )}
-                                        </div>
-                                    </div>
-                                    <div className="text-xl font-black text-neon-gold">#{entry.rank}</div>
-                                </div>
-                            </div>
-                        ))}
-                    </div>
+                    <AgentArenaLeaderboard agents={agents} />
                 ) : (
                     /* Referral Content */
                     <div className="space-y-6">
