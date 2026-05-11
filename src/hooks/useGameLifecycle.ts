@@ -52,7 +52,7 @@ async function checkGamePlayerCount(gameId: string, expectedCount: number): Prom
     const { Connection, PublicKey } = await import('@solana/web3.js');
     const { Program, AnchorProvider } = await import('@coral-xyz/anchor');
     const { SOLANA_CONFIG } = await import('@/utils/constants');
-    const { PROGRAM_ID } = await import('@/lib/anchor');
+    const { PROGRAM_ID, getConfigPDA: _getConfigPDA } = await import('@/lib/anchor');
     const idlJson = await import('@/../public/idl/pir8_game.json');
     
     const rpcUrl = SOLANA_CONFIG.RPC_URL || "https://api.devnet.solana.com";
@@ -82,7 +82,7 @@ async function findCorrectGameId(expectedCount: number): Promise<string | null> 
     const { Connection, PublicKey } = await import('@solana/web3.js');
     const { Program, AnchorProvider } = await import('@coral-xyz/anchor');
     const { SOLANA_CONFIG } = await import('@/utils/constants');
-    const { PROGRAM_ID } = await import('@/lib/anchor');
+    const { PROGRAM_ID, getConfigPDA: _getConfigPDA } = await import('@/lib/anchor');
     const idlJson = await import('@/../public/idl/pir8_game.json');
     
     const rpcUrl = SOLANA_CONFIG.RPC_URL || "https://api.devnet.solana.com";
@@ -91,7 +91,7 @@ async function findCorrectGameId(expectedCount: number): Promise<string | null> 
     const programId = SOLANA_CONFIG.PROGRAM_ID ? new PublicKey(SOLANA_CONFIG.PROGRAM_ID) : PROGRAM_ID;
     const program = new Program(idlJson as any, programId, provider);
     
-    const [configPDA] = getConfigPDA(programId);
+    const [configPDA] = _getConfigPDA(programId);
     const configAccount = await (program as any).account.gameConfig.fetch(configPDA);
     const totalGames = configAccount.totalGames.toNumber();
 
