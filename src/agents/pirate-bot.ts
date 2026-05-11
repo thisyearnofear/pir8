@@ -5,7 +5,7 @@
  * Following: MODULAR, CLEAN, PERFORMANT
  */
 
-import { Connection, Keypair } from "@solana/web3.js";
+import { Connection, Keypair, PublicKey } from "@solana/web3.js";
 import { Program, AnchorProvider } from "@coral-xyz/anchor";
 import { PIR8AgentPlugin } from "../lib/sdk/PIR8AgentPlugin";
 import fs from "fs";
@@ -41,7 +41,17 @@ export async function runAutonomousAgent(
   // Load IDL
   const idlPath = path.join(process.cwd(), "public/idl/pir8_game.json");
   const idl = JSON.parse(fs.readFileSync(idlPath, "utf8"));
-  const program = new (Program as any)(idl, provider) as Program;
+  const programId = idl.address || process.env.NEXT_PUBLIC_PROGRAM_ID;
+
+  // Modern Anchor IDLs (0.30+) include an "address" field. Try the 2-arg
+  // constructor first; fall back to explicit 3-arg if it fails.
+  let program: Program;
+  try {
+    program = new (Program as any)(idl, provider) as Program;
+  } catch {
+    console.warn("[pir8] 2-arg Program constructor failed in pirate-bot, trying 3-arg");
+    program = new (Program as any)(idl, new PublicKey(programId), provider) as Program;
+  }
 
   // Initialize Plugin
   const pir8Plugin = new PIR8AgentPlugin(program, connection);

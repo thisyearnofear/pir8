@@ -28,7 +28,15 @@ export async function fetchGameStateClient(gameId: number = 0): Promise<any> {
       ? new PublicKey(SOLANA_CONFIG.PROGRAM_ID)
       : PROGRAM_ID;
 
-    const program = new (Program as any)(idlJson, provider) as Program;
+    // Modern Anchor IDLs (0.30+) include an "address" field. Try the 2-arg
+    // constructor first; fall back to explicit 3-arg if it fails.
+    let program: Program;
+    try {
+      program = new (Program as any)(idlJson, provider) as Program;
+    } catch {
+      console.warn("[pir8] 2-arg Program constructor failed in gameStateClient, trying 3-arg");
+      program = new (Program as any)(idlJson, programId, provider) as Program;
+    }
     const [gamePDA] = getGamePDA(gameId, programId);
 
     try {

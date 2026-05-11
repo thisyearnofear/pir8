@@ -90,16 +90,25 @@ export const getClientProgram = async (
       ? SOLANA_CONFIG.RPC_URL
       : "https://api.devnet.solana.com";
 
+  console.info("[pir8] Connecting to RPC:", rpcUrl.replace(/https:\/\/[^@]+@/, "https://***@"));
+
   const connection = new Connection(rpcUrl, "confirmed");
   const provider = new AnchorProvider(connection, wallet, {
     commitment: "confirmed",
   });
 
   const idl = await getIdl();
+  const programId = new PublicKey(SOLANA_CONFIG.PROGRAM_ID);
 
-  // Anchor 0.30+ modern IDLs include the address and work best with the 2-argument constructor.
-  // We use a type cast to 'any' to avoid the "Expected 3 arguments" TS error during build.
-  return new (Program as any)(idl, provider) as Program;
+  // Modern Anchor IDLs (0.30+) include an "address" field. Try the 2-arg
+  // constructor first (idl + provider). If that fails (e.g. SDK version
+  // mismatch), fall back to the explicit 3-arg form.
+  try {
+    return new (Program as any)(idl, provider) as Program;
+  } catch {
+    console.warn("[pir8] 2-arg Program constructor failed, trying 3-arg with explicit programId");
+    return new (Program as any)(idl, programId, provider) as Program;
+  }
 };
 
 // ============================================================================
@@ -517,7 +526,8 @@ export const testProgramConnection = async (
     const program = await getClientProgram(wallet);
     const idl = await program.idl;
     return !!idl;
-  } catch {
+  } catch (error) {
+    console.error("[pir8] Program connection test failed:", error);
     return false;
   }
 };
