@@ -5,10 +5,9 @@
  * Following: MODULAR, CLEAN, PERFORMANT
  */
 
-import { Connection, Keypair, PublicKey } from "@solana/web3.js";
+import { Connection, Keypair } from "@solana/web3.js";
 import { Program, AnchorProvider } from "@coral-xyz/anchor";
 import { PIR8AgentPlugin } from "../lib/sdk/PIR8AgentPlugin";
-import { PROGRAM_ID } from "../lib/anchor";
 import fs from "fs";
 import path from "path";
 
@@ -42,8 +41,7 @@ export async function runAutonomousAgent(
   // Load IDL
   const idlPath = path.join(process.cwd(), "public/idl/pir8_game.json");
   const idl = JSON.parse(fs.readFileSync(idlPath, "utf8"));
-  const programId = new PublicKey(idl.address || idl.metadata?.address || PROGRAM_ID);
-  const program = new Program(idl, programId, provider);
+  const program = new (Program as any)(idl, provider) as Program;
 
   // Initialize Plugin
   const pir8Plugin = new PIR8AgentPlugin(program, connection);

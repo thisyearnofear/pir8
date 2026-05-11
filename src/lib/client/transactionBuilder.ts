@@ -13,7 +13,7 @@ import {
   SystemProgram,
 } from "@solana/web3.js";
 import { SOLANA_CONFIG } from "@/utils/constants";
-import { PROGRAM_ID, getGamePDA, getAgentRegistryPDA } from "../anchor";
+import { getGamePDA, getAgentRegistryPDA } from "../anchor";
 import type { WalletAdapter } from "@coral-xyz/anchor";
 
 // ============================================================================
@@ -97,7 +97,9 @@ export const getClientProgram = async (
 
   const idl = await getIdl();
 
-  return new Program(idl as Idl, PROGRAM_ID, provider);
+  // Anchor 0.30+ modern IDLs include the address and work best with the 2-argument constructor.
+  // We use a type cast to 'any' to avoid the "Expected 3 arguments" TS error during build.
+  return new (Program as any)(idl, provider) as Program;
 };
 
 // ============================================================================

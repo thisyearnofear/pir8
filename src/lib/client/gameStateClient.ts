@@ -4,7 +4,7 @@
  */
 
 import { Connection, PublicKey } from "@solana/web3.js";
-import { Program, AnchorProvider, Idl } from "@coral-xyz/anchor";
+import { Program, AnchorProvider } from "@coral-xyz/anchor";
 import { SOLANA_CONFIG } from "@/utils/constants";
 import { PROGRAM_ID, getGamePDA } from "../anchor";
 import idlJson from "@/../public/idl/pir8_game.json";
@@ -28,7 +28,7 @@ export async function fetchGameStateClient(gameId: number = 0): Promise<any> {
       ? new PublicKey(SOLANA_CONFIG.PROGRAM_ID)
       : PROGRAM_ID;
 
-    const program = new Program(idlJson as unknown as Idl, programId, provider);
+    const program = new (Program as any)(idlJson, provider) as Program;
     const [gamePDA] = getGamePDA(gameId, programId);
 
     try {
