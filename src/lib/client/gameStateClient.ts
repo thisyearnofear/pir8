@@ -28,14 +28,7 @@ export async function fetchGameStateClient(gameId: number = 0): Promise<any> {
       ? new PublicKey(SOLANA_CONFIG.PROGRAM_ID)
       : PROGRAM_ID;
 
-    const idl = idlJson as any;
-    const transformedIdl = {
-      ...idl,
-      name: idl.metadata?.name || "pir8_game",
-      version: idl.metadata?.version || "0.1.0",
-    };
-
-    const program = new Program(transformedIdl as unknown as Idl, programId, provider);
+    const program = new Program(idlJson as unknown as Idl, provider);
     const [gamePDA] = getGamePDA(gameId, programId);
 
     try {

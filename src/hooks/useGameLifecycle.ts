@@ -8,7 +8,6 @@ import { useState, useEffect, useCallback, useRef } from 'react';
 import { usePirateGame, usePirateGameStore } from '@/store/gameStore';
 import { useHeliusMonitor, GameEvent } from './useHeliusMonitor';
 import { Player, GameState } from '@/types/game';
-import { getGamePDA } from '@/lib/anchor';
 
 // =============================================================================
 // TYPES
@@ -47,80 +46,9 @@ export interface GameLifecycleActions {
 // HELPER FUNCTIONS (extracted for testability)
 // =============================================================================
 
-async function checkGamePlayerCount(gameId: string, expectedCount: number): Promise<boolean> {
-  try {
-    const { Connection, PublicKey } = await import('@solana/web3.js');
-    const { Program, AnchorProvider } = await import('@coral-xyz/anchor');
-    const { SOLANA_CONFIG } = await import('@/utils/constants');
-    const { PROGRAM_ID, getConfigPDA: _getConfigPDA } = await import('@/lib/anchor');
-    const idlJson = await import('@/../public/idl/pir8_game.json');
-    
-    const rpcUrl = SOLANA_CONFIG.RPC_URL || "https://api.devnet.solana.com";
-    const connection = new Connection(rpcUrl, "confirmed");
-    const provider = new AnchorProvider(connection, {} as any, { commitment: "confirmed" });
-    const programId = SOLANA_CONFIG.PROGRAM_ID ? new PublicKey(SOLANA_CONFIG.PROGRAM_ID) : PROGRAM_ID;
-    const idl = idlJson as any;
-    const transformedIdl = {
-      ...idl,
-      name: idl.metadata?.name || "pir8_game",
-      version: idl.metadata?.version || "0.1.0",
-    };
-    const program = new Program(transformedIdl as unknown as any, programId, provider);
-    
-    const gameIdNum = parseInt(gameId.replace(/[^\d]/g, ''), 10);
-    if (isNaN(gameIdNum)) return false;
-
-    const [gamePDA] = getGamePDA(gameIdNum);
-    const gameAccount = await (program as any).account.game.fetch(gamePDA);
-
-    const activePlayers = gameAccount.players.filter(
-      (player: any) => player.key.toString() !== '11111111111111111111111111111111',
-    ).length;
-
-    return activePlayers === expectedCount;
-  } catch (error) {
-    return false;
-  }
-}
-
-async function findCorrectGameId(expectedCount: number): Promise<string | null> {
-  try {
-    const { Connection, PublicKey } = await import('@solana/web3.js');
-    const { Program, AnchorProvider } = await import('@coral-xyz/anchor');
-    const { SOLANA_CONFIG } = await import('@/utils/constants');
-    const { PROGRAM_ID, getConfigPDA: _getConfigPDA } = await import('@/lib/anchor');
-    const idlJson = await import('@/../public/idl/pir8_game.json');
-    
-    const rpcUrl = SOLANA_CONFIG.RPC_URL || "https://api.devnet.solana.com";
-    const connection = new Connection(rpcUrl, "confirmed");
-    const provider = new AnchorProvider(connection, {} as any, { commitment: "confirmed" });
-    const programId = SOLANA_CONFIG.PROGRAM_ID ? new PublicKey(SOLANA_CONFIG.PROGRAM_ID) : PROGRAM_ID;
-    const idl = idlJson as any;
-    const transformedIdl = {
-      ...idl,
-      name: idl.metadata?.name || "pir8_game",
-      version: idl.metadata?.version || "0.1.0",
-    };
-    const program = new Program(transformedIdl as unknown as any, programId, provider);
-    
-    const [configPDA] = _getConfigPDA(programId);
-    const configAccount = await (program as any).account.gameConfig.fetch(configPDA);
-    const totalGames = configAccount.totalGames.toNumber();
-
-    // Check last 5 games
-    const gamesToCheck = Math.max(0, totalGames - 5);
-
-    for (let gameId = gamesToCheck; gameId < totalGames; gameId++) {
-      const hasCorrectPlayers = await checkGamePlayerCount(`onchain_${gameId}`, expectedCount);
-      if (hasCorrectPlayers) {
-        return `onchain_${gameId}`;
-      }
-    }
-
-    return null;
-  } catch (error) {
-    return null;
-  }
+async function findCorrectGameId(_expectedCount: number): Promise<string | null> {
+  // Outdated logic - gameConfig no longer exists in this version of the program
+  return null;
 }
 
 // =============================================================================

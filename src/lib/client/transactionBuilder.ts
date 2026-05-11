@@ -9,11 +9,11 @@ import { AnchorProvider, Program, Idl, BN } from "@coral-xyz/anchor";
 import {
   Connection,
   PublicKey,
-  SystemProgram,
   Transaction,
+  SystemProgram,
 } from "@solana/web3.js";
 import { SOLANA_CONFIG } from "@/utils/constants";
-import { PROGRAM_ID, getGamePDA, getAgentRegistryPDA } from "../anchor";
+import { getGamePDA, getAgentRegistryPDA } from "../anchor";
 import type { WalletAdapter } from "@coral-xyz/anchor";
 
 // ============================================================================
@@ -97,19 +97,7 @@ export const getClientProgram = async (
 
   const idl = await getIdl();
 
-  // Anchor 0.30 expects the address in metadata
-  const rawIdl = idl as any;
-  const transformedIdl = {
-    ...rawIdl,
-    name: rawIdl.metadata?.name || "pir8_game",
-    version: rawIdl.metadata?.version || "0.1.0",
-    metadata: {
-      ...(rawIdl['metadata'] as Record<string, unknown> || {}),
-      address: PROGRAM_ID.toString(),
-    },
-  };
-
-  return new Program(transformedIdl as unknown as Idl, PROGRAM_ID, provider);
+  return new Program(idl as Idl, provider);
 };
 
 // ============================================================================
