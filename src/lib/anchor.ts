@@ -29,6 +29,16 @@ export const PROGRAM_ID = new PublicKey(
     "DkkuBQySAxKTADdxQVyx8rjxudZVSwA7ZjRCqRquH5FU",
 );
 
+/** Config PDA - derives from ["config"] */
+export const getConfigPDA = (
+  programId: PublicKey = PROGRAM_ID,
+): [PublicKey, number] => {
+  return PublicKey.findProgramAddressSync(
+    [Buffer.from("config")],
+    programId,
+  );
+};
+
 // PDA derivation helpers
 
 /** Game PDA - derives from ["pirate_game", game_id_le_bytes] */

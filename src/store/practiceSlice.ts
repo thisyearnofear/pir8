@@ -1,4 +1,4 @@
-import { StateCreator } from "zustand";
+import { type StateCreator } from "zustand/vanilla";
 import { PirateGameStore, PracticeSlice } from "./types";
 import { GameAction } from "../types/game";
 import { PirateGameManager } from "../lib/pirateGameEngine";

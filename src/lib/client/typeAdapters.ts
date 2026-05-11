@@ -80,6 +80,7 @@ function adaptScannedCoordinates(packed: number[]): string[] {
   const MAP_SIZE = 10;
   for (let byteIdx = 0; byteIdx < packed.length; byteIdx++) {
     const byte = packed[byteIdx];
+    if (byte === undefined) continue;
     for (let bitIdx = 0; bitIdx < 8; bitIdx++) {
       if (byte & (1 << bitIdx)) {
         const index = byteIdx * 8 + bitIdx;

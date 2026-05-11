@@ -5,7 +5,7 @@
  */
 
 import { useState, useEffect, useCallback, useRef } from 'react';
-import { usePirateGameState, pirateGameStore } from './usePirateGameState';
+import { usePirateGame, usePirateGameStore } from '@/store/gameStore';
 import { useHeliusMonitor, GameEvent } from './useHeliusMonitor';
 import { Player, GameState } from '@/types/game';
 import { getGamePDA } from '@/lib/anchor';
@@ -91,7 +91,7 @@ async function findCorrectGameId(expectedCount: number): Promise<string | null> 
     const programId = SOLANA_CONFIG.PROGRAM_ID ? new PublicKey(SOLANA_CONFIG.PROGRAM_ID) : PROGRAM_ID;
     const program = new Program(idlJson as any, programId, provider);
     
-    const [configPDA] = getConfigPDA();
+    const [configPDA] = getConfigPDA(programId);
     const configAccount = await (program as any).account.gameConfig.fetch(configPDA);
     const totalGames = configAccount.totalGames.toNumber();
 
@@ -119,7 +119,7 @@ export function useGameLifecycle(options: GameLifecycleOptions = {}): GameLifecy
   const { gameId, expectedPlayerCount = 2, onGameIdChanged, enableSync = true } = options;
 
   // Get store actions
-  const { joinGame: joinGameStore, setGameState, setMessage, gameState } = usePirateGameState();
+  const { joinGame: joinGameStore, setGameState, setMessage, gameState } = usePirateGame();
 
   // Join state
   const [isJoining, setIsJoining] = useState(false);
@@ -230,8 +230,15 @@ export function useGameLifecycle(options: GameLifecycleOptions = {}): GameLifecy
       const rawStatus = onChainState.status ? Object.keys(onChainState.status)[0] : 'waiting';
       const statusKey = (rawStatus || 'waiting').toLowerCase();
 
+      const correctGameId = gameState?.gameId || '0';
       const updatedGameState: GameState = {
         ...gameState,
+        gameId: correctGameId,
+        gameMode: (gameState?.gameMode || 'on-chain') as any,
+        gameMap: gameState?.gameMap || { cells: [], size: 10 },
+        currentPhase: gameState?.currentPhase || 'deployment',
+        pendingActions: gameState?.pendingActions || [],
+        eventLog: gameState?.eventLog || [],
         players: mappedPlayers,
         gameStatus: statusKey as 'waiting' | 'active' | 'completed',
         currentPlayerIndex: onChainState.currentPlayerIndex,
@@ -297,7 +304,7 @@ export function useGameLifecycle(options: GameLifecycleOptions = {}): GameLifecy
     setIsRecovering(true);
 
     try {
-      const currentState = pirateGameStore.getState().gameState;
+      const currentState = usePirateGameStore.getState().gameState;
       if (!currentState) return;
 
       const currentPlayerCount = currentState.players.length;
@@ -317,7 +324,7 @@ export function useGameLifecycle(options: GameLifecycleOptions = {}): GameLifecy
           gameId: correctGameId,
         };
 
-        pirateGameStore.getState().setGameState(updatedGameState);
+        usePirateGameStore.getState().setGameState(updatedGameState);
         onGameIdChanged?.(correctGameId);
 
         // Trigger a page reload to fully reset the game state

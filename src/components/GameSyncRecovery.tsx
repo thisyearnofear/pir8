@@ -1,7 +1,7 @@
 'use client';
 
 import { useGameLifecycle } from '@/hooks/useGameLifecycle';
-import { usePirateGameState } from '@/hooks/usePirateGameState';
+import { usePirateGame } from "@/store/gameStore";
 
 /**
  * GameSyncRecovery - Automatically handles game ID mismatches
@@ -11,7 +11,7 @@ import { usePirateGameState } from '@/hooks/usePirateGameState';
  * Updated to use consolidated useGameLifecycle hook
  */
 export function GameSyncRecovery() {
-  const { gameState } = usePirateGameState();
+  const { gameState } = usePirateGame();
 
   // Use consolidated hook - recovery runs silently in background
   useGameLifecycle({
@@ -30,7 +30,7 @@ export function GameSyncRecovery() {
  * GameSyncStatus - Shows sync status in debug mode
  */
 export function GameSyncStatus() {
-  const { gameState } = usePirateGameState();
+  const { gameState } = usePirateGame();
   const { currentPlayerCount, attemptRecovery, isRecovering } = useGameLifecycle({
     gameId: gameState?.gameId,
     expectedPlayerCount: 2,

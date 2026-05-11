@@ -1,4 +1,4 @@
-import { StateCreator } from "zustand";
+import { type StateCreator } from "zustand/vanilla";
 import { PirateGameStore, OnChainSlice } from "./types";
 import { GameState, OnChainGameMode, Player } from "../types/game";
 
@@ -66,7 +66,7 @@ export const createOnChainSlice: StateCreator<
         "../lib/client/transactionBuilder"
       );
       const walletAdapter = createWalletAdapter(wallet);
-      const onChainState = await fetchGameState(walletAdapter);
+      const onChainState = await fetchGameState(walletAdapter, Number(get().gameState?.gameId || 0));
       if (!onChainState) return null;
 
       const { mapOnChainToLocal } = await import("../utils/helpers");
@@ -79,8 +79,9 @@ export const createOnChainSlice: StateCreator<
   startGame: async (gameId: number, wallet: any): Promise<boolean> => {
     try {
       set({ isLoading: true, error: null });
-      const { startGame } = await import("../lib/client/transactionBuilder");
-      await startGame(wallet);
+      const { startGame, createWalletAdapter } = await import("../lib/client/transactionBuilder");
+      const walletAdapter = createWalletAdapter(wallet);
+      await startGame(walletAdapter, gameId);
 
       const state = await get().fetchGameState(gameId, wallet);
       if (state) set({ gameState: state });
@@ -101,8 +102,9 @@ export const createOnChainSlice: StateCreator<
   ): Promise<boolean> => {
     try {
       set({ isLoading: true, error: null });
-      const { initializeGame } = await import("../lib/client/transactionBuilder");
-      await initializeGame(wallet);
+      const { createGame, createWalletAdapter } = await import("../lib/client/transactionBuilder");
+      const walletAdapter = createWalletAdapter(wallet);
+      await createGame(walletAdapter, gameId, "Casual");
 
       const state = await get().fetchGameState(gameId, wallet);
       if (state) set({ gameState: state });
@@ -127,8 +129,9 @@ export const createOnChainSlice: StateCreator<
           ? parseInt(gameId.replace("onchain_", ""), 10)
           : gameId;
 
-      const { joinGame } = await import("../lib/client/transactionBuilder");
-      await joinGame(wallet);
+      const { joinGame, createWalletAdapter } = await import("../lib/client/transactionBuilder");
+      const walletAdapter = createWalletAdapter(wallet);
+      await joinGame(walletAdapter, Number(gameId));
 
       const state = await get().fetchGameState(gId, wallet);
       if (state) set({ gameState: state });
@@ -168,7 +171,6 @@ export const createOnChainSlice: StateCreator<
       }
 
       const {
-        initializeGame,
         fetchGameState: _fetchGameState,
         fetchLobbies,
         joinGame: _joinGame,
@@ -182,7 +184,9 @@ export const createOnChainSlice: StateCreator<
       console.log(
         `No match found, creating game ${newGameId} in mode ${mode}...`,
       );
-      await initializeGame(wallet);
+      const { createGame, createWalletAdapter } = await import("../lib/client/transactionBuilder");
+      const walletAdapter = createWalletAdapter(wallet);
+      await createGame(walletAdapter, newGameId, mode);
       // ... load state
       
       return true;
@@ -203,8 +207,9 @@ export const createOnChainSlice: StateCreator<
   ): Promise<boolean> => {
     try {
       set({ isLoading: true, error: null });
-      const { moveShip } = await import("../lib/client/transactionBuilder");
-      await moveShip(wallet, shipId, toX, toY);
+      const { moveShip, createWalletAdapter } = await import("../lib/client/transactionBuilder");
+      const walletAdapter = createWalletAdapter(wallet);
+      await moveShip(walletAdapter, gameId, shipId, toX, toY);
 
       const state = await get().fetchGameState(gameId, wallet);
       if (state) set({ gameState: state });
@@ -224,8 +229,9 @@ export const createOnChainSlice: StateCreator<
   ): Promise<boolean> => {
     try {
       set({ isLoading: true, error: null });
-      const { attackShip } = await import("../lib/client/transactionBuilder");
-      await attackShip(wallet, shipId, targetShipId);
+      const { attackShip, createWalletAdapter } = await import("../lib/client/transactionBuilder");
+      const walletAdapter = createWalletAdapter(wallet);
+      await attackShip(walletAdapter, gameId, shipId, targetShipId);
 
       const state = await get().fetchGameState(gameId, wallet);
       if (state) set({ gameState: state });
@@ -262,7 +268,7 @@ export const createOnChainSlice: StateCreator<
         "../lib/client/transactionBuilder"
       );
       const walletAdapter = createWalletAdapter(wallet);
-      await claimTerritory(walletAdapter, shipId, ship.position.x, ship.position.y);
+      await claimTerritory(walletAdapter, gameId, shipId);
 
       const newState = await get().fetchGameState(gameId, wallet);
       if (newState) set({ gameState: newState });
@@ -281,7 +287,7 @@ export const createOnChainSlice: StateCreator<
         "../lib/client/transactionBuilder"
       );
       const walletAdapter = createWalletAdapter(wallet);
-      await collectResources(walletAdapter, 0, 0);
+      await collectResources(walletAdapter, gameId);
 
       const state = await get().fetchGameState(gameId, wallet);
       if (state) set({ gameState: state });
@@ -304,7 +310,7 @@ export const createOnChainSlice: StateCreator<
       set({ isLoading: true, error: null });
       const { buildShip, createWalletAdapter } = await import("../lib/client/transactionBuilder");
       const walletAdapter = createWalletAdapter(wallet);
-      await buildShip(walletAdapter, shipType as any, portX, portY);
+      await buildShip(walletAdapter, gameId, shipType as any, portX, portY);
 
       const state = await get().fetchGameState(gameId, wallet);
       if (state) set({ gameState: state });
@@ -318,8 +324,9 @@ export const createOnChainSlice: StateCreator<
 
   endTurn: async (gameId: number, wallet: any) => {
     try {
-      const { endTurn } = await import("../lib/client/transactionBuilder");
-      await endTurn(wallet);
+      const { endTurn, createWalletAdapter } = await import("../lib/client/transactionBuilder");
+      const walletAdapter = createWalletAdapter(wallet);
+      await endTurn(walletAdapter, gameId);
       const state = await get().fetchGameState(gameId, wallet);
       if (state) set({ gameState: state });
     } catch (e) { }

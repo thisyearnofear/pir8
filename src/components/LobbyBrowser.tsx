@@ -6,12 +6,12 @@
 "use client";
 
 import { useState, useEffect } from "react";
-import { usePirateGameState } from "@/hooks/usePirateGameState";
+import { usePirateGame } from "@/store/gameStore";
 import { useSafeWallet } from "@/components/SafeWalletProvider";
 import { useSessionKey } from "@/hooks/useSessionKey";
 
 export default function LobbyBrowser() {
-  const { lobbies, fetchLobbies, isLoading, startGame } = usePirateGameState();
+  const { lobbies, fetchLobbies, isLoading, startGame } = usePirateGame();
   const fullWallet = useSafeWallet();
   const { publicKey, wallet } = fullWallet;
   const { state: sessionState, createSession, clearSession } = useSessionKey();
@@ -147,7 +147,8 @@ export default function LobbyBrowser() {
         const joinTx = await joinGameViaDelegate(
           walletAdapter,
           targetGameId,
-          sessionState.keypair,
+          sessionState.keypair.publicKey,
+          fullWallet.publicKey,
         );
         console.log("Joined lobby via delegate:", joinTx);
       } else {
@@ -200,7 +201,7 @@ export default function LobbyBrowser() {
       console.log(
         `Starting game: ${lobbyAddress} with gameId: ${targetGameId}`,
       );
-      const success = await startGame(targetGameId, wallet);
+      const success = await startGame(targetGameId ?? 0, wallet);
 
       if (success) {
         console.log("Game started successfully");

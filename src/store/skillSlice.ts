@@ -1,4 +1,4 @@
-import { StateCreator } from "zustand";
+import { type StateCreator } from "zustand/vanilla";
 import { PirateGameStore, SkillSlice } from "./types";
 
 export const createSkillSlice: StateCreator<
@@ -41,8 +41,9 @@ export const createSkillSlice: StateCreator<
 
   scanCoordinate: async (gameId, coordinateX, coordinateY, wallet) => {
     try {
-      const { scanCoordinate } = await import("../lib/client/transactionBuilder");
-      await scanCoordinate(wallet, coordinateX, coordinateY);
+      const { scanCoordinate, createWalletAdapter } = await import("../lib/client/transactionBuilder");
+      const walletAdapter = createWalletAdapter(wallet);
+      await scanCoordinate(walletAdapter, gameId, coordinateX, coordinateY);
       const state = await get().fetchGameState(gameId, wallet);
       if (state) set({ gameState: state });
       return true;

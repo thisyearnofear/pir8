@@ -10,7 +10,7 @@
 "use client";
 
 import { useSafeWallet } from "@/components/SafeWalletProvider";
-import { usePirateGameState } from "@/hooks/usePirateGameState";
+import { usePirateGame } from "@/store/gameStore";
 import { useErrorHandler } from "@/hooks/useErrorHandler";
 import { useShowOnboarding } from "@/hooks/useShowOnboarding";
 import { useViralSystem } from "@/hooks/useViralSystem";
@@ -76,16 +76,20 @@ export default function Home() {
     makePracticeAttack,
     makePracticeClaim,
     exitPracticeMode,
-    isPracticeMode,
-    // AI vs AI mode
-    startAIvsAIGame,
-    isAIvsAIMode,
-    setPlaybackSpeed,
-    getPlaybackSpeed,
-    setAIDecisionCallback,
-    aiReasoningHistory,
-  } = usePirateGameState();
+    gameMode,
+  } = usePirateGame();
 
+  const isPracticeMode = gameMode === 'practice';
+
+  // AI vs AI mode
+  const {
+      startAIvsAIGame,
+      isAIvsAIMode,
+      setPlaybackSpeed,
+      getPlaybackSpeed,
+      setAIDecisionCallback,
+      aiReasoningHistory,
+  } = usePirateGame();
   const [_isCreatingGame, setIsCreatingGame] = useState(false);
   const [_isJoining, setIsJoining] = useState(false);
   const [_joinError, setJoinError] = useState<string | undefined>();
@@ -120,7 +124,7 @@ export default function Home() {
   const getCurrentPlayer = () => {
     if (!gameState?.players) return null;
     // In practice mode, find human player (not AI)
-    if (isPracticeMode()) {
+    if (isPracticeMode) {
       return (
         gameState.players.find((p: any) => !p.publicKey.startsWith("AI_")) ||
         null
@@ -136,7 +140,7 @@ export default function Home() {
 
   // Get current player key for turn checking - memoized to prevent recalculations
   const getCurrentPlayerKey = useMemo(() => {
-    if (isPracticeMode()) {
+    if (isPracticeMode) {
       const humanPlayer = gameState?.players?.find(
         (p: any) => !p.publicKey.startsWith("AI_"),
       );
@@ -147,15 +151,15 @@ export default function Home() {
 
   // Consolidated viral system (auto-dismiss disabled in practice mode)
   const viralSystem = useViralSystem(gameState, getCurrentPlayer(), {
-    disableAutoDismiss: isPracticeMode(),
+    disableAutoDismiss: isPracticeMode,
   });
 
   // Privacy simulation for practice mode
-  const privacySim = usePrivacySimulation({ enabled: isPracticeMode() });
+  const privacySim = usePrivacySimulation({ enabled: isPracticeMode });
 
   // Update privacy simulation when game state changes in practice mode
   useEffect(() => {
-    if (isPracticeMode() && gameState?.players) {
+    if (isPracticeMode && gameState?.players) {
       const humanPlayer = gameState.players.find(
         (p: any) => !p.publicKey.startsWith("AI_"),
       );
@@ -165,8 +169,7 @@ export default function Home() {
         privacySim.updateLeakage(gameState, humanPlayer, recentActions);
       }
     }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [gameState, isPracticeMode]);
+  }, [gameState?.players, isPracticeMode, privacySim]);
 
   // Get current player name for TurnBanner
   const _getCurrentPlayerName = () => {
@@ -183,7 +186,7 @@ export default function Home() {
   const handleCollectResources = async () => {
     if (!wallet) return false;
     try {
-      const success = await collectResources(wallet);
+      const success = await collectResources(Number(gameState!.gameId), wallet);
       if (success) {
         handleGameEvent("💰 Resources collected from territories!");
       }
@@ -202,7 +205,7 @@ export default function Home() {
   ) => {
     if (!wallet) return false;
     try {
-      const success = await buildShip(shipType, portX, portY, wallet);
+      const success = await buildShip(Number(gameState!.gameId), shipType, portX, portY, wallet);
       if (success) {
         handleGameEvent(
           `🛠️ ${shipType.charAt(0).toUpperCase() + shipType.slice(1)} built successfully!`,
@@ -319,7 +322,7 @@ export default function Home() {
 
   const handlePracticeMove = async (shipId: string, coordinate: string) => {
     const [x, y] = coordinate.split(",").map(Number);
-    const success = makePracticeMove(shipId, x, y);
+    const success = makePracticeMove(shipId, x ?? 0, y ?? 0);
     if (success) {
       // Debounce game events to prevent rapid updates
       setTimeout(() => handleGameEvent("Ship moved!"), 50);
@@ -471,7 +474,7 @@ export default function Home() {
     if (!playerKey || !gameState?.players || !isMyTurn(playerKey)) return;
 
     // Practice mode handling
-    if (isPracticeMode()) {
+    if (isPracticeMode) {
       if (selectedShipId) {
         const success = await handlePracticeMove(selectedShipId, coordinate);
         if (success) {
@@ -489,8 +492,8 @@ export default function Home() {
           ) || [];
 
         if (myShips.length > 0) {
-          selectShip(myShips[0].id);
-          handleGameEvent(`${myShips[0].type} selected`);
+          selectShip(myShips[0]?.id || null);
+          handleGameEvent(`${myShips[0]?.type} selected`);
         }
       }
       return;
@@ -501,7 +504,8 @@ export default function Home() {
 
     if (selectedShipId) {
       // Move selected ship to coordinate
-      const success = await moveShip(selectedShipId, coordinate, wallet);
+      const [x, y] = coordinate.split(",").map(Number);
+      const success = await moveShip(Number(gameState!.gameId), selectedShipId, x ?? 0, y ?? 0, wallet);
       if (success) {
         handleGameEvent("Ship moved successfully!");
       }
@@ -514,8 +518,8 @@ export default function Home() {
       );
 
       if (myShips.length > 0) {
-        selectShip(myShips[0].id);
-        handleGameEvent(`${myShips[0].type} selected`);
+        selectShip(myShips[0]?.id || null);
+        handleGameEvent(`${myShips[0]?.type} selected`);
       }
     }
   };
@@ -528,7 +532,7 @@ export default function Home() {
     if (!playerKey || !gameState || !isMyTurn(playerKey)) return;
 
     // Practice mode handling
-    if (isPracticeMode()) {
+    if (isPracticeMode) {
       switch (action) {
         case "move":
           handleGameEvent("Select a destination for your ship on the map");
@@ -558,7 +562,7 @@ export default function Home() {
             if (nearbyEnemies.length > 0) {
               const success = await handlePracticeAttack(
                 shipId,
-                nearbyEnemies[0].id,
+                nearbyEnemies[0]?.id || "",
               );
               if (success) {
                 handleGameEvent("⚔️ Attack launched!");
@@ -623,8 +627,9 @@ export default function Home() {
 
           if (nearbyEnemies.length > 0) {
             const success = await attackWithShip(
+              Number(gameState!.gameId),
               shipId,
-              nearbyEnemies[0].id,
+              nearbyEnemies[0]?.id || "",
               wallet,
             );
             if (success) {
@@ -638,8 +643,8 @@ export default function Home() {
       case "claim":
         const ship = getAllShips().find((s: any) => s.id === shipId);
         if (ship) {
-          const coordinate = `${ship.position.x},${ship.position.y}`;
-          const success = await claimTerritory(shipId, coordinate, wallet);
+          const _coordinate = `${ship.position.x},${ship.position.y}`;
+          const success = await claimTerritory(Number(gameState!.gameId), shipId, wallet);
           if (success) {
             handleGameEvent("🏴‍☠️ Territory claimed!");
           }
@@ -664,7 +669,7 @@ export default function Home() {
     if (!playerKey || !isMyTurn(playerKey)) return;
 
     // Practice mode: only allow selecting human ships
-    if (isPracticeMode()) {
+    if (isPracticeMode) {
       if (ship.id.startsWith("AI_")) return;
       selectShip(ship.id);
       setShipActionModalShip(ship);
@@ -691,7 +696,7 @@ export default function Home() {
         event={viralSystem.currentEvent}
         onShare={handleViralShare}
         onDismiss={viralSystem.dismissCurrentEvent}
-        isPracticeMode={isPracticeMode()}
+        isPracticeMode={isPracticeMode}
       />
       <SocialModal
         type={socialModal.type}
@@ -704,7 +709,7 @@ export default function Home() {
       <SuccessToast message={showMessage} onClose={() => setMessage(null)} />
 
       {/* Privacy & AI Stream Components - Side Panel Stack */}
-      {(isPracticeMode() || isAIvsAIMode) && (
+      {(isPracticeMode || isAIvsAIMode) && (
         <div className="fixed top-20 right-4 z-privacy-panel w-80 space-y-3">
           {/* Information Leakage Meter */}
           {privacySim.leakageReport && (
@@ -734,7 +739,7 @@ export default function Home() {
         </div>
       )}
 
-      {isPracticeMode() && (
+      {isPracticeMode && (
         <>
           <PrivacyLessonModal
             lesson={privacySim.currentLesson}
@@ -807,7 +812,7 @@ export default function Home() {
       )}
 
       {/* Practice Mode Indicator with Upgrade Prompt - Enhanced Readability */}
-      {isPracticeMode() && !isAIvsAIMode && (
+      {isPracticeMode && !isAIvsAIMode && (
         <PracticeModeBanner
           onExit={exitPracticeMode}
           onShowDossier={privacySim.showDossier}

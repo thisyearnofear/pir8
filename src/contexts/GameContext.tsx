@@ -1,7 +1,7 @@
 'use client';
 
 import React, { createContext, useContext, useMemo } from 'react';
-import { usePirateGameState } from '@/hooks/usePirateGameState';
+import { usePirateGame } from '@/store/gameStore';
 import { GameState, Player, Ship } from '@/types/game';
 
 interface GameContextValue {
@@ -39,11 +39,11 @@ interface GameContextValue {
 const GameContext = createContext<GameContextValue | undefined>(undefined);
 
 export function GameProvider({ children, wallet }: { children: React.ReactNode, wallet?: any }) {
-  const store = usePirateGameState();
+  const store = usePirateGame();
   
   const currentPlayer = useMemo(() => {
     return store.getCurrentPlayer();
-  }, [store.gameState, store.currentPlayerIndex]);
+  }, [store.gameState, store.gameState?.currentPlayerIndex]);
 
   const isMyTurn = useMemo(() => {
     return store.isMyTurn(wallet?.publicKey?.toBase58());
@@ -64,7 +64,7 @@ export function GameProvider({ children, wallet }: { children: React.ReactNode, 
   ) => {
     if (!isMyTurn || !wallet) return false;
 
-    if (store.isPracticeMode()) {
+    if (store.gameMode === 'practice') {
       switch (action) {
         case 'move': return true; // Handled by map click
         case 'attack':

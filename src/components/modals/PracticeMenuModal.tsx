@@ -19,7 +19,7 @@ export default function PracticeMenuModal({
     "novice" | "pirate" | "captain" | "admiral"
   >("pirate");
 
-  useFocusTrap(containerRef, isOpen);
+  useFocusTrap(containerRef as unknown as React.RefObject<HTMLElement>, isOpen);
 
   const handleKeyDown = useCallback(
     (e: KeyboardEvent) => {

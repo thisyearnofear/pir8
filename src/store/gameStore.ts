@@ -1,4 +1,4 @@
-import { create } from "zustand";
+import { create } from "zustand/react";
 import { PirateGameStore } from "./types";
 import { createGameSlice } from "./gameSlice";
 import { createOnChainSlice } from "./onChainSlice";
@@ -12,5 +12,5 @@ export const usePirateGameStore = create<PirateGameStore>((...a) => ({
   ...createSkillSlice(...a),
 }));
 
-// Export for backward compatibility if needed, but preferred is usePirateGameStore
+export const usePirateGame = () => usePirateGameStore((state) => state);
 export const usePirateGameState = usePirateGameStore;

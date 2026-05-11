@@ -15,7 +15,7 @@ export default function ModeSelectModal({
   onModeSelected,
 }: ModeSelectModalProps) {
   const containerRef = useRef<HTMLDivElement>(null);
-  useFocusTrap(containerRef, isOpen);
+  useFocusTrap(containerRef as unknown as React.RefObject<HTMLElement>, isOpen);
 
   const handleKeyDown = useCallback(
     (e: KeyboardEvent) => {

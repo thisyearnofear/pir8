@@ -1,6 +1,6 @@
 'use client';
 
-import { usePirateGameState } from '@/hooks/usePirateGameState';
+import { usePirateGame } from "@/store/gameStore";
 import { useGameLifecycle } from '@/hooks/useGameLifecycle';
 import { useState } from 'react';
 
@@ -10,7 +10,7 @@ import { useState } from 'react';
  * Updated to use consolidated useGameLifecycle hook
  */
 export function ManualSyncButton() {
-  const { gameState } = usePirateGameState();
+  const { gameState } = usePirateGame();
   const { forceSync } = useGameLifecycle({ gameId: gameState?.gameId });
   const [isSyncing, setIsSyncing] = useState(false);
 

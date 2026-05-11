@@ -347,6 +347,7 @@ export function MobileGameLayout({
                     onEndTurn={onEndTurn}
                     isCreating={false}
                     isJoining={false}
+                    onClearJoinError={() => {}} // Not applicable mid-game
                     selectedShipId={selectedShipId || undefined}
                     onShipSelect={onShipSelect}
                     onScanCoordinate={async () => {}}

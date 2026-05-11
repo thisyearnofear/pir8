@@ -5,7 +5,7 @@
 
 import { useEffect, useRef, useCallback } from 'react';
 import { HeliusMonitor } from '../lib/integrations';
-import { usePirateGameState } from './usePirateGameState';
+import { usePirateGame, usePirateGameStore } from '@/store/gameStore';
 
 interface UseHeliusMonitorProps {
   gameId?: string;
@@ -21,7 +21,7 @@ export interface GameEvent {
 }
 
 export const useHeliusMonitor = ({ gameId, onGameEvent, enabled = true }: UseHeliusMonitorProps = {}) => {
-  const { setMessage, clearError } = usePirateGameState();
+  const { setMessage, clearError } = usePirateGame();
   const monitorRef = useRef<HeliusMonitor | null>(null);
   const isConnectedRef = useRef(false);
   const LOG_LEVEL = (process.env.NEXT_PUBLIC_LOG_LEVEL as any) || 'error';
@@ -36,7 +36,7 @@ export const useHeliusMonitor = ({ gameId, onGameEvent, enabled = true }: UseHel
 
         // Turn Notification Logic
         if (event.type === 'moveMade') {
-          const { gameState, getCurrentPlayer } = usePirateGameState.getState();
+          const { gameState, getCurrentPlayer } = usePirateGameStore.getState();
           const me = getCurrentPlayer();
           if (me && event.data.nextPlayerIndex === gameState?.players.findIndex((p: any) => p.publicKey === me.publicKey)) {
             // It's my turn next!

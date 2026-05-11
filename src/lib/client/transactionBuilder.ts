@@ -98,11 +98,11 @@ export const getClientProgram = async (
   const idl = await getIdl();
 
   // Anchor 0.30 expects the address in metadata
-  const rawIdl = idl as Record<string, unknown>;
+  const rawIdl = idl as unknown as Record<string, unknown>;
   const transformedIdl = {
     ...rawIdl,
     metadata: {
-      ...(rawIdl.metadata as Record<string, unknown> || {}),
+      ...(rawIdl['metadata'] as Record<string, unknown> || {}),
       address: PROGRAM_ID.toString(),
     },
   };
@@ -123,7 +123,7 @@ export const buildCreateGameTx = async (
   const program = await getClientProgram(wallet);
   const [gamePDA] = getGamePDA(gameId);
 
-  return await program.methods
+  return await (program as any).methods
     .createGame(new BN(gameId), { [mode.toLowerCase()]: {} } as never)
     .accounts({
       game: gamePDA,
@@ -141,7 +141,7 @@ export const buildJoinGameTx = async (
   const program = await getClientProgram(wallet);
   const [gamePDA] = getGamePDA(gameId);
 
-  return await program.methods
+  return await (program as any).methods
     .joinGame()
     .accounts({
       game: gamePDA,
@@ -159,7 +159,7 @@ export const buildStartGameTx = async (
   const program = await getClientProgram(wallet);
   const [gamePDA] = getGamePDA(gameId);
 
-  return await program.methods
+  return await (program as any).methods
     .startGame()
     .accounts({
       game: gamePDA,
@@ -184,7 +184,7 @@ export const buildMoveShipTx = async (
   const program = await getClientProgram(wallet);
   const [gamePDA] = getGamePDA(gameId);
 
-  return await program.methods
+  return await (program as any).methods
     .moveShip(shipId, toX, toY, decisionTimeMs ? new BN(decisionTimeMs) : null)
     .accounts({
       game: gamePDA,
@@ -203,7 +203,7 @@ export const buildAttackShipTx = async (
   const program = await getClientProgram(wallet);
   const [gamePDA] = getGamePDA(gameId);
 
-  return await program.methods
+  return await (program as any).methods
     .attackShip(attackerShipId, targetShipId)
     .accounts({
       game: gamePDA,
@@ -221,7 +221,7 @@ export const buildClaimTerritoryTx = async (
   const program = await getClientProgram(wallet);
   const [gamePDA] = getGamePDA(gameId);
 
-  return await program.methods
+  return await (program as any).methods
     .claimTerritory(shipId)
     .accounts({
       game: gamePDA,
@@ -238,7 +238,7 @@ export const buildCollectResourcesTx = async (
   const program = await getClientProgram(wallet);
   const [gamePDA] = getGamePDA(gameId);
 
-  return await program.methods
+  return await (program as any).methods
     .collectResources()
     .accounts({
       game: gamePDA,
@@ -260,7 +260,7 @@ export const buildBuildShipTx = async (
 
   const shipTypeEnum = { [shipType]: {} } as never;
 
-  return await program.methods
+  return await (program as any).methods
     .buildShip(shipTypeEnum, portX, portY)
     .accounts({
       game: gamePDA,
@@ -279,7 +279,7 @@ export const buildScanCoordinateTx = async (
   const program = await getClientProgram(wallet);
   const [gamePDA] = getGamePDA(gameId);
 
-  return await program.methods
+  return await (program as any).methods
     .scanCoordinate(coordinateX, coordinateY)
     .accounts({
       game: gamePDA,
@@ -296,7 +296,7 @@ export const buildActivateGhostFleetTx = async (
   const program = await getClientProgram(wallet);
   const [gamePDA] = getGamePDA(gameId);
 
-  return await program.methods
+  return await (program as any).methods
     .activateGhostFleet()
     .accounts({
       game: gamePDA,
@@ -313,7 +313,7 @@ export const buildEndTurnTx = async (
   const program = await getClientProgram(wallet);
   const [gamePDA] = getGamePDA(gameId);
 
-  return await program.methods
+  return await (program as any).methods
     .endTurn()
     .accounts({
       game: gamePDA,
@@ -330,7 +330,7 @@ export const buildCheckAndCompleteGameTx = async (
   const program = await getClientProgram(wallet);
   const [gamePDA] = getGamePDA(gameId);
 
-  return await program.methods
+  return await (program as any).methods
     .checkAndCompleteGame()
     .accounts({
       game: gamePDA,
@@ -347,7 +347,7 @@ export const buildClaimWinningsTx = async (
   const program = await getClientProgram(wallet);
   const [gamePDA] = getGamePDA(gameId);
 
-  return await program.methods
+  return await (program as any).methods
     .claimWinnings()
     .accounts({
       game: gamePDA,
@@ -372,7 +372,7 @@ export const buildJoinGameViaDelegateTx = async (
   const [gamePDA] = getGamePDA(gameId);
   const [agentPDA] = getAgentRegistryPDA(ownerPubkey);
 
-  return await program.methods
+  return await (program as any).methods
     .joinGameViaDelegate()
     .accounts({
       game: gamePDA,
@@ -399,7 +399,7 @@ export const buildMoveShipViaDelegateTx = async (
   const [gamePDA] = getGamePDA(gameId);
   const [agentPDA] = getAgentRegistryPDA(ownerPubkey);
 
-  return await program.methods
+  return await (program as any).methods
     .moveShipViaDelegate(
       shipId,
       toX,
@@ -431,7 +431,7 @@ export const buildRegisterAgentTx = async (
   const program = await getClientProgram(wallet);
   const [agentPDA] = getAgentRegistryPDA(wallet.publicKey!);
 
-  return await program.methods
+  return await (program as any).methods
     .registerAgent(name, version, twitter ?? null, website ?? null)
     .accounts({
       agent: agentPDA,
@@ -449,7 +449,7 @@ export const buildDelegateAgentControlTx = async (
   const program = await getClientProgram(wallet);
   const [agentPDA] = getAgentRegistryPDA(wallet.publicKey!);
 
-  return await program.methods
+  return await (program as any).methods
     .delegateAgentControl(delegatePubkey)
     .accounts({
       agent: agentPDA,
@@ -478,12 +478,12 @@ export const executeTransaction = async (
   const connection = new Connection(rpcUrl, "confirmed");
 
   const { blockhash } = await connection.getLatestBlockhash();
-  transaction.recentBlockhash = blockhash;
-  transaction.feePayer = wallet.publicKey;
+  (transaction as any).recentBlockhash = blockhash;
+  (transaction as any).feePayer = wallet.publicKey;
 
   const signedTx = await wallet.signTransaction!(transaction);
   const rawTransaction = signedTx.serialize();
-  const signature = await connection.sendRawTransaction(rawTransaction);
+  const signature = await (connection as any).sendRawTransaction(rawTransaction);
 
   await connection.confirmTransaction(signature, "confirmed");
 
@@ -638,7 +638,10 @@ export const fetchGameState = async (
   const [gamePDA] = getGamePDA(gameId);
 
   try {
-    const raw = await (program.account as Record<string, { fetch: (pk: PublicKey) => Promise<unknown> }>).pirateGame.fetch(gamePDA);
+    const account = (program as any).account as Record<string, { fetch: (pk: PublicKey) => Promise<unknown> }> | undefined;
+    if (!account) return null;
+    const raw = await account['pirateGame']?.fetch(gamePDA);
+    if (!raw) return null;
     return onChainToGameState(raw as OnChainGameState);
   } catch {
     return null;
@@ -652,7 +655,9 @@ export const fetchLobbies = async (
   const program = await getClientProgram(wallet);
 
   try {
-    const games = await (program.account as Record<string, { all: () => Promise<Array<{ publicKey: PublicKey; account: unknown }>> }>).pirateGame.all();
+    const account = (program as any).account as Record<string, { all: () => Promise<Array<{ publicKey: PublicKey; account: unknown }>> }> | undefined;
+    if (!account) return [];
+    const games = await account['pirateGame']?.all();
     return games as Array<{ publicKey: PublicKey; account: OnChainGameState }>;
   } catch (e) {
     console.warn("Error fetching lobbies:", e);

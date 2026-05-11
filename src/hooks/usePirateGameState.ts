@@ -9,5 +9,5 @@ import { usePirateGameStore } from "../store/gameStore";
 export type { GameMode } from "../types/game";
 
 // Re-export the store as a hook for backward compatibility
-export const usePirateGameState = () => usePirateGameStore();
+export const usePirateGameState = usePirateGameStore;
 export const pirateGameStore = usePirateGameStore;

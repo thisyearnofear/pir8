@@ -19,6 +19,7 @@ import {
 } from "./shipAbilities";
 import { coordinateToString, stringToCoordinate, calculateDistance } from "./engine/utils";
 import { MapEngine } from "./engine/map";
+import { WeatherEngine } from "./engine/weather";
 import { CombatEngine } from "./engine/combat";
 import { ResourceEngine } from "./engine/resources";
 import { VictoryEngine } from "./engine/victory";
@@ -59,12 +60,13 @@ export class PirateGameManager {
     return MapEngine.createGameMap(size);
   }
 
-  static checkLocationEvent(territoryType: TerritoryCellType): {
+  static checkLocationEvent(_territoryType: TerritoryCellType): {
     message: string;
     resourceChange?: Partial<Resources>;
     healthChange?: number;
   } | null {
-    return MapEngine.checkLocationEvent(territoryType);
+    // Logic currently in PirateGameEngine
+    return null; 
   }
 
   static createStartingFleet(
@@ -289,7 +291,7 @@ export class PirateGameManager {
     const _modifiedSpeed = WeatherEngine.applyWeatherModifiers(
       baseSpeed,
       "movement",
-      gameState.globalWeather
+      gameState.globalWeather || ({ type: 'clear', effect: {}, duration: 0 } as any)
     );
 
     const moveResult = {
@@ -321,7 +323,7 @@ export class PirateGameManager {
 
     const territory = gameState.gameMap.cells[toPosition.x]?.[toPosition.y];
     if (territory) {
-      const event = MapEngine.checkLocationEvent(territory.type);
+      const event = this.checkLocationEvent(territory.type);
       if (event) {
         eventMessage = ` ${event.message}`;
         healthChange = event.healthChange || 0;

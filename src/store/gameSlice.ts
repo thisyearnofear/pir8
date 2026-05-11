@@ -1,4 +1,4 @@
-import { StateCreator } from "zustand";
+import { StateCreator } from "zustand/vanilla";
 import { PirateGameStore, GameSlice } from "./types";
 
 export const createGameSlice: StateCreator<PirateGameStore, [], [], GameSlice> = (set, get) => ({
