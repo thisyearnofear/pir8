@@ -13,7 +13,7 @@ import {
   SystemProgram,
 } from "@solana/web3.js";
 import { SOLANA_CONFIG } from "@/utils/constants";
-import { getGamePDA, getAgentRegistryPDA } from "../anchor";
+import { PROGRAM_ID, getGamePDA, getAgentRegistryPDA } from "../anchor";
 import type { WalletAdapter } from "@coral-xyz/anchor";
 
 // ============================================================================
@@ -97,7 +97,7 @@ export const getClientProgram = async (
 
   const idl = await getIdl();
 
-  return new Program(idl as Idl, provider);
+  return new Program(idl as Idl, PROGRAM_ID, provider);
 };
 
 // ============================================================================

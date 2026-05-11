@@ -28,7 +28,7 @@ export async function fetchGameStateClient(gameId: number = 0): Promise<any> {
       ? new PublicKey(SOLANA_CONFIG.PROGRAM_ID)
       : PROGRAM_ID;
 
-    const program = new Program(idlJson as unknown as Idl, provider);
+    const program = new Program(idlJson as unknown as Idl, programId, provider);
     const [gamePDA] = getGamePDA(gameId, programId);
 
     try {
