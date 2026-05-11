@@ -59,7 +59,13 @@ async function checkGamePlayerCount(gameId: string, expectedCount: number): Prom
     const connection = new Connection(rpcUrl, "confirmed");
     const provider = new AnchorProvider(connection, {} as any, { commitment: "confirmed" });
     const programId = SOLANA_CONFIG.PROGRAM_ID ? new PublicKey(SOLANA_CONFIG.PROGRAM_ID) : PROGRAM_ID;
-    const program = new Program(idlJson as any, programId, provider);
+    const idl = idlJson as any;
+    const transformedIdl = {
+      ...idl,
+      name: idl.metadata?.name || "pir8_game",
+      version: idl.metadata?.version || "0.1.0",
+    };
+    const program = new Program(transformedIdl as unknown as any, programId, provider);
     
     const gameIdNum = parseInt(gameId.replace(/[^\d]/g, ''), 10);
     if (isNaN(gameIdNum)) return false;
@@ -89,7 +95,13 @@ async function findCorrectGameId(expectedCount: number): Promise<string | null> 
     const connection = new Connection(rpcUrl, "confirmed");
     const provider = new AnchorProvider(connection, {} as any, { commitment: "confirmed" });
     const programId = SOLANA_CONFIG.PROGRAM_ID ? new PublicKey(SOLANA_CONFIG.PROGRAM_ID) : PROGRAM_ID;
-    const program = new Program(idlJson as any, programId, provider);
+    const idl = idlJson as any;
+    const transformedIdl = {
+      ...idl,
+      name: idl.metadata?.name || "pir8_game",
+      version: idl.metadata?.version || "0.1.0",
+    };
+    const program = new Program(transformedIdl as unknown as any, programId, provider);
     
     const [configPDA] = _getConfigPDA(programId);
     const configAccount = await (program as any).account.gameConfig.fetch(configPDA);

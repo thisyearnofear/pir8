@@ -98,16 +98,18 @@ export const getClientProgram = async (
   const idl = await getIdl();
 
   // Anchor 0.30 expects the address in metadata
-  const rawIdl = idl as unknown as Record<string, unknown>;
+  const rawIdl = idl as any;
   const transformedIdl = {
     ...rawIdl,
+    name: rawIdl.metadata?.name || "pir8_game",
+    version: rawIdl.metadata?.version || "0.1.0",
     metadata: {
       ...(rawIdl['metadata'] as Record<string, unknown> || {}),
       address: PROGRAM_ID.toString(),
     },
   };
 
-  return new Program(transformedIdl as Idl, PROGRAM_ID, provider);
+  return new Program(transformedIdl as unknown as Idl, PROGRAM_ID, provider);
 };
 
 // ============================================================================
