@@ -41,10 +41,10 @@ export const createOnChainSlice: StateCreator<
 
       const lobbies = games.map((g: any) => ({
         address: g.publicKey.toBase58(),
-        gameId: g.account?.game_id?.toNumber?.() || null,
+        gameId: g.account?.gameId?.toNumber?.() || null,
         authority: g.account?.authority?.toBase58?.() || null,
         status: g.account?.status,
-        playerCount: g.account?.player_count || 0,
+        playerCount: g.account?.playerCount || 0,
         maxPlayers: 4, // Max players is usually a constant, but we can hardcode for UI
         mode: g.account?.mode,
         players: g.account?.players?.map((p: any) => p.pubkey?.toBase58?.()) || [],

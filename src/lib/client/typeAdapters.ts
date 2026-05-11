@@ -103,13 +103,13 @@ function adaptScannedCoordinates(packed: number[] | Uint8Array | Buffer): string
 export function onChainToShip(data: OnChainShipData): Ship {
   return {
     id: data.id,
-    type: adaptShipType(data.ship_type),
+    type: adaptShipType(data.shipType),
     health: data.health,
-    maxHealth: data.max_health,
+    maxHealth: data.maxHealth,
     attack: data.attack,
     defense: data.defense,
     speed: data.speed,
-    position: adaptPosition(data.position_x, data.position_y),
+    position: adaptPosition(data.positionX, data.positionY),
     // CLIENT-ONLY: resources, ability, activeEffects are not on-chain
     resources: { gold: 0, crew: 0, cannons: 0, supplies: 0, wood: 0, rum: 0 },
     ability: {
@@ -134,14 +134,14 @@ export function onChainToPlayer(data: OnChainPlayerData): Player {
     publicKey: data.pubkey.toString(),
     resources: adaptResources(data.resources),
     ships: data.ships.map(onChainToShip),
-    controlledTerritories: data.controlled_territories,
-    totalScore: data.total_score,
-    isActive: data.is_active,
-    scanCharges: data.scan_charges,
-    scannedCoordinates: adaptScannedCoordinates(data.scanned_coordinates),
-    speedBonusAccumulated: data.speed_bonus_accumulated.toNumber(),
-    averageDecisionTimeMs: data.average_decision_time_ms.toNumber(),
-    totalMoves: data.total_moves,
+    controlledTerritories: data.controlledTerritories,
+    totalScore: data.totalScore,
+    isActive: data.isActive,
+    scanCharges: data.scanCharges,
+    scannedCoordinates: adaptScannedCoordinates(data.scannedCoordinates),
+    speedBonusAccumulated: data.speedBonusAccumulated.toNumber(),
+    averageDecisionTimeMs: data.averageDecisionTimeMs.toNumber(),
+    totalMoves: data.totalMoves,
     // CLIENT-ONLY: consecutiveAttacks, lastActionWasAttack, revealedCoordinates
     consecutiveAttacks: 0,
     lastActionWasAttack: false,
@@ -161,7 +161,7 @@ export function onChainToTerritoryCell(
 ): TerritoryCell {
   return {
     coordinate: `${x},${y}`,
-    type: adaptTerritoryCellType(data.cell_type),
+    type: adaptTerritoryCellType(data.cellType),
     owner: data.owner?.toString() ?? null,
     // CLIENT-ONLY: resources, isContested, weatherEffect
     resources: {},
@@ -183,7 +183,7 @@ export function onChainToGameState(chain: OnChainGameState): GameState {
     const row: TerritoryCell[] = [];
     for (let y = 0; y < MAP_SIZE; y++) {
       const index = x * MAP_SIZE + y;
-      const chainCell = chain.territory_map[index];
+      const chainCell = chain.territoryMap[index];
       if (chainCell) {
         row.push(onChainToTerritoryCell(chainCell, x, y));
       } else {
@@ -202,7 +202,7 @@ export function onChainToGameState(chain: OnChainGameState): GameState {
   const gameMap: GameMap = { cells, size: MAP_SIZE };
 
   return {
-    gameId: chain.game_id.toString(),
+    gameId: chain.gameId.toString(),
     gameMode:
       chain.mode === "casual"
         ? "Casual"
@@ -210,11 +210,11 @@ export function onChainToGameState(chain: OnChainGameState): GameState {
           ? "Competitive"
           : "AgentArena",
     players: chain.players.map(onChainToPlayer),
-    currentPlayerIndex: chain.current_player_index,
+    currentPlayerIndex: chain.currentPlayerIndex,
     gameMap,
     gameStatus: adaptGameStatus(chain.status),
     winner: chain.winner?.toString(),
-    turnNumber: chain.turn_number,
+    turnNumber: chain.turnNumber,
     // CLIENT-ONLY: currentPhase, pendingActions, globalWeather, eventLog
     currentPhase: "movement",
     pendingActions: [],

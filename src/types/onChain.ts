@@ -3,7 +3,7 @@
  * These types are used for deserializing account data from the Solana program.
  *
  * IMPORTANT: Keep these in sync with programs/pir8-game/src/state/
- * AND the generated IDL (which uses snake_case for fields in Anchor 0.30+).
+ * Note: Anchor JS client usually converts snake_case IDL fields to camelCase in objects.
  */
 
 import { BN } from "@coral-xyz/anchor";
@@ -43,15 +43,15 @@ export interface OnChainResources {
 
 export interface OnChainShipData {
   id: string;
-  ship_type: OnChainShipType;
+  shipType: OnChainShipType;
   health: number;
-  max_health: number;
+  maxHealth: number;
   attack: number;
   defense: number;
   speed: number;
-  position_x: number;
-  position_y: number;
-  last_action_turn: number;
+  positionX: number;
+  positionY: number;
+  lastActionTurn: number;
 }
 
 // ============================================================================
@@ -62,17 +62,17 @@ export interface OnChainPlayerData {
   pubkey: PublicKey;
   resources: OnChainResources;
   ships: OnChainShipData[];
-  controlled_territories: string[];
-  total_score: number;
-  is_active: boolean;
-  scan_charges: number;
-  scanned_coordinates: number[] | Buffer; // Bit-packed Vec<u8> from Rust
-  is_ghost_fleet: boolean;
-  ghost_fleet_turns_remaining: number;
-  total_ghosts_activated: number;
-  speed_bonus_accumulated: BN;
-  average_decision_time_ms: BN;
-  total_moves: number;
+  controlledTerritories: string[];
+  totalScore: number;
+  isActive: boolean;
+  scanCharges: number;
+  scannedCoordinates: number[] | Buffer; // Bit-packed Vec<u8> from Rust
+  isGhostFleet: boolean;
+  ghostFleetTurnsRemaining: number;
+  totalGhostsActivated: number;
+  speedBonusAccumulated: BN;
+  averageDecisionTimeMs: BN;
+  totalMoves: number;
 }
 
 // ============================================================================
@@ -80,7 +80,7 @@ export interface OnChainPlayerData {
 // ============================================================================
 
 export interface OnChainTerritoryCell {
-  cell_type: OnChainTerritoryCellType;
+  cellType: OnChainTerritoryCellType;
   owner: PublicKey | null;
 }
 
@@ -89,22 +89,22 @@ export interface OnChainTerritoryCell {
 // ============================================================================
 
 export interface OnChainGameState {
-  game_id: BN;
+  gameId: BN;
   authority: PublicKey;
   status: OnChainGameStatus;
   mode: OnChainGameMode;
-  player_count: number;
-  current_player_index: number;
-  turn_number: number;
-  created_at: BN;
-  started_at: BN | null;
-  completed_at: BN | null;
+  playerCount: number;
+  currentPlayerIndex: number;
+  turnNumber: number;
+  createdAt: BN;
+  startedAt: BN | null;
+  completedAt: BN | null;
   winner: PublicKey | null;
-  weather_type: OnChainWeatherType;
-  weather_duration: number;
+  weatherType: OnChainWeatherType;
+  weatherDuration: number;
   bump: number;
   players: OnChainPlayerData[];
-  territory_map: OnChainTerritoryCell[];
+  territoryMap: OnChainTerritoryCell[];
 }
 
 // ============================================================================
@@ -118,9 +118,9 @@ export interface OnChainAgentRegistry {
   version: string;
   twitter: string | null;
   website: string | null;
-  games_played: BN;
+  gamesPlayed: BN;
   wins: BN;
-  last_active: BN;
+  lastActive: BN;
 }
 
 // ============================================================================
