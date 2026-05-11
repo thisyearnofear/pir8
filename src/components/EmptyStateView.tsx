@@ -1,5 +1,20 @@
 "use client";
 
+import {
+  Anchor,
+  Eye,
+  LockKeyhole,
+  Play,
+  Radar,
+  Radio,
+  Shield,
+  Swords,
+  Trophy,
+  Users,
+  Wallet,
+} from "lucide-react";
+import type { LucideIcon } from "lucide-react";
+import CompetitivePlatform from "@/components/CompetitivePlatform";
 import LobbyBrowser from "@/components/LobbyBrowser";
 
 interface EmptyStateViewProps {
@@ -10,256 +25,288 @@ interface EmptyStateViewProps {
   onAIBattle: () => void;
 }
 
+interface ActionCardProps {
+  icon: LucideIcon;
+  label: string;
+  title: string;
+  description: string;
+  tone: "cyan" | "gold" | "magenta";
+  onClick?: () => void;
+  disabled?: boolean;
+}
+
+const toneClasses = {
+  cyan: {
+    border: "border-cyan-300/50",
+    icon: "text-cyan-200",
+    label: "text-cyan-200",
+    hover: "hover:border-cyan-200 hover:shadow-cyan-950/60",
+  },
+  gold: {
+    border: "border-amber-300/50",
+    icon: "text-amber-200",
+    label: "text-amber-200",
+    hover: "hover:border-amber-200 hover:shadow-amber-950/50",
+  },
+  magenta: {
+    border: "border-fuchsia-300/50",
+    icon: "text-fuchsia-200",
+    label: "text-fuchsia-200",
+    hover: "hover:border-fuchsia-200 hover:shadow-fuchsia-950/50",
+  },
+};
+
+function ActionCard({
+  icon: Icon,
+  label,
+  title,
+  description,
+  tone,
+  onClick,
+  disabled = false,
+}: ActionCardProps) {
+  const classes = toneClasses[tone];
+  const Component = onClick ? "button" : "div";
+
+  return (
+    <Component
+      onClick={disabled ? undefined : onClick}
+      className={`group h-full rounded-lg border bg-slate-950/70 p-5 text-left shadow-2xl transition-all ${classes.border} ${classes.hover} ${
+        disabled ? "cursor-default opacity-70" : "hover:-translate-y-0.5"
+      }`}
+    >
+      <div className="mb-5 flex items-center justify-between">
+        <div
+          className={`flex h-11 w-11 items-center justify-center rounded-md border border-white/10 bg-white/[0.04] ${classes.icon}`}
+        >
+          <Icon size={22} strokeWidth={1.8} />
+        </div>
+        <span
+          className={`rounded-full border border-white/10 bg-white/[0.04] px-3 py-1 text-[11px] font-bold uppercase tracking-[0.2em] ${classes.label}`}
+        >
+          {label}
+        </span>
+      </div>
+      <h3 className="mb-2 text-lg font-black text-white">{title}</h3>
+      <p className="text-sm leading-6 text-slate-400">{description}</p>
+    </Component>
+  );
+}
+
+function TacticalChart() {
+  return (
+    <div className="relative min-h-[360px] overflow-hidden rounded-lg border border-cyan-200/20 bg-[#08131f]">
+      <div className="absolute inset-0 bg-[linear-gradient(rgba(103,232,249,0.08)_1px,transparent_1px),linear-gradient(90deg,rgba(103,232,249,0.08)_1px,transparent_1px)] bg-[size:48px_48px]" />
+      <div className="absolute inset-0 bg-[radial-gradient(circle_at_25%_20%,rgba(14,165,233,0.25),transparent_34%),radial-gradient(circle_at_78%_78%,rgba(245,158,11,0.2),transparent_28%)]" />
+
+      <div className="absolute left-[18%] top-[18%] h-20 w-20 rounded-full border border-cyan-200/30 bg-cyan-300/10 blur-sm" />
+      <div className="absolute bottom-[16%] right-[18%] h-28 w-28 rounded-full border border-amber-200/25 bg-amber-300/10 blur-sm" />
+
+      <div className="absolute left-[15%] top-[28%] flex items-center gap-2 rounded-md border border-cyan-200/40 bg-slate-950/75 px-3 py-2 text-xs font-bold uppercase tracking-[0.18em] text-cyan-100">
+        <Radar size={15} />
+        Scouting
+      </div>
+      <div className="absolute right-[11%] top-[22%] flex items-center gap-2 rounded-md border border-fuchsia-200/35 bg-slate-950/75 px-3 py-2 text-xs font-bold uppercase tracking-[0.18em] text-fuchsia-100">
+        <LockKeyhole size={15} />
+        Masked Fleet
+      </div>
+      <div className="absolute bottom-[19%] left-[26%] flex items-center gap-2 rounded-md border border-amber-200/40 bg-slate-950/75 px-3 py-2 text-xs font-bold uppercase tracking-[0.18em] text-amber-100">
+        <Swords size={15} />
+        Ambush Window
+      </div>
+
+      <div className="absolute left-[30%] top-[44%] h-1 w-[34%] rotate-[-16deg] rounded-full bg-cyan-200/50 shadow-[0_0_20px_rgba(103,232,249,0.65)]" />
+      <div className="absolute bottom-[34%] right-[27%] h-1 w-[26%] rotate-[28deg] rounded-full bg-amber-200/45 shadow-[0_0_20px_rgba(251,191,36,0.55)]" />
+
+      <div className="absolute bottom-0 left-0 right-0 border-t border-white/10 bg-slate-950/80 px-4 py-3">
+        <div className="grid grid-cols-3 gap-3 text-xs">
+          <div>
+            <div className="font-bold text-cyan-100">3 scans</div>
+            <div className="text-slate-500">reveal intent</div>
+          </div>
+          <div>
+            <div className="font-bold text-amber-100">5-8 min</div>
+            <div className="text-slate-500">duel target</div>
+          </div>
+          <div>
+            <div className="font-bold text-fuchsia-100">private</div>
+            <div className="text-slate-500">session key play</div>
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+}
+
 export default function EmptyStateView({
   isConnected,
   onPracticeMode,
-  onCreateGame: _onCreateGame,
+  onCreateGame,
   onSpectatorMode,
   onAIBattle,
 }: EmptyStateViewProps) {
   return (
-    <div className="flex-1 flex items-center justify-center min-h-[600px] px-4">
-      <div className="text-center max-w-4xl w-full">
-        {!isConnected ? (
-          /* Not Connected - Wallet CTA */
-          <div className="space-y-8">
-            <div className="relative inline-block">
-              <div className="text-8xl sm:text-9xl animate-bounce-slow filter drop-shadow-2xl">
-                🔐
-              </div>
-              <div className="absolute -top-4 -right-4 text-4xl animate-spin-slow">
-                ⚓
-              </div>
-            </div>
+    <main className="min-h-[620px] px-1 pb-10 pt-2">
+      <section className="mx-auto grid max-w-7xl gap-8 lg:grid-cols-[minmax(0,1.05fr)_minmax(420px,0.95fr)] lg:items-center">
+        <div className="space-y-7">
+          <div className="inline-flex items-center gap-2 rounded-full border border-cyan-200/20 bg-cyan-200/5 px-3 py-1 text-xs font-bold uppercase tracking-[0.24em] text-cyan-100">
+            <Shield size={14} />
+            Private Tactical Warfare
+          </div>
 
-            <div>
-              <h3
-                className="text-3xl sm:text-4xl lg:text-5xl font-black text-transparent bg-clip-text
-                             bg-gradient-to-r from-neon-cyan via-neon-gold to-neon-cyan mb-4
-                             animate-subtle-glow"
-              >
-                Connect Your Wallet to Begin
-              </h3>
-              <p className="text-lg sm:text-xl text-gray-300 mb-2">
-                Join the battle on Solana blockchain
+          <div className="max-w-3xl">
+            <h2 className="text-4xl font-black leading-tight text-white sm:text-5xl lg:text-6xl">
+              Scout hidden waters. Mask your fleet. Spring the ambush.
+            </h2>
+            <p className="mt-5 max-w-2xl text-base leading-7 text-slate-300 sm:text-lg">
+              PIR8 is a short-form naval strategy game where privacy is the
+              mechanic: hide intent, reveal threats, and turn one decisive
+              command into a shareable challenge.
+            </p>
+          </div>
+
+          <div className="flex flex-col gap-3 sm:flex-row">
+            <button
+              onClick={onPracticeMode}
+              className="inline-flex min-h-[52px] items-center justify-center gap-3 rounded-md bg-cyan-200 px-5 py-3 text-sm font-black uppercase tracking-[0.16em] text-slate-950 shadow-lg shadow-cyan-950/50 transition hover:bg-white"
+            >
+              <Play size={18} fill="currentColor" />
+              Start Private Skirmish
+            </button>
+            <button
+              onClick={onAIBattle}
+              className="inline-flex min-h-[52px] items-center justify-center gap-3 rounded-md border border-amber-200/45 bg-amber-200/10 px-5 py-3 text-sm font-black uppercase tracking-[0.16em] text-amber-100 transition hover:border-amber-100 hover:bg-amber-200/15"
+            >
+              <Eye size={18} />
+              Watch An Ambush
+            </button>
+          </div>
+
+          <div className="grid gap-3 sm:grid-cols-3">
+            <div className="rounded-md border border-white/10 bg-white/[0.03] p-3">
+              <div className="mb-1 flex items-center gap-2 text-sm font-bold text-cyan-100">
+                <Radar size={16} />
+                Scout
+              </div>
+              <p className="text-xs leading-5 text-slate-500">
+                Spend limited scans to reveal the map before committing.
               </p>
-              <p className="text-base text-gray-400 mb-8">
-                Or start a practice match without connecting - no wallet
-                needed!
+            </div>
+            <div className="rounded-md border border-white/10 bg-white/[0.03] p-3">
+              <div className="mb-1 flex items-center gap-2 text-sm font-bold text-fuchsia-100">
+                <LockKeyhole size={16} />
+                Mask
+              </div>
+              <p className="text-xs leading-5 text-slate-500">
+                Session keys keep your main wallet out of match identity.
               </p>
             </div>
-
-            {/* Action Cards */}
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-6 max-w-4xl mx-auto">
-              <div
-                className="bg-gradient-to-br from-slate-800/60 to-slate-900/60 border-2 border-neon-cyan/50
-                             rounded-2xl p-6 hover:scale-105 transition-all duration-300
-                             hover:shadow-lg hover:shadow-neon-cyan/30"
-              >
-                <div className="text-5xl mb-4">💎</div>
-                <h4 className="text-xl font-bold text-neon-cyan mb-2">
-                  Real Battles
-                </h4>
-                <p className="text-sm text-gray-400 mb-4">
-                  Connect wallet to play on-chain, earn rewards, and
-                  climb the leaderboard
-                </p>
-                <div className="inline-flex items-center gap-2 text-neon-cyan text-sm font-semibold">
-                  <span>Click &quot;Connect Wallet&quot; above</span>
-                  <span>↑</span>
-                </div>
+            <div className="rounded-md border border-white/10 bg-white/[0.03] p-3">
+              <div className="mb-1 flex items-center gap-2 text-sm font-bold text-amber-100">
+                <Swords size={16} />
+                Reveal
               </div>
-
-              <button
-                onClick={onPracticeMode}
-                className="bg-gradient-to-br from-slate-800/60 to-slate-900/60 border-2 border-neon-gold/50
-                           rounded-2xl p-6 hover:scale-105 transition-all duration-300
-                           hover:shadow-lg hover:shadow-neon-gold/30 text-left"
-              >
-                <div className="text-5xl mb-4">🎮</div>
-                <h4 className="text-xl font-bold text-neon-gold mb-2">
-                  Practice Mode
-                </h4>
-                <p className="text-sm text-gray-400 mb-4">
-                  Play offline vs AI opponents - perfect for learning
-                  the game!
-                </p>
-                <div className="inline-flex items-center gap-2 text-neon-gold text-sm font-semibold">
-                  <span>Click to Start</span>
-                  <span>→</span>
-                </div>
-              </button>
-
-              {/* NEW: AI vs AI Demo */}
-              <button
-                onClick={onAIBattle}
-                className="bg-gradient-to-br from-slate-800/60 to-slate-900/60 border-2 border-neon-magenta/50
-                           rounded-2xl p-6 hover:scale-105 transition-all duration-300
-                           hover:shadow-lg hover:shadow-neon-magenta/30 text-left"
-              >
-                <div className="text-5xl mb-4">⚔️</div>
-                <h4 className="text-xl font-bold text-neon-magenta mb-2">
-                  Watch AI Battle
-                </h4>
-                <p className="text-sm text-gray-400 mb-4">
-                  See the game in action! Learn by watching AI compete.
-                </p>
-                <div className="inline-flex items-center gap-2 text-neon-magenta text-sm font-semibold">
-                  <span>Watch Demo</span>
-                  <span>→</span>
-                </div>
-              </button>
-            </div>
-
-            {/* Features Preview */}
-            <div className="mt-12 pt-8 border-t border-slate-700/50">
-              <p className="text-sm text-gray-500 uppercase tracking-wider mb-4">
-                What Awaits You
+              <p className="text-xs leading-5 text-slate-500">
+                Ambush turns become the replay and challenge hook.
               </p>
-              <div className="flex flex-wrap justify-center gap-4 text-sm">
-                <span className="bg-slate-800/40 px-4 py-2 rounded-full text-gray-300 border border-slate-700/50">
-                  ⚔️ Strategic Combat
-                </span>
-                <span className="bg-slate-800/40 px-4 py-2 rounded-full text-gray-300 border border-slate-700/50">
-                  💰 Treasure Hunting
-                </span>
-                <span className="bg-slate-800/40 px-4 py-2 rounded-full text-gray-300 border border-slate-700/50">
-                  🚢 Fleet Building
-                </span>
-                <span className="bg-slate-800/40 px-4 py-2 rounded-full text-gray-300 border border-slate-700/50">
-                  ⚡ Speed Bonuses
-                </span>
-              </div>
             </div>
           </div>
-        ) : (
-          /* Connected but No Game - Clear CTAs */
-          <div className="space-y-12">
-            <div className="text-7xl sm:text-8xl animate-bounce-slow filter drop-shadow-2xl">
-              🏴‍☠️
-            </div>
-            <div>
-              <h3
-                className="text-3xl sm:text-4xl font-black text-transparent bg-clip-text
-                             bg-gradient-to-r from-neon-cyan via-neon-gold to-neon-cyan mb-4"
-              >
-                Ready for Battle, Captain!
-              </h3>
-              <p className="text-lg sm:text-xl text-gray-300 mb-2">
-                Your wallet is connected
-              </p>
-            </div>
+        </div>
 
-            {/* NEW: Lobby Browser Hero */}
-            <LobbyBrowser />
+        <TacticalChart />
+      </section>
 
-            {/* Action Cards for Connected Users (Secondary) */}
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-6 max-w-4xl mx-auto pt-8 border-t border-slate-700/30">
-              {/* Practice Mode */}
-              <button
-                onClick={onPracticeMode}
-                className="group bg-gradient-to-br from-slate-800/60 to-slate-900/60 border-2 border-neon-gold/50
-                           rounded-2xl p-6 hover:scale-105 transition-all duration-300
-                           hover:shadow-lg hover:shadow-neon-gold/30 text-left"
-              >
-                <div className="text-5xl mb-4">⚔️</div>
-                <h4 className="text-xl font-bold text-neon-gold mb-2">
-                  Practice Mode
-                </h4>
-                <p className="text-sm text-gray-400 mb-4">
-                  Sharpen your skills vs AI. No on-chain fees or gas
-                  costs.
-                </p>
-                <div className="flex items-center gap-2 text-neon-gold text-sm font-semibold">
-                  <span>Train Now</span>
-                  <span>→</span>
+      <section className="mx-auto mt-8 grid max-w-7xl gap-4 md:grid-cols-3">
+        <ActionCard
+          icon={Swords}
+          label="Instant"
+          title="Play before wallet friction"
+          description="Start against an AI captain immediately. Learn the scouting and ambush loop before moving into real stakes."
+          tone="cyan"
+          onClick={onPracticeMode}
+        />
+        <ActionCard
+          icon={Radio}
+          label="Watch"
+          title="Spectate command decisions"
+          description="Use AI battles as a live product demo: observe scouting, pressure, and reveal moments without setup."
+          tone="gold"
+          onClick={onAIBattle}
+        />
+        <ActionCard
+          icon={Wallet}
+          label={isConnected ? "Compete" : "Upgrade"}
+          title={isConnected ? "Create or join on-chain" : "Connect when ready"}
+          description={
+            isConnected
+              ? "Browse active lobbies, start private-session play, and turn matches into public reputation."
+              : "Wallet play unlocks on-chain battles, provable wins, lobbies, and future challenge links."
+          }
+          tone="magenta"
+          onClick={isConnected ? onCreateGame : undefined}
+          disabled={!isConnected}
+        />
+      </section>
+
+      <section className="mx-auto mt-8 max-w-7xl">
+        {isConnected ? (
+          <div className="rounded-lg border border-white/10 bg-slate-950/50 p-4">
+            <div className="mb-4 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+              <div>
+                <div className="flex items-center gap-2 text-sm font-black uppercase tracking-[0.2em] text-cyan-100">
+                  <Anchor size={16} />
+                  On-chain harbor
                 </div>
-              </button>
-
-              {/* NEW: AI vs AI Demo */}
-              <button
-                onClick={onAIBattle}
-                className="group bg-gradient-to-br from-slate-800/60 to-slate-900/60 border-2 border-neon-magenta/50
-                           rounded-2xl p-6 hover:scale-105 transition-all duration-300
-                           hover:shadow-lg hover:shadow-neon-magenta/30 text-left"
-              >
-                <div className="text-5xl mb-4">🤖</div>
-                <h4 className="text-xl font-bold text-neon-magenta mb-2">
-                  Watch AI Battle
-                </h4>
-                <p className="text-sm text-gray-400 mb-4">
-                  Learn by watching AI opponents compete. No commitment
-                  required!
+                <p className="mt-1 text-sm text-slate-500">
+                  Join a live lobby after you understand the ambush loop.
                 </p>
-                <div className="flex items-center gap-2 text-neon-magenta text-sm font-semibold">
-                  <span>Watch Demo</span>
-                  <span>→</span>
-                </div>
-              </button>
-
-              {/* Watch / Join */}
+              </div>
               <button
                 onClick={onSpectatorMode}
-                className="group bg-gradient-to-br from-slate-800/60 to-slate-900/60 border-2 border-neon-purple/50
-                           rounded-2xl p-6 hover:scale-105 transition-all duration-300
-                           hover:shadow-lg hover:shadow-neon-purple/30 text-left"
+                className="inline-flex items-center justify-center gap-2 rounded-md border border-white/10 bg-white/[0.04] px-4 py-2 text-sm font-bold text-white transition hover:border-cyan-200/50"
               >
-                <div className="text-5xl mb-4">👁️</div>
-                <h4 className="text-xl font-bold text-neon-purple mb-2">
-                  Watch & Join
-                </h4>
-                <p className="text-sm text-gray-400 mb-4">
-                  Spectate live battles or join an existing game.
-                </p>
-                <div className="flex items-center gap-2 text-neon-purple text-sm font-semibold">
-                  <span>Explore</span>
-                  <span>→</span>
-                </div>
+                <Users size={16} />
+                Browse Spectator View
               </button>
             </div>
-
-            {/* Quick Tips */}
-            <div className="max-w-2xl mx-auto">
-              <div
-                className="bg-gradient-to-r from-neon-cyan/10 to-neon-gold/10
-                             border border-neon-cyan/30 rounded-xl p-6 backdrop-blur-sm"
-              >
-                <div className="flex items-start gap-4">
-                  <span className="text-3xl">💡</span>
-                  <div className="flex-1 text-left">
-                    <div className="text-sm font-semibold text-neon-cyan mb-2">
-                      Getting Started
-                    </div>
-                    <ul className="text-xs text-gray-400 space-y-1">
-                      <li>
-                        •{" "}
-                        <strong className="text-gray-300">
-                          Create Battle:
-                        </strong>{" "}
-                        Start on-chain game with real stakes
-                      </li>
-                      <li>
-                        •{" "}
-                        <strong className="text-gray-300">
-                          Practice Mode:
-                        </strong>{" "}
-                        Learn mechanics without gas fees
-                      </li>
-                      <li>
-                        •{" "}
-                        <strong className="text-gray-300">
-                          Zcash Privacy:
-                        </strong>{" "}
-                        Use shielded memos for private moves
-                      </li>
-                    </ul>
-                  </div>
+            <LobbyBrowser />
+            <CompetitivePlatform
+              isConnected={isConnected}
+              onJoinDuelQueue={onCreateGame}
+              onSpectate={onSpectatorMode}
+            />
+          </div>
+        ) : (
+          <div className="rounded-lg border border-white/10 bg-slate-950/50 p-5">
+            <div className="grid gap-4 md:grid-cols-[1fr_auto] md:items-center">
+              <div>
+                <div className="mb-2 flex items-center gap-2 text-sm font-black uppercase tracking-[0.2em] text-amber-100">
+                  <Trophy size={16} />
+                  Competition unlocks after the hook lands
                 </div>
+                <p className="max-w-3xl text-sm leading-6 text-slate-400">
+                  Connect a wallet when you want provable wins, public captain
+                  status, lobbies, and eventually shareable Solana challenge
+                  links. Until then, the skirmish and AI battle modes are the
+                  fastest way to feel the game.
+                </p>
               </div>
+              <button
+                onClick={onSpectatorMode}
+                className="inline-flex min-h-[44px] items-center justify-center gap-2 rounded-md border border-cyan-200/35 bg-cyan-200/10 px-4 py-2 text-sm font-bold text-cyan-100 transition hover:border-cyan-100"
+              >
+                <Eye size={16} />
+                Spectate Battles
+              </button>
             </div>
+            <CompetitivePlatform
+              isConnected={isConnected}
+              onJoinDuelQueue={onCreateGame}
+              onSpectate={onSpectatorMode}
+            />
           </div>
         )}
-      </div>
-    </div>
+      </section>
+    </main>
   );
 }

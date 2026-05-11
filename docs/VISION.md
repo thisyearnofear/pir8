@@ -6,14 +6,26 @@ PIR8 is a **privacy-first strategic naval combat platform** combining session ke
 
 **Core Mission**: Transform Web3 gaming from luck-based speculation to skill-based competition with privacy-first principles.
 
+## Current Product Direction
+
+The next phase of PIR8 is to move from "pirate strategy game on Solana" to a sharper product:
+
+> Private tactical naval warfare where scouting, deception, ambushes, and wallet privacy are part of the game.
+
+Privacy should be visible as gameplay, not only as infrastructure. The fastest route to a memorable product is an instant-play skirmish loop where players scout hidden waters, hide intent, reveal ambushes, and then share a challenge or replay moment.
+
+See [PRODUCT_EXECUTION_PLAN.md](./PRODUCT_EXECUTION_PLAN.md) for the execution roadmap.
+
 ## Core Pillars
 
 ### 1. Privacy-First Gaming
 - **Session Key Architecture**: Anonymous gameplay via ephemeral wallet identities (no server signing required)
-- **Private Moves**: Session keys ensure main wallet identity never appears on game PDAs
+- **Private Tactical Identity**: Session keys ensure main wallet identity never appears on game PDAs
+- **Privacy as Gameplay**: Fog, scouting, deception, and reveal moments make privacy legible to players
 - **Regulatory Compliance**: Privacy without compromising legal requirements
 
 ### 2. Skill + Luck Balance (70% Skill / 30% Luck)
+- **Hidden-Information Strategy**: Scout, deceive, commit, and reveal
 - **Fleet Strategy**: Ship positioning, type selection, resource allocation
 - **Economic Depth**: Resource management drives tactical decisions
 - **Territory Control**: Strategic map control with competing victory conditions
@@ -25,8 +37,10 @@ PIR8 is a **privacy-first strategic naval combat platform** combining session ke
 - **Performance Rewards**: Top finishers earn tradeable assets with real value
 
 ### 4. Viral Growth
+- **Challenge Links**: "Beat my fleet in 5 minutes" as the default share object
+- **Ambush Replays**: Share the decisive reveal, comeback, or bounty kill
 - **Social Proof**: Leaderboards, achievements, reputation systems
-- **Spectator Mode**: Watch top players compete
+- **Spectator Mode**: Watch top players and AI captains compete
 - **Creator Economy**: Streamers and content creators can monetize
 
 ## The Problem We Solve
@@ -42,8 +56,9 @@ PIR8 is a **privacy-first strategic naval combat platform** combining session ke
 1. **Skill-Based Competition**: Win through strategy, not wallet size
 2. **Sustainable Economics**: Tournament pools with real liquidity
 3. **Deep Gameplay**: Multiple skill layers and meta-game
-4. **Seamless UX**: Solana speed + familiar game interface
+4. **Seamless UX**: Instant practice/watch entry before wallet friction
 5. **Privacy Options**: Session key architecture for anonymous competitive play (zero server cost)
+6. **Viral Moments**: Ambushes, bounties, and challenge links create natural sharing
 
 ## Product Strategy
 
@@ -61,16 +76,26 @@ PIR8 is a **privacy-first strategic naval combat platform** combining session ke
 - ✅ Resource economy (framework ready)
 - ✅ Skill mechanics (scanning system, timing bonuses)
 
-### Phase 2: Skill Depth (In Progress)
-**Goal**: Enhance 70% skill balance with advanced mechanics
+### Phase 2: Tactical Privacy Loop (In Progress)
+**Goal**: Make scouting, deception, and reveal moments the core skill loop
 
 - 🔧 **Fog of War**: Hidden ship positions until adjacent/detected
 - 🔧 **Intel System**: Reconnaissance missions, map scouting
+- 🔧 **Deception System**: Ghost fleets, decoys, and masked intent
+- 🔧 **Threat Previews**: Movement range, attack range, and expected damage
 - 🔧 **Advanced Tactics**: Multi-turn strategy rewards, combo bonuses
 - 🔧 **Economic Leverage**: Resource control → power projection
 
-### Phase 3: Tournament Platform (Q2 2025)
-**Goal**: Launch competitive tournament system
+### Phase 3: Shareable Challenge Platform
+**Goal**: Turn every match into a playable or watchable acquisition surface
+
+- 🔲 **Challenge Links**: Accept, join, or spectate a match from a shared URL
+- 🔲 **Ambush Replay Cards**: Auto-generated battle summaries and decisive-turn visuals
+- 🔲 **Bounty Board**: Public targets and social pressure around top captains
+- 🔲 **Solana Actions/Blinks Prototype**: Challenge and spectate actions outside the app
+
+### Phase 4: Tournament Platform
+**Goal**: Launch competitive tournament system after the duel loop is proven
 
 - 🔲 **Bracket Management**: Multi-stage elimination
 - 🔲 **Leader Seeding**: Performance-based tournament entry
@@ -78,7 +103,7 @@ PIR8 is a **privacy-first strategic naval combat platform** combining session ke
 - 🔲 **Reputation System**: Player rankings and history
 - 🔲 **Spectator Mode**: Watch live tournament matches
 
-### Phase 4: Scale & Monetize (Q3-Q4 2025)
+### Phase 5: Scale & Monetize
 **Goal**: Sustainable growth and revenue
 
 - 🔲 **Seasonal Championships**: Quarterly mega-tournaments

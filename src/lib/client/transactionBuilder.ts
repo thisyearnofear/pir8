@@ -21,6 +21,7 @@ import type { WalletAdapter } from "@coral-xyz/anchor";
 // ============================================================================
 
 let cachedIdl: Idl | null = null;
+let cachedProgramId: PublicKey | null = null;
 
 async function getIdl(): Promise<Idl> {
   if (cachedIdl) return cachedIdl;
@@ -38,6 +39,31 @@ async function getIdl(): Promise<Idl> {
   throw new Error(
     "Could not load program IDL. Make sure anchor build has been run and public/idl/pir8_game.json exists.",
   );
+}
+
+async function getResolvedProgramId(): Promise<PublicKey> {
+  if (cachedProgramId) return cachedProgramId;
+
+  const idl = await getIdl();
+  const idlWithAddress = idl as unknown as { address?: unknown };
+  const idlAddress = typeof idlWithAddress.address === "string"
+    ? idlWithAddress.address
+    : null;
+  const configuredAddress = SOLANA_CONFIG.PROGRAM_ID;
+
+  if (idlAddress && configuredAddress && idlAddress !== configuredAddress) {
+    throw new Error(
+      `Program ID mismatch: NEXT_PUBLIC_PROGRAM_ID=${configuredAddress} but IDL address=${idlAddress}. Regenerate or replace the stale configuration so both point to the deployed PIR8 program.`,
+    );
+  }
+
+  const resolvedAddress = idlAddress || configuredAddress;
+  if (!resolvedAddress) {
+    throw new Error("Program ID is missing from both NEXT_PUBLIC_PROGRAM_ID and public/idl/pir8_game.json");
+  }
+
+  cachedProgramId = new PublicKey(resolvedAddress);
+  return cachedProgramId;
 }
 
 // ============================================================================
@@ -98,7 +124,7 @@ export const getClientProgram = async (
   });
 
   const idl = await getIdl();
-  const programId = new PublicKey(SOLANA_CONFIG.PROGRAM_ID);
+  const programId = await getResolvedProgramId();
 
   // Modern Anchor IDLs (0.30+) include an "address" field. Try the 2-arg
   // constructor first (idl + provider). If that fails (e.g. SDK version

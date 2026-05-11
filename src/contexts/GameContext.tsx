@@ -1,7 +1,7 @@
 'use client';
 
 import React, { createContext, useContext, useMemo } from 'react';
-import { usePirateGame } from '@/store/gameStore';
+import { usePirateGameStore } from '@/store/gameStore';
 import { GameState, Player, Ship } from '@/types/game';
 
 interface GameContextValue {
@@ -39,66 +39,75 @@ interface GameContextValue {
 const GameContext = createContext<GameContextValue | undefined>(undefined);
 
 export function GameProvider({ children, wallet }: { children: React.ReactNode, wallet?: any }) {
-  const store = usePirateGame();
-  
+  const gameState = usePirateGameStore((state) => state.gameState);
+  const gameMode = usePirateGameStore((state) => state.gameMode);
+  const isLoading = usePirateGameStore((state) => state.isLoading);
+  const error = usePirateGameStore((state) => state.error);
+  const showMessage = usePirateGameStore((state) => state.showMessage);
+  const selectedShipId = usePirateGameStore((state) => state.selectedShipId);
+  const decisionTime = usePirateGameStore((state) => state.decisionTime);
+  const scanChargesRemaining = usePirateGameStore((state) => state.scanChargesRemaining);
+  const speedBonusAccumulated = usePirateGameStore((state) => state.speedBonusAccumulated);
+  const getScannedCoordinates = usePirateGameStore((state) => state.getScannedCoordinates);
+  const selectShip = usePirateGameStore((state) => state.selectShip);
+  const endTurn = usePirateGameStore((state) => state.endTurn);
+  const collectResources = usePirateGameStore((state) => state.collectResources);
+  const buildShip = usePirateGameStore((state) => state.buildShip);
+  const moveShip = usePirateGameStore((state) => state.moveShip);
+  const attackWithShip = usePirateGameStore((state) => state.attackWithShip);
+  const claimTerritory = usePirateGameStore((state) => state.claimTerritory);
+  const getCurrentPlayer = usePirateGameStore((state) => state.getCurrentPlayer);
+  const isMyTurnForWallet = usePirateGameStore((state) => state.isMyTurn);
+  const getMyShips = usePirateGameStore((state) => state.getMyShips);
+  const getAllShips = usePirateGameStore((state) => state.getAllShips);
+
   const currentPlayer = useMemo(() => {
-    return store.getCurrentPlayer();
-  }, [store.gameState, store.gameState?.currentPlayerIndex]);
+    return getCurrentPlayer();
+  }, [getCurrentPlayer, gameState, gameState?.currentPlayerIndex]);
 
   const isMyTurn = useMemo(() => {
-    return store.isMyTurn(wallet?.publicKey?.toBase58());
-  }, [store.gameState, wallet?.publicKey]);
+    return isMyTurnForWallet(wallet?.publicKey?.toBase58());
+  }, [isMyTurnForWallet, gameState, wallet?.publicKey]);
 
   const myShips = useMemo(() => {
-    return wallet?.publicKey ? store.getMyShips(wallet.publicKey.toBase58()) : [];
-  }, [store.gameState, wallet?.publicKey]);
+    return wallet?.publicKey ? getMyShips(wallet.publicKey.toBase58()) : [];
+  }, [getMyShips, gameState, wallet?.publicKey]);
 
   const allShips = useMemo(() => {
-    return store.getAllShips();
-  }, [store.gameState]);
+    return getAllShips();
+  }, [getAllShips, gameState]);
 
-  // Handle ship action logic (abstracted from page.tsx)
-  const handleShipAction = async (
-    shipId: string,
-    action: 'move' | 'attack' | 'claim' | 'collect' | 'build'
-  ) => {
-    if (!isMyTurn || !wallet) return false;
-
-    if (store.gameMode === 'practice') {
-      switch (action) {
-        case 'move': return true; // Handled by map click
-        case 'attack':
-          // logic from page.tsx
-          return store.makePracticeAttack(shipId, ''); // simplified for now
-        case 'claim':
-          return store.makePracticeClaim(shipId);
-        default: return false;
-      }
-    } else {
-      switch (action) {
-        case 'move': return true;
-        case 'attack':
-          return store.attackWithShip(parseInt(store.gameState?.gameId || '0'), shipId, '', wallet);
-        case 'claim':
-          return store.claimTerritory(parseInt(store.gameState?.gameId || '0'), shipId, wallet);
-        case 'collect':
-          return store.collectResources(parseInt(store.gameState?.gameId || '0'), wallet);
-        default: return false;
-      }
-    }
-  };
+  const scannedCoordinates = useMemo(() => {
+    return getScannedCoordinates();
+  }, [getScannedCoordinates, gameState]);
 
   const value = {
-    ...store,
+    gameState,
+    gameMode,
+    isPracticeMode: gameMode === 'practice',
+    isLoading,
+    error,
+    showMessage,
+    selectedShipId,
     currentPlayer,
     isMyTurn,
     myShips,
     allShips,
-    handleShipAction,
+    decisionTime,
+    scanChargesRemaining,
+    speedBonusAccumulated,
+    scannedCoordinates,
+    selectShip,
+    endTurn,
+    collectResources,
+    buildShip,
+    moveShip,
+    attackWithShip,
+    claimTerritory,
   };
 
   return (
-    <GameContext.Provider value={value as any}>
+    <GameContext.Provider value={value}>
       {children}
     </GameContext.Provider>
   );

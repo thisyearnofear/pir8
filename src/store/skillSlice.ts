@@ -44,8 +44,7 @@ export const createSkillSlice: StateCreator<
       const { scanCoordinate, createWalletAdapter } = await import("../lib/client/transactionBuilder");
       const walletAdapter = createWalletAdapter(wallet);
       await scanCoordinate(walletAdapter, gameId, coordinateX, coordinateY);
-      const state = await get().fetchGameState(gameId, wallet);
-      if (state) set({ gameState: state });
+      await get().fetchGameState(gameId, wallet);
       return true;
     } catch (e) {
       return false;

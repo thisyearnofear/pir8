@@ -2,6 +2,7 @@
 
 import { useState, useEffect, useCallback } from 'react';
 import { GameState, Player } from '../types/game';
+import { buildAmbushShareText, buildChallengeUrl } from '@/lib/shareLinks';
 
 // Consolidated viral event types
 export type ViralEventType =
@@ -193,9 +194,9 @@ function checkAchievements(gameState: GameState, player: Player): ViralEvent[] {
             id: 'first_blood',
             type: 'achievement',
             title: 'First Blood',
-            description: 'Sink your first enemy ship',
+            description: 'You revealed the first weakness in the enemy fleet.',
             emoji: '⚔️',
-            shareText: '⚔️ Just drew first blood in @PIR8Game! Enemy ship sent to Davy Jones\' locker! #PIR8Game #FirstBlood',
+            shareText: `First blood in PIR8 Shadow Seas.\nScout hidden waters. Mask your fleet. Spring the ambush.\n${buildChallengeUrl()}\n#PIR8 #ShadowSeas`,
             rarity: 'common',
             timestamp: Date.now()
         });
@@ -206,10 +207,10 @@ function checkAchievements(gameState: GameState, player: Player): ViralEvent[] {
         achievements.push({
             id: 'pirate_king',
             type: 'achievement',
-            title: 'Pirate King',
+            title: 'Shadow Admiral',
             description: 'Win your first game',
             emoji: '👑',
-            shareText: '👑 PIRATE KING CROWNED! Just conquered my first battle in @PIR8Game! The seas have a new ruler! #PIR8Game #PirateKing',
+            shareText: `I won my first PIR8 Shadow Seas duel.\nThink you can beat my fleet?\n${buildChallengeUrl({ gameId: gameState.gameId })}\n#PIR8 #ShadowSeas`,
             rarity: 'legendary',
             timestamp: Date.now()
         });
@@ -241,10 +242,10 @@ function detectViralMoments(oldState: GameState, newState: GameState, player: Pl
         moments.push({
             id: `epic_battle_${Date.now()}`,
             type: 'viral_moment',
-            title: 'NAVAL MASSACRE!',
-            description: `Destroyed ${shipsDestroyed} enemy ships in one devastating turn!`,
+            title: 'AMBUSH REVEALED!',
+            description: `Destroyed ${shipsDestroyed} enemy ships in one decisive turn.`,
             emoji: '💥',
-            shareText: `💥 NAVAL MASSACRE! Just destroyed ${shipsDestroyed} enemy ships in one turn in @PIR8Game! The seas run red! ⚔️ #PIR8Game #EpicBattle`,
+            shareText: `Ambush revealed in PIR8 Shadow Seas.\n${shipsDestroyed} ships sunk in one turn.\nCan you survive the same board?\n${buildChallengeUrl({ gameId: newState.gameId })}\n#PIR8 #ShadowSeas`,
             rarity: 'epic',
             data: { shipsDestroyed },
             timestamp: Date.now()
@@ -256,28 +257,39 @@ function detectViralMoments(oldState: GameState, newState: GameState, player: Pl
 
 // Consolidated share text generation
 function generateShareText(type: string, gameState: GameState, player: Player): string {
-    const baseUrl = window.location.origin;
-    const gameUrl = `${baseUrl}?join=${gameState.gameId}`;
+    const gameUrl = buildChallengeUrl({ gameId: gameState.gameId });
+    const winner = gameState.players.find(p => p.publicKey === gameState.winner);
+    const winnerName = winner?.username || winner?.publicKey?.slice(0, 8) || 'Unknown captain';
+    const shipsDestroyed = gameState.players.reduce((total, p) =>
+        total + p.ships.filter(s => s.health === 0).length, 0
+    );
+    const territoriesControlled = winner?.controlledTerritories.length || 0;
+    const gold = winner?.resources.gold || player.resources.gold;
 
     switch (type) {
         case 'victory':
-            return `👑 PIRATE KING CROWNED! Just dominated the seven seas in @PIR8Game!\n` +
-                `💰 Plundered ${player.resources.gold.toLocaleString()} gold\n` +
-                `🏆 Victory in ${gameState.turnNumber} turns\n\n` +
-                `Think you can challenge the new Pirate King? ⚓\n` +
-                `🎮 ${gameUrl}\n\n` +
-                `#PIR8Game #PirateKing #Web3Gaming #Solana`;
+            return buildAmbushShareText({
+                url: gameUrl,
+                winnerName,
+                turnNumber: gameState.turnNumber,
+                shipsDestroyed,
+                territoriesControlled,
+                gold,
+                isWinner: true,
+            });
 
         case 'defeat':
-            const winner = gameState.players.find(p => p.publicKey === gameState.winner);
-            return `🏴‍☠️ Epic naval battle just ended!\n` +
-                `${winner?.username || 'Unknown'} claimed the Pirate King crown in @PIR8Game\n` +
-                `⚔️ ${gameState.turnNumber} turns of strategic warfare\n\n` +
-                `Ready to challenge for the crown? ⚓\n` +
-                `🎮 ${gameUrl}\n\n` +
-                `#PIR8Game #NavalWarfare #Web3Gaming`;
+            return buildAmbushShareText({
+                url: gameUrl,
+                winnerName,
+                turnNumber: gameState.turnNumber,
+                shipsDestroyed,
+                territoriesControlled,
+                gold,
+                isWinner: false,
+            });
 
         default:
-            return `🏴‍☠️ Epic battles await in @PIR8Game! ⚔️\n${gameUrl}\n#PIR8Game #Web3Gaming`;
+            return `PIR8 Shadow Seas is private naval tactics: scout, mask, reveal, ambush.\n${buildChallengeUrl()}\n#PIR8 #ShadowSeas`;
     }
 }

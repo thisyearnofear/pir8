@@ -192,6 +192,7 @@ Token Distribution:
 | [docs/ARCHITECTURE.md](./docs/ARCHITECTURE.md) | System architecture and technical details |
 | [docs/DEVELOPMENT.md](./docs/DEVELOPMENT.md) | Development workflow and contributing |
 | [docs/VISION.md](./docs/VISION.md) | Project vision and roadmap |
+| [docs/PRODUCT_EXECUTION_PLAN.md](./docs/PRODUCT_EXECUTION_PLAN.md) | Product repositioning, game loop, growth hooks, and execution roadmap |
 
 ---
 

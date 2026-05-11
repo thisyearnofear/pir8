@@ -1,9 +1,10 @@
 "use client";
 
 import { useState, useRef, useEffect } from "react";
-import { GameMap, Ship } from "../types/game";
-import { TERRITORY_EMOJIS, SHIP_EMOJIS } from "../utils/constants";
+import type { CSSProperties } from "react";
+import { GameMap, Ship, ShipType, TerritoryCellType } from "../types/game";
 import { PirateGameManager } from "../lib/pirateGameEngine";
+import { GameBalance } from "../lib/gameBalance";
 import TerritoryTooltip from "./TerritoryTooltip";
 import { useMobileOptimized } from "@/hooks/useMobileOptimized";
 
@@ -22,6 +23,68 @@ interface PirateMapProps {
   selectedShipId?: string;
   currentPlayerPK?: string;
   scannedCoordinates?: string[];
+}
+
+const shipLabels: Record<ShipType, string> = {
+  sloop: "S",
+  frigate: "F",
+  galleon: "G",
+  flagship: "X",
+};
+
+const territoryLabels: Record<TerritoryCellType, string> = {
+  water: "",
+  island: "IS",
+  port: "PT",
+  treasure: "$",
+  storm: "ST",
+  reef: "RF",
+  whirlpool: "WP",
+};
+
+function ShipToken({
+  type,
+  color,
+  isSelected,
+  animationClass,
+}: {
+  type: ShipType;
+  color: string;
+  isSelected: boolean;
+  animationClass?: { type: "move" | "attack" | "damaged"; timestamp: number };
+}) {
+  return (
+    <span
+      className={`ship-token ship-token-${type} ${
+        animationClass ? `ship-anim-${animationClass.type}` : ""
+      } ${isSelected ? "ship-token-selected" : ""}`}
+      style={{ "--ship-color": color } as CSSProperties}
+      aria-label={`${type} ship`}
+    >
+      <span className="ship-token-hull" />
+      <span className="ship-token-mast" />
+      <span className="ship-token-label">{shipLabels[type]}</span>
+    </span>
+  );
+}
+
+function TerritoryToken({
+  type,
+  isScanned,
+}: {
+  type: TerritoryCellType;
+  isScanned: boolean;
+}) {
+  return (
+    <div
+      className={`territory-token territory-token-${type} ${
+        isScanned ? "territory-token-scanned" : "territory-token-unscanned"
+      }`}
+      aria-label={`${type} territory`}
+    >
+      <span className="territory-token-mark">{territoryLabels[type]}</span>
+    </div>
+  );
 }
 
 export default function PirateMap({
@@ -131,10 +194,88 @@ export default function PirateMap({
     return colors[playerIndex % colors.length] || "#ffffff";
   };
 
+  const selectedShip = selectedShipId
+    ? ships.find((ship) => ship.id === selectedShipId)
+    : undefined;
+
+  const isEnemyShip = (ship: Ship): boolean => {
+    if (!currentPlayerPK) return false;
+    return !ship.id.startsWith(currentPlayerPK);
+  };
+
+  const getDistanceFromSelected = (coordinate: string): number | null => {
+    if (!selectedShip) return null;
+    return PirateGameManager.calculateDistance(
+      selectedShip.position,
+      PirateGameManager.stringToCoordinate(coordinate),
+    );
+  };
+
+  const isCoordinateThreatened = (coordinate: string): boolean => {
+    if (!currentPlayerPK) return false;
+    return ships.some((ship) => {
+      if (!isEnemyShip(ship) || ship.health <= 0) return false;
+      const enemyRange = GameBalance.SHIP_BALANCE[ship.type].range;
+      const enemyDistance = PirateGameManager.calculateDistance(
+        ship.position,
+        PirateGameManager.stringToCoordinate(coordinate),
+      );
+      return enemyDistance <= enemyRange;
+    });
+  };
+
+  const getTacticalState = (coordinate: string) => {
+    const targetShip = getShipAtPosition(coordinate);
+    const isThreatened = isCoordinateThreatened(coordinate);
+
+    if (!selectedShip) {
+      return {
+        isMoveOption: false,
+        isAttackOption: false,
+        isThreatened,
+        targetShip,
+      };
+    }
+
+    const distance = getDistanceFromSelected(coordinate) ?? Infinity;
+    const selectedRange = GameBalance.SHIP_BALANCE[selectedShip.type].range;
+    const isSelectedPosition =
+      PirateGameManager.coordinateToString(selectedShip.position) === coordinate;
+
+    const isMoveOption =
+      !isSelectedPosition &&
+      !targetShip &&
+      distance <= selectedShip.speed;
+
+    const isAttackOption =
+      !!targetShip &&
+      isEnemyShip(targetShip) &&
+      distance <= selectedRange;
+
+    return { isMoveOption, isAttackOption, isThreatened, targetShip };
+  };
+
+  const getDamagePreview = (targetShip?: Ship): number | null => {
+    if (!selectedShip || !targetShip) return null;
+    const distance = PirateGameManager.calculateDistance(
+      selectedShip.position,
+      targetShip.position,
+    );
+    const attackerStrength = GameBalance.SHIP_BALANCE[selectedShip.type].strength;
+    const defenderStrength = GameBalance.SHIP_BALANCE[targetShip.type].strength;
+    const healthMultiplier = selectedShip.health / 100;
+    const distancePenalty = Math.max(0, (distance - 1) * 0.2);
+    const distanceMultiplier = Math.max(0.1, 1.0 - distancePenalty);
+    const baseDamage = attackerStrength * 40 * healthMultiplier * distanceMultiplier;
+    const defenseReduction = targetShip.defense * (defenderStrength / 10);
+    return Math.max(5, Math.floor(baseDamage - defenseReduction));
+  };
+
   const getCellContent = (coordinate: string) => {
     const ship = getShipAtPosition(coordinate);
     const flatCells = gameMap.cells.flat();
     const cell = flatCells.find(c => c.coordinate === coordinate);
+    const isScanned = scannedCoordinates.includes(coordinate);
 
     if (ship) {
       const isSelected = selectedShipId === ship.id;
@@ -143,12 +284,12 @@ export default function PirateMap({
       
       return (
         <div className="relative w-full h-full flex items-center justify-center">
-          <span
-            className={`ship-icon ${animationClass && !shouldReduceAnimations() ? `ship-anim-${animationClass.type}` : ""} ${isSelected ? "ring-2 ring-neon-gold" : ""}`}
-            style={{ color: playerColor }}
-          >
-            {SHIP_EMOJIS[ship.type as keyof typeof SHIP_EMOJIS]}
-          </span>
+          <ShipToken
+            type={ship.type}
+            color={playerColor}
+            isSelected={isSelected}
+            animationClass={animationClass && !shouldReduceAnimations() ? animationClass : undefined}
+          />
           
           <div className="health-bar">
             <div
@@ -168,12 +309,7 @@ export default function PirateMap({
     }
 
     if (cell) {
-      const isScanned = scannedCoordinates.includes(coordinate);
-      return (
-        <div className={`territory-icon ${isScanned ? "opacity-100" : "opacity-60"}`}>
-          {TERRITORY_EMOJIS[cell.type]}
-        </div>
-      );
+      return <TerritoryToken type={cell.type} isScanned={isScanned} />;
     }
 
     return null;
@@ -198,6 +334,11 @@ export default function PirateMap({
           const x = index % gridSize;
           const y = Math.floor(index / gridSize);
           const coordinate = PirateGameManager.coordinateToString({ x, y });
+          const tacticalState = getTacticalState(coordinate);
+          const damagePreview = getDamagePreview(tacticalState.targetShip);
+          const isScanned = scannedCoordinates.includes(coordinate);
+          const hasFogIntel = scannedCoordinates.length > 0;
+          const isFogged = hasFogIntel && !isScanned && !getShipAtPosition(coordinate);
           
           return (
             <div
@@ -207,6 +348,10 @@ export default function PirateMap({
                 territory-cell cursor-pointer
                 ${isMyTurn ? "hover:bg-neon-cyan hover:bg-opacity-20" : ""}
                 ${selectedShipId && getShipAtPosition(coordinate)?.id === selectedShipId ? "ring-2 ring-neon-gold" : ""}
+                ${tacticalState.isMoveOption ? "ring-1 ring-cyan-300/70 bg-cyan-300/10" : ""}
+                ${tacticalState.isAttackOption ? "ring-2 ring-red-400/90 bg-red-500/15" : ""}
+                ${!tacticalState.isMoveOption && !tacticalState.isAttackOption && tacticalState.isThreatened ? "threat-zone-cell" : ""}
+                ${isFogged ? "fogged-sector" : isScanned ? "scanned-sector" : ""}
                 ${classes.button}
               `}
               {...(isMobile ? touchHandlers : {
@@ -218,6 +363,21 @@ export default function PirateMap({
               <div className="cell-content">
                 {getCellContent(coordinate)}
               </div>
+
+              {selectedShip && tacticalState.isMoveOption && (
+                <div className="move-range-marker" />
+              )}
+
+              {selectedShip && tacticalState.isAttackOption && (
+                <>
+                  <div className="attack-range-arc" />
+                  <div className="pointer-events-none absolute inset-x-0 top-0 flex justify-center">
+                    <div className="rounded-b bg-red-500 px-1.5 py-0.5 text-[10px] font-black leading-none text-white shadow-lg">
+                      {damagePreview ? `~${damagePreview}` : "HIT"}
+                    </div>
+                  </div>
+                </>
+              )}
             </div>
           );
         })}
@@ -260,12 +420,9 @@ export default function PirateMap({
                 }`,
               }}
             >
-              {isPlayerControlled && !cell.isContested && (
-                <div className="absolute -top-1 -right-1 text-xs animate-float drop-shadow-lg">💰</div>
-              )}
-              {cell.isContested && (
-                <div className="absolute -top-1 -left-1 text-xs drop-shadow-lg">⚔️</div>
-              )}
+              <div className="territory-control-flag">
+                {cell.isContested ? "HOT" : isPlayerControlled ? "YOU" : isAIControlled ? "AI" : "CAP"}
+              </div>
             </div>
           );
         })}
@@ -281,12 +438,20 @@ export default function PirateMap({
 
         {/* Selection info - Mobile Optimized */}
         {selectedShipId && (
-          <div className="mt-2 sm:mt-4 p-2 sm:p-3 bg-neon-cyan bg-opacity-10 border border-neon-cyan rounded-lg text-center w-full max-w-xs">
-            <div className="text-xs sm:text-sm text-neon-cyan font-mono truncate">
-              Ship: {ships.find((s) => s.id === selectedShipId)?.type}
+          <div className="mt-2 sm:mt-4 p-2 sm:p-3 bg-slate-950/80 border border-cyan-300/50 rounded-lg text-center w-full max-w-xs">
+            <div className="text-xs sm:text-sm text-cyan-100 font-mono truncate">
+              {selectedShip?.type ?? "Ship"} selected
             </div>
-            <div className="text-xs text-gray-300 mt-1">
-              Tap highlighted cell to move
+            <div className="mt-2 grid grid-cols-3 gap-1 text-[10px] uppercase tracking-wide">
+              <span className="rounded border border-cyan-300/30 bg-cyan-300/10 px-1.5 py-1 text-cyan-100">
+                Move {selectedShip?.speed ?? "-"}
+              </span>
+              <span className="rounded border border-red-300/30 bg-red-500/10 px-1.5 py-1 text-red-100">
+                Range {selectedShip ? GameBalance.SHIP_BALANCE[selectedShip.type].range : "-"}
+              </span>
+              <span className="rounded border border-amber-300/30 bg-amber-300/10 px-1.5 py-1 text-amber-100">
+                Threat map
+              </span>
             </div>
           </div>
         )}

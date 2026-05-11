@@ -1,125 +1,232 @@
-'use client';
+"use client";
 
-import { useState, useEffect } from 'react';
-import { useSafeWallet } from '@/components/SafeWalletProvider';
-import { AgentArenaLeaderboard } from './AgentArenaLeaderboard';
-import { LeaderboardManager, LeaderboardAgent } from '@/lib/leaderboard-manager';
+import { useEffect, useMemo, useState } from "react";
+import { Clipboard, Eye, Share2, Swords, Trophy, X } from "lucide-react";
+import { useSafeWallet } from "@/components/SafeWalletProvider";
+import { AgentArenaLeaderboard } from "./AgentArenaLeaderboard";
+import {
+  LeaderboardManager,
+  LeaderboardAgent,
+} from "@/lib/leaderboard-manager";
+import { buildChallengeActionUrl, buildChallengeUrl } from "@/lib/shareLinks";
 
 interface SocialModalProps {
-    type: 'leaderboard' | 'referral';
-    gameId?: string;
-    isOpen: boolean;
-    onClose: () => void;
+  type: "leaderboard" | "referral";
+  gameId?: string;
+  isOpen: boolean;
+  onClose: () => void;
 }
 
-export default function SocialModal({ type, gameId, isOpen, onClose }: SocialModalProps) {
-    const { publicKey } = useSafeWallet();
-    const [agents, setAgents] = useState<LeaderboardAgent[]>([]);
-    const [referralCode, setReferralCode] = useState('');
-    const [inviteLink, setInviteLink] = useState('');
-    const [copied, setCopied] = useState(false);
+export default function SocialModal({
+  type,
+  gameId,
+  isOpen,
+  onClose,
+}: SocialModalProps) {
+  const { publicKey } = useSafeWallet();
+  const [agents, setAgents] = useState<LeaderboardAgent[]>([]);
+  const [copied, setCopied] = useState(false);
 
-    useEffect(() => {
-        if (isOpen && publicKey) {
-            if (type === 'referral') {
-                const code = publicKey.toString().slice(0, 8).toUpperCase();
-                setReferralCode(code);
-                const baseUrl = window.location.origin;
-                const link = gameId ? `${baseUrl}?join=${gameId}&ref=${code}` : `${baseUrl}?ref=${code}`;
-                setInviteLink(link);
-            } else if (type === 'leaderboard') {
-                const topAgents = LeaderboardManager.getTopAgents(10);
-                setAgents(topAgents);
-            }
-        }
-    }, [isOpen, publicKey, type, gameId]);
+  const referralCode = useMemo(() => {
+    if (!publicKey) return "GUEST";
+    return publicKey.toString().slice(0, 8).toUpperCase();
+  }, [publicKey]);
 
-    const handleCopy = async (text: string) => {
-        await navigator.clipboard.writeText(text);
-        setCopied(true);
-        setTimeout(() => setCopied(false), 2000);
-    };
+  const challengeLink = useMemo(() => {
+    return buildChallengeUrl({
+      gameId,
+      ref: referralCode !== "GUEST" ? referralCode : null,
+    });
+  }, [gameId, referralCode]);
 
-    const handleShare = (platform: 'twitter' | 'discord') => {
-        const shareText = type === 'referral'
-            ? `🏴‍☠️ Join me in PIR8 - epic naval warfare on Solana! ⚔️\n${inviteLink}\n#PIR8Game #Web3Gaming`
-            : `🏆 Check out my rank on the @PIR8Game leaderboard! #PIR8Game #Leaderboard`;
+  const actionLink = useMemo(() => {
+    return buildChallengeActionUrl({
+      gameId,
+      ref: referralCode !== "GUEST" ? referralCode : null,
+    });
+  }, [gameId, referralCode]);
 
-        if (platform === 'twitter') {
-            window.open(`https://twitter.com/intent/tweet?text=${encodeURIComponent(shareText)}`, '_blank');
-        } else {
-            handleCopy(shareText);
-        }
-    };
+  const shareText = useMemo(() => {
+    if (type === "leaderboard") {
+      return "Check the PIR8 Shadow Seas captain ranks.";
+    }
 
-    if (!isOpen) return null;
+    if (gameId) {
+      return `I opened a PIR8 duel in the Shadow Seas. Scout the board, mask your fleet, and try to beat my position.\n${challengeLink}\n#PIR8 #SolanaGaming`;
+    }
 
-    return (
-        <div className="fixed inset-0 bg-black/95 backdrop-blur-lg flex items-center justify-center z-modal"
-            role="dialog" aria-modal="true">
-            <div className="bg-gradient-to-br from-slate-900 via-slate-800 to-slate-900 
-                      rounded-3xl border-2 border-neon-cyan p-8 max-w-2xl w-full mx-4 
-                      shadow-2xl shadow-neon-cyan/30 max-h-[90vh] overflow-y-auto">
+    return `Beat my fleet in PIR8 Shadow Seas. Private naval tactics: scout, mask, reveal, ambush.\n${challengeLink}\n#PIR8 #SolanaGaming`;
+  }, [challengeLink, gameId, type]);
 
-                {/* Header */}
-                <div className="flex items-center justify-between mb-6">
-                    <h2 className="text-3xl font-black text-transparent bg-clip-text 
-                         bg-gradient-to-r from-neon-cyan via-neon-gold to-neon-cyan">
-                        {type === 'leaderboard' ? '🏆 GLOBAL LEADERBOARD' : '🚀 INVITE YOUR CREW'}
-                    </h2>
-                    <button onClick={onClose} className="text-gray-400 hover:text-white text-2xl font-bold">✕</button>
-                </div>
+  useEffect(() => {
+    if (!isOpen || type !== "leaderboard") return;
+    setAgents(LeaderboardManager.getTopAgents(10));
+  }, [isOpen, type]);
 
-                {type === 'leaderboard' ? (
-                    <AgentArenaLeaderboard agents={agents} />
-                ) : (
-                    /* Referral Content */
-                    <div className="space-y-6">
-                        <div className="text-center bg-gradient-to-r from-neon-gold/20 to-neon-orange/20 
-                            border-2 border-neon-gold rounded-xl p-4">
-                            <div className="text-2xl font-black text-neon-gold mb-2">Your Referral Code</div>
-                            <div className="font-mono text-xl font-bold text-white">{referralCode}</div>
-                        </div>
+  const handleCopy = async (text: string) => {
+    await navigator.clipboard.writeText(text);
+    setCopied(true);
+    setTimeout(() => setCopied(false), 2000);
+  };
 
-                        <div>
-                            <h3 className="text-lg font-bold text-neon-cyan mb-3">Invite Link</h3>
-                            <div className="flex gap-2">
-                                <div className="flex-1 bg-slate-800/60 border border-slate-600 rounded-lg px-4 py-3 
-                                font-mono text-sm text-gray-300 break-all">
-                                    {inviteLink}
-                                </div>
-                                <button onClick={() => handleCopy(inviteLink)}
-                                    className="bg-neon-cyan hover:bg-neon-cyan/80 text-black font-bold px-4 py-3 
-                                   rounded-lg transition-all hover:scale-105">
-                                    {copied ? '✓' : '📋'}
-                                </button>
-                            </div>
-                        </div>
+  const handleShare = (platform: "twitter" | "copy") => {
+    if (platform === "twitter") {
+      window.open(
+        `https://twitter.com/intent/tweet?text=${encodeURIComponent(shareText)}`,
+        "_blank",
+      );
+      return;
+    }
 
-                        <div className="flex gap-3">
-                            <button onClick={() => handleShare('twitter')}
-                                className="flex-1 bg-blue-500 hover:bg-blue-600 text-white font-bold py-3 px-4 
-                                 rounded-lg transition-all hover:scale-105 flex items-center justify-center gap-2">
-                                <span>🐦</span>
-                                <span>Share on Twitter</span>
-                            </button>
-                            <button onClick={() => handleShare('discord')}
-                                className="flex-1 bg-indigo-500 hover:bg-indigo-600 text-white font-bold py-3 px-4 
-                                 rounded-lg transition-all hover:scale-105 flex items-center justify-center gap-2">
-                                <span>💬</span>
-                                <span>Copy for Discord</span>
-                            </button>
-                        </div>
-                    </div>
-                )}
+    handleCopy(shareText);
+  };
 
-                {copied && (
-                    <div className="fixed bottom-4 right-4 bg-green-500 text-white px-4 py-2 rounded-lg 
-                          font-bold animate-in slide-in-from-right duration-300">
-                        ✓ Copied to clipboard!
-                    </div>
-                )}
+  if (!isOpen) return null;
+
+  return (
+    <div
+      className="fixed inset-0 z-modal flex items-center justify-center bg-black/90 p-4 backdrop-blur-md"
+      role="dialog"
+      aria-modal="true"
+    >
+      <div className="max-h-[90vh] w-full max-w-2xl overflow-y-auto rounded-lg border border-cyan-200/30 bg-slate-950 p-5 shadow-2xl shadow-cyan-950/50 sm:p-6">
+        <div className="mb-6 flex items-start justify-between gap-4">
+          <div>
+            <div className="mb-2 inline-flex items-center gap-2 rounded-full border border-cyan-200/20 bg-cyan-200/5 px-3 py-1 text-[11px] font-black uppercase tracking-[0.2em] text-cyan-100">
+              {type === "leaderboard" ? (
+                <Trophy size={14} />
+              ) : (
+                <Share2 size={14} />
+              )}
+              {type === "leaderboard" ? "Ranks" : "Challenge Link"}
             </div>
+            <h2 className="text-2xl font-black text-white sm:text-3xl">
+              {type === "leaderboard"
+                ? "Captain standings"
+                : gameId
+                  ? "Challenge this duel"
+                  : "Send a shadow skirmish"}
+            </h2>
+            <p className="mt-2 max-w-xl text-sm leading-6 text-slate-400">
+              {type === "leaderboard"
+                ? "Track the captains and agents shaping the current meta."
+                : "Share a playable entry point instead of a generic invite. The link opens PIR8 around scouting, masking, and ambush play."}
+            </p>
+          </div>
+          <button
+            onClick={onClose}
+            className="flex h-10 w-10 shrink-0 items-center justify-center rounded-md border border-white/10 bg-white/[0.04] text-slate-300 transition hover:text-white"
+            aria-label="Close"
+          >
+            <X size={18} />
+          </button>
         </div>
-    );
+
+        {type === "leaderboard" ? (
+          <AgentArenaLeaderboard agents={agents} />
+        ) : (
+          <div className="space-y-5">
+            <div className="grid gap-3 sm:grid-cols-3">
+              <div className="rounded-md border border-cyan-200/20 bg-cyan-200/5 p-3">
+                <div className="mb-1 flex items-center gap-2 text-sm font-bold text-cyan-100">
+                  <Swords size={16} />
+                  Duel hook
+                </div>
+                <p className="text-xs leading-5 text-slate-500">
+                  The recipient lands on a playable skirmish or match join.
+                </p>
+              </div>
+              <div className="rounded-md border border-amber-200/20 bg-amber-200/5 p-3">
+                <div className="mb-1 flex items-center gap-2 text-sm font-bold text-amber-100">
+                  <Eye size={16} />
+                  Watchable
+                </div>
+                <p className="text-xs leading-5 text-slate-500">
+                  The message frames the game around decisive ambush moments.
+                </p>
+              </div>
+              <div className="rounded-md border border-fuchsia-200/20 bg-fuchsia-200/5 p-3">
+                <div className="mb-1 text-sm font-bold text-fuchsia-100">
+                  Code {referralCode}
+                </div>
+                <p className="text-xs leading-5 text-slate-500">
+                  Wallet-connected captains get attribution in the URL.
+                </p>
+              </div>
+            </div>
+
+            <div>
+              <h3 className="mb-2 text-sm font-black uppercase tracking-[0.18em] text-cyan-100">
+                Challenge URL
+              </h3>
+              <div className="flex flex-col gap-2 sm:flex-row">
+                <div className="min-h-[48px] flex-1 rounded-md border border-white/10 bg-white/[0.04] px-3 py-3 font-mono text-sm text-slate-300 break-all">
+                  {challengeLink}
+                </div>
+                <button
+                  onClick={() => handleCopy(challengeLink)}
+                  className="inline-flex min-h-[48px] items-center justify-center gap-2 rounded-md bg-cyan-200 px-4 py-2 text-sm font-black text-slate-950 transition hover:bg-white"
+                >
+                  <Clipboard size={16} />
+                  {copied ? "Copied" : "Copy"}
+                </button>
+              </div>
+            </div>
+
+            <div>
+              <h3 className="mb-2 text-sm font-black uppercase tracking-[0.18em] text-fuchsia-100">
+                Blink Action URL
+              </h3>
+              <div className="flex flex-col gap-2 sm:flex-row">
+                <div className="min-h-[48px] flex-1 rounded-md border border-white/10 bg-white/[0.04] px-3 py-3 font-mono text-sm text-slate-300 break-all">
+                  {actionLink}
+                </div>
+                <button
+                  onClick={() => handleCopy(actionLink)}
+                  className="inline-flex min-h-[48px] items-center justify-center gap-2 rounded-md border border-fuchsia-200/30 bg-fuchsia-200/10 px-4 py-2 text-sm font-black text-fuchsia-100 transition hover:border-fuchsia-100"
+                >
+                  <Clipboard size={16} />
+                  Copy
+                </button>
+              </div>
+              <p className="mt-2 text-xs leading-5 text-slate-500">
+                Prototype endpoint for Solana Actions/Blinks inspectors. The
+                normal challenge URL remains the fallback for every browser.
+              </p>
+            </div>
+
+            <div>
+              <h3 className="mb-2 text-sm font-black uppercase tracking-[0.18em] text-amber-100">
+                Share Copy
+              </h3>
+              <div className="rounded-md border border-white/10 bg-slate-900/80 p-4 text-sm leading-6 text-slate-300 whitespace-pre-wrap">
+                {shareText}
+              </div>
+            </div>
+
+            <div className="flex flex-col gap-2 sm:flex-row">
+              <button
+                onClick={() => handleShare("twitter")}
+                className="flex-1 rounded-md border border-cyan-200/30 bg-cyan-200/10 px-4 py-3 text-sm font-bold text-cyan-100 transition hover:border-cyan-100"
+              >
+                Share on X
+              </button>
+              <button
+                onClick={() => handleShare("copy")}
+                className="flex-1 rounded-md border border-amber-200/30 bg-amber-200/10 px-4 py-3 text-sm font-bold text-amber-100 transition hover:border-amber-100"
+              >
+                Copy Discord Text
+              </button>
+            </div>
+          </div>
+        )}
+
+        {copied && (
+          <div className="fixed bottom-4 right-4 rounded-md bg-green-500 px-4 py-2 text-sm font-bold text-white shadow-lg">
+            Copied to clipboard
+          </div>
+        )}
+      </div>
+    </div>
+  );
 }

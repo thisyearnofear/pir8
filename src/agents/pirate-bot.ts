@@ -11,6 +11,24 @@ import { PIR8AgentPlugin } from "../lib/sdk/PIR8AgentPlugin";
 import fs from "fs";
 import path from "path";
 
+function getResolvedProgramId(idl: { address?: unknown }): PublicKey {
+  const idlAddress = typeof idl.address === "string" ? idl.address : null;
+  const configuredAddress = process.env.NEXT_PUBLIC_PROGRAM_ID || null;
+
+  if (idlAddress && configuredAddress && idlAddress !== configuredAddress) {
+    throw new Error(
+      `Program ID mismatch: NEXT_PUBLIC_PROGRAM_ID=${configuredAddress} but IDL address=${idlAddress}. Regenerate or replace the stale configuration so both point to the deployed PIR8 program.`,
+    );
+  }
+
+  const resolvedAddress = idlAddress || configuredAddress;
+  if (!resolvedAddress) {
+    throw new Error("Program ID is missing from both NEXT_PUBLIC_PROGRAM_ID and public/idl/pir8_game.json");
+  }
+
+  return new PublicKey(resolvedAddress);
+}
+
 export async function runAutonomousAgent(
   gameId: number,
   privateKeyArray: number[],
@@ -41,7 +59,7 @@ export async function runAutonomousAgent(
   // Load IDL
   const idlPath = path.join(process.cwd(), "public/idl/pir8_game.json");
   const idl = JSON.parse(fs.readFileSync(idlPath, "utf8"));
-  const programId = idl.address || process.env.NEXT_PUBLIC_PROGRAM_ID;
+  const programId = getResolvedProgramId(idl);
 
   // Modern Anchor IDLs (0.30+) include an "address" field. Try the 2-arg
   // constructor first; fall back to explicit 3-arg if it fails.
@@ -50,7 +68,7 @@ export async function runAutonomousAgent(
     program = new (Program as any)(idl, provider) as Program;
   } catch {
     console.warn("[pir8] 2-arg Program constructor failed in pirate-bot, trying 3-arg");
-    program = new (Program as any)(idl, new PublicKey(programId), provider) as Program;
+    program = new (Program as any)(idl, programId, provider) as Program;
   }
 
   // Initialize Plugin

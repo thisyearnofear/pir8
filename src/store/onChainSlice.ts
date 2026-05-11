@@ -7,328 +7,377 @@ export const createOnChainSlice: StateCreator<
   [],
   [],
   OnChainSlice
-> = (set, get) => ({
-  lobbies: [],
+> = (set, get) => {
+  const createWalletAdapterOrNull = async (wallet?: any) => {
+    if (!wallet) return null;
+    const { createWalletAdapter } = await import("../lib/client/transactionBuilder");
+    return createWalletAdapter(wallet);
+  };
 
-  fetchLobbies: async (wallet?: any) => {
-    try {
-      set({ isLoading: true });
-
-      const { SOLANA_CONFIG } = await import("../utils/constants");
-      if (!SOLANA_CONFIG.PROGRAM_ID) {
-        console.warn("SOLANA_CONFIG.PROGRAM_ID is not set");
-        set({ lobbies: [], isLoading: false });
-        return;
-      }
-
-      const { fetchLobbies: fetchLobbiesFromChain, createWalletAdapter } = await import(
-        "../lib/client/transactionBuilder"
-      );
-
-      let walletAdapter;
-      if (wallet) {
-        walletAdapter = createWalletAdapter(wallet);
-      } else {
-        const { Connection } = await import("@solana/web3.js");
-        const connection = new Connection(
-          SOLANA_CONFIG.RPC_URL || "https://api.devnet.solana.com",
-          "confirmed"
-        );
-        walletAdapter = { connection, publicKey: null } as any;
-      }
-
-      const games = await fetchLobbiesFromChain(walletAdapter);
-
-      const lobbies = games.map((g: any) => ({
-        address: g.publicKey.toBase58(),
-        gameId: g.account?.gameId?.toNumber?.() || null,
-        authority: g.account?.authority?.toBase58?.() || null,
-        status: g.account?.status,
-        playerCount: g.account?.playerCount || 0,
-        maxPlayers: 4, // Max players is usually a constant, but we can hardcode for UI
-        mode: g.account?.mode,
-        players: g.account?.players?.map((p: any) => p.pubkey?.toBase58?.()) || [],
-      }));
-
-      set({ lobbies, isLoading: false });
-    } catch (error) {
-      console.warn("Failed to fetch lobbies:", error);
-      set({ lobbies: [], isLoading: false });
+  const refreshLobbiesState = async (wallet?: any) => {
+    const { SOLANA_CONFIG } = await import("../utils/constants");
+    if (!SOLANA_CONFIG.PROGRAM_ID) {
+      console.warn("SOLANA_CONFIG.PROGRAM_ID is not set");
+      set({ lobbies: [] });
+      return [];
     }
-  },
 
-  fetchGameState: async (
+    const { fetchLobbies: fetchLobbiesFromChain } = await import(
+      "../lib/client/transactionBuilder"
+    );
+
+    let walletAdapter;
+    if (wallet) {
+      walletAdapter = await createWalletAdapterOrNull(wallet);
+    } else {
+      const { Connection } = await import("@solana/web3.js");
+      const connection = new Connection(
+        SOLANA_CONFIG.RPC_URL || "https://api.devnet.solana.com",
+        "confirmed"
+      );
+      walletAdapter = { connection, publicKey: null } as any;
+    }
+
+    const games = await fetchLobbiesFromChain(walletAdapter as any);
+    const lobbies = games.map((g: any) => ({
+      address: g.publicKey.toBase58(),
+      gameId: g.account?.gameId?.toNumber?.() || null,
+      authority: g.account?.authority?.toBase58?.() || null,
+      status: g.account?.status,
+      playerCount: g.account?.playerCount || 0,
+      maxPlayers: 4,
+      mode: g.account?.mode,
+      players: g.account?.players?.map((p: any) => p.pubkey?.toBase58?.()) || [],
+    }));
+
+    set({ lobbies });
+    return lobbies;
+  };
+
+  const refreshGameState = async (
     gameId: number,
     wallet: any,
   ): Promise<GameState | null> => {
-    try {
-      const { fetchGameState, createWalletAdapter } = await import(
-        "../lib/client/transactionBuilder"
-      );
-      const walletAdapter = createWalletAdapter(wallet);
-      const onChainState = await fetchGameState(walletAdapter, Number(get().gameState?.gameId || 0));
-      if (!onChainState) return null;
-
-      const { mapOnChainToLocal } = await import("../utils/helpers");
-      return mapOnChainToLocal(onChainState, gameId.toString());
-    } catch (e) {
-      return null;
+    const walletAdapter = await createWalletAdapterOrNull(wallet);
+    if (!walletAdapter) {
+      throw new Error("Wallet is required to refresh game state");
     }
-  },
 
-  startGame: async (gameId: number, wallet: any): Promise<boolean> => {
+    const { fetchGameState } = await import("../lib/client/transactionBuilder");
+    const onChainState = await fetchGameState(walletAdapter, Number(gameId));
+    if (!onChainState) return null;
+
+    const { mapOnChainToLocal } = await import("../utils/helpers");
+    const localState = mapOnChainToLocal(onChainState, gameId.toString());
+    set({ gameState: localState });
+    return localState;
+  };
+
+  const withOnChainAction = async <T>(
+    action: () => Promise<T>,
+    options?: {
+      gameId?: number;
+      wallet?: any;
+      refreshLobbies?: boolean;
+      errorMessage?: string;
+    },
+  ): Promise<T> => {
+    set({ isLoading: true, error: null });
+
     try {
-      set({ isLoading: true, error: null });
-      const { startGame, createWalletAdapter } = await import("../lib/client/transactionBuilder");
-      const walletAdapter = createWalletAdapter(wallet);
-      await startGame(walletAdapter, gameId);
+      const result = await action();
 
-      const state = await get().fetchGameState(gameId, wallet);
-      if (state) set({ gameState: state });
+      if (options?.gameId !== undefined && options.wallet) {
+        await refreshGameState(options.gameId, options.wallet);
+      }
+
+      if (options?.refreshLobbies) {
+        await refreshLobbiesState(options.wallet);
+      }
 
       set({ isLoading: false });
-      return true;
+      return result;
     } catch (error) {
-      set({ error: "Failed to start game", isLoading: false });
-      return false;
+      set({
+        error: options?.errorMessage || "On-chain action failed",
+        isLoading: false,
+      });
+      throw error;
     }
-  },
+  };
 
-  createGame: async (
-    gameId: number,
-    _players: Player[],
-    _entryFee: number,
-    wallet: any,
-  ): Promise<boolean> => {
-    try {
-      set({ isLoading: true, error: null });
-      const { createGame, createWalletAdapter } = await import("../lib/client/transactionBuilder");
-      const walletAdapter = createWalletAdapter(wallet);
-      await createGame(walletAdapter, gameId, "Casual");
+  return {
+    lobbies: [],
 
-      const state = await get().fetchGameState(gameId, wallet);
-      if (state) set({ gameState: state });
+    fetchLobbies: async (wallet?: any) => {
+      try {
+        set({ isLoading: true });
+        await refreshLobbiesState(wallet);
+        set({ isLoading: false });
+      } catch (error) {
+        console.warn("Failed to fetch lobbies:", error);
+        set({ lobbies: [], isLoading: false });
+      }
+    },
 
-      set({ isLoading: false });
-      return true;
-    } catch (error) {
-      set({ error: "Failed to create game", isLoading: false });
-      return false;
-    }
-  },
+    fetchGameState: async (
+      gameId: number,
+      wallet: any,
+    ): Promise<GameState | null> => {
+      try {
+        return await refreshGameState(gameId, wallet);
+      } catch {
+        return null;
+      }
+    },
 
-  joinGame: async (
-    gameId: string | number,
-    _player: Player,
-    wallet: any,
-  ): Promise<boolean> => {
-    try {
-      set({ isLoading: true, error: null });
-      const gId =
-        typeof gameId === "string"
-          ? parseInt(gameId.replace("onchain_", ""), 10)
-          : gameId;
+    startGame: async (gameId: number, wallet: any): Promise<boolean> => {
+      try {
+        const walletAdapter = await createWalletAdapterOrNull(wallet);
+        if (!walletAdapter) throw new Error("Wallet not connected");
 
-      const { joinGame, createWalletAdapter } = await import("../lib/client/transactionBuilder");
-      const walletAdapter = createWalletAdapter(wallet);
-      await joinGame(walletAdapter, Number(gameId));
+        const { startGame } = await import("../lib/client/transactionBuilder");
+        await withOnChainAction(
+          () => startGame(walletAdapter, gameId),
+          {
+            gameId,
+            wallet,
+            refreshLobbies: true,
+            errorMessage: "Failed to start game",
+          },
+        );
+        return true;
+      } catch {
+        return false;
+      }
+    },
 
-      const state = await get().fetchGameState(gId, wallet);
-      if (state) set({ gameState: state });
+    createGame: async (
+      gameId: number,
+      _players: Player[],
+      _entryFee: number,
+      wallet: any,
+    ): Promise<boolean> => {
+      try {
+        const walletAdapter = await createWalletAdapterOrNull(wallet);
+        if (!walletAdapter) throw new Error("Wallet not connected");
 
-      set({ isLoading: false });
-      return true;
-    } catch (error) {
-      set({ error: "Failed to join game", isLoading: false });
-      return false;
-    }
-  },
+        const { createGame } = await import("../lib/client/transactionBuilder");
+        await withOnChainAction(
+          () => createGame(walletAdapter, gameId, "Casual"),
+          {
+            gameId,
+            wallet,
+            refreshLobbies: true,
+            errorMessage: "Failed to create game",
+          },
+        );
+        return true;
+      } catch {
+        return false;
+      }
+    },
 
-  findOrCreateGame: async (
-    mode: OnChainGameMode,
-    _player: Player,
-    wallet: any,
-  ): Promise<boolean> => {
-    try {
-      set({ isLoading: true, error: null });
-      
-      // Check for Agent Arena match if mode is AgentArena
-      if (mode === "AgentArena") {
-        const { getAgentMatchmaker } = await import("../lib/agent-matchmaker");
-        const matchmaker = getAgentMatchmaker();
-        
-        // Find existing lobbies for Agent Arena
-        const agentLobbies = matchmaker.getActiveLobbies().filter(l => l.gameType === "ranked");
-        if (agentLobbies.length > 0) {
+    joinGame: async (
+      gameId: string | number,
+      _player: Player,
+      wallet: any,
+    ): Promise<boolean> => {
+      try {
+        const gId =
+          typeof gameId === "string"
+            ? parseInt(gameId.replace("onchain_", ""), 10)
+            : gameId;
+        const walletAdapter = await createWalletAdapterOrNull(wallet);
+        if (!walletAdapter) throw new Error("Wallet not connected");
+
+        const { joinGame } = await import("../lib/client/transactionBuilder");
+        await withOnChainAction(
+          () => joinGame(walletAdapter, Number(gId)),
+          {
+            gameId: Number(gId),
+            wallet,
+            refreshLobbies: true,
+            errorMessage: "Failed to join game",
+          },
+        );
+        return true;
+      } catch {
+        return false;
+      }
+    },
+
+    findOrCreateGame: async (
+      mode: OnChainGameMode,
+      _player: Player,
+      wallet: any,
+    ): Promise<boolean> => {
+      try {
+        if (mode === "AgentArena") {
+          const { getAgentMatchmaker } = await import("../lib/agent-matchmaker");
+          const matchmaker = getAgentMatchmaker();
+          const agentLobbies = matchmaker
+            .getActiveLobbies()
+            .filter((l) => l.gameType === "ranked");
+
           const targetLobby = agentLobbies[0];
           if (targetLobby) {
-            const { joinGame } = await import("../lib/client/transactionBuilder");
-            await joinGame(wallet, targetLobby.gameId);
-            // ... load state
-            return true;
+            return await get().joinGame(targetLobby.gameId, _player, wallet);
           }
         }
+
+        const newGameId = Math.floor(Date.now() / 1000);
+        console.log(
+          `No match found, creating game ${newGameId} in mode ${mode}...`,
+        );
+
+        const walletAdapter = await createWalletAdapterOrNull(wallet);
+        if (!walletAdapter) throw new Error("Wallet not connected");
+        const { createGame } = await import("../lib/client/transactionBuilder");
+
+        await withOnChainAction(
+          () => createGame(walletAdapter, newGameId, mode),
+          {
+            gameId: newGameId,
+            wallet,
+            refreshLobbies: true,
+            errorMessage: "Failed to find or create game",
+          },
+        );
+
+        return true;
+      } catch (error) {
+        console.error(error);
+        return false;
       }
+    },
 
-      const {
-        fetchGameState: _fetchGameState,
-        fetchLobbies,
-        joinGame: _joinGame,
-      } = await import("../lib/client/transactionBuilder");
-      const { mapOnChainToLocal: _mapOnChainToLocal } = await import("../utils/helpers");
-
-      const _allGames = await fetchLobbies(wallet);
-      // ... existing match logic
-      
-      const newGameId = Math.floor(Date.now() / 1000);
-      console.log(
-        `No match found, creating game ${newGameId} in mode ${mode}...`,
-      );
-      const { createGame, createWalletAdapter } = await import("../lib/client/transactionBuilder");
-      const walletAdapter = createWalletAdapter(wallet);
-      await createGame(walletAdapter, newGameId, mode);
-      // ... load state
-      
-      return true;
-    } catch (error) {
-      console.error(error);
-      set({ error: "Failed to find or create game", isLoading: false });
-      return false;
-    }
-  },
-
-  moveShip: async (
-    gameId: number,
-    shipId: string,
-    toX: number,
-    toY: number,
-    wallet: any,
-    _decisionTimeMs?: number,
-  ): Promise<boolean> => {
-    try {
-      set({ isLoading: true, error: null });
-      const { moveShip, createWalletAdapter } = await import("../lib/client/transactionBuilder");
-      const walletAdapter = createWalletAdapter(wallet);
-      await moveShip(walletAdapter, gameId, shipId, toX, toY);
-
-      const state = await get().fetchGameState(gameId, wallet);
-      if (state) set({ gameState: state });
-      set({ isLoading: false });
-      return true;
-    } catch (error) {
-      set({ error: "Move failed", isLoading: false });
-      return false;
-    }
-  },
-
-  attackWithShip: async (
-    gameId: number,
-    shipId: string,
-    targetShipId: string,
-    wallet: any,
-  ): Promise<boolean> => {
-    try {
-      set({ isLoading: true, error: null });
-      const { attackShip, createWalletAdapter } = await import("../lib/client/transactionBuilder");
-      const walletAdapter = createWalletAdapter(wallet);
-      await attackShip(walletAdapter, gameId, shipId, targetShipId);
-
-      const state = await get().fetchGameState(gameId, wallet);
-      if (state) set({ gameState: state });
-      set({ isLoading: false });
-      return true;
-    } catch (error) {
-      set({ error: "Attack failed", isLoading: false });
-      return false;
-    }
-  },
-
-  claimTerritory: async (
-    gameId: number,
-    shipId: string,
-    wallet: any,
-  ): Promise<boolean> => {
-    try {
-      set({ isLoading: true, error: null });
-      
-      const state = get().gameState;
-      if (!state) {
-        throw new Error("No game state");
+    moveShip: async (
+      gameId: number,
+      shipId: string,
+      toX: number,
+      toY: number,
+      wallet: any,
+      _decisionTimeMs?: number,
+    ): Promise<boolean> => {
+      try {
+        const walletAdapter = await createWalletAdapterOrNull(wallet);
+        if (!walletAdapter) throw new Error("Wallet not connected");
+        const { moveShip } = await import("../lib/client/transactionBuilder");
+        await withOnChainAction(
+          () => moveShip(walletAdapter, gameId, shipId, toX, toY),
+          { gameId, wallet, errorMessage: "Move failed" },
+        );
+        return true;
+      } catch {
+        return false;
       }
-      
-      const ship = state.players
-        .flatMap((p: any) => p.ships)
-        .find((s: any) => s.id === shipId);
-      
-      if (!ship) {
-        throw new Error("Ship not found");
+    },
+
+    attackWithShip: async (
+      gameId: number,
+      shipId: string,
+      targetShipId: string,
+      wallet: any,
+    ): Promise<boolean> => {
+      try {
+        const walletAdapter = await createWalletAdapterOrNull(wallet);
+        if (!walletAdapter) throw new Error("Wallet not connected");
+        const { attackShip } = await import("../lib/client/transactionBuilder");
+        await withOnChainAction(
+          () => attackShip(walletAdapter, gameId, shipId, targetShipId),
+          { gameId, wallet, errorMessage: "Attack failed" },
+        );
+        return true;
+      } catch {
+        return false;
       }
-      
-      const { claimTerritory, createWalletAdapter } = await import(
-        "../lib/client/transactionBuilder"
-      );
-      const walletAdapter = createWalletAdapter(wallet);
-      await claimTerritory(walletAdapter, gameId, shipId);
+    },
 
-      const newState = await get().fetchGameState(gameId, wallet);
-      if (newState) set({ gameState: newState });
-      set({ isLoading: false });
-      return true;
-    } catch (error) {
-      set({ error: "Claim failed", isLoading: false });
-      return false;
-    }
-  },
+    claimTerritory: async (
+      gameId: number,
+      shipId: string,
+      wallet: any,
+    ): Promise<boolean> => {
+      try {
+        const state = get().gameState;
+        if (!state) {
+          throw new Error("No game state");
+        }
 
-  collectResources: async (gameId: number, wallet: any): Promise<boolean> => {
-    try {
-      set({ isLoading: true, error: null });
-      const { collectResources, createWalletAdapter } = await import(
-        "../lib/client/transactionBuilder"
-      );
-      const walletAdapter = createWalletAdapter(wallet);
-      await collectResources(walletAdapter, gameId);
+        const ship = state.players
+          .flatMap((p: any) => p.ships)
+          .find((s: any) => s.id === shipId);
 
-      const state = await get().fetchGameState(gameId, wallet);
-      if (state) set({ gameState: state });
-      set({ isLoading: false });
-      return true;
-    } catch (error) {
-      set({ error: "Collection failed", isLoading: false });
-      return false;
-    }
-  },
+        if (!ship) {
+          throw new Error("Ship not found");
+        }
 
-  buildShip: async (
-    gameId: number,
-    shipType: string,
-    portX: number,
-    portY: number,
-    wallet: any,
-  ): Promise<boolean> => {
-    try {
-      set({ isLoading: true, error: null });
-      const { buildShip, createWalletAdapter } = await import("../lib/client/transactionBuilder");
-      const walletAdapter = createWalletAdapter(wallet);
-      await buildShip(walletAdapter, gameId, shipType as any, portX, portY);
+        const walletAdapter = await createWalletAdapterOrNull(wallet);
+        if (!walletAdapter) throw new Error("Wallet not connected");
+        const { claimTerritory } = await import(
+          "../lib/client/transactionBuilder"
+        );
+        await withOnChainAction(
+          () => claimTerritory(walletAdapter, gameId, shipId),
+          { gameId, wallet, errorMessage: "Claim failed" },
+        );
+        return true;
+      } catch {
+        return false;
+      }
+    },
 
-      const state = await get().fetchGameState(gameId, wallet);
-      if (state) set({ gameState: state });
-      set({ isLoading: false });
-      return true;
-    } catch (error) {
-      set({ error: "Build failed", isLoading: false });
-      return false;
-    }
-  },
+    collectResources: async (gameId: number, wallet: any): Promise<boolean> => {
+      try {
+        const walletAdapter = await createWalletAdapterOrNull(wallet);
+        if (!walletAdapter) throw new Error("Wallet not connected");
+        const { collectResources } = await import(
+          "../lib/client/transactionBuilder"
+        );
+        await withOnChainAction(
+          () => collectResources(walletAdapter, gameId),
+          { gameId, wallet, errorMessage: "Collection failed" },
+        );
+        return true;
+      } catch {
+        return false;
+      }
+    },
 
-  endTurn: async (gameId: number, wallet: any) => {
-    try {
-      const { endTurn, createWalletAdapter } = await import("../lib/client/transactionBuilder");
-      const walletAdapter = createWalletAdapter(wallet);
-      await endTurn(walletAdapter, gameId);
-      const state = await get().fetchGameState(gameId, wallet);
-      if (state) set({ gameState: state });
-    } catch (e) { }
-  },
-});
+    buildShip: async (
+      gameId: number,
+      shipType: string,
+      portX: number,
+      portY: number,
+      wallet: any,
+    ): Promise<boolean> => {
+      try {
+        const walletAdapter = await createWalletAdapterOrNull(wallet);
+        if (!walletAdapter) throw new Error("Wallet not connected");
+        const { buildShip } = await import("../lib/client/transactionBuilder");
+        await withOnChainAction(
+          () => buildShip(walletAdapter, gameId, shipType as any, portX, portY),
+          { gameId, wallet, errorMessage: "Build failed" },
+        );
+        return true;
+      } catch {
+        return false;
+      }
+    },
+
+    endTurn: async (gameId: number, wallet: any) => {
+      try {
+        const walletAdapter = await createWalletAdapterOrNull(wallet);
+        if (!walletAdapter) throw new Error("Wallet not connected");
+        const { endTurn } = await import("../lib/client/transactionBuilder");
+        await withOnChainAction(
+          () => endTurn(walletAdapter, gameId),
+          { gameId, wallet, errorMessage: "Failed to end turn" },
+        );
+      } catch {
+        // Keep silent behavior consistent with previous implementation.
+      }
+    },
+  };
+};

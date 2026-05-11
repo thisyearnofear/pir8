@@ -7,6 +7,26 @@
 
 const anchor = require("@coral-xyz/anchor");
 const { PublicKey } = require("@solana/web3.js");
+const path = require("path");
+const fs = require("fs");
+
+function getResolvedProgramId(idl) {
+    const idlAddress = typeof idl.address === "string" ? idl.address : null;
+    const configuredAddress = process.env.NEXT_PUBLIC_PROGRAM_ID || null;
+
+    if (idlAddress && configuredAddress && idlAddress !== configuredAddress) {
+        throw new Error(
+            `Program ID mismatch: NEXT_PUBLIC_PROGRAM_ID=${configuredAddress} but IDL address=${idlAddress}. Regenerate or replace the stale configuration so both point to the deployed PIR8 program.`
+        );
+    }
+
+    const resolvedAddress = idlAddress || configuredAddress;
+    if (!resolvedAddress) {
+        throw new Error("Program ID is missing from both NEXT_PUBLIC_PROGRAM_ID and public/idl/pir8_game.json");
+    }
+
+    return new PublicKey(resolvedAddress);
+}
 
 async function main() {
     // Setup connection
@@ -14,8 +34,9 @@ async function main() {
     anchor.setProvider(provider);
 
     // Load program
-    const programId = new PublicKey("54S7Pw6cDQKWqW4JkdTGb3vEQqtnHsZ3SvB3LB1fST2V");
-    const idl = require("../target/idl/pir8_game.json");
+    const idlPath = path.join(process.cwd(), "public/idl/pir8_game.json");
+    const idl = JSON.parse(fs.readFileSync(idlPath, "utf8"));
+    const programId = getResolvedProgramId(idl);
     const program = new anchor.Program(idl, programId, provider);
 
     // Get global game PDA

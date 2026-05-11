@@ -9,9 +9,17 @@ import { useState, useEffect } from "react";
 import { usePirateGame } from "@/store/gameStore";
 import { useSafeWallet } from "@/components/SafeWalletProvider";
 import { useSessionKey } from "@/hooks/useSessionKey";
+import { createPlayerFromWallet } from "@/lib/playerHelper";
 
 export default function LobbyBrowser() {
-  const { lobbies, fetchLobbies, isLoading, startGame } = usePirateGame();
+  const {
+    lobbies,
+    fetchLobbies,
+    isLoading,
+    startGame,
+    createGame,
+    joinGame: joinGameStore,
+  } = usePirateGame();
   const fullWallet = useSafeWallet();
   const { publicKey, wallet } = fullWallet;
   const { state: sessionState, createSession, clearSession } = useSessionKey();
@@ -41,42 +49,19 @@ export default function LobbyBrowser() {
 
     setIsCreating(true);
     try {
-      // Use proper client-side transaction building
-      const {
-        initializeGame,
-        joinGame,
-        createWalletAdapter,
-        testProgramConnection,
-      } = await import("@/lib/client/transactionBuilder");
-
-      console.log(`Creating game with seed: ${newGameId}`);
-
-      // Create a wallet adapter compatible object
-      const walletAdapter = createWalletAdapter(fullWallet);
-
-      // Test program connection first
-      console.log("Testing program connection...");
-      const programConnected = await testProgramConnection(walletAdapter);
-      if (!programConnected) {
-        throw new Error(
-          "Program not found or not deployed. Please check the program ID and network.",
-        );
+      const player = createPlayerFromWallet(publicKey);
+      const created = await createGame(newGameId, [player], 0, wallet);
+      if (!created) {
+        throw new Error("Failed to initialize game");
       }
-      console.log("Program connection successful");
 
-      console.log("Step 1: Initializing game...");
-      const initTx = await initializeGame(walletAdapter, newGameId, "Casual");
-      console.log("Game initialized successfully:", initTx);
-
-      console.log("Step 2: Joining game...");
-      const joinTx = await joinGame(walletAdapter, newGameId);
-      console.log("Joined game successfully:", joinTx);
+      const joined = await joinGameStore(newGameId, player, wallet);
+      if (!joined) {
+        throw new Error("Failed to join created game");
+      }
 
       setShowCreateModal(false);
       console.log("Game creation completed successfully");
-
-      // Refresh lobbies to show the newly created game
-      fetchLobbies(wallet);
     } catch (error) {
       console.error("Failed to create game:", error);
       setLocalError(`Failed to create game: ${error instanceof Error ? error.message : "Unknown error"}`);
@@ -86,7 +71,6 @@ export default function LobbyBrowser() {
   };
 
   const handleJoinLobby = async (lobbyAddress: string, gameId?: number) => {
-    // Check wallet connection with detailed logging
     if (!publicKey) {
       console.warn("Wallet publicKey not available");
       setLocalError("Please connect your wallet first. Click the wallet button in the top right.");
@@ -98,7 +82,6 @@ export default function LobbyBrowser() {
       return;
     }
 
-    // Prevent duplicate joins for the same lobby
     if (joiningLobby === lobbyAddress) {
       console.log("Already joining this lobby");
       return;
@@ -106,9 +89,7 @@ export default function LobbyBrowser() {
 
     setJoiningLobby(lobbyAddress);
     try {
-      // Use proper client-side transaction building
       const {
-        joinGame,
         joinGameViaDelegate,
         createWalletAdapter,
         getClientProgram,
@@ -117,7 +98,6 @@ export default function LobbyBrowser() {
 
       let targetGameId = gameId;
 
-      // If gameId not provided, fetch from chain
       if (!targetGameId) {
         console.log(`Fetching gameId from lobby: ${lobbyAddress}`);
         const walletAdapter = createWalletAdapter(fullWallet);
@@ -136,13 +116,10 @@ export default function LobbyBrowser() {
         `Joining lobby: ${lobbyAddress} with gameId: ${targetGameId}, privateMode: ${privateMode}`,
       );
 
-      // Create a wallet adapter compatible object
-      const walletAdapter = createWalletAdapter(fullWallet);
-
-      // Use session key for private mode, otherwise use regular join
       if (!targetGameId) throw new Error("Could not resolve gameId");
 
       if (privateMode && sessionState.keypair) {
+        const walletAdapter = createWalletAdapter(fullWallet);
         console.log("Joining via delegate (session key)");
         const joinTx = await joinGameViaDelegate(
           walletAdapter,
@@ -151,13 +128,14 @@ export default function LobbyBrowser() {
           fullWallet.publicKey,
         );
         console.log("Joined lobby via delegate:", joinTx);
+        await fetchLobbies(wallet);
       } else {
-        const joinTx = await joinGame(walletAdapter, targetGameId);
-        console.log("Joined lobby:", joinTx);
+        const player = createPlayerFromWallet(publicKey);
+        const joined = await joinGameStore(targetGameId, player, wallet);
+        if (!joined) {
+          throw new Error("Failed to join lobby");
+        }
       }
-
-      // Refresh lobbies after successful join
-      await fetchLobbies(wallet);
     } catch (error) {
       console.error("Failed to join lobby:", error);
       const errorMessage =

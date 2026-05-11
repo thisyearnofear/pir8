@@ -9,6 +9,19 @@ import { SOLANA_CONFIG } from "@/utils/constants";
 import { PROGRAM_ID, getGamePDA } from "../anchor";
 import idlJson from "@/../public/idl/pir8_game.json";
 
+function getResolvedProgramId(): PublicKey {
+  const idlAddress = typeof idlJson.address === "string" ? idlJson.address : null;
+  const configuredAddress = SOLANA_CONFIG.PROGRAM_ID || PROGRAM_ID.toBase58();
+
+  if (idlAddress && configuredAddress && idlAddress !== configuredAddress) {
+    throw new Error(
+      `Program ID mismatch: NEXT_PUBLIC_PROGRAM_ID=${configuredAddress} but IDL address=${idlAddress}. Regenerate or replace the stale configuration so both point to the deployed PIR8 program.`,
+    );
+  }
+
+  return new PublicKey(idlAddress || configuredAddress);
+}
+
 /**
  * Fetch game state directly from Solana blockchain (client-side only)
  */
@@ -24,9 +37,7 @@ export async function fetchGameStateClient(gameId: number = 0): Promise<any> {
       { commitment: "confirmed" }
     );
 
-    const programId = SOLANA_CONFIG.PROGRAM_ID
-      ? new PublicKey(SOLANA_CONFIG.PROGRAM_ID)
-      : PROGRAM_ID;
+    const programId = getResolvedProgramId();
 
     // Modern Anchor IDLs (0.30+) include an "address" field. Try the 2-arg
     // constructor first; fall back to explicit 3-arg if it fails.

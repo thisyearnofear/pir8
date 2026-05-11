@@ -4,6 +4,8 @@ import { useEffect, useState } from 'react';
 import { GameState } from '../types/game';
 import { ConfettiCelebration } from './effects/ConfettiCelebration';
 import { useAccessibility } from '../hooks/useAccessibility';
+import { buildBattleMoment } from '@/lib/battleMoments';
+import { buildAmbushShareText, buildChallengeUrl } from '@/lib/shareLinks';
 
 interface VictoryScreenProps {
     gameState: GameState | null;
@@ -53,49 +55,26 @@ export default function VictoryScreen({
         const winner = gameState.players.find(p => p.publicKey === gameState.winner);
         const isWinner = winner?.publicKey === currentPlayerPK;
         const winnerName = winner?.username || 'Anonymous Pirate';
-        const totalGold = winner?.resources.gold || 0;
-        const shipsDestroyed = gameState.players.reduce((total, p) =>
-            total + p.ships.filter(s => s.health === 0).length, 0
-        );
-        const territoriesControlled = winner?.controlledTerritories.length || 0;
+        const moment = buildBattleMoment(gameState, winner?.publicKey);
 
-        // Generate epic moment description
-        const epicMoments = [
-            `⚔️ ${shipsDestroyed} enemy ships sent to Davy Jones' locker!`,
-            `🏴‍☠️ Conquered ${territoriesControlled} territories across the seven seas!`,
-            `💰 Plundered ${totalGold.toLocaleString()} pieces of gold!`,
-            `⚡ Victory achieved in just ${gameState.turnNumber} strategic turns!`,
-            `🌊 Dominated the battlefield with tactical supremacy!`
-        ];
+        setEpicMoment(`${moment.title}: ${moment.summary}`);
 
-        setEpicMoment(epicMoments[Math.floor(Math.random() * epicMoments.length)] || 'Epic victory achieved!');
-
-        // Generate viral share text
-        const gameUrl = `${window.location.origin}?join=${gameState.gameId}`;
+        // Generate challenge-first share text
+        const gameUrl = buildChallengeUrl({ gameId: gameState.gameId });
+        const challengeText = buildAmbushShareText({
+            url: gameUrl,
+            winnerName,
+            turnNumber: moment.turnNumber,
+            shipsDestroyed: moment.shipsDestroyed,
+            territoriesControlled: moment.territoriesControlled,
+            gold: moment.gold,
+            isWinner,
+        });
 
         if (isWinner) {
-            setShareText(
-                `🏴‍☠️ PIRATE KING CROWNED! 👑\n\n` +
-                `Just dominated the seven seas in @PIR8Game!\n` +
-                `💰 Plundered ${totalGold.toLocaleString()} gold\n` +
-                `⚔️ Sunk ${shipsDestroyed} enemy ships\n` +
-                `🏆 Victory in ${gameState.turnNumber} turns\n` +
-                `🌊 Controlled ${territoriesControlled} territories\n\n` +
-                `Think you can challenge the new Pirate King? ⚓\n` +
-                `🎮 ${gameUrl}\n\n` +
-                `#PIR8Game #PirateKing #Web3Gaming #Solana #NavalWarfare`
-            );
+            setShareText(challengeText);
         } else {
-            setShareText(
-                `🏴‍☠️ Epic naval battle just ended!\n\n` +
-                `${winnerName} claimed the Pirate King crown in @PIR8Game\n` +
-                `💀 ${shipsDestroyed} ships sent to Davy Jones' locker\n` +
-                `⚔️ ${gameState.turnNumber} turns of strategic warfare\n` +
-                `🌊 ${territoriesControlled} territories conquered\n\n` +
-                `Ready to challenge for the crown? ⚓\n` +
-                `🎮 ${gameUrl}\n\n` +
-                `#PIR8Game #NavalWarfare #Web3Gaming #ChallengeAccepted`
-            );
+            setShareText(challengeText);
         }
     };
 
@@ -252,8 +231,8 @@ export default function VictoryScreen({
                                         translate-x-[-100%] group-hover:translate-x-[100%] transition-transform duration-700"></div>
                         <div className="relative flex items-center justify-center gap-3">
                             <span className="text-2xl animate-pulse">🚀</span>
-                            <span>SHARE EPIC VICTORY</span>
-                            <span className="text-2xl animate-pulse">🏆</span>
+                            <span>SHARE CHALLENGE</span>
+                            <span className="text-2xl animate-pulse">⚔️</span>
                         </div>
                     </button>
                 </div>
@@ -439,8 +418,12 @@ export default function VictoryScreen({
                                     p-8 max-w-md w-full mx-4 shadow-2xl shadow-neon-magenta/30 animate-in zoom-in duration-300">
                         <h3 className="text-2xl font-black text-neon-magenta mb-6 text-center flex items-center justify-center gap-2">
                             <span className="text-3xl">🚀</span>
-                            Share Your Victory
+                            Share The Challenge
                         </h3>
+
+                        <div className="mb-4 rounded-xl border border-neon-cyan/30 bg-slate-950/70 p-3 text-xs leading-5 text-gray-300 whitespace-pre-wrap">
+                            {shareText}
+                        </div>
 
                         <div className="space-y-4">
                             <button

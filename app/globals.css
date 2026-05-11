@@ -90,12 +90,248 @@
   @apply text-xl font-bold drop-shadow-lg;
 }
 
+.ship-token {
+  --ship-color: #00d9ff;
+  position: relative;
+  display: grid;
+  place-items: center;
+  width: clamp(24px, 62%, 42px);
+  aspect-ratio: 1.35;
+  color: var(--ship-color);
+  filter: drop-shadow(0 0 8px color-mix(in srgb, var(--ship-color) 65%, transparent));
+  transition: transform 0.2s ease, filter 0.2s ease;
+  z-index: 10;
+}
+
+.ship-token-hull {
+  position: absolute;
+  inset: 44% 8% 12%;
+  border: 2px solid currentColor;
+  border-top: 0;
+  border-radius: 0 0 999px 999px;
+  background:
+    linear-gradient(90deg, transparent 0 14%, currentColor 14% 20%, transparent 20% 80%, currentColor 80% 86%, transparent 86%),
+    color-mix(in srgb, currentColor 22%, #06131f);
+  box-shadow: inset 0 -5px 8px rgba(0, 0, 0, 0.45);
+}
+
+.ship-token-mast {
+  position: absolute;
+  bottom: 35%;
+  left: 46%;
+  width: 38%;
+  height: 58%;
+  border-left: 2px solid currentColor;
+  border-bottom: 2px solid currentColor;
+  transform: skewX(-12deg);
+  background: linear-gradient(135deg, color-mix(in srgb, currentColor 72%, white) 0 48%, transparent 49%);
+  clip-path: polygon(0 0, 100% 18%, 14% 100%, 0 100%);
+}
+
+.ship-token-label {
+  position: absolute;
+  left: 7%;
+  bottom: 6%;
+  font-size: 9px;
+  font-weight: 900;
+  line-height: 1;
+  color: #eafaff;
+  text-shadow: 0 1px 2px #000;
+}
+
+.ship-token-selected {
+  transform: translateY(-1px) scale(1.08);
+  filter: drop-shadow(0 0 10px rgba(255, 215, 0, 0.75));
+}
+
+.ship-token-frigate,
+.ship-token-galleon,
+.ship-token-flagship {
+  width: clamp(28px, 72%, 48px);
+}
+
+.ship-token-galleon .ship-token-mast,
+.ship-token-flagship .ship-token-mast {
+  width: 46%;
+  height: 66%;
+}
+
+.ship-token-flagship::before {
+  content: "";
+  position: absolute;
+  top: 6%;
+  right: 12%;
+  width: 22%;
+  height: 22%;
+  border: 1px solid currentColor;
+  border-radius: 50%;
+  box-shadow: 0 0 8px currentColor;
+}
+
 .health-bar {
   @apply absolute bottom-0 left-0 right-0 h-1 bg-gray-700 rounded-b;
 }
 
 .territory-icon {
   @apply text-lg;
+}
+
+.territory-token {
+  position: relative;
+  width: 74%;
+  aspect-ratio: 1;
+  border-radius: 5px;
+  border: 1px solid rgba(148, 163, 184, 0.3);
+  background: linear-gradient(145deg, rgba(15, 23, 42, 0.28), rgba(8, 47, 73, 0.22));
+  overflow: hidden;
+}
+
+.territory-token::before,
+.territory-token::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  opacity: 0.65;
+}
+
+.territory-token-water::before {
+  background: repeating-linear-gradient(135deg, rgba(34, 211, 238, 0.28) 0 2px, transparent 2px 7px);
+}
+
+.territory-token-island::before {
+  inset: 22%;
+  border-radius: 43% 57% 38% 62%;
+  background: #3f7b52;
+  box-shadow: 0 0 0 5px rgba(16, 185, 129, 0.15);
+}
+
+.territory-token-port::before {
+  inset: 20% 18%;
+  border: 2px solid rgba(251, 191, 36, 0.8);
+  border-top: 0;
+  border-radius: 0 0 999px 999px;
+}
+
+.territory-token-treasure::before {
+  inset: 26%;
+  border-radius: 3px;
+  background: linear-gradient(145deg, #fbbf24, #92400e);
+  transform: rotate(45deg);
+}
+
+.territory-token-storm::before {
+  background:
+    linear-gradient(130deg, transparent 0 42%, rgba(125, 211, 252, 0.75) 43% 48%, transparent 49%),
+    radial-gradient(circle at 35% 35%, rgba(148, 163, 184, 0.55), transparent 42%);
+}
+
+.territory-token-reef::before {
+  background: linear-gradient(135deg, transparent 0 35%, #94a3b8 36% 46%, transparent 47% 100%);
+}
+
+.territory-token-whirlpool::before {
+  inset: 18%;
+  border: 2px solid rgba(34, 211, 238, 0.72);
+  border-left-color: transparent;
+  border-radius: 50%;
+  transform: rotate(-35deg);
+}
+
+.territory-token-mark {
+  position: absolute;
+  inset-inline: 0;
+  bottom: 2px;
+  z-index: 1;
+  text-align: center;
+  font-size: 8px;
+  font-weight: 900;
+  line-height: 1;
+  color: rgba(226, 232, 240, 0.82);
+  text-shadow: 0 1px 2px #000;
+}
+
+.territory-token-unscanned {
+  opacity: 0.62;
+}
+
+.territory-token-scanned {
+  border-color: rgba(103, 232, 249, 0.55);
+  box-shadow: inset 0 0 12px rgba(34, 211, 238, 0.12);
+}
+
+.fogged-sector::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  border-radius: inherit;
+  pointer-events: none;
+  background:
+    repeating-linear-gradient(135deg, rgba(148, 163, 184, 0.08) 0 4px, transparent 4px 9px),
+    rgba(2, 6, 23, 0.42);
+  z-index: 8;
+}
+
+.scanned-sector::before {
+  content: "";
+  position: absolute;
+  inset: 2px;
+  border-radius: inherit;
+  border: 1px solid rgba(103, 232, 249, 0.2);
+  pointer-events: none;
+  z-index: 7;
+}
+
+.threat-zone-cell::after {
+  content: "";
+  position: absolute;
+  inset: 4px;
+  border: 1px solid rgba(248, 113, 113, 0.32);
+  border-radius: inherit;
+  background: repeating-linear-gradient(-45deg, rgba(239, 68, 68, 0.1) 0 3px, transparent 3px 9px);
+  pointer-events: none;
+  z-index: 6;
+}
+
+.move-range-marker {
+  pointer-events: none;
+  position: absolute;
+  right: 3px;
+  bottom: 3px;
+  width: 9px;
+  height: 9px;
+  border: 1px solid rgba(207, 250, 254, 0.95);
+  border-radius: 50%;
+  background: rgba(34, 211, 238, 0.72);
+  box-shadow: 0 0 10px rgba(103, 232, 249, 0.85);
+}
+
+.attack-range-arc {
+  pointer-events: none;
+  position: absolute;
+  inset: 5px;
+  border: 2px solid rgba(248, 113, 113, 0.82);
+  border-left-color: transparent;
+  border-radius: 50%;
+  transform: rotate(-35deg);
+  z-index: 6;
+}
+
+.territory-control-flag {
+  position: absolute;
+  top: -7px;
+  right: -7px;
+  min-width: 22px;
+  padding: 2px 4px;
+  border: 1px solid currentColor;
+  border-radius: 4px;
+  background: rgba(2, 6, 23, 0.92);
+  color: #e2e8f0;
+  font-size: 8px;
+  font-weight: 900;
+  line-height: 1;
+  letter-spacing: 0.02em;
+  text-align: center;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.45);
 }
 
 /* Pirate Theme Effects */
