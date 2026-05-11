@@ -75,11 +75,13 @@ function adaptPosition(x: number, y: number): Coordinate {
 }
 
 /** Convert bit-packed scanned_coordinates (Vec<u8>) to string array */
-function adaptScannedCoordinates(packed: number[]): string[] {
+function adaptScannedCoordinates(packed: number[] | Uint8Array | Buffer): string[] {
   const result: string[] = [];
   const MAP_SIZE = 10;
-  for (let byteIdx = 0; byteIdx < packed.length; byteIdx++) {
-    const byte = packed[byteIdx];
+  const data = packed instanceof Uint8Array || packed instanceof Buffer ? Array.from(packed) : packed;
+  
+  for (let byteIdx = 0; byteIdx < data.length; byteIdx++) {
+    const byte = data[byteIdx];
     if (byte === undefined) continue;
     for (let bitIdx = 0; bitIdx < 8; bitIdx++) {
       if (byte & (1 << bitIdx)) {
@@ -101,13 +103,13 @@ function adaptScannedCoordinates(packed: number[]): string[] {
 export function onChainToShip(data: OnChainShipData): Ship {
   return {
     id: data.id,
-    type: adaptShipType(data.shipType),
+    type: adaptShipType(data.ship_type),
     health: data.health,
-    maxHealth: data.maxHealth,
+    maxHealth: data.max_health,
     attack: data.attack,
     defense: data.defense,
     speed: data.speed,
-    position: adaptPosition(data.positionX, data.positionY),
+    position: adaptPosition(data.position_x, data.position_y),
     // CLIENT-ONLY: resources, ability, activeEffects are not on-chain
     resources: { gold: 0, crew: 0, cannons: 0, supplies: 0, wood: 0, rum: 0 },
     ability: {
@@ -132,14 +134,14 @@ export function onChainToPlayer(data: OnChainPlayerData): Player {
     publicKey: data.pubkey.toString(),
     resources: adaptResources(data.resources),
     ships: data.ships.map(onChainToShip),
-    controlledTerritories: data.controlledTerritories,
-    totalScore: data.totalScore,
-    isActive: data.isActive,
-    scanCharges: data.scanCharges,
-    scannedCoordinates: adaptScannedCoordinates(data.scannedCoordinates),
-    speedBonusAccumulated: data.speedBonusAccumulated.toNumber(),
-    averageDecisionTimeMs: data.averageDecisionTimeMs.toNumber(),
-    totalMoves: data.totalMoves,
+    controlledTerritories: data.controlled_territories,
+    totalScore: data.total_score,
+    isActive: data.is_active,
+    scanCharges: data.scan_charges,
+    scannedCoordinates: adaptScannedCoordinates(data.scanned_coordinates),
+    speedBonusAccumulated: data.speed_bonus_accumulated.toNumber(),
+    averageDecisionTimeMs: data.average_decision_time_ms.toNumber(),
+    totalMoves: data.total_moves,
     // CLIENT-ONLY: consecutiveAttacks, lastActionWasAttack, revealedCoordinates
     consecutiveAttacks: 0,
     lastActionWasAttack: false,
@@ -159,7 +161,7 @@ export function onChainToTerritoryCell(
 ): TerritoryCell {
   return {
     coordinate: `${x},${y}`,
-    type: adaptTerritoryCellType(data.cellType),
+    type: adaptTerritoryCellType(data.cell_type),
     owner: data.owner?.toString() ?? null,
     // CLIENT-ONLY: resources, isContested, weatherEffect
     resources: {},
@@ -181,7 +183,7 @@ export function onChainToGameState(chain: OnChainGameState): GameState {
     const row: TerritoryCell[] = [];
     for (let y = 0; y < MAP_SIZE; y++) {
       const index = x * MAP_SIZE + y;
-      const chainCell = chain.territoryMap[index];
+      const chainCell = chain.territory_map[index];
       if (chainCell) {
         row.push(onChainToTerritoryCell(chainCell, x, y));
       } else {
@@ -200,7 +202,7 @@ export function onChainToGameState(chain: OnChainGameState): GameState {
   const gameMap: GameMap = { cells, size: MAP_SIZE };
 
   return {
-    gameId: chain.gameId.toString(),
+    gameId: chain.game_id.toString(),
     gameMode:
       chain.mode === "casual"
         ? "Casual"
@@ -208,11 +210,11 @@ export function onChainToGameState(chain: OnChainGameState): GameState {
           ? "Competitive"
           : "AgentArena",
     players: chain.players.map(onChainToPlayer),
-    currentPlayerIndex: chain.currentPlayerIndex,
+    currentPlayerIndex: chain.current_player_index,
     gameMap,
     gameStatus: adaptGameStatus(chain.status),
     winner: chain.winner?.toString(),
-    turnNumber: chain.turnNumber,
+    turnNumber: chain.turn_number,
     // CLIENT-ONLY: currentPhase, pendingActions, globalWeather, eventLog
     currentPhase: "movement",
     pendingActions: [],

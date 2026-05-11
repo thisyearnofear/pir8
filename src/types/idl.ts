@@ -1,14 +1,20 @@
-{
+/**
+ * Program IDL in camelCase format in order to be used in JS/TS.
+ *
+ * Note that this is only a type helper and is not the actual IDL. The original
+ * IDL can be found at `target/idl/pir8_game.json`.
+ */
+export type Pir8Game = {
   "address": "B8iZB76A6umsmc9Ctc8psmtAZhzxgAEP41uoAsyU2mrC",
   "metadata": {
-    "name": "pir8_game",
+    "name": "pir8Game",
     "version": "0.1.0",
     "spec": "0.1.0",
     "description": "PIR8 - Privacy-First Gaming on Solana"
   },
   "instructions": [
     {
-      "name": "activate_ghost_fleet",
+      "name": "activateGhostFleet",
       "discriminator": [
         170,
         39,
@@ -44,7 +50,7 @@
               {
                 "kind": "account",
                 "path": "game.game_id",
-                "account": "PirateGame"
+                "account": "pirateGame"
               }
             ]
           }
@@ -57,7 +63,7 @@
       "args": []
     },
     {
-      "name": "attack_ship",
+      "name": "attackShip",
       "discriminator": [
         163,
         146,
@@ -93,7 +99,7 @@
               {
                 "kind": "account",
                 "path": "game.game_id",
-                "account": "PirateGame"
+                "account": "pirateGame"
               }
             ]
           }
@@ -105,17 +111,17 @@
       ],
       "args": [
         {
-          "name": "attacker_ship_id",
+          "name": "attackerShipId",
           "type": "string"
         },
         {
-          "name": "target_ship_id",
+          "name": "targetShipId",
           "type": "string"
         }
       ]
     },
     {
-      "name": "build_ship",
+      "name": "buildShip",
       "discriminator": [
         213,
         16,
@@ -151,7 +157,7 @@
               {
                 "kind": "account",
                 "path": "game.game_id",
-                "account": "PirateGame"
+                "account": "pirateGame"
               }
             ]
           }
@@ -163,25 +169,25 @@
       ],
       "args": [
         {
-          "name": "ship_type",
+          "name": "shipType",
           "type": {
             "defined": {
-              "name": "ShipType"
+              "name": "shipType"
             }
           }
         },
         {
-          "name": "port_x",
+          "name": "portX",
           "type": "u8"
         },
         {
-          "name": "port_y",
+          "name": "portY",
           "type": "u8"
         }
       ]
     },
     {
-      "name": "check_and_complete_game",
+      "name": "checkAndCompleteGame",
       "discriminator": [
         246,
         228,
@@ -217,7 +223,7 @@
               {
                 "kind": "account",
                 "path": "game.game_id",
-                "account": "PirateGame"
+                "account": "pirateGame"
               }
             ]
           }
@@ -230,7 +236,7 @@
       "args": []
     },
     {
-      "name": "claim_territory",
+      "name": "claimTerritory",
       "discriminator": [
         187,
         166,
@@ -266,7 +272,7 @@
               {
                 "kind": "account",
                 "path": "game.game_id",
-                "account": "PirateGame"
+                "account": "pirateGame"
               }
             ]
           }
@@ -278,13 +284,13 @@
       ],
       "args": [
         {
-          "name": "ship_id",
+          "name": "shipId",
           "type": "string"
         }
       ]
     },
     {
-      "name": "claim_winnings",
+      "name": "claimWinnings",
       "discriminator": [
         161,
         215,
@@ -320,7 +326,7 @@
               {
                 "kind": "account",
                 "path": "game.game_id",
-                "account": "PirateGame"
+                "account": "pirateGame"
               }
             ]
           }
@@ -331,14 +337,14 @@
           "signer": true
         },
         {
-          "name": "system_program",
+          "name": "systemProgram",
           "address": "11111111111111111111111111111111"
         }
       ],
       "args": []
     },
     {
-      "name": "collect_resources",
+      "name": "collectResources",
       "discriminator": [
         80,
         180,
@@ -374,7 +380,7 @@
               {
                 "kind": "account",
                 "path": "game.game_id",
-                "account": "PirateGame"
+                "account": "pirateGame"
               }
             ]
           }
@@ -387,7 +393,7 @@
       "args": []
     },
     {
-      "name": "create_game",
+      "name": "createGame",
       "discriminator": [
         124,
         69,
@@ -422,7 +428,7 @@
               },
               {
                 "kind": "arg",
-                "path": "game_id"
+                "path": "gameId"
               }
             ]
           }
@@ -433,27 +439,27 @@
           "signer": true
         },
         {
-          "name": "system_program",
+          "name": "systemProgram",
           "address": "11111111111111111111111111111111"
         }
       ],
       "args": [
         {
-          "name": "game_id",
+          "name": "gameId",
           "type": "u64"
         },
         {
           "name": "mode",
           "type": {
             "defined": {
-              "name": "GameMode"
+              "name": "gameMode"
             }
           }
         }
       ]
     },
     {
-      "name": "delegate_agent_control",
+      "name": "delegateAgentControl",
       "discriminator": [
         144,
         153,
@@ -505,7 +511,7 @@
       ]
     },
     {
-      "name": "end_turn",
+      "name": "endTurn",
       "discriminator": [
         34,
         247,
@@ -541,7 +547,7 @@
               {
                 "kind": "account",
                 "path": "game.game_id",
-                "account": "PirateGame"
+                "account": "pirateGame"
               }
             ]
           }
@@ -554,7 +560,7 @@
       "args": []
     },
     {
-      "name": "join_game",
+      "name": "joinGame",
       "discriminator": [
         107,
         112,
@@ -590,7 +596,7 @@
               {
                 "kind": "account",
                 "path": "game.game_id",
-                "account": "PirateGame"
+                "account": "pirateGame"
               }
             ]
           }
@@ -601,14 +607,14 @@
           "signer": true
         },
         {
-          "name": "system_program",
+          "name": "systemProgram",
           "address": "11111111111111111111111111111111"
         }
       ],
       "args": []
     },
     {
-      "name": "join_game_via_delegate",
+      "name": "joinGameViaDelegate",
       "discriminator": [
         4,
         233,
@@ -643,13 +649,13 @@
               },
               {
                 "kind": "arg",
-                "path": "game_id"
+                "path": "gameId"
               }
             ]
           }
         },
         {
-          "name": "session_key",
+          "name": "sessionKey",
           "docs": [
             "Session key acting as signer - must be delegate of the owner"
           ],
@@ -686,14 +692,14 @@
           ]
         },
         {
-          "name": "system_program",
+          "name": "systemProgram",
           "address": "11111111111111111111111111111111"
         }
       ],
       "args": []
     },
     {
-      "name": "move_ship",
+      "name": "moveShip",
       "discriminator": [
         85,
         196,
@@ -729,7 +735,7 @@
               {
                 "kind": "account",
                 "path": "game.game_id",
-                "account": "PirateGame"
+                "account": "pirateGame"
               }
             ]
           }
@@ -741,19 +747,19 @@
       ],
       "args": [
         {
-          "name": "ship_id",
+          "name": "shipId",
           "type": "string"
         },
         {
-          "name": "to_x",
+          "name": "toX",
           "type": "u8"
         },
         {
-          "name": "to_y",
+          "name": "toY",
           "type": "u8"
         },
         {
-          "name": "decision_time_ms",
+          "name": "decisionTimeMs",
           "type": {
             "option": "u64"
           }
@@ -761,7 +767,7 @@
       ]
     },
     {
-      "name": "move_ship_via_delegate",
+      "name": "moveShipViaDelegate",
       "discriminator": [
         5,
         178,
@@ -797,13 +803,13 @@
               {
                 "kind": "account",
                 "path": "game.game_id",
-                "account": "PirateGame"
+                "account": "pirateGame"
               }
             ]
           }
         },
         {
-          "name": "session_key",
+          "name": "sessionKey",
           "docs": [
             "Session key acting as signer - must be delegate of the owner"
           ],
@@ -842,19 +848,19 @@
       ],
       "args": [
         {
-          "name": "ship_id",
+          "name": "shipId",
           "type": "string"
         },
         {
-          "name": "to_x",
+          "name": "toX",
           "type": "u8"
         },
         {
-          "name": "to_y",
+          "name": "toY",
           "type": "u8"
         },
         {
-          "name": "decision_time_ms",
+          "name": "decisionTimeMs",
           "type": {
             "option": "u64"
           }
@@ -862,7 +868,7 @@
       ]
     },
     {
-      "name": "register_agent",
+      "name": "registerAgent",
       "discriminator": [
         135,
         157,
@@ -902,7 +908,7 @@
           "signer": true
         },
         {
-          "name": "system_program",
+          "name": "systemProgram",
           "address": "11111111111111111111111111111111"
         }
       ],
@@ -930,7 +936,7 @@
       ]
     },
     {
-      "name": "reset_game",
+      "name": "resetGame",
       "discriminator": [
         97,
         146,
@@ -966,7 +972,7 @@
               {
                 "kind": "account",
                 "path": "game.game_id",
-                "account": "PirateGame"
+                "account": "pirateGame"
               }
             ]
           }
@@ -982,7 +988,7 @@
       "args": []
     },
     {
-      "name": "scan_coordinate",
+      "name": "scanCoordinate",
       "discriminator": [
         225,
         142,
@@ -1018,7 +1024,7 @@
               {
                 "kind": "account",
                 "path": "game.game_id",
-                "account": "PirateGame"
+                "account": "pirateGame"
               }
             ]
           }
@@ -1030,17 +1036,17 @@
       ],
       "args": [
         {
-          "name": "coordinate_x",
+          "name": "coordinateX",
           "type": "u8"
         },
         {
-          "name": "coordinate_y",
+          "name": "coordinateY",
           "type": "u8"
         }
       ]
     },
     {
-      "name": "start_game",
+      "name": "startGame",
       "discriminator": [
         249,
         47,
@@ -1076,7 +1082,7 @@
               {
                 "kind": "account",
                 "path": "game.game_id",
-                "account": "PirateGame"
+                "account": "pirateGame"
               }
             ]
           }
@@ -1094,7 +1100,7 @@
   ],
   "accounts": [
     {
-      "name": "AgentRegistry",
+      "name": "agentRegistry",
       "discriminator": [
         6,
         34,
@@ -1107,7 +1113,7 @@
       ]
     },
     {
-      "name": "PirateGame",
+      "name": "pirateGame",
       "discriminator": [
         241,
         180,
@@ -1122,7 +1128,7 @@
   ],
   "events": [
     {
-      "name": "CoordinateScanned",
+      "name": "coordinateScanned",
       "discriminator": [
         137,
         65,
@@ -1135,7 +1141,7 @@
       ]
     },
     {
-      "name": "GameCompleted",
+      "name": "gameCompleted",
       "discriminator": [
         103,
         26,
@@ -1148,7 +1154,7 @@
       ]
     },
     {
-      "name": "GameStarted",
+      "name": "gameStarted",
       "discriminator": [
         222,
         247,
@@ -1161,7 +1167,7 @@
       ]
     },
     {
-      "name": "GhostFleetActivated",
+      "name": "ghostFleetActivated",
       "discriminator": [
         93,
         105,
@@ -1174,7 +1180,7 @@
       ]
     },
     {
-      "name": "MoveExecuted",
+      "name": "moveExecuted",
       "discriminator": [
         220,
         142,
@@ -1187,7 +1193,7 @@
       ]
     },
     {
-      "name": "PlayerJoined",
+      "name": "playerJoined",
       "discriminator": [
         39,
         144,
@@ -1200,7 +1206,7 @@
       ]
     },
     {
-      "name": "ResourcesCollected",
+      "name": "resourcesCollected",
       "discriminator": [
         177,
         8,
@@ -1213,7 +1219,7 @@
       ]
     },
     {
-      "name": "ShipAttacked",
+      "name": "shipAttacked",
       "discriminator": [
         92,
         240,
@@ -1226,7 +1232,7 @@
       ]
     },
     {
-      "name": "ShipBuilt",
+      "name": "shipBuilt",
       "discriminator": [
         211,
         172,
@@ -1239,7 +1245,7 @@
       ]
     },
     {
-      "name": "ShipMoved",
+      "name": "shipMoved",
       "discriminator": [
         154,
         13,
@@ -1252,7 +1258,7 @@
       ]
     },
     {
-      "name": "TerritoryClaimed",
+      "name": "territoryClaimed",
       "discriminator": [
         121,
         234,
@@ -1265,7 +1271,7 @@
       ]
     },
     {
-      "name": "WinningsClaimed",
+      "name": "winningsClaimed",
       "discriminator": [
         187,
         184,
@@ -1281,108 +1287,108 @@
   "errors": [
     {
       "code": 6000,
-      "name": "GameNotActive",
+      "name": "gameNotActive",
       "msg": "Game is not active"
     },
     {
       "code": 6001,
-      "name": "GameFull",
+      "name": "gameFull",
       "msg": "Game is full"
     },
     {
       "code": 6002,
-      "name": "NotEnoughPlayers",
+      "name": "notEnoughPlayers",
       "msg": "Not enough players to start"
     },
     {
       "code": 6003,
-      "name": "GameAlreadyStarted",
+      "name": "gameAlreadyStarted",
       "msg": "Game already started"
     },
     {
       "code": 6004,
-      "name": "NotPlayerTurn",
+      "name": "notPlayerTurn",
       "msg": "Not your turn"
     },
     {
       "code": 6005,
-      "name": "ShipNotFound",
+      "name": "shipNotFound",
       "msg": "Ship not found"
     },
     {
       "code": 6006,
-      "name": "ShipNotAtLocation",
+      "name": "shipNotAtLocation",
       "msg": "Ship not at specified location"
     },
     {
       "code": 6007,
-      "name": "TerritoryNotControlled",
+      "name": "territoryNotControlled",
       "msg": "Territory not controlled by player"
     },
     {
       "code": 6008,
-      "name": "InsufficientResources",
+      "name": "insufficientResources",
       "msg": "Insufficient resources"
     },
     {
       "code": 6009,
-      "name": "FleetSizeLimit",
+      "name": "fleetSizeLimit",
       "msg": "Fleet size limit reached"
     },
     {
       "code": 6010,
-      "name": "NoAdjacentPort",
+      "name": "noAdjacentPort",
       "msg": "No adjacent controlled port"
     },
     {
       "code": 6011,
-      "name": "PositionOccupied",
+      "name": "positionOccupied",
       "msg": "Position occupied"
     },
     {
       "code": 6012,
-      "name": "GameNotJoinable",
+      "name": "gameNotJoinable",
       "msg": "Game not joinable"
     },
     {
       "code": 6013,
-      "name": "InvalidCoordinate",
+      "name": "invalidCoordinate",
       "msg": "Invalid coordinate"
     },
     {
       "code": 6014,
-      "name": "ShipsNotInRange",
+      "name": "shipsNotInRange",
       "msg": "Ships not in range"
     },
     {
       "code": 6015,
-      "name": "Unauthorized",
-      "msg": "Unauthorized"
+      "name": "unauthorized",
+      "msg": "unauthorized"
     },
     {
       "code": 6016,
-      "name": "NoScansRemaining",
+      "name": "noScansRemaining",
       "msg": "No scan charges remaining"
     },
     {
       "code": 6017,
-      "name": "CoordinateAlreadyScanned",
+      "name": "coordinateAlreadyScanned",
       "msg": "Coordinate already scanned"
     },
     {
       "code": 6018,
-      "name": "UnauthorizedDelegate",
+      "name": "unauthorizedDelegate",
       "msg": "Session key is not an authorized delegate"
     },
     {
       "code": 6019,
-      "name": "GhostFleetAlreadyActive",
+      "name": "ghostFleetAlreadyActive",
       "msg": "Ghost Fleet is already active"
     }
   ],
   "types": [
     {
-      "name": "AgentRegistry",
+      "name": "agentRegistry",
       "type": {
         "kind": "struct",
         "fields": [
@@ -1417,7 +1423,7 @@
             }
           },
           {
-            "name": "games_played",
+            "name": "gamesPlayed",
             "type": "u64"
           },
           {
@@ -1425,19 +1431,19 @@
             "type": "u64"
           },
           {
-            "name": "last_active",
+            "name": "lastActive",
             "type": "i64"
           }
         ]
       }
     },
     {
-      "name": "CoordinateScanned",
+      "name": "coordinateScanned",
       "type": {
         "kind": "struct",
         "fields": [
           {
-            "name": "game_id",
+            "name": "gameId",
             "type": "u64"
           },
           {
@@ -1445,31 +1451,31 @@
             "type": "pubkey"
           },
           {
-            "name": "coordinate_x",
+            "name": "coordinateX",
             "type": "u8"
           },
           {
-            "name": "coordinate_y",
+            "name": "coordinateY",
             "type": "u8"
           },
           {
-            "name": "tile_type",
+            "name": "tileType",
             "type": "string"
           },
           {
-            "name": "scan_charges_remaining",
+            "name": "scanChargesRemaining",
             "type": "u8"
           }
         ]
       }
     },
     {
-      "name": "GameCompleted",
+      "name": "gameCompleted",
       "type": {
         "kind": "struct",
         "fields": [
           {
-            "name": "game_id",
+            "name": "gameId",
             "type": "u64"
           },
           {
@@ -1477,65 +1483,65 @@
             "type": "pubkey"
           },
           {
-            "name": "victory_type",
+            "name": "victoryType",
             "type": "string"
           }
         ]
       }
     },
     {
-      "name": "GameMode",
+      "name": "gameMode",
       "type": {
         "kind": "enum",
         "variants": [
           {
-            "name": "Casual"
+            "name": "casual"
           },
           {
-            "name": "Competitive"
+            "name": "competitive"
           },
           {
-            "name": "AgentArena"
+            "name": "agentArena"
           }
         ]
       }
     },
     {
-      "name": "GameStarted",
+      "name": "gameStarted",
       "type": {
         "kind": "struct",
         "fields": [
           {
-            "name": "player_count",
+            "name": "playerCount",
             "type": "u8"
           }
         ]
       }
     },
     {
-      "name": "GameStatus",
+      "name": "gameStatus",
       "type": {
         "kind": "enum",
         "variants": [
           {
-            "name": "Waiting"
+            "name": "waiting"
           },
           {
-            "name": "Active"
+            "name": "active"
           },
           {
-            "name": "Completed"
+            "name": "completed"
           }
         ]
       }
     },
     {
-      "name": "GhostFleetActivated",
+      "name": "ghostFleetActivated",
       "type": {
         "kind": "struct",
         "fields": [
           {
-            "name": "game_id",
+            "name": "gameId",
             "type": "u64"
           },
           {
@@ -1543,19 +1549,19 @@
             "type": "pubkey"
           },
           {
-            "name": "turns_remaining",
+            "name": "turnsRemaining",
             "type": "u8"
           }
         ]
       }
     },
     {
-      "name": "MoveExecuted",
+      "name": "moveExecuted",
       "type": {
         "kind": "struct",
         "fields": [
           {
-            "name": "game_id",
+            "name": "gameId",
             "type": "u64"
           },
           {
@@ -1563,27 +1569,27 @@
             "type": "pubkey"
           },
           {
-            "name": "decision_time_ms",
+            "name": "decisionTimeMs",
             "type": "u64"
           },
           {
-            "name": "speed_bonus_awarded",
+            "name": "speedBonusAwarded",
             "type": "u64"
           },
           {
-            "name": "new_total_score",
+            "name": "newTotalScore",
             "type": "u64"
           }
         ]
       }
     },
     {
-      "name": "PirateGame",
+      "name": "pirateGame",
       "type": {
         "kind": "struct",
         "fields": [
           {
-            "name": "game_id",
+            "name": "gameId",
             "type": "u64"
           },
           {
@@ -1594,7 +1600,7 @@
             "name": "status",
             "type": {
               "defined": {
-                "name": "GameStatus"
+                "name": "gameStatus"
               }
             }
           },
@@ -1602,34 +1608,34 @@
             "name": "mode",
             "type": {
               "defined": {
-                "name": "GameMode"
+                "name": "gameMode"
               }
             }
           },
           {
-            "name": "player_count",
+            "name": "playerCount",
             "type": "u8"
           },
           {
-            "name": "current_player_index",
+            "name": "currentPlayerIndex",
             "type": "u8"
           },
           {
-            "name": "turn_number",
+            "name": "turnNumber",
             "type": "u32"
           },
           {
-            "name": "created_at",
+            "name": "createdAt",
             "type": "i64"
           },
           {
-            "name": "started_at",
+            "name": "startedAt",
             "type": {
               "option": "i64"
             }
           },
           {
-            "name": "completed_at",
+            "name": "completedAt",
             "type": {
               "option": "i64"
             }
@@ -1641,15 +1647,15 @@
             }
           },
           {
-            "name": "weather_type",
+            "name": "weatherType",
             "type": {
               "defined": {
-                "name": "WeatherType"
+                "name": "weatherType"
               }
             }
           },
           {
-            "name": "weather_duration",
+            "name": "weatherDuration",
             "type": "u8"
           },
           {
@@ -1661,17 +1667,17 @@
             "type": {
               "vec": {
                 "defined": {
-                  "name": "PlayerData"
+                  "name": "playerData"
                 }
               }
             }
           },
           {
-            "name": "territory_map",
+            "name": "territoryMap",
             "type": {
               "vec": {
                 "defined": {
-                  "name": "TerritoryCell"
+                  "name": "territoryCell"
                 }
               }
             }
@@ -1680,7 +1686,7 @@
       }
     },
     {
-      "name": "PlayerData",
+      "name": "playerData",
       "type": {
         "kind": "struct",
         "fields": [
@@ -1692,7 +1698,7 @@
             "name": "resources",
             "type": {
               "defined": {
-                "name": "Resources"
+                "name": "resources"
               }
             }
           },
@@ -1701,62 +1707,62 @@
             "type": {
               "vec": {
                 "defined": {
-                  "name": "ShipData"
+                  "name": "shipData"
                 }
               }
             }
           },
           {
-            "name": "controlled_territories",
+            "name": "controlledTerritories",
             "type": {
               "vec": "string"
             }
           },
           {
-            "name": "total_score",
+            "name": "totalScore",
             "type": "u32"
           },
           {
-            "name": "is_active",
+            "name": "isActive",
             "type": "bool"
           },
           {
-            "name": "scan_charges",
+            "name": "scanCharges",
             "type": "u8"
           },
           {
-            "name": "scanned_coordinates",
+            "name": "scannedCoordinates",
             "type": "bytes"
           },
           {
-            "name": "is_ghost_fleet",
+            "name": "isGhostFleet",
             "type": "bool"
           },
           {
-            "name": "ghost_fleet_turns_remaining",
+            "name": "ghostFleetTurnsRemaining",
             "type": "u8"
           },
           {
-            "name": "total_ghosts_activated",
+            "name": "totalGhostsActivated",
             "type": "u8"
           },
           {
-            "name": "speed_bonus_accumulated",
+            "name": "speedBonusAccumulated",
             "type": "u64"
           },
           {
-            "name": "average_decision_time_ms",
+            "name": "averageDecisionTimeMs",
             "type": "u64"
           },
           {
-            "name": "total_moves",
+            "name": "totalMoves",
             "type": "u8"
           }
         ]
       }
     },
     {
-      "name": "PlayerJoined",
+      "name": "playerJoined",
       "type": {
         "kind": "struct",
         "fields": [
@@ -1765,14 +1771,14 @@
             "type": "pubkey"
           },
           {
-            "name": "player_count",
+            "name": "playerCount",
             "type": "u8"
           }
         ]
       }
     },
     {
-      "name": "Resources",
+      "name": "resources",
       "type": {
         "kind": "struct",
         "fields": [
@@ -1796,12 +1802,12 @@
       }
     },
     {
-      "name": "ResourcesCollected",
+      "name": "resourcesCollected",
       "type": {
         "kind": "struct",
         "fields": [
           {
-            "name": "game_id",
+            "name": "gameId",
             "type": "u64"
           },
           {
@@ -1809,27 +1815,27 @@
             "type": "pubkey"
           },
           {
-            "name": "gold_collected",
+            "name": "goldCollected",
             "type": "u32"
           },
           {
-            "name": "crew_collected",
+            "name": "crewCollected",
             "type": "u32"
           },
           {
-            "name": "supplies_collected",
+            "name": "suppliesCollected",
             "type": "u32"
           }
         ]
       }
     },
     {
-      "name": "ShipAttacked",
+      "name": "shipAttacked",
       "type": {
         "kind": "struct",
         "fields": [
           {
-            "name": "game_id",
+            "name": "gameId",
             "type": "u64"
           },
           {
@@ -1837,11 +1843,11 @@
             "type": "pubkey"
           },
           {
-            "name": "attacker_ship_id",
+            "name": "attackerShipId",
             "type": "string"
           },
           {
-            "name": "target_ship_id",
+            "name": "targetShipId",
             "type": "string"
           },
           {
@@ -1849,19 +1855,19 @@
             "type": "u32"
           },
           {
-            "name": "ship_destroyed",
+            "name": "shipDestroyed",
             "type": "bool"
           }
         ]
       }
     },
     {
-      "name": "ShipBuilt",
+      "name": "shipBuilt",
       "type": {
         "kind": "struct",
         "fields": [
           {
-            "name": "game_id",
+            "name": "gameId",
             "type": "u64"
           },
           {
@@ -1869,26 +1875,26 @@
             "type": "pubkey"
           },
           {
-            "name": "ship_type",
+            "name": "shipType",
             "type": {
               "defined": {
-                "name": "ShipType"
+                "name": "shipType"
               }
             }
           },
           {
-            "name": "position_x",
+            "name": "positionX",
             "type": "u8"
           },
           {
-            "name": "position_y",
+            "name": "positionY",
             "type": "u8"
           }
         ]
       }
     },
     {
-      "name": "ShipData",
+      "name": "shipData",
       "type": {
         "kind": "struct",
         "fields": [
@@ -1897,10 +1903,10 @@
             "type": "string"
           },
           {
-            "name": "ship_type",
+            "name": "shipType",
             "type": {
               "defined": {
-                "name": "ShipType"
+                "name": "shipType"
               }
             }
           },
@@ -1909,7 +1915,7 @@
             "type": "u32"
           },
           {
-            "name": "max_health",
+            "name": "maxHealth",
             "type": "u32"
           },
           {
@@ -1925,27 +1931,27 @@
             "type": "u32"
           },
           {
-            "name": "position_x",
+            "name": "positionX",
             "type": "u8"
           },
           {
-            "name": "position_y",
+            "name": "positionY",
             "type": "u8"
           },
           {
-            "name": "last_action_turn",
+            "name": "lastActionTurn",
             "type": "u32"
           }
         ]
       }
     },
     {
-      "name": "ShipMoved",
+      "name": "shipMoved",
       "type": {
         "kind": "struct",
         "fields": [
           {
-            "name": "game_id",
+            "name": "gameId",
             "type": "u64"
           },
           {
@@ -1953,58 +1959,58 @@
             "type": "pubkey"
           },
           {
-            "name": "ship_id",
+            "name": "shipId",
             "type": "string"
           },
           {
-            "name": "from_x",
+            "name": "fromX",
             "type": "u8"
           },
           {
-            "name": "from_y",
+            "name": "fromY",
             "type": "u8"
           },
           {
-            "name": "to_x",
+            "name": "toX",
             "type": "u8"
           },
           {
-            "name": "to_y",
+            "name": "toY",
             "type": "u8"
           }
         ]
       }
     },
     {
-      "name": "ShipType",
+      "name": "shipType",
       "type": {
         "kind": "enum",
         "variants": [
           {
-            "name": "Sloop"
+            "name": "sloop"
           },
           {
-            "name": "Frigate"
+            "name": "frigate"
           },
           {
-            "name": "Galleon"
+            "name": "galleon"
           },
           {
-            "name": "Flagship"
+            "name": "flagship"
           }
         ]
       }
     },
     {
-      "name": "TerritoryCell",
+      "name": "territoryCell",
       "type": {
         "kind": "struct",
         "fields": [
           {
-            "name": "cell_type",
+            "name": "cellType",
             "type": {
               "defined": {
-                "name": "TerritoryCellType"
+                "name": "territoryCellType"
               }
             }
           },
@@ -2018,41 +2024,41 @@
       }
     },
     {
-      "name": "TerritoryCellType",
+      "name": "territoryCellType",
       "type": {
         "kind": "enum",
         "variants": [
           {
-            "name": "Water"
+            "name": "water"
           },
           {
-            "name": "Island"
+            "name": "island"
           },
           {
-            "name": "Port"
+            "name": "port"
           },
           {
-            "name": "Treasure"
+            "name": "treasure"
           },
           {
-            "name": "Storm"
+            "name": "storm"
           },
           {
-            "name": "Reef"
+            "name": "reef"
           },
           {
-            "name": "Whirlpool"
+            "name": "whirlpool"
           }
         ]
       }
     },
     {
-      "name": "TerritoryClaimed",
+      "name": "territoryClaimed",
       "type": {
         "kind": "struct",
         "fields": [
           {
-            "name": "game_id",
+            "name": "gameId",
             "type": "u64"
           },
           {
@@ -2060,43 +2066,43 @@
             "type": "pubkey"
           },
           {
-            "name": "territory_x",
+            "name": "territoryX",
             "type": "u8"
           },
           {
-            "name": "territory_y",
+            "name": "territoryY",
             "type": "u8"
           }
         ]
       }
     },
     {
-      "name": "WeatherType",
+      "name": "weatherType",
       "type": {
         "kind": "enum",
         "variants": [
           {
-            "name": "Calm"
+            "name": "calm"
           },
           {
-            "name": "TradeWinds"
+            "name": "tradeWinds"
           },
           {
-            "name": "Storm"
+            "name": "storm"
           },
           {
-            "name": "Fog"
+            "name": "fog"
           }
         ]
       }
     },
     {
-      "name": "WinningsClaimed",
+      "name": "winningsClaimed",
       "type": {
         "kind": "struct",
         "fields": [
           {
-            "name": "game_id",
+            "name": "gameId",
             "type": "u64"
           },
           {
@@ -2111,4 +2117,4 @@
       }
     }
   ]
-}
+};
