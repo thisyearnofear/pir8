@@ -6,6 +6,7 @@ import {
   useMemo,
   useCallback,
 } from "react";
+import { markGameShellMounted } from "@/lib/startupDiagnostics";
 import { useSafeWallet } from "@/components/SafeWalletProvider";
 import { 
   useAIBattleState, 
@@ -157,6 +158,10 @@ export default function GameShell() {
 
   const privacySim = usePrivacySimulation({ enabled: isPracticeMode });
   const { updateLeakage } = privacySim;
+
+  useEffect(() => {
+    markGameShellMounted();
+  }, []);
 
   useEffect(() => {
     if (isPracticeMode && gameState?.players) {

@@ -5,7 +5,13 @@
 "use client";
 
 import GameShell from "@/components/GameShell";
+import { StartupDiagnostics } from "@/lib/startupDiagnostics";
 
 export default function Home() {
-  return <GameShell />;
+  return (
+    <>
+      <StartupDiagnostics />
+      <GameShell />
+    </>
+  );
 }

@@ -38,13 +38,11 @@ export function WalletContextProvider({
       });
       
       if (mobileAdapter) {
-        console.log('[WalletProvider] Using Solana Mobile Wallet Adapter');
         return [mobileAdapter];
       }
     }
     
     // Standard web/iOS wallet adapters
-    console.log('[WalletProvider] Using standard wallet adapters');
     return [new PhantomWalletAdapter(), new SolflareWalletAdapter()];
   }, []);
 
