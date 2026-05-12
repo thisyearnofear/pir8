@@ -147,7 +147,8 @@ export const createOnChainSlice: StateCreator<
           },
         );
         return true;
-      } catch {
+      } catch (error) {
+        console.error("[pir8] startGame failed:", error);
         return false;
       }
     },
@@ -173,7 +174,8 @@ export const createOnChainSlice: StateCreator<
           },
         );
         return true;
-      } catch {
+      } catch (error) {
+        console.error("[pir8] createGame failed:", error);
         return false;
       }
     },
@@ -202,7 +204,8 @@ export const createOnChainSlice: StateCreator<
           },
         );
         return true;
-      } catch {
+      } catch (error) {
+        console.error("[pir8] joinGame failed:", error);
         return false;
       }
     },

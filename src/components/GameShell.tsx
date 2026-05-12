@@ -45,7 +45,9 @@ import { ModalLayer } from "@/components/ModalLayer";
 import { NotificationLayer } from "@/components/NotificationLayer";
 
 export default function GameShell() {
-  const { publicKey, wallet } = useSafeWallet();
+  const walletContext = useSafeWallet();
+  const { publicKey } = walletContext;
+  const wallet = walletContext;
   const { gameState, gameMode } = useMatchState();
   const { isMyTurn, getAllShips } = usePlayerState();
   const { 

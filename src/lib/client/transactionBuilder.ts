@@ -524,6 +524,10 @@ export const executeTransaction = async (
     throw new Error("Wallet not connected");
   }
 
+  if (!wallet.signTransaction) {
+    throw new Error("Wallet cannot sign transactions");
+  }
+
   const rpcUrl =
     SOLANA_CONFIG.RPC_URL && !SOLANA_CONFIG.RPC_URL.includes("YOUR_API_KEY")
       ? SOLANA_CONFIG.RPC_URL
@@ -531,17 +535,37 @@ export const executeTransaction = async (
 
   const connection = new Connection(rpcUrl, "confirmed");
 
-  const { blockhash } = await connection.getLatestBlockhash();
-  (transaction as any).recentBlockhash = blockhash;
+  const latestBlockhash = await connection.getLatestBlockhash();
+  (transaction as any).recentBlockhash = latestBlockhash.blockhash;
   (transaction as any).feePayer = wallet.publicKey;
 
-  const signedTx = await wallet.signTransaction!(transaction);
-  const rawTransaction = signedTx.serialize();
-  const signature = await (connection as any).sendRawTransaction(rawTransaction);
+  try {
+    const signedTx = await wallet.signTransaction(transaction);
+    const rawTransaction = signedTx.serialize();
+    const signature = await (connection as any).sendRawTransaction(rawTransaction, {
+      preflightCommitment: "confirmed",
+    });
 
-  await connection.confirmTransaction(signature, "confirmed");
+    const confirmation = await (connection as any).confirmTransaction(
+      {
+        signature,
+        blockhash: latestBlockhash.blockhash,
+        lastValidBlockHeight: latestBlockhash.lastValidBlockHeight,
+      },
+      "confirmed",
+    );
 
-  return signature;
+    if (confirmation?.value?.err) {
+      throw new Error(
+        `Transaction confirmed with error: ${JSON.stringify(confirmation.value.err)}`,
+      );
+    }
+
+    return signature;
+  } catch (error) {
+    console.error("[pir8] executeTransaction failed:", error);
+    throw error;
+  }
 };
 
 // ============================================================================
