@@ -51,3 +51,5 @@ coverage/
 # Build artifacts
 *.tgz
 *.tar.gz
+
+tsconfig.tsbuildinfo
