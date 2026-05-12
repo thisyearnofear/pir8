@@ -44,7 +44,7 @@ export default function RootLayout({
         <script
           dangerouslySetInnerHTML={{
             __html: `
-              // Prevent ethereum provider conflicts from crashing the app
+              // Prevent noisy provider conflicts from crashing the app
               window.addEventListener('error', function(e) {
                 if (e.message && (e.message.includes('ethereum') || e.message.includes('Cannot set property'))) {
                   console.warn('Provider error suppressed:', e.message);
@@ -60,18 +60,6 @@ export default function RootLayout({
                   return false;
                 }
               });
-
-              // Prevent wallet adapter from overriding ethereum provider
-              if (typeof window !== 'undefined') {
-                const originalDefineProperty = Object.defineProperty;
-                Object.defineProperty = function(obj, prop, descriptor) {
-                  if (obj === window && prop === 'ethereum' && descriptor.set) {
-                    console.warn('Prevented ethereum provider override');
-                    return obj;
-                  }
-                  return originalDefineProperty.call(this, obj, prop, descriptor);
-                };
-              }
             `
           }}
         />

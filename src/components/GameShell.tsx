@@ -156,6 +156,7 @@ export default function GameShell() {
   }, [gameState?.players, publicKey, isPracticeMode]);
 
   const privacySim = usePrivacySimulation({ enabled: isPracticeMode });
+  const { updateLeakage } = privacySim;
 
   useEffect(() => {
     if (isPracticeMode && gameState?.players) {
@@ -164,10 +165,10 @@ export default function GameShell() {
       );
       if (humanPlayer) {
         const recentActions = (gameState as any).recentActions || [];
-        privacySim.updateLeakage(gameState, humanPlayer, recentActions);
+        updateLeakage(gameState, humanPlayer, recentActions);
       }
     }
-  }, [gameState, gameState?.players, isPracticeMode, privacySim]);
+  }, [gameState, isPracticeMode, updateLeakage]);
 
   const {
     handleCollectResources,
