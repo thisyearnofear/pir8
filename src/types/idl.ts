@@ -5,8 +5,7 @@
  * IDL can be found at `target/idl/pir8_game.json`.
  */
 export type Pir8Game = {
-  "address": "B8iZB76A6umsmc9Ctc8psmtAZhzxgAEP41uoAsyU2mrC",
-  "metadata": {
+  "address": "2TZwkCc8ffz7NGWYF3koXyRm75DHq9VL9kvHxXZu8kLy",  "metadata": {
     "name": "pir8Game",
     "version": "0.1.0",
     "spec": "0.1.0",

@@ -26,7 +26,7 @@ export type {
 // Program ID - Deployed to devnet
 export const PROGRAM_ID = new PublicKey(
   process.env.NEXT_PUBLIC_PROGRAM_ID ||
-    "B8iZB76A6umsmc9Ctc8psmtAZhzxgAEP41uoAsyU2mrC",
+    "2TZwkCc8ffz7NGWYF3koXyRm75DHq9VL9kvHxXZu8kLy",
 );
 
 /** Config PDA - derives from ["config"] */

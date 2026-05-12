@@ -12,6 +12,8 @@
     "build:mobile": "cd packages/mobile && npm run build",
     "dev:mobile": "cd packages/mobile && npm start",
     "clean": "rm -rf .next out dist node_modules/.cache",
+    "anchor:check-program": "node scripts/check-program-consistency.js",
+    "anchor:deploy-program": "bash scripts/deploy-program.sh",
     "prepare": "husky"
   },
   "lint-staged": {

@@ -27,7 +27,7 @@ PIR8 is a full-stack Web3 gaming platform built on Solana with privacy features 
 
 #### Game Contract (`pir8_game`)
 **Location**: `/programs/pir8-game/src/lib.rs`
-**Deployed Address (Devnet)**: `B8iZB76A6umsmc9Ctc8psmtAZhzxgAEP41uoAsyU2mrC`
+**Deployed Address (Devnet)**: `2TZwkCc8ffz7NGWYF3koXyRm75DHq9VL9kvHxXZu8kLy`
 
 **Key Instructions**:
 ```rust
