@@ -24,9 +24,11 @@ test-ledger/
 .idea/
 .kiro/
 .qoder/
+.qwen/
 .junie/
 .zencoder/
 .zenflow/
+.blackboxcli/
 .cursor/
 .windsurf/
 
@@ -49,4 +51,3 @@ coverage/
 # Build artifacts
 *.tgz
 *.tar.gz
-.blackboxcli/
