@@ -7,6 +7,7 @@ import { PirateGameManager } from "../lib/pirateGameEngine";
 import { GameBalance } from "../lib/gameBalance";
 import TerritoryTooltip from "./TerritoryTooltip";
 import { useMobileOptimized } from "@/hooks/useMobileOptimized";
+import { buildVisibilityProjection } from "@/lib/visibility";
 
 interface PlayerInfo {
   publicKey: string;
@@ -23,6 +24,8 @@ interface PirateMapProps {
   selectedShipId?: string;
   currentPlayerPK?: string;
   scannedCoordinates?: string[];
+  revealedCoordinates?: string[];
+  spectatorMode?: "public" | "omniscient";
 }
 
 const shipLabels: Record<ShipType, string> = {
@@ -97,6 +100,8 @@ export default function PirateMap({
   selectedShipId,
   currentPlayerPK,
   scannedCoordinates = [],
+  revealedCoordinates = [],
+  spectatorMode = "public",
 }: PirateMapProps) {
   const [hoveredCoordinate, setHoveredCoordinate] = useState<string | null>(null);
   const [tooltipPosition, setTooltipPosition] = useState({ x: 0, y: 0 });
@@ -164,6 +169,16 @@ export default function PirateMap({
     return () => clearInterval(timer);
   }, [damageNumbers.length]);
 
+  const visibility = buildVisibilityProjection({
+    gameMap,
+    ships,
+    currentPlayerPK,
+    scannedCoordinates,
+    revealedCoordinates,
+    spectatorMode,
+  });
+  const visibleShips = visibility.visibleShips;
+
   const handleCellClick = (coordinate: string) => {
     if (!isMyTurn) return;
     const ship = getShipAtPosition(coordinate);
@@ -181,7 +196,7 @@ export default function PirateMap({
   };
 
   const getShipAtPosition = (coordinate: string): Ship | undefined => {
-    return ships.find(ship => PirateGameManager.coordinateToString(ship.position) === coordinate);
+    return visibleShips.find(ship => PirateGameManager.coordinateToString(ship.position) === coordinate);
   };
 
   const isMyShip = (ship: Ship): boolean => {
@@ -195,7 +210,7 @@ export default function PirateMap({
   };
 
   const selectedShip = selectedShipId
-    ? ships.find((ship) => ship.id === selectedShipId)
+    ? visibleShips.find((ship) => ship.id === selectedShipId)
     : undefined;
 
   const isEnemyShip = (ship: Ship): boolean => {
@@ -213,7 +228,7 @@ export default function PirateMap({
 
   const isCoordinateThreatened = (coordinate: string): boolean => {
     if (!currentPlayerPK) return false;
-    return ships.some((ship) => {
+    return visibleShips.some((ship) => {
       if (!isEnemyShip(ship) || ship.health <= 0) return false;
       const enemyRange = GameBalance.SHIP_BALANCE[ship.type].range;
       const enemyDistance = PirateGameManager.calculateDistance(
@@ -273,9 +288,9 @@ export default function PirateMap({
 
   const getCellContent = (coordinate: string) => {
     const ship = getShipAtPosition(coordinate);
-    const flatCells = gameMap.cells.flat();
-    const cell = flatCells.find(c => c.coordinate === coordinate);
-    const isScanned = scannedCoordinates.includes(coordinate);
+    const cell = visibility.getVisibleCell(coordinate);
+    const intelState = visibility.getCoordinateIntel(coordinate);
+    const isScanned = intelState === "current";
 
     if (ship) {
       const isSelected = selectedShipId === ship.id;
@@ -336,9 +351,10 @@ export default function PirateMap({
           const coordinate = PirateGameManager.coordinateToString({ x, y });
           const tacticalState = getTacticalState(coordinate);
           const damagePreview = getDamagePreview(tacticalState.targetShip);
-          const isScanned = scannedCoordinates.includes(coordinate);
-          const hasFogIntel = scannedCoordinates.length > 0;
-          const isFogged = hasFogIntel && !isScanned && !getShipAtPosition(coordinate);
+          const intelState = visibility.getCoordinateIntel(coordinate);
+          const isScanned = intelState === "current";
+          const isStale = intelState === "stale";
+          const isFogged = intelState === "hidden";
           
           return (
             <div
@@ -351,7 +367,7 @@ export default function PirateMap({
                 ${tacticalState.isMoveOption ? "ring-1 ring-cyan-300/70 bg-cyan-300/10" : ""}
                 ${tacticalState.isAttackOption ? "ring-2 ring-red-400/90 bg-red-500/15" : ""}
                 ${!tacticalState.isMoveOption && !tacticalState.isAttackOption && tacticalState.isThreatened ? "threat-zone-cell" : ""}
-                ${isFogged ? "fogged-sector" : isScanned ? "scanned-sector" : ""}
+                ${isFogged ? "fogged-sector" : isStale ? "stale-sector" : isScanned ? "scanned-sector" : ""}
                 ${classes.button}
               `}
               {...(isMobile ? touchHandlers : {
@@ -398,8 +414,9 @@ export default function PirateMap({
         const y = Math.floor(index / gridSize);
         const coordinate = PirateGameManager.coordinateToString({ x, y });
         const cell = flatCells.find(c => c.coordinate === coordinate);
+        const intelState = visibility.getCoordinateIntel(coordinate);
           
-        if (!cell?.owner) return <div key={`overlay-${coordinate}`} />;
+        if (!cell?.owner || intelState === "hidden") return <div key={`overlay-${coordinate}`} />;
           
         const isPlayerControlled= cell.owner === currentPlayerPK;
         const isAIControlled = cell.owner.startsWith('AI_');

@@ -5,6 +5,11 @@ interface BuildChallengeUrlOptions {
   challenge?: "shadow-skirmish" | "duel" | "watch";
 }
 
+interface BuildReplayUrlOptions {
+  origin?: string;
+  momentId: string;
+}
+
 export function getShareOrigin(): string {
   if (typeof window === "undefined") return "";
   return window.location.origin;
@@ -32,6 +37,14 @@ export function buildChallengeUrl({
   }
 
   return `${origin}?${params.toString()}`;
+}
+
+export function buildReplayUrl({
+  origin = getShareOrigin(),
+  momentId,
+}: BuildReplayUrlOptions): string {
+  if (!origin) return "";
+  return `${origin}/replay/${momentId}`;
 }
 
 export function buildChallengeActionUrl({
@@ -86,7 +99,7 @@ export function buildAmbushShareText({
     `Ships sunk: ${shipsDestroyed}\n` +
     `Territories held: ${territoriesControlled}\n` +
     `Gold plundered: ${gold.toLocaleString()}\n\n` +
-    `Think you can beat this position?\n` +
+    `Watch the replay or beat this position:\n` +
     `${url}\n\n` +
     `#PIR8 #ShadowSeas #SolanaGaming`
   );
