@@ -63,23 +63,23 @@ export function GameProvider({ children, wallet }: { children: React.ReactNode, 
 
   const currentPlayer = useMemo(() => {
     return getCurrentPlayer();
-  }, [getCurrentPlayer, gameState, gameState?.currentPlayerIndex]);
+  }, [getCurrentPlayer]);
 
   const isMyTurn = useMemo(() => {
     return isMyTurnForWallet(wallet?.publicKey?.toBase58());
-  }, [isMyTurnForWallet, gameState, wallet?.publicKey]);
+  }, [isMyTurnForWallet, wallet?.publicKey]);
 
   const myShips = useMemo(() => {
     return wallet?.publicKey ? getMyShips(wallet.publicKey.toBase58()) : [];
-  }, [getMyShips, gameState, wallet?.publicKey]);
+  }, [getMyShips, wallet?.publicKey]);
 
   const allShips = useMemo(() => {
     return getAllShips();
-  }, [getAllShips, gameState]);
+  }, [getAllShips]);
 
   const scannedCoordinates = useMemo(() => {
     return getScannedCoordinates();
-  }, [getScannedCoordinates, gameState]);
+  }, [getScannedCoordinates]);
 
   const value = {
     gameState,

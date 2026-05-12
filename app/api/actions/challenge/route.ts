@@ -14,9 +14,11 @@ import {
   clusterApiUrl,
   Connection,
   PublicKey,
+  SystemProgram,
   Transaction,
   TransactionInstruction,
 } from "@solana/web3.js";
+import { getGamePDA, PROGRAM_ID } from "@/lib/anchor";
 
 export const dynamic = "force-dynamic";
 export const runtime = "nodejs";
@@ -86,6 +88,56 @@ function buildStatusMessage(status: ChallengeStatus) {
   }
 }
 
+// Discriminator for joinGame instruction from IDL
+const JOIN_GAME_DISCRIMINATOR = Buffer.from(
+  new Uint8Array([107, 112, 18, 38, 56, 173, 60, 128]),
+);
+
+function serializeToBase64(transaction: Transaction): string {
+  const serialized = transaction.serialize({
+    requireAllSignatures: false,
+    verifySignatures: false,
+  }) as Uint8Array;
+  const buffer = Buffer.alloc(serialized.length);
+  serialized.forEach((byte, index) => {
+    buffer[index] = byte;
+  });
+  return buffer.toString("base64");
+}
+
+async function buildJoinTransaction(
+  account: string,
+  gameId: number,
+): Promise<string> {
+  const publicKey = new PublicKey(account);
+  const rpcUrl =
+    SOLANA_CONFIG.RPC_URL ||
+    clusterApiUrl(
+      SOLANA_CONFIG.NETWORK === "mainnet-beta" ? "mainnet-beta" : "devnet",
+    );
+  const connection = new Connection(rpcUrl, "confirmed");
+  const { blockhash } = await connection.getLatestBlockhash();
+
+  const [gamePDA] = getGamePDA(gameId);
+
+  const transaction = new Transaction({
+    feePayer: publicKey,
+    recentBlockhash: blockhash,
+  }).add(
+    new TransactionInstruction({
+      programId: PROGRAM_ID,
+      keys: [
+        { pubkey: gamePDA, isSigner: false, isWritable: true },
+        { pubkey: publicKey, isSigner: true, isWritable: true },
+        { pubkey: SystemProgram.programId, isSigner: false, isWritable: false },
+      ],
+      data: JOIN_GAME_DISCRIMINATOR as Buffer,
+    }),
+  );
+
+  return serializeToBase64(transaction);
+}
+
 async function buildPreviewTransaction(
   account: string,
   memoLines: string[],
@@ -99,6 +151,8 @@ async function buildPreviewTransaction(
   const connection = new Connection(rpcUrl, "confirmed");
   const { blockhash } = await connection.getLatestBlockhash();
 
+  const memoData = Buffer.from(memoLines.join("; "), "utf8");
+
   const transaction = new Transaction({
     feePayer: publicKey,
     recentBlockhash: blockhash,
@@ -106,16 +160,11 @@ async function buildPreviewTransaction(
     new TransactionInstruction({
       programId: MEMO_PROGRAM_ID,
       keys: [{ pubkey: publicKey, isSigner: true, isWritable: false }],
-      data: Buffer.from(memoLines.join("; "), "utf8") as Buffer,
+      data: memoData as Buffer,
     }),
   );
 
-  return (transaction as any)
-    .serialize({
-      requireAllSignatures: false,
-      verifySignatures: false,
-    })
-    .toString("base64");
+  return serializeToBase64(transaction);
 }
 
 function buildChallengeStatusUrl(origin: string, challengeId: string) {
@@ -279,21 +328,69 @@ export async function POST(request: Request) {
       );
     }
 
-    const serialized = await buildPreviewTransaction(account, [
-      "PIR8 challenge preview",
-      `id=${record.id}`,
-      `challenge=${record.type}`,
-      `join=${record.gameId || "none"}`,
-      `ref=${record.referrer || "none"}`,
-      "status=open",
-    ]);
+    let serialized: string;
+    let txMessage: string;
+
+    if (record.type === "duel" && record.gameId) {
+      const gameIdNum = parseInt(record.gameId, 10);
+      if (!isNaN(gameIdNum)) {
+        serialized = await buildJoinTransaction(account, gameIdNum);
+        txMessage =
+          "Join transaction prepared. Sign to accept the duel — acceptance is recorded only after your wallet confirms the transaction.";
+      } else {
+        serialized = await buildPreviewTransaction(account, [
+          "PIR8 duel preview",
+          `id=${record.id}`,
+          `challenge=${record.type}`,
+          `join=${record.gameId}`,
+          `ref=${record.referrer || "none"}`,
+          "status=open",
+        ]);
+        txMessage =
+          "Duel preview prepared. Acceptance is recorded after wallet confirmation through the challenge status endpoint.";
+      }
+    } else if (record.type === "shadow-skirmish") {
+      // Shadow skirmish: local receipt only, no on-chain transaction needed.
+      // Return a completed action directing the client to open the game.
+      return actionJson({
+        type: "completed",
+        message: "Shadow skirmish receipt created. Open the game to start your private practice match.",
+        links: {
+          next: {
+            type: "inline",
+            action: {
+              label: "Open Game",
+              href: buildSiteUrl(origin, new URLSearchParams({
+                challenge: record.type,
+                ...(record.gameId ? { join: record.gameId } : {}),
+                ...(record.referrer ? { ref: record.referrer } : {}),
+                challengeId: record.id,
+              })),
+            },
+          },
+        },
+        challenge: {
+          id: record.id,
+          status: record.status,
+          statusUrl: buildChallengeStatusUrl(origin, record.id),
+        },
+      });
+    } else {
+      serialized = await buildPreviewTransaction(account, [
+        "PIR8 challenge preview",
+        `id=${record.id}`,
+        `challenge=${record.type}`,
+        `join=${record.gameId || "none"}`,
+        `ref=${record.referrer || "none"}`,
+        "status=open",
+      ]);
+      txMessage =
+        "Preview transaction prepared. Acceptance is recorded after wallet confirmation through the challenge status endpoint.";
+    }
 
     return actionJson({
       transaction: serialized,
-      message:
-        record.type === "duel"
-          ? "Preview join transaction prepared. Acceptance is only recorded after the client confirms signature or submission through the challenge status endpoint."
-          : "Preview skirmish receipt prepared. Acceptance is only recorded after the client confirms continuation through the challenge status endpoint.",
+      message: txMessage,
       links: {
         next: {
           type: "inline",

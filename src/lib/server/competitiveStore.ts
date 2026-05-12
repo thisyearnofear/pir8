@@ -12,10 +12,12 @@ import {
   ChallengeStatus,
   ChallengeType,
   CompetitiveSnapshot,
+  MatchResult,
   DEFAULT_BOUNTY_TARGETS,
   DEFAULT_CAPTAIN_PROFILES,
   buildDefaultCompetitiveSnapshot,
   challengeRecordToAcceptance,
+  computeCaptainProfiles,
 } from "@/lib/competitiveData";
 import { GameState } from "@/types/game";
 
@@ -29,6 +31,7 @@ interface CompetitiveStoreFile {
   bountyTargets: BountyTarget[];
   captainProfiles: CaptainProfile[];
   battleMoments: BattleMomentReplay[];
+  matchResults: MatchResult[];
 }
 
 const storeDir = path.join(process.cwd(), ".data");
@@ -39,6 +42,7 @@ let memoryStore: CompetitiveStoreFile = {
   bountyTargets: DEFAULT_BOUNTY_TARGETS,
   captainProfiles: DEFAULT_CAPTAIN_PROFILES,
   battleMoments: [],
+  matchResults: [],
 };
 
 function toChallengeType(value?: string | null): ChallengeType {
@@ -120,6 +124,7 @@ function normalizeStore(
         ? parsed.captainProfiles
         : DEFAULT_CAPTAIN_PROFILES,
     battleMoments: parsed.battleMoments || [],
+    matchResults: Array.isArray(parsed.matchResults) ? parsed.matchResults : [],
   };
 }
 
@@ -185,11 +190,27 @@ async function requireChallengeRecord(challengeId: string): Promise<{
 
 export async function getCompetitiveSnapshot(): Promise<CompetitiveSnapshot> {
   const store = await readStore();
+  const captainProfiles = computeCaptainProfiles(
+    store.captainProfiles,
+    store.matchResults,
+  );
   return buildDefaultCompetitiveSnapshot(
     store.challengeRecords,
     store.bountyTargets,
-    store.captainProfiles,
+    captainProfiles,
   );
+}
+
+export async function recordMatchResult(input: MatchResult): Promise<MatchResult> {
+  const store = await readStore();
+  const matchResults = [input, ...store.matchResults].slice(0, 200);
+  await writeStore({ ...store, matchResults });
+  return input;
+}
+
+export async function listMatchResults(): Promise<MatchResult[]> {
+  const store = await readStore();
+  return store.matchResults;
 }
 
 export async function createChallengeRecord(input: {

@@ -6,33 +6,27 @@ import {
   useMemo,
 } from "react";
 import { useSafeWallet } from "@/components/SafeWalletProvider";
-import { useGameShellState, useAIBattleState } from "@/store/gameStore";
-import { useErrorHandler } from "@/hooks/useErrorHandler";
-import { useShowOnboarding } from "@/hooks/useShowOnboarding";
-import { useViralSystem } from "@/hooks/useViralSystem";
+import { 
+  useAIBattleState, 
+  useMatchState, 
+  usePlayerState, 
+  useActionState, 
+  usePracticeState 
+} from "@/store/gameStore";
+import { useViralSystem as _useViralSystem } from "@/hooks/useViralSystem";
 import { usePrivacySimulation } from "@/hooks/usePrivacySimulation";
 import { ErrorBoundary } from "@/components/ErrorBoundary";
-import { ErrorToast, SuccessToast } from "@/components/Toast";
 import GameContainer from "@/components/GameContainer";
-import SpectatorView from "@/components/SpectatorView";
-import OnboardingModal from "@/components/OnboardingModal";
 import { ManualSyncButton } from "@/components/ManualSyncButton";
 import { GameSyncStatus } from "@/components/GameSyncRecovery";
-import ViralEventModal from "@/components/ViralEventModal";
-import SocialModal from "@/components/SocialModal";
 import AIStreamPanel from "@/components/AIStreamPanel";
 import {
   LeakageMeter,
-  BountyBoard,
-  PrivacyLessonModal,
 } from "@/components/privacy";
-import AIBattleModal from "@/components/AIBattleModal";
-import { AIBattleErrorBoundary } from "@/components/AIBattleErrorBoundary";
+import AIBattleErrorBoundary from "@/components/AIBattleErrorBoundary";
 import AIBattleControls from "@/components/AIBattleControls";
 import { Ship } from "@/types/game";
 import { GameBalance } from "@/lib/gameBalance";
-import ModeSelectModal from "@/components/modals/ModeSelectModal";
-import PracticeMenuModal from "@/components/modals/PracticeMenuModal";
 import PracticeModeBanner from "@/components/modals/PracticeModeBanner";
 import GameHeader from "@/components/GameHeader";
 import EmptyStateView from "@/components/EmptyStateView";
@@ -40,32 +34,34 @@ import { GameProvider } from "@/contexts/GameContext";
 import { useIncomingChallenge } from "@/hooks/useIncomingChallenge";
 import { usePracticeModeController } from "@/hooks/usePracticeModeController";
 import { useMatchFlowController } from "@/hooks/useMatchFlowController";
+import { useEntryController } from "@/hooks/useEntryController";
+import { useSpectatorController } from "@/hooks/useSpectatorController";
+import { useChallengeController } from "@/hooks/useChallengeController";
+import { useNotificationController } from "@/hooks/useNotificationController";
+import { useOnChainActions } from "@/store/gameStore";
+import { ModalLayer } from "@/components/ModalLayer";
+import { NotificationLayer } from "@/components/NotificationLayer";
 
 export default function GameShell() {
   const { publicKey, wallet } = useSafeWallet();
-  const {
-    gameState,
-    error,
-    showMessage,
-    selectedShipId,
-    joinGame,
-    findOrCreateGame,
-    moveShip,
-    attackWithShip,
-    claimTerritory,
-    collectResources,
-    selectShip,
-    setMessage,
-    clearError,
-    isMyTurn,
-    getAllShips,
-    startPracticeGame,
-    makePracticeMove,
-    makePracticeAttack,
-    makePracticeClaim,
-    exitPracticeMode,
-    gameMode,
-  } = useGameShellState();
+  const { gameState, gameMode } = useMatchState();
+  const { isMyTurn, getAllShips } = usePlayerState();
+  const { 
+    selectedShipId, 
+    selectShip, 
+    moveShip, 
+    attackWithShip, 
+    claimTerritory, 
+    collectResources 
+  } = useActionState();
+  const { 
+    startPracticeGame, 
+    makePracticeMove, 
+    makePracticeAttack, 
+    makePracticeClaim, 
+    exitPracticeMode 
+  } = usePracticeState();
+  
   const {
     startAIvsAIGame,
     isAIvsAIMode,
@@ -75,30 +71,49 @@ export default function GameShell() {
     aiReasoningHistory,
   } = useAIBattleState();
 
+  const {
+    joinGame,
+    findOrCreateGame,
+  } = useOnChainActions();
+
   const isPracticeMode = gameMode === "practice";
   const [_shipActionModalShip, setShipActionModalShip] = useState<Ship | null>(
     null,
   );
-  const [showModeSelect, setShowModeSelect] = useState(false);
-  const [socialModal, setSocialModal] = useState<{
-    type: "leaderboard" | "referral";
-    isOpen: boolean;
-  }>({
-    type: "leaderboard",
-    isOpen: false,
-  });
-  const [handledIncomingChallenge, setHandledIncomingChallenge] =
-    useState(false);
-  const [showPracticeMenu, setShowPracticeMenu] = useState(false);
-  const [showAIBattleModal, setShowAIBattleModal] = useState(false);
   const [expandedPanel, setExpandedPanel] = useState<"leakage" | "ai" | null>(
     "ai",
   );
-  const [showSpectatorMode, setShowSpectatorMode] = useState(false);
 
-  const { handleGameError } = useErrorHandler();
-  const { shown: showOnboarding, dismiss: dismissOnboarding } =
-    useShowOnboarding();
+  const {
+    showModeSelect,
+    setShowModeSelect,
+    showPracticeMenu,
+    setShowPracticeMenu,
+    showAIBattleModal,
+    setShowAIBattleModal,
+    handledIncomingChallenge,
+    setHandledIncomingChallenge,
+    showOnboarding,
+    dismissOnboarding,
+    openModeSelect: _openModeSelect,
+    openPracticeMenu,
+    openAIBattleModal,
+  } = useEntryController();
+
+  const {
+    showSpectatorMode,
+    openSpectatorMode,
+    closeSpectatorMode,
+  } = useSpectatorController();
+
+  const {
+    error,
+    showMessage,
+    clearError,
+    setMessage,
+    handleGameEvent,
+    handleGameError,
+  } = useNotificationController();
 
   const getCurrentPlayer = () => {
     if (!gameState?.players) return null;
@@ -116,6 +131,19 @@ export default function GameShell() {
     );
   };
 
+  const {
+    socialModal,
+    viralSystem,
+    handleViralShare,
+    openSocialModal,
+    closeSocialModal,
+  } = useChallengeController({
+    gameState,
+    currentPlayer: getCurrentPlayer(),
+    isPracticeMode,
+    handleGameEvent,
+  });
+
   const getCurrentPlayerKey = useMemo(() => {
     if (isPracticeMode) {
       const humanPlayer = gameState?.players?.find(
@@ -125,10 +153,6 @@ export default function GameShell() {
     }
     return publicKey?.toString();
   }, [gameState?.players, publicKey, isPracticeMode]);
-
-  const viralSystem = useViralSystem(gameState, getCurrentPlayer(), {
-    disableAutoDismiss: isPracticeMode,
-  });
 
   const privacySim = usePrivacySimulation({ enabled: isPracticeMode });
 
@@ -142,21 +166,9 @@ export default function GameShell() {
         privacySim.updateLeakage(gameState, humanPlayer, recentActions);
       }
     }
-  }, [gameState?.players, isPracticeMode, privacySim]);
-
-  const handleGameEvent = (message: string) => {
-    setMessage(null);
-    setTimeout(() => {
-      setMessage(message);
-      setTimeout(() => setMessage(null), 3000);
-    }, 50);
-  };
+  }, [gameState, gameState?.players, isPracticeMode, privacySim]);
 
   const {
-    isCreatingGame: _isCreatingGame,
-    isJoining: _isJoining,
-    joinError: _joinError,
-    setJoinError,
     handleCollectResources,
     handleNewGame,
     handleReturnToLobby,
@@ -194,20 +206,12 @@ export default function GameShell() {
     handleGameEvent,
   });
 
-  const handleViralShare = (
-    event: any,
-    platform?: "twitter" | "discord" | "copy",
-  ) => {
-    viralSystem.handleShare(event, platform);
-    handleGameEvent("🚀 Epic moment shared! Spread the world!");
-  };
-
   useIncomingChallenge({
     handledIncomingChallenge,
     publicKey,
     wallet,
     setHandledIncomingChallenge,
-    setJoinError,
+    setJoinError: (err) => err && handleGameError(new Error(err), "joining challenge"),
     setShowAIBattleModal,
     setShowPracticeMenu,
     handleGameEvent,
@@ -388,16 +392,13 @@ export default function GameShell() {
         break;
       }
       case "claim": {
-        const ship = getAllShips().find((s: any) => s.id === shipId);
-        if (ship) {
-          const success = await claimTerritory(
-            Number(gameState!.gameId),
-            shipId,
-            wallet,
-          );
-          if (success) {
-            handleGameEvent("🏴‍☠️ Territory claimed!");
-          }
+        const success = await claimTerritory(
+          Number(gameState!.gameId),
+          shipId,
+          wallet,
+        );
+        if (success) {
+          handleGameEvent("🏴‍☠️ Territory claimed!");
         }
         break;
       }
@@ -435,23 +436,38 @@ export default function GameShell() {
 
   return (
     <ErrorBoundary>
-      <OnboardingModal isOpen={showOnboarding} onDismiss={dismissOnboarding} />
-
-      <ViralEventModal
-        event={viralSystem.currentEvent}
-        onShare={handleViralShare}
-        onDismiss={viralSystem.dismissCurrentEvent}
+      <ModalLayer
+        showOnboarding={showOnboarding}
+        onDismissOnboarding={dismissOnboarding}
+        currentViralEvent={viralSystem.currentEvent}
+        onViralShare={handleViralShare}
+        onDismissViralEvent={viralSystem.dismissCurrentEvent}
         isPracticeMode={isPracticeMode}
-      />
-      <SocialModal
-        type={socialModal.type}
+        socialModal={socialModal}
+        onCloseSocialModal={closeSocialModal}
         gameId={gameState?.gameId}
-        isOpen={socialModal.isOpen}
-        onClose={() => setSocialModal((prev) => ({ ...prev, isOpen: false }))}
+        showAIBattleModal={showAIBattleModal}
+        onCloseAIBattleModal={() => setShowAIBattleModal(false)}
+        onStartAIBattle={handleStartAIBattle}
+        showModeSelect={showModeSelect}
+        onCloseModeSelect={() => setShowModeSelect(false)}
+        onModeSelected={handleModeSelected}
+        showPracticeMenu={showPracticeMenu}
+        onClosePracticeMenu={() => setShowPracticeMenu(false)}
+        onStartPractice={handleStartPractice}
+        gameStateExists={!!gameState}
+        privacySim={privacySim}
+        showSpectatorMode={showSpectatorMode}
+        onCloseSpectatorMode={closeSpectatorMode}
+        onJoinGame={handleJoinGame}
       />
 
-      <ErrorToast error={error} onClose={clearError} />
-      <SuccessToast message={showMessage} onClose={() => setMessage(null)} />
+      <NotificationLayer
+        error={error}
+        showMessage={showMessage}
+        onClearError={clearError}
+        onClearMessage={() => setMessage(null)}
+      />
 
       {(isPracticeMode || isAIvsAIMode) && (
         <div className="fixed top-20 right-4 z-privacy-panel w-80 space-y-3">
@@ -480,62 +496,6 @@ export default function GameShell() {
           />
         </div>
       )}
-
-      {isPracticeMode && (
-        <>
-          <PrivacyLessonModal
-            lesson={privacySim.currentLesson}
-            isVisible={privacySim.isLessonVisible}
-            onDismiss={privacySim.dismissLesson}
-            onActivateGhostFleet={privacySim.activateGhostFleet}
-          />
-
-          <BountyBoard
-            dossier={
-              privacySim.dossier || {
-                playerId: "",
-                movesAnalyzed: 0,
-                patternsIdentified: [],
-                predictabilityScore: 0,
-                typicalPlayStyle: "balanced",
-                lastUpdated: new Date(),
-              }
-            }
-            isVisible={privacySim.isDossierVisible}
-            onClose={privacySim.hideDossier}
-          />
-        </>
-      )}
-
-      {showSpectatorMode && (
-        <div className="fixed inset-0 z-50 bg-slate-900">
-          <SpectatorView
-            onClose={() => setShowSpectatorMode(false)}
-            onJoinGame={(id) => {
-              setShowSpectatorMode(false);
-              handleJoinGame(id);
-            }}
-          />
-        </div>
-      )}
-
-      <AIBattleModal
-        isOpen={showAIBattleModal}
-        onClose={() => setShowAIBattleModal(false)}
-        onStartBattle={handleStartAIBattle}
-      />
-
-      <ModeSelectModal
-        isOpen={showModeSelect}
-        onClose={() => setShowModeSelect(false)}
-        onModeSelected={handleModeSelected}
-      />
-
-      <PracticeMenuModal
-        isOpen={showPracticeMenu && !gameState}
-        onClose={() => setShowPracticeMenu(false)}
-        onStartPractice={handleStartPractice}
-      />
 
       {isAIvsAIMode && (
         <AIBattleControls
@@ -567,13 +527,9 @@ export default function GameShell() {
       <div className="min-h-screen bg-gradient-to-b from-slate-900 to-slate-800 text-white">
         <div className="container mx-auto px-4 py-6">
           <GameHeader
-            onSpectatorMode={() => setShowSpectatorMode(true)}
-            onOpenReferral={() =>
-              setSocialModal({ type: "referral", isOpen: true })
-            }
-            onOpenLeaderboard={() =>
-              setSocialModal({ type: "leaderboard", isOpen: true })
-            }
+            onSpectatorMode={openSpectatorMode}
+            onOpenReferral={() => openSocialModal("referral")}
+            onOpenLeaderboard={() => openSocialModal("leaderboard")}
             playerCount={gameState?.players?.length}
           />
 
@@ -587,12 +543,8 @@ export default function GameShell() {
                     onCellSelect={handleCellSelect}
                     onNewGame={handleNewGame}
                     onReturnToLobby={handleReturnToLobby}
-                    onOpenLeaderboard={() =>
-                      setSocialModal({ type: "leaderboard", isOpen: true })
-                    }
-                    onOpenReferral={() =>
-                      setSocialModal({ type: "referral", isOpen: true })
-                    }
+                    onOpenLeaderboard={() => openSocialModal("leaderboard")}
+                    onOpenReferral={() => openSocialModal("referral")}
                   />
                 </AIBattleErrorBoundary>
               ) : (
@@ -602,22 +554,18 @@ export default function GameShell() {
                   onCellSelect={handleCellSelect}
                   onNewGame={handleNewGame}
                   onReturnToLobby={handleReturnToLobby}
-                  onOpenLeaderboard={() =>
-                    setSocialModal({ type: "leaderboard", isOpen: true })
-                  }
-                  onOpenReferral={() =>
-                    setSocialModal({ type: "referral", isOpen: true })
-                  }
+                  onOpenLeaderboard={() => openSocialModal("leaderboard")}
+                  onOpenReferral={() => openSocialModal("referral")}
                 />
               )}
             </GameProvider>
           ) : (
             <EmptyStateView
               isConnected={!!publicKey}
-              onPracticeMode={() => setShowPracticeMenu(true)}
+              onPracticeMode={openPracticeMenu}
               onCreateGame={handleCreateGame}
-              onSpectatorMode={() => setShowSpectatorMode(true)}
-              onAIBattle={() => setShowAIBattleModal(true)}
+              onSpectatorMode={openSpectatorMode}
+              onAIBattle={openAIBattleModal}
             />
           )}
         </div>

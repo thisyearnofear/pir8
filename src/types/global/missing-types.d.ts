@@ -127,7 +127,10 @@ declare module '@solana/web3.js' {
     constructor(options?: { feePayer?: PublicKey; recentBlockhash?: string });
     add(...instructions: TransactionInstruction[]): Transaction;
     sign(...signers: any[]): void;
-    serialize(): Buffer;
+    serialize(options?: {
+      requireAllSignatures?: boolean;
+      verifySignatures?: boolean;
+    }): Buffer;
   }
 
   export class TransactionInstruction {
@@ -188,14 +191,19 @@ declare var process: {
 };
 
 declare var Buffer: {
-  new(str: string, encoding?: string): Uint8Array;
-  from(input: string | Uint8Array, encoding?: string): Uint8Array;
-  alloc(size: number): Uint8Array;
-  allocUnsafe(size: number): Uint8Array;
-  isBuffer(obj: any): obj is Uint8Array;
-  concat(list: Uint8Array[], totalLength?: number): Uint8Array;
+  new(str: string, encoding?: string): Buffer;
+  from(input: string | Uint8Array | number[], encoding?: string): Buffer;
+  alloc(size: number): Buffer;
+  allocUnsafe(size: number): Buffer;
+  isBuffer(obj: any): obj is Buffer;
+  concat(list: Buffer[], totalLength?: number): Buffer;
   byteLength(string: string, encoding?: string): number;
 };
+
+interface Buffer extends Uint8Array {
+  toString(encoding?: string): string;
+  [index: number]: number;
+}
 
 // Add missing ES2015+ features if not detected
 interface Array<T> {

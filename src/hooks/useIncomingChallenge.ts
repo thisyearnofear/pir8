@@ -90,7 +90,22 @@ export function useIncomingChallenge({
         setHandledIncomingChallenge(true);
         if (publicKey && wallet) {
           handleGameEvent("Opening shared PIR8 duel...");
-          handleJoinGame(resolvedJoinId);
+          const joined = await handleJoinGame(resolvedJoinId);
+          if (joined && challengeId) {
+            try {
+              await fetch("/api/challenges", {
+                method: "PATCH",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({
+                  challengeId,
+                  status: "accepted",
+                  account: publicKey.toString(),
+                }),
+              });
+            } catch {
+              // Non-fatal: acceptance recording failed, game join still succeeded.
+            }
+          }
         } else {
           setJoinError("Connect your wallet to accept this shared duel.");
           handleGameEvent("Shared duel loaded. Connect wallet to accept.");
@@ -103,6 +118,23 @@ export function useIncomingChallenge({
         setShowAIBattleModal(true);
         handleGameEvent("Shared ambush loaded. Choose captains to watch.");
         return;
+      }
+
+      // Shadow skirmish: record acceptance immediately (no on-chain tx needed).
+      if (challengeId) {
+        try {
+          await fetch("/api/challenges", {
+            method: "PATCH",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({
+              challengeId,
+              status: "accepted",
+              account: publicKey?.toString(),
+            }),
+          });
+        } catch {
+          // Non-fatal.
+        }
       }
 
       setHandledIncomingChallenge(true);

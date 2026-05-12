@@ -15,6 +15,54 @@ export const usePirateGameStore = create<PirateGameStore>((...a) => ({
 export const usePirateGame = () => usePirateGameStore((state) => state);
 export const usePirateGameState = usePirateGameStore;
 
+// Focused Selectors
+export const useMatchState = () =>
+  usePirateGameStore((state) => ({
+    gameState: state.gameState,
+    gameMode: state.gameMode,
+    isLoading: state.isLoading,
+  }));
+
+export const usePlayerState = () =>
+  usePirateGameStore((state) => ({
+    isMyTurn: state.isMyTurn,
+    getAllShips: state.getAllShips,
+    getCurrentPlayer: state.getCurrentPlayer,
+    getMyShips: state.getMyShips,
+  }));
+
+export const useActionState = () =>
+  usePirateGameStore((state) => ({
+    selectedShipId: state.selectedShipId,
+    selectShip: state.selectShip,
+    moveShip: state.moveShip,
+    attackWithShip: state.attackWithShip,
+    claimTerritory: state.claimTerritory,
+    collectResources: state.collectResources,
+    buildShip: state.buildShip,
+    scanCoordinate: state.scanCoordinate,
+    isCoordinateScanned: state.isCoordinateScanned,
+  }));
+
+export const useNotificationState = () =>
+  usePirateGameStore((state) => ({
+    error: state.error,
+    showMessage: state.showMessage,
+    setError: state.setError,
+    setMessage: state.setMessage,
+    clearError: state.clearError,
+  }));
+
+export const usePracticeState = () =>
+  usePirateGameStore((state) => ({
+    startPracticeGame: state.startPracticeGame,
+    makePracticeMove: state.makePracticeMove,
+    makePracticeAttack: state.makePracticeAttack,
+    makePracticeClaim: state.makePracticeClaim,
+    exitPracticeMode: state.exitPracticeMode,
+    processAITurn: state.processAITurn,
+  }));
+
 export const useGameShellState = () =>
   usePirateGameStore((state) => ({
     gameState: state.gameState,
@@ -59,4 +107,5 @@ export const useOnChainActions = () =>
     joinGame: state.joinGame,
     startGame: state.startGame,
     fetchGameState: state.fetchGameState,
+    findOrCreateGame: state.findOrCreateGame,
   }));

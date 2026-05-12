@@ -40,6 +40,7 @@ export interface Ship {
   defense: number;
   speed: number;
   position: Coordinate;
+  previousPosition?: Coordinate;
   // CLIENT-ONLY: resources, ability, activeEffects are not persisted on-chain
   resources: Resources;
   ability: ShipAbility;

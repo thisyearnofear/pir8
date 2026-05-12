@@ -39,6 +39,7 @@ export interface Ship {
   defense: number;
   speed: number;
   position: Coordinate;
+  previousPosition?: Coordinate;
   resources: Resources;
   ability: ShipAbility; // ENHANCEMENT: Each ship has unique ability
   activeEffects: ShipEffect[]; // ENHANCEMENT: Buffs/debuffs tracking

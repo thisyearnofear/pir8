@@ -29,6 +29,19 @@ export interface CaptainProfile {
   style: string;
   winRate: string;
   signal: string;
+  wins?: number;
+  losses?: number;
+  recentResults?: Array<"W" | "L">;
+}
+
+export interface MatchResult {
+  winnerPublicKey: string;
+  loserPublicKey: string;
+  winnerLabel?: string;
+  loserLabel?: string;
+  gameId: string;
+  turnCount: number;
+  completedAt: string;
 }
 
 export interface ChallengeRecord {
@@ -137,6 +150,52 @@ export function challengeRecordToAcceptance(
     ref: record.referrer,
     acceptedAt: record.acceptedAt,
   };
+}
+
+export function computeCaptainProfiles(
+  existingProfiles: CaptainProfile[],
+  matchResults: MatchResult[],
+): CaptainProfile[] {
+  if (matchResults.length === 0) return existingProfiles;
+
+  const stats = new Map<string, { label: string; wins: number; losses: number; results: Array<"W" | "L"> }>();
+
+  for (const result of matchResults) {
+    const wKey = result.winnerPublicKey;
+    const lKey = result.loserPublicKey;
+    const wLabel = result.winnerLabel || wKey.slice(0, 8);
+    const lLabel = result.loserLabel || lKey.slice(0, 8);
+
+    if (!stats.has(wKey)) stats.set(wKey, { label: wLabel, wins: 0, losses: 0, results: [] });
+    if (!stats.has(lKey)) stats.set(lKey, { label: lLabel, wins: 0, losses: 0, results: [] });
+
+    const w = stats.get(wKey)!;
+    w.wins += 1;
+    w.results = (["W", ...w.results] as Array<"W" | "L">).slice(0, 5);
+
+    const l = stats.get(lKey)!;
+    l.losses += 1;
+    l.results = (["L", ...l.results] as Array<"W" | "L">).slice(0, 5);
+  }
+
+  const computed: CaptainProfile[] = Array.from(stats.entries())
+    .sort((a, b) => {
+      const aRate = a[1].wins / Math.max(1, a[1].wins + a[1].losses);
+      const bRate = b[1].wins / Math.max(1, b[1].wins + b[1].losses);
+      return bRate - aRate;
+    })
+    .map(([, s], i) => ({
+      name: s.label,
+      rank: `#${i + 1}`,
+      style: s.wins > s.losses ? "Aggressive" : "Defensive",
+      winRate: `${Math.round((s.wins / Math.max(1, s.wins + s.losses)) * 100)}%`,
+      signal: `${s.wins}W-${s.losses}L`,
+      wins: s.wins,
+      losses: s.losses,
+      recentResults: s.results,
+    }));
+
+  return computed.length > 0 ? computed : existingProfiles;
 }
 
 export function buildDefaultCompetitiveSnapshot(

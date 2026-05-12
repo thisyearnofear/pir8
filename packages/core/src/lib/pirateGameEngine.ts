@@ -82,8 +82,9 @@ export class PirateGameManager {
    * Calculate distance between two coordinates
    */
   static calculateDistance(coord1: Coordinate, coord2: Coordinate): number {
-    return Math.sqrt(
-      Math.pow(coord2.x - coord1.x, 2) + Math.pow(coord2.y - coord1.y, 2),
+    return Math.max(
+      Math.abs(coord2.x - coord1.x),
+      Math.abs(coord2.y - coord1.y),
     );
   }
 
@@ -463,6 +464,7 @@ export class PirateGameManager {
   static processTurnAction(
     gameState: GameState,
     action: GameAction,
+    randomFn: () => number = Math.random,
   ): {
     updatedGameState: GameState;
     success: boolean;
@@ -483,7 +485,7 @@ export class PirateGameManager {
       case "move_ship":
         return this.processShipMovementAction(gameState, action);
       case "attack":
-        return this.processAttackAction(gameState, action);
+        return this.processAttackAction(gameState, action, randomFn);
       case "claim_territory":
         return this.processTerritoryClaimAction(gameState, action);
       case "collect_resources":
@@ -598,6 +600,7 @@ export class PirateGameManager {
         const newHealth = Math.max(0, s.health + healthChange);
         return {
           ...moveResult.updatedShip!,
+          previousPosition: { ...ship.position },
           position: { ...moveResult.updatedShip!.position },
           health: newHealth,
         };
@@ -908,7 +911,11 @@ export class PirateGameManager {
   /**
    * Process ship attack action
    */
-  static processAttackAction(gameState: GameState, action: GameAction) {
+  static processAttackAction(
+    gameState: GameState,
+    action: GameAction,
+    randomFn: () => number = Math.random,
+  ) {
     const { data, player } = action;
     const { shipId, targetShipId } = data;
 
@@ -1005,6 +1012,7 @@ export class PirateGameManager {
       gameState.turnNumber,
       isMomentumHit,
       distance,
+      randomFn,
     );
 
     // Apply damage to target ship
@@ -1577,6 +1585,8 @@ export class PirateGameManager {
 
   // ===== AI OPPONENT SYSTEM (For Practice Mode) =====
 
+  private static aiInstanceCounter = 0;
+
   /**
    * Create an AI player for practice mode
    * ENHANCEMENT: Store difficulty in publicKey for proper AI behavior
@@ -1587,16 +1597,20 @@ export class PirateGameManager {
   ): Player {
     const aiNames = [
       "Blackbeard",
-      "Calico Jack",
-      "Anne Bonny",
+      "CalicoJack",
+      "AnneBonny",
       "Bartholomew",
-      "Mary Read",
+      "MaryRead",
     ];
-    const randomName = aiNames[Math.floor(Math.random() * aiNames.length)];
+    const instanceId = ++this.aiInstanceCounter;
+    const nameIndex = instanceId % aiNames.length;
+    const randomName = aiNames[nameIndex];
+    // Use gameId+difficulty as stable unique part — deterministic per game slot and role
+    const uniquePart = _gameId ? `${_gameId}_${difficulty}` : `${instanceId}`;
 
-    // Store difficulty in publicKey format: AI_{name}_{difficulty}_{timestamp}
+    // Store difficulty in publicKey format: AI_{name}_{difficulty}_{uniquePart}
     return {
-      publicKey: `AI_${randomName}_${difficulty}_${Date.now()}`,
+      publicKey: `AI_${randomName}_${difficulty}_${uniquePart}`,
       username: `${randomName} (AI)`,
       resources: this.generateStartingResources(),
       ships: [],
@@ -1624,8 +1638,9 @@ export class PirateGameManager {
   static generateAIMove(
     gameState: GameState,
     aiPlayer: Player,
+    randomFn: () => number = Math.random,
   ): GameAction | null {
-    const decision = this.generateAIDecision(gameState, aiPlayer);
+    const decision = this.generateAIDecision(gameState, aiPlayer, randomFn);
     return decision.action;
   }
 
@@ -1636,6 +1651,7 @@ export class PirateGameManager {
   static generateAIDecision(
     gameState: GameState,
     aiPlayer: Player,
+    randomFn: () => number = Math.random,
   ): AIDecision {
     const startTime = Date.now();
     const difficulty = this.getAIDifficulty(aiPlayer);
@@ -1691,7 +1707,7 @@ export class PirateGameManager {
           difficulty,
           gameAnalysis,
         );
-        if (Math.random() < selectionChance) {
+        if (randomFn() < selectionChance) {
           chosenOption = option;
           chosenAction = this.optionToAction(option, gameState, aiPlayer);
           break;
@@ -1854,7 +1870,7 @@ export class PirateGameManager {
   } {
     // Extract difficulty from player ID: AI_{name}_{difficulty}_{timestamp}
     const difficultyMatch = aiPlayer.publicKey.match(
-      /AI_\w+_(novice|pirate|captain|admiral)_\d+/,
+      /_(novice|pirate|captain|admiral)_/,
     );
     const level =
       (difficultyMatch?.[1] as "novice" | "pirate" | "captain" | "admiral") ||
@@ -1883,22 +1899,22 @@ export class PirateGameManager {
       },
       // Captain: Always acts, strategic with occasional variation
       captain: {
-        claimChance: 1.0,
-        attackChance: 0.85,
+        claimChance: 0.8,
+        attackChance: 1.0,
         moveChance: 1.0,
-        buildChance: 0.7,
+        buildChance: 0.5,
         planningDepth: 3,
-        aggressiveness: 0.75,
+        aggressiveness: 0.85,
         debugName: "🏴‍☠️ Captain",
       },
       // Admiral: Uses randomness for unpredictability
       admiral: {
-        claimChance: 0.95,
-        attackChance: 0.9,
-        moveChance: 0.95,
-        buildChance: 0.8,
+        claimChance: 0.7,
+        attackChance: 1.0,
+        moveChance: 1.0,
+        buildChance: 0.5,
         planningDepth: 4,
-        aggressiveness: 0.9,
+        aggressiveness: 1.0,
         debugName: "👑 Admiral",
       },
     };
@@ -1921,7 +1937,12 @@ export class PirateGameManager {
     const { shipId, toCoordinate } = result.data;
     if (!toCoordinate) return null;
 
-    const ship = aiPlayer.ships.find((s) => s.id === shipId);
+    const currentPlayerInState = gameState.players.find(
+      (p) => p.publicKey === aiPlayer.publicKey,
+    );
+    const ship = (currentPlayerInState || aiPlayer).ships.find(
+      (s) => s.id === shipId,
+    );
     if (!ship) return null;
 
     const coord = this.stringToCoordinate(toCoordinate);
@@ -1932,14 +1953,31 @@ export class PirateGameManager {
 
     if (territory) {
       if (territory.type === "treasure") {
-        score = 100;
+        score = 80;
         reason = "High-value treasure - must claim!";
       } else if (territory.type === "port") {
-        score = 90;
+        score = 70;
         reason = "Strategic port for ship building";
       } else if (territory.type === "island") {
-        score = 75;
+        score = 55;
         reason = "Island provides resources";
+      }
+    }
+
+    // Aggressive AIs deprioritise claiming when an enemy is nearby
+    const aggressiveness = this.getAIDifficulty(aiPlayer).aggressiveness;
+    if (aggressiveness >= 0.5) {
+      let nearestEnemyDist = Infinity;
+      for (const enemy of gameState.players) {
+        if (enemy.publicKey === aiPlayer.publicKey) continue;
+        for (const enemyShip of enemy.ships.filter((s) => s.health > 0)) {
+          const d = this.calculateDistance(ship.position, enemyShip.position);
+          if (d < nearestEnemyDist) nearestEnemyDist = d;
+        }
+      }
+      if (nearestEnemyDist <= 4) {
+        score -= Math.round(aggressiveness * (80 + (4 - nearestEnemyDist) * 20));
+        reason = "Enemy nearby - combat first";
       }
     }
 
@@ -1960,7 +1998,12 @@ export class PirateGameManager {
     gameState: GameState,
     aiPlayer: Player,
   ): GameAction | null {
-    const activeShips = aiPlayer.ships.filter((s) => s.health > 0);
+    const currentPlayerInState = gameState.players.find(
+      (p) => p.publicKey === aiPlayer.publicKey,
+    );
+    const activeShips = (currentPlayerInState || aiPlayer).ships.filter(
+      (s) => s.health > 0,
+    );
 
     for (const ship of activeShips) {
       const coord = this.coordinateToString(ship.position);
@@ -2027,7 +2070,12 @@ export class PirateGameManager {
     score: number;
     reason: string;
   } | null {
-    const activeShips = aiPlayer.ships.filter((s) => s.health > 0);
+    const currentPlayerInState = gameState.players.find(
+      (p) => p.publicKey === aiPlayer.publicKey,
+    );
+    const activeShips = (currentPlayerInState || aiPlayer).ships.filter(
+      (s) => s.health > 0,
+    );
     let bestAttack: {
       shipId: string;
       targetShipId: string;
@@ -2036,27 +2084,30 @@ export class PirateGameManager {
     } | null = null;
 
     const isLateGame = gameState.turnNumber > 25;
+    const aggressiveness = this.getAIDifficulty(aiPlayer).aggressiveness;
 
     for (const ship of activeShips) {
+      const maxRange = GameBalance.SHIP_BALANCE[ship.type]?.range ?? 1;
       for (const enemy of gameState.players) {
         if (enemy.publicKey === aiPlayer.publicKey) continue;
 
         for (const enemyShip of enemy.ships.filter((s) => s.health > 0)) {
-          const manhattanDist =
-            Math.abs(ship.position.x - enemyShip.position.x) +
-            Math.abs(ship.position.y - enemyShip.position.y);
+          const distance = this.calculateDistance(
+            ship.position,
+            enemyShip.position,
+          );
 
-          if (manhattanDist <= 1) {
-            let score = 100;
+          if (distance <= maxRange) {
+            let score = 300 + aggressiveness * 200;
             let reason = "Enemy in range";
 
-            // Prefer attacking weak ships
-            score += 100 - enemyShip.health;
+            score += Math.max(0, (maxRange - distance) * 40);
+            score += Math.max(0, 100 - enemyShip.health);
+
             if (enemyShip.health < 30) {
               reason = "Finish off weakened enemy";
             }
 
-            // Prefer attacking stronger ship types
             if (enemyShip.type === "flagship") {
               score += 50;
               reason = "Eliminate flagship threat";
@@ -2067,13 +2118,11 @@ export class PirateGameManager {
               score += 20;
             }
 
-            // If losing, be more aggressive
             if (gameAnalysis.isLosing) {
               score += 25;
               reason = "Aggressive strike - must turn tide";
             }
 
-            // Late game: prioritize combat over expansion
             if (isLateGame) {
               score *= 1.5;
               reason += " (late game)";
@@ -2134,8 +2183,15 @@ export class PirateGameManager {
     score: number;
     reason: string;
   } | null {
-    const activeShips = aiPlayer.ships.filter((s) => s.health > 0);
+    const currentPlayerInState = gameState.players.find(
+      (p) => p.publicKey === aiPlayer.publicKey,
+    );
+    const activeShips = (currentPlayerInState || aiPlayer).ships.filter(
+      (s) => s.health > 0,
+    );
     if (activeShips.length === 0) return null;
+
+    const aggressiveness = this.getAIDifficulty(aiPlayer).aggressiveness;
 
     let ship = activeShips[0];
     for (const s of activeShips) {
@@ -2151,6 +2207,20 @@ export class PirateGameManager {
     let bestTarget: { x: number; y: number } | null = null;
     let bestScore = -Infinity;
     let bestReason = "";
+
+    // Find nearest enemy for approach scoring
+    let nearestEnemyPos: Coordinate | null = null;
+    let nearestEnemyDist = Infinity;
+    for (const enemy of gameState.players) {
+      if (enemy.publicKey === aiPlayer.publicKey) continue;
+      for (const enemyShip of enemy.ships.filter((s) => s.health > 0)) {
+        const d = this.calculateDistance(ship.position, enemyShip.position);
+        if (d < nearestEnemyDist) {
+          nearestEnemyDist = d;
+          nearestEnemyPos = enemyShip.position;
+        }
+      }
+    }
 
     for (let x = 0; x < gameState.gameMap.size; x++) {
       for (let y = 0; y < gameState.gameMap.size; y++) {
@@ -2169,13 +2239,13 @@ export class PirateGameManager {
         let reason = "";
 
         if (territory.type === "treasure") {
-          score = 100;
+          score = 70;
           reason = "Move toward treasure";
         } else if (territory.type === "port") {
-          score = 70;
+          score = 55;
           reason = "Advance to strategic port";
         } else if (territory.type === "island") {
-          score = 40;
+          score = 35;
           reason = "Head to resource island";
         } else if (territory.type === "water") {
           score = 15;
@@ -2186,11 +2256,29 @@ export class PirateGameManager {
         }
 
         if (!territory.owner && territory.type !== "water") {
-          score += 30;
+          score += 20;
           reason = "Claim unclaimed territory";
         }
 
         score -= manhattanDist * 3;
+
+        // Anti-backtrack: penalise returning to previous position
+        if (
+          ship.previousPosition &&
+          ship.previousPosition.x === x &&
+          ship.previousPosition.y === y
+        ) {
+          score -= 120;
+        }
+
+        // Approach enemy bonus
+        if (nearestEnemyPos) {
+          const distAfter = this.calculateDistance({ x, y }, nearestEnemyPos);
+          if (distAfter < nearestEnemyDist) {
+            score += Math.round(aggressiveness * (80 + (nearestEnemyDist - distAfter) * 20));
+            reason = reason || "Approach enemy";
+          }
+        }
 
         if (
           gameAnalysis.isLosing &&

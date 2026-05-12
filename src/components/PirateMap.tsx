@@ -356,10 +356,33 @@ export default function PirateMap({
           const isStale = intelState === "stale";
           const isFogged = intelState === "hidden";
           
+          const cellAriaLabel = (() => {
+            const parts: string[] = [`Cell ${coordinate}`];
+            const shipHere = getShipAtPosition(coordinate);
+            if (shipHere) {
+              const owner = isMyShip(shipHere) ? "your" : "enemy";
+              parts.push(`${owner} ${shipHere.type}, ${shipHere.health} of ${shipHere.maxHealth} HP`);
+            }
+            const cellData = flatCells.find(c => c.coordinate === coordinate);
+            if (cellData?.type && cellData.type !== "water") parts.push(cellData.type);
+            if (cellData?.owner) parts.push(cellData.owner === currentPlayerPK ? "controlled by you" : "enemy controlled");
+            if (isFogged) parts.push("hidden");
+            else if (isStale) parts.push("stale intel");
+            else if (isScanned) parts.push("scanned");
+            if (tacticalState.isMoveOption) parts.push("move available");
+            if (tacticalState.isAttackOption) parts.push(`attack available${damagePreview ? `, estimated damage ${damagePreview}` : ""}`);
+            if (tacticalState.isThreatened && !tacticalState.isMoveOption && !tacticalState.isAttackOption) parts.push("threatened");
+            return parts.join(", ");
+          })();
+
           return (
             <div
               key={coordinate}
               data-coordinate={coordinate}
+              aria-label={cellAriaLabel}
+              role="button"
+              tabIndex={isMyTurn ? 0 : -1}
+              onKeyDown={(e) => { if (e.key === "Enter" || e.key === " ") handleCellClick(coordinate); }}
               className={`
                 territory-cell cursor-pointer
                 ${isMyTurn ? "hover:bg-neon-cyan hover:bg-opacity-20" : ""}

@@ -71,10 +71,10 @@ describe("PirateGameManager.calculateDistance", () => {
   });
 
   it("should calculate diagonal distance", () => {
-    // Distance from (0,0) to (3,4) = sqrt(9+16) = 5
+    // Chebyshev distance from (0,0) to (3,4) = max(3,4) = 4
     expect(
       PirateGameManager.calculateDistance({ x: 0, y: 0 }, { x: 3, y: 4 }),
-    ).toBe(5);
+    ).toBe(4);
   });
 
   it("should be symmetric", () => {

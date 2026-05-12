@@ -196,6 +196,7 @@ export class PirateGameManager {
   static processTurnAction(
     gameState: GameState,
     action: GameAction,
+    randomFn: () => number = Math.random,
   ): {
     updatedGameState: GameState;
     success: boolean;
@@ -216,7 +217,7 @@ export class PirateGameManager {
       case "move_ship":
         return this.processShipMovementAction(gameState, action);
       case "attack":
-        return CombatEngine.processAttackAction(gameState, action);
+        return CombatEngine.processAttackAction(gameState, action, randomFn);
       case "claim_territory":
         return this.processTerritoryClaimAction(gameState, action);
       case "collect_resources":
@@ -336,11 +337,18 @@ export class PirateGameManager {
         const newHealth = Math.max(0, s.health + healthChange);
         return {
           ...moveResult.updatedShip!,
+          previousPosition: { ...s.position },
           position: { ...moveResult.updatedShip!.position },
           health: newHealth,
         };
       }
-      return { ...s, position: { ...s.position } };
+      return {
+        ...s,
+        previousPosition: s.previousPosition
+          ? { ...s.previousPosition }
+          : undefined,
+        position: { ...s.position },
+      };
     });
 
     const updatedResources = { ...currentPlayer.resources };
@@ -671,15 +679,17 @@ export class PirateGameManager {
   static generateAIMove(
     gameState: GameState,
     aiPlayer: Player,
+    randomFn: () => number = Math.random,
   ): GameAction | null {
-    return AIEngine.generateAIMove(gameState, aiPlayer);
+    return AIEngine.generateAIMove(gameState, aiPlayer, randomFn);
   }
 
   static generateAIDecision(
     gameState: GameState,
     aiPlayer: Player,
+    randomFn: () => number = Math.random,
   ): AIDecision {
-    return AIEngine.generateAIDecision(gameState, aiPlayer);
+    return AIEngine.generateAIDecision(gameState, aiPlayer, randomFn);
   }
 
   // ===== PRACTICE MODE =====

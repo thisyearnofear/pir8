@@ -56,30 +56,31 @@ Open [http://localhost:3000](http://localhost:3000) and connect your Solana wall
 
 ## ✨ Key Features
 
-### Current (Phase 1B - Core Game Loop - 90% Complete) 🎯
+### Game Engine & AI ✅
 - ✅ **10x10 Strategic Map** - Territory generation with island/port/treasure placement
 - ✅ **Fleet System** - 4 ship types with distinct stats (speed, attack, defense, health)
-- ✅ **Core Instructions** - Create game, join game, start game, reset game
-- ✅ **Movement System** - Move ships within speed range with timing bonuses
-- ✅ **Combat System** - Attack ships with damage calculation and destruction
+- ✅ **Movement System** - Grid-consistent Chebyshev distance, anti-backtrack AI movement
+- ✅ **Combat System** - Deterministic damage calculation with seeded RNG support
 - ✅ **Territory Control** - Claim ports, islands, and treasures
 - ✅ **Resource Economy** - Collect resources from controlled territories
 - ✅ **Ship Building** - Build new ships at controlled ports
 - ✅ **Victory Conditions** - Fleet dominance, territory control, economic victory
+- ✅ **AI Opponents** - Four difficulty tiers (novice → admiral) with tuned attack/claim/move heuristics
+- ✅ **Seeded Balance Tests** - All 10 simulation balance assertions pass; duel length, attack frequency, and win-rate targets met
+
+### Challenge & Competitive Loop ✅
+- ✅ **Challenge Lifecycle** - Open → accepted → started → completed/expired with durable records
+- ✅ **On-Chain Join Transaction** - `buildJoinTransaction` wired to Solana devnet program
+- ✅ **Shadow Skirmish / Watch Flow** - Spectator and referrer attribution paths
+- ✅ **Captain Profiles** - Win/loss stats, win-rate, streaks, and rank derived from match history
+- ✅ **Competitive Snapshot** - Live leaderboard data from `computeCaptainProfiles()`
 - ✅ **Real-Time Updates** - Helius WebSocket monitoring integration
 - ✅ **Multi-Wallet Support** - Phantom, Solflare, Backpack via Wallet Adapter
-- 🏗️ **Session Key Privacy** - Ephemeral identity system for private gameplay (leveraging existing AgentRegistry delegate pattern)
 
-### In Progress (Phase 1B - Final Polish)
-- 🔧 **Contract Deployment** - Deploy updated contract to devnet
-- 🔧 **Frontend Integration** - Wire all 9 instructions to UI
-- 🏗️ **Auto Victory Check** - Call check_and_complete_game after each turn
-- 🏗️ **UI Polish** - Display resources, ship building interface, victory screen
-
-### Ready for Testing
-- ⏳ Full gameplay loop with 2+ players
-- ⏳ Resource generation and ship building
-- ⏳ Victory condition triggers
+### UI & Accessibility ✅
+- ✅ **Accessible Map** - Every cell has `aria-label`, keyboard navigation, and tactical descriptions
+- ✅ **Replay Infrastructure** - Battle moment capture and `/api/moments` endpoints
+- ✅ **Focused Controllers** - `useIncomingChallenge`, `usePracticeModeController`, `useMatchFlowController` extracted from GameShell
 
 ---
 

@@ -90,7 +90,8 @@ export class GameBalance {
     defenderDefense: number,
     turnNumber: number = 0,
     isMomentumHit: boolean = false,
-    distance: number = 1
+    distance: number = 1,
+    randomFn: () => number = Math.random,
   ): { damage: number; isCritical: boolean } {
     const attackerStrength = this.SHIP_BALANCE[attackerType].strength;
     const defenderStrength = this.SHIP_BALANCE[defenderType].strength;
@@ -113,7 +114,7 @@ export class GameBalance {
       effectiveDamage *= 1.25;
     }
 
-    const variance = 0.85 + (Math.random() * 0.3);
+    const variance = 0.85 + (randomFn() * 0.3);
     let finalDamage = effectiveDamage * variance;
 
     // Sudden death: double damage
@@ -122,7 +123,7 @@ export class GameBalance {
     }
 
     // Critical strike: 15% chance for 2x damage
-    const isCritical = Math.random() < 0.15;
+    const isCritical = randomFn() < 0.15;
     if (isCritical) {
       finalDamage *= 2;
     }

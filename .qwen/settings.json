@@ -1,0 +1,10 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(rm *)",
+      "Bash(solana *)",
+      "Read(//Users/udiingethe/Dev/pir8/src/lib/client/**)"
+    ]
+  },
+  "$version": 3
+}

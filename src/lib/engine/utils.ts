@@ -15,8 +15,9 @@ export function stringToCoordinate(coordinateStr: string): Coordinate {
 }
 
 export function calculateDistance(coord1: Coordinate, coord2: Coordinate): number {
-  return Math.sqrt(
-    Math.pow(coord2.x - coord1.x, 2) + Math.pow(coord2.y - coord1.y, 2),
+  return Math.max(
+    Math.abs(coord2.x - coord1.x),
+    Math.abs(coord2.y - coord1.y),
   );
 }
 

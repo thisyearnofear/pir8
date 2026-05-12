@@ -28,7 +28,7 @@ export class GameBalance {
     frigate: {
       stats: SHIP_CONFIGS.frigate,
       cost: { gold: 1200, crew: 25, cannons: 15, supplies: 40, wood: 0, rum: 0 },
-      strength: 2.0,
+      strength: 2.2,
       resourceBonus: 1.2,
       range: 3
     },
@@ -46,6 +46,7 @@ export class GameBalance {
       resourceBonus: 1.3,
       range: 1
     }
+
   };
 
   /**
@@ -90,7 +91,8 @@ export class GameBalance {
     defenderDefense: number,
     turnNumber: number = 0,
     isMomentumHit: boolean = false,
-    distance: number = 1
+    distance: number = 1,
+    randomFn: () => number = Math.random,
   ): { damage: number; isCritical: boolean } {
     const attackerStrength = this.SHIP_BALANCE[attackerType].strength;
     const defenderStrength = this.SHIP_BALANCE[defenderType].strength;
@@ -104,7 +106,7 @@ export class GameBalance {
     const distancePenalty = Math.max(0, (distance - 1) * 0.2);
     const distanceMultiplier = Math.max(0.1, 1.0 - distancePenalty);
 
-    let baseDamage = attackerStrength * 40 * healthMultiplier * distanceMultiplier;
+    let baseDamage = attackerStrength * 48 * healthMultiplier * distanceMultiplier;
     const defenseReduction = defenderDefense * (defenderStrength / 10);
     let effectiveDamage = Math.max(5, baseDamage - defenseReduction);
 
@@ -113,7 +115,7 @@ export class GameBalance {
       effectiveDamage *= 1.25;
     }
 
-    const variance = 0.85 + (Math.random() * 0.3);
+    const variance = 0.85 + (randomFn() * 0.3);
     let finalDamage = effectiveDamage * variance;
 
     // Sudden death: double damage
@@ -122,7 +124,7 @@ export class GameBalance {
     }
 
     // Critical strike: 15% chance for 2x damage
-    const isCritical = Math.random() < 0.15;
+    const isCritical = randomFn() < 0.15;
     if (isCritical) {
       finalDamage *= 2;
     }

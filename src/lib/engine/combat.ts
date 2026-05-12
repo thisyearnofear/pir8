@@ -3,7 +3,11 @@ import { GameBalance } from "../gameBalance";
 import { calculateDistance } from "./utils";
 
 export class CombatEngine {
-  static processAttackAction(gameState: GameState, action: GameAction) {
+  static processAttackAction(
+    gameState: GameState,
+    action: GameAction,
+    randomFn: () => number = Math.random,
+  ) {
     const { data, player } = action;
     const { shipId, targetShipId } = data;
 
@@ -93,6 +97,7 @@ export class CombatEngine {
       gameState.turnNumber,
       isMomentumHit,
       distance,
+      randomFn,
     );
 
     const newTargetHealth = Math.max(0, targetShip.health - damage);
