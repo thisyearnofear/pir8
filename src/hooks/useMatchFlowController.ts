@@ -1,4 +1,4 @@
-import { useCallback, useState } from "react";
+import { useCallback, useState, useMemo } from "react";
 import type { PublicKey } from "@solana/web3.js";
 import { createPlayerFromWallet } from "@/lib/playerHelper";
 
@@ -143,7 +143,7 @@ export function useMatchFlowController({
     [handleGameEvent, joinGame, publicKey, wallet],
   );
 
-  return {
+  return useMemo(() => ({
     isCreatingGame,
     isJoining,
     joinError,
@@ -154,5 +154,15 @@ export function useMatchFlowController({
     handleCreateGame,
     handleModeSelected,
     handleJoinGame,
-  };
+  }), [
+    isCreatingGame,
+    isJoining,
+    joinError,
+    handleCollectResources,
+    handleNewGame,
+    handleReturnToLobby,
+    handleCreateGame,
+    handleModeSelected,
+    handleJoinGame,
+  ]);
 }

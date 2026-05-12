@@ -4,6 +4,7 @@ import {
   useState,
   useEffect,
   useMemo,
+  useCallback,
 } from "react";
 import { useSafeWallet } from "@/components/SafeWalletProvider";
 import { 
@@ -115,7 +116,7 @@ export default function GameShell() {
     handleGameError,
   } = useNotificationController();
 
-  const getCurrentPlayer = () => {
+  const getCurrentPlayer = useCallback(() => {
     if (!gameState?.players) return null;
     if (isPracticeMode) {
       return (
@@ -129,7 +130,7 @@ export default function GameShell() {
         (p: any) => p.publicKey === publicKey.toString(),
       ) || null
     );
-  };
+  }, [gameState?.players, isPracticeMode, publicKey]);
 
   const {
     socialModal,
@@ -218,7 +219,7 @@ export default function GameShell() {
     handleJoinGame,
   });
 
-  const handleCellSelect = async (coordinate: string) => {
+  const handleCellSelect = useCallback(async (coordinate: string) => {
     const playerKey = getCurrentPlayerKey;
     if (!playerKey || !gameState?.players || !isMyTurn(playerKey)) return;
 
@@ -272,9 +273,22 @@ export default function GameShell() {
         handleGameEvent(`${myShips[0]?.type} selected`);
       }
     }
-  };
+  }, [
+    getCurrentPlayerKey,
+    gameState,
+    isMyTurn,
+    isPracticeMode,
+    selectedShipId,
+    handlePracticeMove,
+    handleGameEvent,
+    selectShip,
+    publicKey,
+    wallet,
+    moveShip,
+    getAllShips,
+  ]);
 
-  const handleShipAction = async (
+  const handleShipAction = useCallback(async (
     shipId: string,
     action: "move" | "attack" | "claim" | "collect" | "build",
   ) => {
@@ -414,9 +428,23 @@ export default function GameShell() {
         break;
     }
     setShipActionModalShip(null);
-  };
+  }, [
+    getCurrentPlayerKey,
+    gameState,
+    isMyTurn,
+    isPracticeMode,
+    handleGameEvent,
+    getAllShips,
+    handlePracticeAttack,
+    handlePracticeClaim,
+    wallet,
+    publicKey,
+    attackWithShip,
+    claimTerritory,
+    handleCollectResources,
+  ]);
 
-  const handleShipClick = (ship: Ship) => {
+  const handleShipClick = useCallback((ship: Ship) => {
     const playerKey = getCurrentPlayerKey;
     if (!playerKey || !isMyTurn(playerKey)) return;
 
@@ -432,7 +460,7 @@ export default function GameShell() {
 
     selectShip(ship.id);
     setShipActionModalShip(ship);
-  };
+  }, [getCurrentPlayerKey, isMyTurn, isPracticeMode, selectShip, publicKey]);
 
   return (
     <ErrorBoundary>

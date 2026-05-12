@@ -7,7 +7,7 @@
 
 'use client';
 
-import { useState, useCallback, useEffect, useRef } from 'react';
+import { useState, useCallback, useEffect, useRef, useMemo } from 'react';
 import {
     PrivacySimulator,
     InformationLeakageReport,
@@ -179,7 +179,7 @@ export function usePrivacySimulation(
         initialize();
     }, [initialize]);
 
-    return {
+    return useMemo(() => ({
         // State
         simulator: simulatorRef.current,
         leakageReport,
@@ -201,7 +201,25 @@ export function usePrivacySimulation(
         hideDossier,
         isDossierVisible,
         incrementTurn,
-    };
+    }), [
+        leakageReport,
+        dossier,
+        ghostFleetStatus,
+        currentLesson,
+        isLessonVisible,
+        mode,
+        turnNumber,
+        initialize,
+        reset,
+        updateLeakage,
+        recordAction,
+        activateGhostFleet,
+        dismissLesson,
+        showDossier,
+        hideDossier,
+        isDossierVisible,
+        incrementTurn,
+    ]);
 }
 
 export default usePrivacySimulation;
