@@ -94,3 +94,5 @@ export class AIBattleErrorBoundary extends React.Component<AIBattleErrorBoundary
         return this.props.children;
     }
 }
+
+export default AIBattleErrorBoundary;
