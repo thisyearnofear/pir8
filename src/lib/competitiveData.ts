@@ -1,9 +1,26 @@
+export type CompetitiveDataProvenance =
+  | "live"
+  | "testnet"
+  | "preview"
+  | "seeded";
+
+export type BountyStatus = "Open" | "Watched" | "Claimed";
+
+export type ChallengeType = "shadow-skirmish" | "duel" | "watch";
+export type ChallengeStatus =
+  | "open"
+  | "accepted"
+  | "started"
+  | "completed"
+  | "expired"
+  | "rejected";
+
 export interface BountyTarget {
   captain: string;
   record: string;
   bounty: string;
   reason: string;
-  status: "Open" | "Watched" | "Claimed";
+  status: BountyStatus;
 }
 
 export interface CaptainProfile {
@@ -14,16 +31,36 @@ export interface CaptainProfile {
   signal: string;
 }
 
+export interface ChallengeRecord {
+  id: string;
+  type: ChallengeType;
+  status: ChallengeStatus;
+  creatorId: string;
+  creatorLabel?: string;
+  acceptedBy?: string | null;
+  gameId: string | null;
+  seedStateId?: string | null;
+  referrer: string | null;
+  acceptanceSignature?: string | null;
+  statusReason?: string | null;
+  createdAt: string;
+  acceptedAt?: string | null;
+  startedAt?: string | null;
+  completedAt?: string | null;
+  expiresAt?: string | null;
+}
+
 export interface ChallengeAcceptance {
   id: string;
   account: string;
-  challenge: string;
+  challenge: ChallengeType;
   join: string | null;
   ref: string | null;
   acceptedAt: string;
 }
 
 export interface CompetitiveSnapshot {
+  provenance: CompetitiveDataProvenance;
   queue: {
     format: string;
     targetDuration: string;
@@ -34,6 +71,7 @@ export interface CompetitiveSnapshot {
   bountyTargets: BountyTarget[];
   captainProfiles: CaptainProfile[];
   acceptedChallenges: ChallengeAcceptance[];
+  challengeRecords: ChallengeRecord[];
 }
 
 export const DEFAULT_BOUNTY_TARGETS: BountyTarget[] = [
@@ -84,10 +122,37 @@ export const DEFAULT_CAPTAIN_PROFILES: CaptainProfile[] = [
   },
 ];
 
-export function buildDefaultCompetitiveSnapshot(
-  acceptedChallenges: ChallengeAcceptance[] = [],
-): CompetitiveSnapshot {
+export function challengeRecordToAcceptance(
+  record: ChallengeRecord,
+): ChallengeAcceptance | null {
+  if (record.status !== "accepted" || !record.acceptedBy || !record.acceptedAt) {
+    return null;
+  }
+
   return {
+    id: record.id,
+    account: record.acceptedBy,
+    challenge: record.type,
+    join: record.gameId,
+    ref: record.referrer,
+    acceptedAt: record.acceptedAt,
+  };
+}
+
+export function buildDefaultCompetitiveSnapshot(
+  challengeRecords: ChallengeRecord[] = [],
+  bountyTargets: BountyTarget[] = DEFAULT_BOUNTY_TARGETS,
+  captainProfiles: CaptainProfile[] = DEFAULT_CAPTAIN_PROFILES,
+): CompetitiveSnapshot {
+  const acceptedChallenges = challengeRecords
+    .map(challengeRecordToAcceptance)
+    .filter((entry): entry is ChallengeAcceptance => entry !== null)
+    .slice(0, 20);
+
+  const hasRealRecords = challengeRecords.length > 0;
+
+  return {
+    provenance: hasRealRecords ? "preview" : "seeded",
     queue: {
       format: "1v1",
       targetDuration: "5-8m",
@@ -95,8 +160,9 @@ export function buildDefaultCompetitiveSnapshot(
       activeCaptains: Math.max(acceptedChallenges.length, 3),
       averageWait: acceptedChallenges.length > 0 ? "< 2m" : "Open",
     },
-    bountyTargets: DEFAULT_BOUNTY_TARGETS,
-    captainProfiles: DEFAULT_CAPTAIN_PROFILES,
+    bountyTargets,
+    captainProfiles,
     acceptedChallenges,
+    challengeRecords: challengeRecords.slice(0, 20),
   };
 }

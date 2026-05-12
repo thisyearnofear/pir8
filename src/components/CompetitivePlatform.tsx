@@ -40,6 +40,9 @@ export default function CompetitivePlatform({
   const [snapshot, setSnapshot] = useState<CompetitiveSnapshot>(() =>
     buildDefaultCompetitiveSnapshot(),
   );
+  const [loadState, setLoadState] = useState<"loading" | "ready" | "fallback">(
+    "loading",
+  );
 
   useEffect(() => {
     let isMounted = true;
@@ -47,16 +50,26 @@ export default function CompetitivePlatform({
     fetch("/api/competitive", { cache: "no-store" })
       .then((response) => (response.ok ? response.json() : null))
       .then((data: CompetitiveSnapshot | null) => {
-        if (isMounted && data) setSnapshot(data);
+        if (isMounted && data) {
+          setSnapshot(data);
+          setLoadState("ready");
+        }
       })
       .catch(() => {
-        // The seeded snapshot keeps the surface usable offline.
+        if (isMounted) setLoadState("fallback");
       });
 
     return () => {
       isMounted = false;
     };
   }, []);
+
+  const openChallenges = snapshot.challengeRecords.filter(
+    (record) => record.status === "open",
+  ).length;
+  const acceptedChallenges = snapshot.challengeRecords.filter(
+    (record) => record.status === "accepted",
+  ).length;
 
   return (
     <div className="mt-5 space-y-4">
@@ -78,6 +91,15 @@ export default function CompetitivePlatform({
               </p>
             </div>
             <StatusPill>{isConnected ? "Ready" : "Wallet gated"}</StatusPill>
+          </div>
+          <div className="mb-3 flex flex-wrap gap-2">
+            <StatusPill>
+              {loadState === "loading"
+                ? "Loading data"
+                : `${snapshot.provenance} data`}
+            </StatusPill>
+            {loadState === "fallback" && <StatusPill>Offline fallback</StatusPill>}
+            {openChallenges > 0 && <StatusPill>{openChallenges} open challenges</StatusPill>}
           </div>
 
           <div className="grid gap-3 sm:grid-cols-3">
@@ -131,13 +153,13 @@ export default function CompetitivePlatform({
             >
               <Radio size={16} />
               Watch Queue
-              </button>
-            </div>
+            </button>
+          </div>
           <div className="mt-3 flex flex-wrap gap-2 text-xs text-slate-500">
             <span>{snapshot.queue.activeCaptains} active captains</span>
             <span>Average wait: {snapshot.queue.averageWait}</span>
-            {snapshot.acceptedChallenges.length > 0 && (
-              <span>{snapshot.acceptedChallenges.length} accepted challenges</span>
+            {acceptedChallenges > 0 && (
+              <span>{acceptedChallenges} accepted challenges</span>
             )}
           </div>
         </section>

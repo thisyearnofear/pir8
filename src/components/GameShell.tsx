@@ -4,7 +4,6 @@ import {
   useState,
   useEffect,
   useMemo,
-  useCallback,
 } from "react";
 import { useSafeWallet } from "@/components/SafeWalletProvider";
 import { useGameShellState, useAIBattleState } from "@/store/gameStore";
@@ -30,8 +29,7 @@ import {
 import AIBattleModal from "@/components/AIBattleModal";
 import { AIBattleErrorBoundary } from "@/components/AIBattleErrorBoundary";
 import AIBattleControls from "@/components/AIBattleControls";
-import { createPlayerFromWallet } from "@/lib/playerHelper";
-import { Ship, Player } from "@/types/game";
+import { Ship } from "@/types/game";
 import { GameBalance } from "@/lib/gameBalance";
 import ModeSelectModal from "@/components/modals/ModeSelectModal";
 import PracticeMenuModal from "@/components/modals/PracticeMenuModal";
@@ -39,6 +37,9 @@ import PracticeModeBanner from "@/components/modals/PracticeModeBanner";
 import GameHeader from "@/components/GameHeader";
 import EmptyStateView from "@/components/EmptyStateView";
 import { GameProvider } from "@/contexts/GameContext";
+import { useIncomingChallenge } from "@/hooks/useIncomingChallenge";
+import { usePracticeModeController } from "@/hooks/usePracticeModeController";
+import { useMatchFlowController } from "@/hooks/useMatchFlowController";
 
 export default function GameShell() {
   const { publicKey, wallet } = useSafeWallet();
@@ -58,7 +59,6 @@ export default function GameShell() {
     clearError,
     isMyTurn,
     getAllShips,
-    startTurn,
     startPracticeGame,
     makePracticeMove,
     makePracticeAttack,
@@ -76,9 +76,6 @@ export default function GameShell() {
   } = useAIBattleState();
 
   const isPracticeMode = gameMode === "practice";
-  const [_isCreatingGame, setIsCreatingGame] = useState(false);
-  const [_isJoining, setIsJoining] = useState(false);
-  const [_joinError, setJoinError] = useState<string | undefined>();
   const [_shipActionModalShip, setShipActionModalShip] = useState<Ship | null>(
     null,
   );
@@ -155,134 +152,47 @@ export default function GameShell() {
     }, 50);
   };
 
-  const handleCollectResources = async () => {
-    if (!wallet) return false;
-    try {
-      const success = await collectResources(Number(gameState!.gameId), wallet);
-      if (success) {
-        handleGameEvent("💰 Resources collected from territories!");
-      }
-      return success;
-    } catch (error) {
-      console.error("Resource collection failed:", error);
-      return false;
-    }
-  };
-
-  const handleNewGame = async () => {
-    if (!publicKey || !wallet) return;
-    try {
-      const player = createPlayerFromWallet(publicKey);
-      await findOrCreateGame("Casual", player, wallet);
-      handleGameEvent("🏴‍☠️ New battle begins!");
-    } catch (error) {
-      handleGameError(error, "create new game");
-    }
-  };
-
-  const handleReturnToLobby = () => {
-    handleGameEvent("Returning to lobby...");
-  };
-
-  useEffect(() => {
-    const playerKey = getCurrentPlayerKey;
-    const isTurn = isMyTurn(playerKey);
-    if (isTurn && gameState?.gameStatus === "active") {
-      startTurn();
-    }
-  }, [
-    gameState?.currentPlayerIndex,
-    gameState?.gameStatus,
+  const {
+    isCreatingGame: _isCreatingGame,
+    isJoining: _isJoining,
+    joinError: _joinError,
+    setJoinError,
+    handleCollectResources,
+    handleNewGame,
+    handleReturnToLobby,
+    handleCreateGame,
+    handleModeSelected,
+    handleJoinGame,
+  } = useMatchFlowController({
     publicKey,
-    getCurrentPlayerKey,
-    isMyTurn,
-    startTurn,
-  ]);
+    wallet,
+    gameId: gameState?.gameId,
+    collectResources,
+    findOrCreateGame,
+    joinGame,
+    handleGameEvent,
+    handleGameError,
+    setShowModeSelect,
+  });
 
-  const handleStartPractice = useCallback(
-    (difficulty: "novice" | "pirate" | "captain" | "admiral") => {
-      const practicePlayer: Player = {
-        publicKey: publicKey?.toString() || `guest_${Date.now()}`,
-        username: publicKey ? undefined : "Guest Pirate",
-        resources: {
-          gold: 1000,
-          crew: 50,
-          cannons: 10,
-          supplies: 100,
-          wood: 0,
-          rum: 0,
-        },
-        ships: [],
-        controlledTerritories: [],
-        totalScore: 0,
-        isActive: true,
-        scanCharges: 3,
-        scannedCoordinates: [],
-        speedBonusAccumulated: 0,
-        averageDecisionTimeMs: 0,
-        totalMoves: 0,
-        consecutiveAttacks: 0,
-        lastActionWasAttack: false,
-      };
-
-      const success = startPracticeGame(practicePlayer, difficulty);
-      if (success) {
-        setShowPracticeMenu(false);
-        handleGameEvent(`⚔️ Practice mode: ${difficulty} AI opponent!`);
-      }
-    },
-    [publicKey, startPracticeGame],
-  );
-
-  const handleStartAIBattle = useCallback(
-    (difficulty1: string, difficulty2: string, speed: number) => {
-      const success = startAIvsAIGame(
-        difficulty1 as "novice" | "pirate" | "captain" | "admiral",
-        difficulty2 as "novice" | "pirate" | "captain" | "admiral",
-        speed,
-      );
-      if (success) {
-        handleGameEvent(`⚔️ AI Battle: ${difficulty1} vs ${difficulty2}!`);
-      }
-    },
-    [startAIvsAIGame],
-  );
-
-  useEffect(() => {
-    if (isAIvsAIMode) {
-      setAIDecisionCallback(() => {});
-    } else {
-      setAIDecisionCallback(null);
-    }
-    return () => {
-      setAIDecisionCallback(null);
-    };
-  }, [isAIvsAIMode, setAIDecisionCallback]);
-
-  const handlePracticeMove = async (shipId: string, coordinate: string) => {
-    const [x, y] = coordinate.split(",").map(Number);
-    const success = makePracticeMove(shipId, x ?? 0, y ?? 0);
-    if (success) {
-      setTimeout(() => handleGameEvent("Ship moved!"), 50);
-    }
-    return success;
-  };
-
-  const handlePracticeAttack = async (shipId: string, targetShipId: string) => {
-    const success = makePracticeAttack(shipId, targetShipId);
-    if (success) {
-      handleGameEvent("⚔️ Attack launched!");
-    }
-    return success;
-  };
-
-  const handlePracticeClaim = async (shipId: string) => {
-    const success = makePracticeClaim(shipId);
-    if (success) {
-      handleGameEvent("🏴‍☠️ Territory claimed!");
-    }
-    return success;
-  };
+  const {
+    handleStartPractice,
+    handleStartAIBattle,
+    handlePracticeMove,
+    handlePracticeAttack,
+    handlePracticeClaim,
+  } = usePracticeModeController({
+    publicKey,
+    startPracticeGame,
+    startAIvsAIGame,
+    makePracticeMove,
+    makePracticeAttack,
+    makePracticeClaim,
+    isAIvsAIMode,
+    setAIDecisionCallback,
+    setShowPracticeMenu,
+    handleGameEvent,
+  });
 
   const handleViralShare = (
     event: any,
@@ -292,107 +202,17 @@ export default function GameShell() {
     handleGameEvent("🚀 Epic moment shared! Spread the world!");
   };
 
-  const handleCreateGame = async () => {
-    if (!publicKey || !wallet) {
-      setJoinError("Please connect your wallet first");
-      return;
-    }
-    setShowModeSelect(true);
-  };
-
-  const handleModeSelected = async (
-    mode: "Casual" | "Competitive" | "AgentArena",
-  ) => {
-    if (!publicKey || !wallet) return;
-
-    setShowModeSelect(false);
-    setIsCreatingGame(true);
-    setJoinError(undefined);
-
-    try {
-      const player = createPlayerFromWallet(publicKey);
-      const success = await findOrCreateGame(mode, player, wallet);
-
-      if (!success) {
-        throw new Error("Failed to create battle arena");
-      }
-
-      handleGameEvent(`🏴‍☠️ ${mode} Arena created! Waiting for opponents...`);
-    } catch (error) {
-      console.error("Failed to create arena:", error);
-      setJoinError(error instanceof Error ? error.message : "Failed to create battle arena");
-    } finally {
-      setIsCreatingGame(false);
-    }
-  };
-
-  const handleJoinGame = async (gameIdInput: string): Promise<boolean> => {
-    if (!publicKey || !wallet) {
-      setJoinError("Please connect your wallet first");
-      return false;
-    }
-
-    setIsJoining(true);
-    setJoinError(undefined);
-
-    try {
-      const gameIdNum = parseInt(gameIdInput, 10);
-      if (isNaN(gameIdNum)) {
-        setJoinError("Invalid game ID");
-        return false;
-      }
-
-      const player = createPlayerFromWallet(publicKey);
-      const success = await joinGame(gameIdNum, player, wallet);
-      if (!success) {
-        throw new Error("Failed to join battle");
-      }
-
-      handleGameEvent(`🏴‍☠️ Joined battle ${gameIdInput}!`);
-      return true;
-    } catch (error) {
-      console.error("Failed to join game:", error);
-      setJoinError(
-        error instanceof Error ? error.message : "Failed to join battle",
-      );
-      return false;
-    } finally {
-      setIsJoining(false);
-    }
-  };
-
-  useEffect(() => {
-    if (handledIncomingChallenge || typeof window === "undefined") return;
-
-    const params = new URLSearchParams(window.location.search);
-    const challenge = params.get("challenge");
-    const joinId = params.get("join");
-
-    if (!challenge && !joinId) return;
-
-    if (joinId) {
-      setHandledIncomingChallenge(true);
-      if (publicKey && wallet) {
-        handleGameEvent("Opening shared PIR8 duel...");
-        handleJoinGame(joinId);
-      } else {
-        setJoinError("Connect your wallet to accept this shared duel.");
-        handleGameEvent("Shared duel loaded. Connect wallet to accept.");
-      }
-      return;
-    }
-
-    if (challenge === "watch") {
-      setHandledIncomingChallenge(true);
-      setShowAIBattleModal(true);
-      handleGameEvent("Shared ambush loaded. Choose captains to watch.");
-      return;
-    }
-
-    setHandledIncomingChallenge(true);
-    setShowPracticeMenu(true);
-    handleGameEvent("Challenge loaded. Start a private skirmish.");
-  }, [handledIncomingChallenge, publicKey, wallet]);
+  useIncomingChallenge({
+    handledIncomingChallenge,
+    publicKey,
+    wallet,
+    setHandledIncomingChallenge,
+    setJoinError,
+    setShowAIBattleModal,
+    setShowPracticeMenu,
+    handleGameEvent,
+    handleJoinGame,
+  });
 
   const handleCellSelect = async (coordinate: string) => {
     const playerKey = getCurrentPlayerKey;

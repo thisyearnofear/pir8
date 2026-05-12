@@ -4,6 +4,7 @@ import { useEffect, useState } from 'react';
 import { GameState } from '../types/game';
 import { ConfettiCelebration } from './effects/ConfettiCelebration';
 import { useAccessibility } from '../hooks/useAccessibility';
+import { useReplayPersistence } from '@/hooks/useReplayPersistence';
 import { buildBattleMoment } from '@/lib/battleMoments';
 import { buildAmbushShareText, buildChallengeUrl } from '@/lib/shareLinks';
 
@@ -30,9 +31,14 @@ export default function VictoryScreen({
     const [showEpicAnimation, setShowEpicAnimation] = useState(false);
     const { reducedMotion } = useAccessibility();
 
+    const winner = gameState?.players.find(p => p.publicKey === gameState?.winner);
+    const { replayUrl } = useReplayPersistence({
+        gameState,
+        winnerPublicKey: winner?.publicKey,
+    });
+
     useEffect(() => {
         if (gameState?.gameStatus === 'completed') {
-            // Respect reduced motion preference
             const animationDelay = reducedMotion ? 0 : 1500;
             const confettiDuration = reducedMotion ? 0 : 8000;
             
@@ -43,13 +49,12 @@ export default function VictoryScreen({
                 setTimeout(() => setShowConfetti(false), confettiDuration);
             }
 
-            // Generate epic moment and share text
             generateEpicContent();
         }
         // eslint-disable-next-line react-hooks/exhaustive-deps
-    }, [gameState?.gameStatus, reducedMotion]);
+    }, [gameState?.gameStatus, reducedMotion, replayUrl]);
 
-    const generateEpicContent = () => {
+    const generateEpicContent = async () => {
         if (!gameState) return;
 
         const winner = gameState.players.find(p => p.publicKey === gameState.winner);
@@ -59,10 +64,10 @@ export default function VictoryScreen({
 
         setEpicMoment(`${moment.title}: ${moment.summary}`);
 
-        // Generate challenge-first share text
-        const gameUrl = buildChallengeUrl({ gameId: gameState.gameId });
+        const shareUrl = replayUrl || buildChallengeUrl({ gameId: gameState.gameId });
+
         const challengeText = buildAmbushShareText({
-            url: gameUrl,
+            url: shareUrl,
             winnerName,
             turnNumber: moment.turnNumber,
             shipsDestroyed: moment.shipsDestroyed,
@@ -71,11 +76,7 @@ export default function VictoryScreen({
             isWinner,
         });
 
-        if (isWinner) {
-            setShareText(challengeText);
-        } else {
-            setShareText(challengeText);
-        }
+        setShareText(challengeText);
     };
 
     const handleShare = async (platform: 'twitter' | 'discord' | 'copy' | 'screenshot') => {
@@ -85,13 +86,11 @@ export default function VictoryScreen({
                 break;
             case 'discord':
                 navigator.clipboard.writeText(shareText);
-                // Show success toast
                 break;
             case 'copy':
                 navigator.clipboard.writeText(shareText);
                 break;
             case 'screenshot':
-                // Trigger screenshot functionality (would need html2canvas or similar)
                 break;
         }
         setShowShareModal(false);
@@ -101,7 +100,6 @@ export default function VictoryScreen({
         return null;
     }
 
-    const winner = gameState.players.find(p => p.publicKey === gameState.winner);
     const isWinner = winner?.publicKey === currentPlayerPK;
     const currentPlayer = gameState.players.find(p => p.publicKey === currentPlayerPK);
 
