@@ -77,6 +77,31 @@ loudness-normalized (SFX −16 LUFS / music −18 LUFS / ambience −30 LUFS, TP
 ### music/defeat_stinger (10s)
 - prompt: `somber orchestral defeat sting: low mournful strings and a final timpani, quiet tragic loss at sea, no vocals`
 
+## Integration design — how this bank is meant to be played
+
+**Cannons are a layer system, not a sound.** A broadside is composed at runtime:
+`cannon_boom_sub` (low body) + `cannon_crack_body` (the crack) + `cannon_echo_water`
+(the tail over water). Fire them per-cannon with 30–80ms stagger across the
+broadside — a 7-gun broadside should be 7 staggered composites, not one big
+sample. Scale layer count/volume with broadside size. `cannon_distant` is for
+enemy fire beyond the fog or across the map — low-pass it further with distance.
+
+**A creaking ship is a living ship.** `hull_creak` variants should fire as
+sparse random one-shots (every 20–60s, randomized) over the ocean bed *at all
+times*, more often when the ship is heeling or damaged. `ocean_calm_bed` /
+`ocean_storm_bed` crossfade with weather state — they are 120s beds, alternate
+or crossfade at loop points.
+
+**Music is intensity-tiered** (the API had no stems, so tiers replace stem
+fading): `explore_cue_a/b` alternate during sailing; on combat entry crossfade
+to `battle_cue_low`; as hull damage or crew loss rises, crossfade to
+`battle_cue_high`. `victory_stinger` / `defeat_stinger` on resolution.
+
+Other mappings: `wood_splinter_debris` + `hull_impact` on taking hits;
+`splash` for near-miss cannonballs; `steel_clash` + `crew_cry_battle` for
+boarding; `rigging_strain`/`sail_flap` on hard maneuvers; `harbor_bell` in
+port; `coin_reward` for plunder.
+
 ## Provenance & license
 
 - Generated 2026-11-26 under the Sonilo Pro trial on the papaandthejimjams@gmail.com account.
