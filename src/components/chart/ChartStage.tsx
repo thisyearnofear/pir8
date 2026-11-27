@@ -76,6 +76,9 @@ const SHEET_MARGIN = 1.08;
 /** Half the margin, as a fraction of the board box. The canvas overscans by this
  * amount so the shader's inner 10x10 chart lands exactly under the DOM hit grid. */
 const CANVAS_OVERSCAN = (SHEET_MARGIN - 1) / 2;
+/** High enough that near/far planes never clip token relief. Height does not
+ * change framing in an orthographic camera. */
+const CAMERA_HEIGHT = 24;
 
 export default function ChartStage({
   gridSize,
@@ -193,6 +196,7 @@ export default function ChartStage({
       uTerrain: { value: terrainTex },
       uGrid: { value: new THREE.Vector2(size, size) },
       uUvScale: { value: SHEET_MARGIN },
+      uUnroll: { value: 1 },
       uTime: { value: 0 },
       uLamp: { value: new THREE.Vector2(size * 0.5, size * 0.42) },
       uLampPower: { value: 1 },
@@ -219,6 +223,7 @@ export default function ChartStage({
     const fogUniforms = {
       uIntel: { value: intelTex },
       uGrid: { value: new THREE.Vector2(size, size) },
+      uUnroll: { value: 1 },
       uTime: { value: 0 },
       uDensity: { value: 1 },
     };
@@ -368,27 +373,29 @@ export default function ChartStage({
       }
     };
 
-    // ---- camera framing: fit the whole board, portrait or landscape
-    const fitted = new THREE.Vector3(0, 10, 8);
+    // ---- camera framing: fit the physical sheet exactly. The canvas overscans
+    // by the sheet margin, so the shader's inner playable chart lands under the
+    // DOM hit grid. In an orthographic top-down camera that alignment is affine
+    // and stable; a tilted camera would project the square board as a trapezoid.
     const fitCamera = () => {
       const w = host.clientWidth || 1;
       const h = host.clientHeight || 1;
       const aspect = w / h;
-      camera.aspect = aspect;
-
-      const vFov = (camera.fov * Math.PI) / 180;
-      const hFov = 2 * Math.atan(Math.tan(vFov / 2) * aspect);
-      // Fit the physical sheet, not the sheet plus breathing room. The canvas is
-      // overscanned by exactly the sheet margin, so this framing puts the inner
-      // playable chart under the DOM grid instead of shrinking it by another 6%.
       const need = size * SHEET_MARGIN;
-      const distV = need / 2 / Math.tan(vFov / 2);
-      const distH = need / 2 / Math.tan(hFov / 2);
-      const dist = Math.max(distV, distH);
 
-      const tilt = (PLAY_TILT_DEG * Math.PI) / 180;
-      fitted.set(0, Math.sin(tilt) * dist, Math.cos(tilt) * dist);
-      camera.position.copy(fitted);
+      let halfW = need / 2;
+      let halfH = need / 2;
+      if (aspect >= 1) {
+        halfW = halfH * aspect;
+      } else {
+        halfH = halfW / aspect;
+      }
+
+      camera.left = -halfW;
+      camera.right = halfW;
+      camera.top = halfH;
+      camera.bottom = -halfH;
+      camera.position.set(0, CAMERA_HEIGHT, 0);
       camera.lookAt(0, 0, 0);
       camera.updateProjectionMatrix();
       renderer.setSize(w, h, false);
@@ -421,14 +428,9 @@ export default function ChartStage({
       intelTex.needsUpdate = true;
     };
 
-    // ---- pointer parallax: the table leans very slightly as you look around
-    const pointer = { x: 0, y: 0 };
-    const onPointerMove = (e: PointerEvent) => {
-      pointer.x = (e.clientX / window.innerWidth) * 2 - 1;
-      pointer.y = (e.clientY / window.innerHeight) * 2 - 1;
-    };
-    if (!reduced) window.addEventListener('pointermove', onPointerMove, { passive: true });
-
+    // No pointer parallax in play: moving the camera would move the picture away
+    // from the invisible DOM hit cells. Ambient life comes from water, fog, and
+    // the lantern instead.
     // ---- resize
     const ro = new ResizeObserver(fitCamera);
     ro.observe(host);
@@ -442,9 +444,14 @@ export default function ChartStage({
     const glide = {
       active: false,
       t0: 0,
-      from: new THREE.Vector3(),
     };
     const GLIDE_MS = 3400;
+    // 03 UNROLL runs inside the glide's first 1200ms: the chart lays itself
+    // while the camera is still wide, so tokens settle onto a finished table.
+    const UNROLL_MS = 1200;
+    // Token set-down after the unroll (02 SET-DOWN, 320ms ease-out, no bounce).
+    const SET_DOWN_MS = 320;
+    let tokensDropT0 = -1;
 
     const render = () => {
       const dt = Math.min(clock.getDelta(), 0.05);
@@ -474,29 +481,50 @@ export default function ChartStage({
       }
       lantern.position.lerp(lampTarget, 1 - Math.pow(0.001, dt));
 
-      // Intro glide: wide framing settles onto the fitted table (09 GLIDE).
+      // Intro glide: a top-down zoom/pan settle. Because the camera never tilts,
+      // the chart remains rectangular throughout and lands exactly on the hit grid.
       if (glide.active) {
-        const k = Math.min(1, (performance.now() - glide.t0) / GLIDE_MS);
-        camera.position.lerpVectors(glide.from, fitted, k);
-        camera.lookAt(0, 0, 0);
-        if (k >= 1) glide.active = false;
+        const now = performance.now();
+        const k = Math.min(1, (now - glide.t0) / GLIDE_MS);
+        const remaining = 1 - k;
+        // 03 UNROLL: linear wipe, finished long before the glide lands.
+        const u = Math.min(1, (now - glide.t0) / UNROLL_MS);
+        chartUniforms.uUnroll.value = u;
+        fogUniforms.uUnroll.value = u;
+        if (u >= 1 && !tokenRoot.visible) {
+          tokenRoot.visible = true;
+          tokensDropT0 = now;
+        }
+        camera.position.set(
+          remaining * size * 0.18,
+          CAMERA_HEIGHT,
+          remaining * size * 0.12,
+        );
+        camera.zoom = 0.72 + 0.28 * k;
+        camera.updateProjectionMatrix();
+        if (k >= 1) {
+          glide.active = false;
+          camera.position.set(0, CAMERA_HEIGHT, 0);
+          camera.zoom = 1;
+          camera.updateProjectionMatrix();
+        }
       }
 
+      // 02 SET-DOWN: tokens drop onto the finished table, then bob (01 RAISE).
+      if (tokensDropT0 >= 0 && !reduced) {
+        const dk = Math.min(1, (performance.now() - tokensDropT0) / SET_DOWN_MS);
+        const ease = 1 - (1 - dk) * (1 - dk);
+        tokenRoot.position.y = 0.02 + (1 - ease) * 0.5;
+        if (dk >= 1) {
+          tokenRoot.position.y = 0.02;
+          tokensDropT0 = -1;
+        }
+      }
       // Tokens bob; the selected one lifts toward the light (01 RAISE).
       for (const child of tokenRoot.children) {
         const phase = (child.userData['phase'] as number) ?? 0;
         const lift = child.userData['selected'] ? 0.055 : 0;
         child.position.y = lift + (reduced ? 0 : Math.sin(t * 1.15 + phase) * 0.014);
-      }
-
-      // Camera parallax, clamped hard so the grid never becomes unreadable.
-      if (!reduced) {
-        camera.position.set(
-          fitted.x + pointer.x * 0.42,
-          fitted.y - pointer.y * 0.22,
-          fitted.z,
-        );
-        camera.lookAt(0, 0, 0);
       }
 
       renderer.render(scene, camera);
@@ -513,11 +541,17 @@ export default function ChartStage({
       },
       startGlide: () => {
         if (reduced) return;
-        glide.from.copy(camera.position);
-        // Pull back and up: the table is revealed from the cabin dark.
-        glide.from.multiplyScalar(1.45);
-        glide.from.y += size * 0.55;
-        camera.position.copy(glide.from);
+        // Restart rolled shut with tokens struck, so the intro always plays
+        // table -> unroll -> set-down in order. The DOM grid is live throughout.
+        chartUniforms.uUnroll.value = 0;
+        fogUniforms.uUnroll.value = 0;
+        tokenRoot.visible = false;
+        tokensDropT0 = -1;
+        // Start wide and offset, then settle to the exact play framing. Any input
+        // during the transition is already live; nothing here blocks the DOM grid.
+        camera.position.set(size * 0.18, CAMERA_HEIGHT, size * 0.12);
+        camera.zoom = 0.72;
+        camera.updateProjectionMatrix();
         glide.t0 = performance.now();
         glide.active = true;
       },
@@ -531,7 +565,6 @@ export default function ChartStage({
     return () => {
       renderer.setAnimationLoop(null);
       ro.disconnect();
-      window.removeEventListener('pointermove', onPointerMove);
       clearTokens();
       hullGeo.dispose();
       sailGeo.dispose();
