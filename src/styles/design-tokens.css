@@ -1,0 +1,167 @@
+/* ==========================================================================
+   PIR8 design tokens — see DESIGN.md
+   One scaling unit. Every metric derives from it.
+   ========================================================================== */
+
+:root {
+  /* ---- the one unit: ~1px at 720p, ~1.25px at 1440p ---- */
+  --p8-u: clamp(1px, calc(0.7px + 0.04vmin), 1.25px);
+
+  /* ---- palette: three roles, not seven colours ---- */
+  --p8-ink: #0b1418;
+  --p8-deep: #12232b;
+  --p8-vellum: #e8dfc8;
+  --p8-lamp: #f0b24a;
+  --p8-brass: #9a7b3f;
+  --p8-signal: #4fb3a8;
+  --p8-threat: #c2453c;
+
+  /* derived */
+  --p8-vellum-dim: color-mix(in srgb, var(--p8-vellum) 62%, var(--p8-ink));
+  --p8-vellum-mute: color-mix(in srgb, var(--p8-vellum) 40%, var(--p8-ink));
+  --p8-brass-line: color-mix(in srgb, var(--p8-brass) 35%, transparent);
+  --p8-lamp-glow: color-mix(in srgb, var(--p8-lamp) 45%, transparent);
+
+  /* ---- space ---- */
+  --p8-space-1: calc(4 * var(--p8-u));
+  --p8-space-2: calc(8 * var(--p8-u));
+  --p8-space-3: calc(12 * var(--p8-u));
+  --p8-space-4: calc(16 * var(--p8-u));
+  --p8-space-5: calc(24 * var(--p8-u));
+  --p8-space-6: calc(32 * var(--p8-u));
+
+  /* ---- shape ---- */
+  --p8-radius: calc(3 * var(--p8-u));
+  --p8-hairline: max(1px, calc(0.75 * var(--p8-u)));
+
+  /* ---- type ---- */
+  --p8-fs-xs: calc(11 * var(--p8-u));
+  --p8-fs-sm: calc(12.5 * var(--p8-u));
+  --p8-fs-md: calc(14 * var(--p8-u));
+  --p8-fs-lg: calc(17 * var(--p8-u));
+  --p8-fs-xl: calc(22 * var(--p8-u));
+  --p8-fs-display: calc(38 * var(--p8-u));
+
+  --p8-font-world: var(--font-world), "IM Fell English", Georgia, serif;
+  --p8-font-ui: var(--font-ui), Inter, system-ui, sans-serif;
+  --p8-font-instrument: var(--font-instrument), "JetBrains Mono", ui-monospace, monospace;
+
+  /* ---- elevation: two levels only ---- */
+  --p8-shadow-instrument: 0 2px 8px rgba(0, 0, 0, 0.45);
+}
+
+/* ==========================================================================
+   Instrument surface — the only raised surface in the product
+   ========================================================================== */
+
+.p8-instrument {
+  background: var(--p8-deep);
+  border: var(--p8-hairline) solid var(--p8-brass-line);
+  border-radius: var(--p8-radius);
+  box-shadow: var(--p8-shadow-instrument);
+}
+
+.p8-hairline {
+  border-color: var(--p8-brass-line);
+}
+
+.p8-label {
+  font-family: var(--p8-font-instrument);
+  font-size: var(--p8-fs-xs);
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: var(--p8-vellum-mute);
+}
+
+.p8-value {
+  font-family: var(--p8-font-instrument);
+  font-variant-numeric: tabular-nums;
+  color: var(--p8-vellum);
+}
+
+.p8-world {
+  font-family: var(--p8-font-world);
+  color: var(--p8-vellum-dim);
+}
+
+/* ==========================================================================
+   Flat chart view — the fairness mode. High contrast, no diegesis.
+   ========================================================================== */
+
+.p8-flat {
+  --p8-ink: #06090b;
+  --p8-deep: #0e1519;
+  --p8-vellum: #f4f7f8;
+  --p8-vellum-dim: #c3ced2;
+  --p8-vellum-mute: #8fa0a6;
+  --p8-lamp: #ffc94d;
+}
+
+/* ==========================================================================
+   Chart board — when the 3D chart is the picture, the DOM grid is the interface
+   ========================================================================== */
+
+.chart-mode .territory-cell {
+  background: transparent !important;
+  border-color: transparent !important;
+  box-shadow: none !important;
+  border-radius: 0;
+}
+
+.chart-mode .territory-cell::before,
+.chart-mode .territory-cell::after {
+  /* suppress the CSS fog/scan/stale textures — the shader owns them now */
+  display: none;
+}
+
+.chart-mode .game-grid,
+.chart-mode .mobile-map-grid {
+  background: transparent;
+  border: none;
+  box-shadow: none;
+  padding: 0;
+}
+
+.chart-mode .game-grid::before {
+  display: none;
+}
+
+.chart-mode .territory-cell:hover {
+  transform: none;
+  box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--p8-lamp) 55%, transparent);
+}
+
+/* The shader paints the sea and the terrain wash; the DOM keeps the labels,
+   because a label is the non-colour signal DESIGN.md §2 requires. */
+.chart-mode .ship-token {
+  opacity: 0;
+}
+
+.chart-mode .territory-token {
+  background: transparent;
+  border-color: transparent;
+  box-shadow: none;
+}
+
+.chart-mode .territory-token-mark {
+  color: var(--p8-vellum-dim);
+  text-shadow: 0 1px 3px rgba(0, 0, 0, 0.9);
+}
+
+/* Crisp interaction affordances stay in the DOM: they are information, not scenery. */
+.chart-mode .territory-cell:focus-visible {
+  outline: var(--p8-hairline) solid var(--p8-lamp);
+  outline-offset: -1px;
+}
+
+/* ==========================================================================
+   Reduced motion — resting state for everything (MOTION.md rule 3)
+   ========================================================================== */
+
+@media (prefers-reduced-motion: reduce) {
+  .p8-reduced-static,
+  .p8-reduced-static * {
+    animation: none !important;
+    transition: none !important;
+  }
+}
