@@ -57,3 +57,6 @@ tsconfig.tsbuildinfo
 # spike deploy/player keypairs (secret keys, never commit)
 spikes/**/spike-keypair.json
 spikes/**/player*.json
+
+# Local design research (screenshots, references)
+.screens/

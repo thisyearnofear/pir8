@@ -120,6 +120,11 @@
   border: none;
   box-shadow: none;
   padding: 0;
+  /* The shader grid is continuous. Any DOM gutter accumulates across ten cells
+     and moves the hit targets away from the painted cells. */
+  gap: 0;
+  width: 100%;
+  height: 100%;
 }
 
 .chart-mode .game-grid::before {

@@ -1,81 +1,21 @@
-@import url('https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;700&family=Orbitron:wght@400;700;900&display=swap');
+/* Fonts are loaded through next/font in app/layout.tsx (three registers,
+   self-hosted, no render-blocking @import). See DESIGN.md §3. */
 
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
 
-/* Pirate Theme Colors */
-.text-neon-cyan {
-  color: #00ffff;
-}
-
-.text-neon-orange {
-  color: #ff6b00;
-}
-
-.text-neon-gold {
-  color: #ffd700;
-}
-
-.text-neon-blue {
-  color: #0080ff;
-}
-
-.text-neon-magenta {
-  color: #ff00ff;
-}
-
-.text-neon-green {
-  color: #00ff00;
-}
-
-.bg-neon-cyan {
-  background-color: #00ffff;
-}
-
-.bg-neon-orange {
-  background-color: #ff6b00;
-}
-
-.bg-neon-gold {
-  background-color: #ffd700;
-}
-
-.bg-neon-blue {
-  background-color: #0080ff;
-}
-
-.bg-neon-magenta {
-  background-color: #ff00ff;
-}
-
-.bg-neon-green {
-  background-color: #00ff00;
-}
-
-.border-neon-cyan {
-  border-color: #00ffff;
-}
-
-.border-neon-orange {
-  border-color: #ff6b00;
-}
-
-.border-neon-gold {
-  border-color: #ffd700;
-}
-
-.border-neon-blue {
-  border-color: #0080ff;
-}
-
-.border-neon-magenta {
-  border-color: #ff00ff;
-}
+/* Pirate Theme Colors
+   These utilities are generated from tailwind.config.js. They used to be
+   hand-written here as well, with different values (.text-neon-cyan was
+   #00ffff while the Tailwind token was #00D9FF), so the same class name meant
+   two colours depending on which declaration won. One source of truth now:
+   the Tailwind config. Add new colours there, never here. */
 
 /* Pirate Map Styles */
 .territory-cell {
-  @apply relative min-h-[40px] min-w-[40px] border border-gray-600 rounded transition-all duration-300;
+  @apply relative border border-gray-600 rounded transition-all duration-300;
+  aspect-ratio: 1;
 }
 
 .territory-cell:hover {
@@ -3152,12 +3092,14 @@ body.modal-open {
     max-width: min(98vw, 85vh) !important;
     margin: 0 auto;
   }
-  
-  /* Touch-friendly territory cells */
-  .territory-cell {
-    min-height: 44px;
-    min-width: 44px;
-    border-radius: 6px;
+
+  /* Touch-friendly territory cells — but the board must never crop.
+     A fixed min-width here forced a 10-column grid wider than the viewport,
+     which silently hid the last three columns. Size comes from the grid. */
+  .mobile-map-grid .territory-cell {
+    min-height: 0;
+    min-width: 0;
+    border-radius: 4px;
     transition: transform 0.1s ease;
   }
   
@@ -3200,10 +3142,10 @@ body.modal-open {
   .mobile-map-grid {
     gap: 0.5px;
   }
-  
-  .territory-cell {
-    min-height: 40px;
-    min-width: 40px;
+
+  .mobile-map-grid .territory-cell {
+    min-height: 0;
+    min-width: 0;
   }
   
   .territory-icon {

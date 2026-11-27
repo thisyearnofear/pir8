@@ -115,12 +115,11 @@ export const useMobileOptimized = ({
     touchHandlers,
     triggerHaptic,
     
-    // CONSOLIDATED responsive utilities
-    getGridSize: () => {
-      if (screenSize === 'xs') return 7;
-      if (screenSize === 'sm') return 8;
-      return 10;
-    },
+    // The board is always the full map. Cropping it on small screens made
+    // columns H–J and rows 8–10 invisible *and* unclickable — a rules bug, not
+    // a layout choice. Density is handled by CSS (.mobile-map-grid) instead.
+    // See DESIGN.md §7 and MOTION.md.
+    getGridSize: () => 10,
     shouldReduceAnimations: () => isMobile && screenSize === 'xs',
     
     // ENHANCED CSS classes - consistent minimum touch targets

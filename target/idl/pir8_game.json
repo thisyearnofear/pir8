@@ -502,6 +502,79 @@
       ]
     },
     {
+      "name": "debug_settle_weather",
+      "docs": [
+        "DEV-ONLY: authority settles pending weather without the VRF oracle.",
+        "Remove before any competitive use."
+      ],
+      "discriminator": [
+        59,
+        149,
+        235,
+        172,
+        192,
+        204,
+        251,
+        121
+      ],
+      "accounts": [
+        {
+          "name": "game",
+          "writable": true,
+          "pda": {
+            "seeds": [
+              {
+                "kind": "const",
+                "value": [
+                  112,
+                  105,
+                  114,
+                  97,
+                  116,
+                  101,
+                  95,
+                  103,
+                  97,
+                  109,
+                  101
+                ]
+              },
+              {
+                "kind": "account",
+                "path": "game.game_id",
+                "account": "PirateGame"
+              }
+            ]
+          },
+          "relations": [
+            "weather"
+          ]
+        },
+        {
+          "name": "weather",
+          "writable": true
+        },
+        {
+          "name": "authority",
+          "signer": true,
+          "relations": [
+            "game"
+          ]
+        }
+      ],
+      "args": [
+        {
+          "name": "randomness",
+          "type": {
+            "array": [
+              "u8",
+              32
+            ]
+          }
+        }
+      ]
+    },
+    {
       "name": "delegate_agent_control",
       "discriminator": [
         144,
@@ -1567,6 +1640,11 @@
       "code": 6020,
       "name": "InvalidWeatherSeed",
       "msg": "Invalid weather seed (must be non-zero)"
+    },
+    {
+      "code": 6021,
+      "name": "NoWeatherRequestPending",
+      "msg": "No live weather request to settle"
     }
   ],
   "types": [

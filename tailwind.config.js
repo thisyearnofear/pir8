@@ -15,6 +15,7 @@ module.exports = {
         'neon-orange': '#FF6B35',
         'neon-purple': '#C71585',
         'neon-gold': '#FFD700',
+        'neon-green': '#00FF9C',
         'ocean-blue': '#006994',
         'bg-dark-0': '#0a0e27',
         'bg-dark-1': '#0f1629',
@@ -22,8 +23,11 @@ module.exports = {
         'bg-dark-3': '#1a2550',
       },
       fontFamily: {
-        mono: ['JetBrains Mono', 'monospace'],
-        tech: ['Orbitron', 'sans-serif'],
+        mono: ['var(--font-instrument)', 'JetBrains Mono', 'monospace'],
+        // Orbitron is retired (DESIGN.md §3). "tech" now resolves to the world face.
+        tech: ['var(--font-world)', 'Georgia', 'serif'],
+        world: ['var(--font-world)', 'Georgia', 'serif'],
+        ui: ['var(--font-ui)', 'Inter', 'sans-serif'],
       },
       zIndex: {
         'toast': '9999',

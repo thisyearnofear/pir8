@@ -18,7 +18,6 @@ import PirateControls from "../PirateControls";
 import ShipBuildingPanel from "../ShipBuildingPanel";
 import AIReasoningPanel from "../AIReasoningPanel";
 import TerritoryBonusPanel from "../TerritoryBonusPanel";
-import QuickActionsBar from "../QuickActionsBar";
 import GameEventLog from "../GameEventLog";
 import ResourceBar from "../ResourceBar";
 import ShipActionModal from "../ShipActionModal";
@@ -350,15 +349,10 @@ export function DesktopGameLayout({
           )}
         </div>
 
-        {/* ===== QUICK ACTIONS BAR ===== */}
-        <QuickActionsBar
-          onCollectAll={onCollectResources}
-          onEndTurn={() => Promise.resolve(onEndTurn())}
-          isMyTurn={isMyTurn}
-          canUndo={false}
-        />
-
-        {/* ===== BOTTOM ACTION BAR ===== */}
+        {/* ===== BOTTOM ACTION BAR =====
+            One primary action, in one place. The floating QuickActionsBar that
+            used to sit here rendered a second End Turn button over the bottom
+            bar (DESIGN.md §9). The bottom bar is the single source of truth. */}
         <div className="flex items-center justify-between px-3 py-2 bg-slate-900/90 border-t border-neon-cyan/30 gap-2">
           {/* Selected Ship Info */}
           <button

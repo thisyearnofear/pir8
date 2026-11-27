@@ -171,7 +171,7 @@ Two files at repo root, both read by agents before touching visuals. `museum-of-
 ## 5. Phases
 
 ### Phase 0 — Contract + stop the bleeding (½ day, no 3D)
-- [ ] Write `DESIGN.md` and `MOTION.md`
+- [x] Write `DESIGN.md` and `MOTION.md`
 - [ ] Unify cyan to one value; delete `.text-neon-cyan` duplicates in `globals.css`
 - [ ] Delete 478 emoji; replace with Lucide (same set as `EmptyStateView`)
 - [ ] One icon set, one radius scale, one border scale
@@ -181,22 +181,21 @@ Two files at repo root, both read by agents before touching visuals. `museum-of-
 ### Phase 1 — ChartStage vertical slice (3–5 days) ← **the de-risk step**
 Goal: one screen, real game state, no new rules. If this doesn't feel better, stop.
 
-- [ ] Add `three`, `@react-three/fiber`, `@react-three/drei`, `motion`
-- [ ] Port Atelier's `webgl-provider` + `webgl-portal` + `use-dom-plane`
-- [ ] `ChartSurface`: table, chart plane, water glint shader, paper edge
-- [ ] `FogLayer`: curl-noise shader driven by `visibility.getCoordinateIntel()` — scanned / stale / hidden
-- [ ] `ShipTokens`: 4 silhouettes, heading, bob, selection ring; instanced
-- [ ] Camera: constrained orbit + zoom, clamped so the grid never becomes unreadable
-- [ ] `GridOverlay`: existing 100 DOM cells at `opacity: 0` — aria, hit-test, tooltips survive
-- [ ] Lantern as the turn timer (intensity + flicker decay)
-- [ ] `T` toggles flat chart view
+- [x] `three` only — R3F/drei/motion deliberately not added; one canvas, raw WebGL, no new deps
+- [x] `ChartSurface`: table, chart plane, ink-wash + lantern-glint shader, torn vellum edge
+- [x] `FogLayer`: noise-bank shader driven by `visibility.getCoordinateIntel()` — scanned / stale / hidden
+- [x] Ship tokens: 4 silhouettes, heading-from-nearest-enemy, bob, selection ring
+- [x] Camera: orthographic top-down (affine-stable under the DOM hit grid; tilted orbit rejected — trapezoid can't align)
+- [x] DOM grid stays the interface — canvas is picture-only, hit-test/aria/tooltips never left the DOM
+- [x] Lantern as the turn timer (`turnProgress` → intensity + flicker decay)
+- [x] `T` toggles flat chart view (persisted; reduced-motion defaults to flat)
 
-**Exit criteria:** a stranger can look at the slice and read *where they can move, what they can hit, what is hidden* — and it looks like a place.
+**Exit criteria:** a stranger can look at the slice and read *where they can move, what they can hit, what is hidden* — and it looks like a place. (Pending a formal stranger pass before judging.)
 
 ### Phase 2 — Diegetic shell (2–3 days)
 - [ ] Cabin lobby replaces `EmptyStateView` dashboard (open — owned by the UI pass)
 - [x] "Charting the waters…" loader with key art + calm-frame-gated reveal (`ChartingLoader` + `useStagedIntro`; mount where the shell gates on readiness)
-- [ ] Staged intro sequencing table → unroll → tokens → instruments (hook ready; parent wires `signalReady()` to its load completion)
+- [x] Staged intro sequencing table → unroll → tokens (`ChartStage glideKey` self-sequences: 03 UNROLL wipe + 02 SET-DOWN drop; parent only passes the key; instruments stay DOM-side)
 - [x] Camera glide on match start (`ChartStage glideKey` — pass a fresh match id; skipped under reduced motion)
 
 ### Phase 3 — Instruments (3–4 days)

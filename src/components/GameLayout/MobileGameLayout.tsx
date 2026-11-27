@@ -22,7 +22,6 @@ import TerritoryBonusPanel from '../TerritoryBonusPanel';
 import GameEventLog from '../GameEventLog';
 import ResourceBar from '../ResourceBar';
 import ShipActionModal from '../ShipActionModal';
-import QuickActionsBar from '../QuickActionsBar';
 import { useMobileOptimized } from '@/hooks/useMobileOptimized';
 import { Haptic } from '@/utils/haptics';
 import { GameState, Ship, Player } from '@/types/game';
@@ -209,15 +208,10 @@ export function MobileGameLayout({
         )}
       </div>
 
-      {/* Quick Actions (Floating above bottom bar) */}
-      <QuickActionsBar 
-        onCollectAll={onCollectResources}
-        onEndTurn={() => Promise.resolve(onEndTurn())}
-        isMyTurn={isMyTurn}
-        canUndo={false}
-      />
-
-      {/* ===== BOTTOM ACTION BAR ===== */}
+      {/* ===== BOTTOM ACTION BAR =====
+          Single source of truth for primary actions. The floating
+          QuickActionsBar that used to overlay this bar rendered a duplicate
+          End Turn (DESIGN.md §9). */}
       <div className="flex items-center justify-between px-3 py-2 bg-slate-900/95 border-t border-neon-cyan/30 z-40 gap-2">
         {/* Selected Ship Mini-Info */}
         <button

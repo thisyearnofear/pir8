@@ -85,11 +85,13 @@ Open [http://localhost:3000](http://localhost:3000) and connect your Solana wall
 - ✅ **Competitive Snapshot** - Live leaderboard data from `computeCaptainProfiles()`
 - ✅ **Real-Time Updates** - Helius WebSocket monitoring integration
 - ✅ **Multi-Wallet Support** - Phantom, Solflare, Backpack via Wallet Adapter
+- ✅ **MagicBlock VRF Weather (devnet live)** - `request_weather_randomness` / `callback_weather_randomness` + per-game `WeatherState` PDA in the game program (`2TZwkCc8ffz7NGWYF3koXyRm75DHq9VL9kvHxXZu8kLy`); request path + client loop proven on devnet, oracle fulfillment pending — see [docs/MAGICBLOCK_INTEGRATION.md](./docs/MAGICBLOCK_INTEGRATION.md)
 
 ### UI & Accessibility ✅
 - ✅ **Accessible Map** - Every cell has `aria-label`, keyboard navigation, and tactical descriptions
 - ✅ **Replay Infrastructure** - Battle moment capture and `/api/moments` endpoints
 - ✅ **Focused Controllers** - `useIncomingChallenge`, `usePracticeModeController`, `useMatchFlowController` extracted from GameShell
+- ✅ **Diegetic Chart Table (opt-out)** - The board renders as a captain's chart: one three.js canvas (orthographic, picture-only), fog driven by real intel state, lantern burning down with the turn timer, staged unroll intro, `T` for the flat fairness view — the DOM grid stays the interface, so accessibility never regresses
 
 ---
 
@@ -185,6 +187,7 @@ Current development and demonstrations should use Solana devnet/test value only.
 - **Next.js 16**: React framework with App Router
 - **TypeScript**: Type-safe development
 - **Tailwind CSS**: Utility-first styling
+- **three.js**: Single-canvas chart-table rendering (no scene-graph framework)
 - **Solana Wallet Adapter**: Multi-wallet support
 
 ### Infrastructure
@@ -201,7 +204,7 @@ Current development and demonstrations should use Solana devnet/test value only.
 | [docs/ARCHITECTURE.md](./docs/ARCHITECTURE.md) | System architecture and technical details |
 | [docs/DEVELOPMENT.md](./docs/DEVELOPMENT.md) | Development workflow and contributing |
 | [docs/VISION.md](./docs/VISION.md) | Project vision and roadmap |
-| [docs/MAGICBLOCK_INTEGRATION.md](./docs/MAGICBLOCK_INTEGRATION.md) | Proposed Ephemeral Rollup / VRF integration path |
+| [docs/MAGICBLOCK_INTEGRATION.md](./docs/MAGICBLOCK_INTEGRATION.md) | VRF weather live on devnet (request path + client loop; oracle pending); ER match sessions designed-only |
 | [plans/practice-mode-privacy-design.md](./plans/practice-mode-privacy-design.md) | Practice-mode privacy education design |
 
 ---
