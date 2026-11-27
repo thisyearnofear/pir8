@@ -16,6 +16,7 @@ import { Haptic } from '@/utils/haptics';
 import { MobileGameLayout } from './GameLayout/MobileGameLayout';
 import { DesktopGameLayout } from './GameLayout/DesktopGameLayout';
 import VictoryScreen from './VictoryScreen';
+import VictoryProgress from './VictoryProgress';
 import { FirstTimeTutorial } from './onboarding/FirstTimeTutorial';
 import { ContextualHints, HINT_TEMPLATES } from './onboarding/ContextualHints';
 import { Ship } from '@/types/game';
@@ -111,11 +112,16 @@ export default function GameContainer(props: GameContainerProps) {
   // CONTEXTUAL HINTS TRIGGERS
   // =============================================================================
 
+  const ambushTargetId = (gameState as any)?.ambushTargetId as string | undefined;
+
   useEffect(() => {
     if (!gameState?.gameMap || !isMyTurn || !currentPlayer) return;
 
     if (!hintTrigger) {
-      if (gameState.turnNumber === 1 && !selectedShipId) {
+      if (ambushTargetId) {
+        setHintTrigger({ type: 'AMBUSH_WINDOW' });
+      }
+      else if (gameState.turnNumber === 1 && !selectedShipId) {
         setHintTrigger({ type: 'FIRST_SHIP_SELECT' });
       }
       else if (gameState.turnNumber <= 3 && !hintTrigger) {
@@ -125,7 +131,7 @@ export default function GameContainer(props: GameContainerProps) {
         setHintTrigger({ type: 'TERRITORY_CONTROL' });
       }
     }
-  }, [gameState, isMyTurn, currentPlayer, hintTrigger, selectedShipId]);
+  }, [gameState, isMyTurn, currentPlayer, hintTrigger, selectedShipId, ambushTargetId]);
 
   const handleHintDismiss = () => {
     setHintTrigger(null);
@@ -238,6 +244,7 @@ export default function GameContainer(props: GameContainerProps) {
 
     return (
       <>
+        <VictoryProgress gameState={gameState} currentPlayer={currentPlayer} />
         <FirstTimeTutorial
           isVisible={showTutorial}
           onComplete={handleTutorialComplete}

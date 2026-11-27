@@ -21,18 +21,6 @@ const SLIDES = [
     bgGradient: 'from-red-900/20 to-orange-900/20'
   },
   {
-    emoji: '⏱️',
-    title: 'Speed Rewards the Bold',
-    subtitle: 'Think Fast, Strike Faster',
-    content: 'Quick decisions earn bonus points! The fastest captains dominate the leaderboards.',
-    details: [
-      { time: '< 5s', bonus: '+100 pts', color: 'text-green-400', desc: 'Lightning reflexes!' },
-      { time: '< 10s', bonus: '+50 pts', color: 'text-cyan-400', desc: 'Swift thinking' },
-      { time: '< 15s', bonus: '+25 pts', color: 'text-yellow-400', desc: 'Steady pace' },
-    ],
-    bgGradient: 'from-cyan-900/20 to-blue-900/20'
-  },
-  {
     emoji: '🔍',
     title: 'Scout Before You Strike',
     subtitle: 'Intelligence Wins Wars',
@@ -45,22 +33,10 @@ const SLIDES = [
     bgGradient: 'from-emerald-900/20 to-teal-900/20'
   },
   {
-    emoji: '🚢',
-    title: 'Command Your Fleet',
-    subtitle: 'Every Ship Has Its Purpose',
-    content: 'Build a balanced armada. Each vessel serves a unique role in your conquest strategy.',
-    details: [
-      { icon: '⛵', text: 'Sloop', desc: 'Fast scout ship', stats: 'Speed: 3 | Health: 100' },
-      { icon: '🚢', text: 'Frigate', desc: 'Balanced warship', stats: 'Speed: 2 | Health: 200' },
-      { icon: '🛳️', text: 'Galleon', desc: 'Heavy battleship', stats: 'Speed: 1 | Health: 350' },
-    ],
-    bgGradient: 'from-purple-900/20 to-indigo-900/20'
-  },
-  {
     emoji: '👑',
-    title: 'Claim Your Victory',
+    title: 'Spring the Ambush',
     subtitle: 'Three Paths to Glory',
-    content: 'Choose your strategy! Multiple victory conditions mean every playstyle can triumph.',
+    content: 'Mask your fleet, strike from fog, and decide fast — quick captains earn bonus points. Choose your strategy!',
     details: [
       { icon: '🏴‍☠️', text: 'Territory Control', desc: 'Dominate 50% of valuable lands', color: 'text-red-400' },
       { icon: '⚔️', text: 'Fleet Supremacy', desc: 'Control 65% of naval power', color: 'text-orange-400' },

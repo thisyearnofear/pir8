@@ -5,6 +5,51 @@ import { PirateGameManager } from "../lib/pirateGameEngine";
 import { getVisibleCoordinates } from "../utils/helpers";
 
 const PRACTICE_GAME_STORAGE_KEY = "pir8_practice_game";
+const AMBUSH_SCRIPTED_KEY = "pir8_ambush_scripted";
+
+/**
+ * Script the unmissable first-game ambush: park an enemy on a water cell
+ * adjacent to the human's lead ship so every new captain gets a real
+ * ambush window on turn one. Slice-level setup only — the engine is
+ * untouched. Anything unexpected means an ordinary game: callers and the
+ * UI degrade gracefully when the flag is absent.
+ */
+function scriptAmbushSetup(gameState: any, humanPublicKey: string) {
+  if (typeof window === "undefined") return;
+  if (window.localStorage.getItem(AMBUSH_SCRIPTED_KEY)) return;
+  const human = gameState.players.find(
+    (p: any) => p.publicKey === humanPublicKey,
+  );
+  const ai = gameState.players.find((p: any) =>
+    p.publicKey.startsWith("AI_"),
+  );
+  const lead = human?.ships?.[0];
+  const lurker = ai?.ships?.[0];
+  if (!lead || !lurker) return;
+  const size = gameState.gameMap.size;
+  const occupied = new Set<string>();
+  gameState.players.forEach((p: any) =>
+    p.ships.forEach((s: any) =>
+      occupied.add(`${s.position.x},${s.position.y}`),
+    ),
+  );
+  const deltas = [
+    [1, 0], [-1, 0], [0, 1], [0, -1],
+    [1, 1], [1, -1], [-1, 1], [-1, -1],
+  ];
+  for (const [dx, dy] of deltas) {
+    const x = lead.position.x + dx;
+    const y = lead.position.y + dy;
+    if (x < 0 || y < 0 || x >= size || y >= size) continue;
+    const cell = gameState.gameMap.cells[x]?.[y];
+    if (!cell || cell.type !== "water" || occupied.has(`${x},${y}`))
+      continue;
+    lurker.position = { x, y };
+    gameState.ambushTargetId = lurker.id;
+    gameState.ambushExpiresTurn = gameState.turnNumber + 6;
+    return;
+  }
+}
 
 const loadSavedPracticeGame = () => {
   if (typeof window === "undefined") return null;
@@ -59,6 +104,11 @@ export const createPracticeSlice: StateCreator<
       }
 
       const practiceGame = PirateGameManager.createPracticeGame(humanPlayer, difficulty);
+      try {
+        scriptAmbushSetup(practiceGame, humanPlayer.publicKey);
+      } catch {
+        // Ordinary game — the ambush is a garnish, never the meal.
+      }
       savePracticeGame(practiceGame);
 
       const initialScanned = new Set<string>();
@@ -137,6 +187,23 @@ export const createPracticeSlice: StateCreator<
     const result = PirateGameManager.processTurnAction(gameState, action);
     if (result.success) {
       const advancedState = PirateGameManager.advanceTurn(result.updatedGameState);
+      const flagged = advancedState as any;
+      if (flagged.ambushTargetId && targetShipId === flagged.ambushTargetId) {
+        delete flagged.ambushTargetId;
+        try {
+          window.localStorage.setItem(AMBUSH_SCRIPTED_KEY, "true");
+        } catch {
+          // Non-fatal.
+        }
+        savePracticeGame(advancedState);
+        set({
+          gameState: advancedState,
+          showMessage: "🐺 Ambush sprung! Masked strikes hit hardest.",
+        });
+        setTimeout(() => set({ showMessage: null }), 3500);
+        setTimeout(() => get().processAITurn(), 1000);
+        return true;
+      }
       savePracticeGame(advancedState);
       set({ gameState: advancedState });
 
@@ -198,6 +265,24 @@ export const createPracticeSlice: StateCreator<
       playbackSpeed,
       aiDecisionCallback,
     } = get();
+
+    // Quiet expiry for a missed ambush window — the trail goes cold.
+    const flagged = gameState as any;
+    if (
+      flagged?.ambushTargetId &&
+      typeof flagged.ambushExpiresTurn === "number" &&
+      gameState &&
+      gameState.turnNumber > flagged.ambushExpiresTurn
+    ) {
+      delete flagged.ambushTargetId;
+      try {
+        window.localStorage.setItem(AMBUSH_SCRIPTED_KEY, "true");
+      } catch {
+        // Non-fatal.
+      }
+      savePracticeGame(gameState);
+      set({ gameState: { ...gameState } });
+    }
     if (!gameState || gameMode !== "practice") return;
 
     const currentPlayer = gameState.players[gameState.currentPlayerIndex];

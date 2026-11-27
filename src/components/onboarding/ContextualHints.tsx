@@ -165,6 +165,13 @@ export const HINT_TEMPLATES = {
     duration: 5000,
   },
   
+  AMBUSH_WINDOW: {
+    id: 'ambush_window',
+    text: '🐺 AMBUSH! An enemy ship drifted into range. Attack it now — masked strikes hit hardest!',
+    priority: 'high' as const,
+    duration: 9000,
+  },
+  
   LOW_HEALTH: {
     id: 'low_health',
     text: '❤️ Your ship is low on health! Consider retreating or repairing',
@@ -174,7 +181,7 @@ export const HINT_TEMPLATES = {
   
   VICTORY_CONDITION: {
     id: 'victory_condition',
-    text: '🏆 Destroy all enemy ships OR control 60% of the map to win!',
+    text: '🏆 Three paths to glory: 50% territory, 65% fleet power, or 10k riches. Watch the bars up top!',
     priority: 'low' as const,
     duration: 6000,
   },
