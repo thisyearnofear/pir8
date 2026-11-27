@@ -1,5 +1,17 @@
 'use client';
 
+/**
+ * VictoryScreen — the closing entry of the captain's log.
+ *
+ * Token-native rewrite of the neon celebration modal. This is the one
+ * moment of theatre the game is allowed, and it now happens in the world's
+ * own materials: the proclamation in world type, the battle's tale as a
+ * logbook quote, standings as final ledger entries. The canvas confetti
+ * stays (a celebration is content, not chrome); the fifty absolutely
+ * positioned emoji raining at random rotation are gone. Share, replay,
+ * practice upsell, and reduced-motion behavior are all preserved.
+ */
+
 import { useEffect, useState } from 'react';
 import { GameState } from '../types/game';
 import { ConfettiCelebration } from './effects/ConfettiCelebration';
@@ -7,6 +19,7 @@ import { useAccessibility } from '../hooks/useAccessibility';
 import { useReplayPersistence } from '@/hooks/useReplayPersistence';
 import { buildBattleMoment } from '@/lib/battleMoments';
 import { buildAmbushShareText, buildChallengeUrl } from '@/lib/shareLinks';
+import { Icon } from './ui/Icon';
 
 interface VictoryScreenProps {
     gameState: GameState | null;
@@ -14,6 +27,17 @@ interface VictoryScreenProps {
     onNewGame: () => void;
     onReturnToLobby: () => void;
     isPracticeMode?: boolean;
+}
+
+function LedgerRow({ label, value, tone }: { label: string; value: React.ReactNode; tone?: string }) {
+    return (
+        <div className="p8-cell-row" style={{ justifyContent: 'space-between' }}>
+            <span className="p8-label">{label}</span>
+            <span className={`p8-value ${tone ?? ''}`} style={{ fontSize: 'var(--p8-fs-md)' }}>
+                {value}
+            </span>
+        </div>
+    );
 }
 
 export default function VictoryScreen({
@@ -28,7 +52,7 @@ export default function VictoryScreen({
     const [showShareModal, setShowShareModal] = useState(false);
     const [shareText, setShareText] = useState('');
     const [epicMoment, setEpicMoment] = useState('');
-    const [showEpicAnimation, setShowEpicAnimation] = useState(false);
+    const [copied, setCopied] = useState(false);
     const { reducedMotion } = useAccessibility();
 
     const winner = gameState?.players.find(p => p.publicKey === gameState?.winner);
@@ -41,9 +65,8 @@ export default function VictoryScreen({
         if (gameState?.gameStatus === 'completed') {
             const animationDelay = reducedMotion ? 0 : 1500;
             const confettiDuration = reducedMotion ? 0 : 8000;
-            
+
             setShowConfetti(!reducedMotion);
-            setShowEpicAnimation(!reducedMotion);
             setTimeout(() => setShowStats(true), animationDelay);
             if (!reducedMotion) {
                 setTimeout(() => setShowConfetti(false), confettiDuration);
@@ -57,10 +80,10 @@ export default function VictoryScreen({
     const generateEpicContent = async () => {
         if (!gameState) return;
 
-        const winner = gameState.players.find(p => p.publicKey === gameState.winner);
-        const isWinner = winner?.publicKey === currentPlayerPK;
-        const winnerName = winner?.username || 'Anonymous Pirate';
-        const moment = buildBattleMoment(gameState, winner?.publicKey);
+        const winnerPlayer = gameState.players.find(p => p.publicKey === gameState.winner);
+        const isWinnerNow = winnerPlayer?.publicKey === currentPlayerPK;
+        const winnerName = winnerPlayer?.username || 'Anonymous Pirate';
+        const moment = buildBattleMoment(gameState, winnerPlayer?.publicKey);
 
         setEpicMoment(`${moment.title}: ${moment.summary}`);
 
@@ -73,27 +96,21 @@ export default function VictoryScreen({
             shipsDestroyed: moment.shipsDestroyed,
             territoriesControlled: moment.territoriesControlled,
             gold: moment.gold,
-            isWinner,
+            isWinner: isWinnerNow,
         });
 
         setShareText(challengeText);
     };
 
-    const handleShare = async (platform: 'twitter' | 'discord' | 'copy' | 'screenshot') => {
-        switch (platform) {
-            case 'twitter':
-                window.open(`https://twitter.com/intent/tweet?text=${encodeURIComponent(shareText)}`, '_blank');
-                break;
-            case 'discord':
-                navigator.clipboard.writeText(shareText);
-                break;
-            case 'copy':
-                navigator.clipboard.writeText(shareText);
-                break;
-            case 'screenshot':
-                break;
+    const handleShare = async (platform: 'twitter' | 'copy') => {
+        if (platform === 'twitter') {
+            window.open(`https://twitter.com/intent/tweet?text=${encodeURIComponent(shareText)}`, '_blank');
+        } else {
+            navigator.clipboard.writeText(shareText);
+            setCopied(true);
+            setTimeout(() => setCopied(false), 2000);
         }
-        setShowShareModal(false);
+        if (platform === 'twitter') setShowShareModal(false);
     };
 
     if (!gameState || gameState.gameStatus !== 'completed') {
@@ -103,7 +120,6 @@ export default function VictoryScreen({
     const isWinner = winner?.publicKey === currentPlayerPK;
     const currentPlayer = gameState.players.find(p => p.publicKey === currentPlayerPK);
 
-    // Calculate final stats
     const calculateStats = () => {
         const stats = gameState.players.map(player => {
             const fleetPower = player.ships.reduce((total, ship) => total + ship.health, 0);
@@ -130,335 +146,315 @@ export default function VictoryScreen({
 
     const finalStats = calculateStats();
     const playerRank = finalStats.findIndex(p => p.publicKey === currentPlayerPK) + 1;
+    const rankSuffix = playerRank === 1 ? 'st' : playerRank === 2 ? 'nd' : playerRank === 3 ? 'rd' : 'th';
 
     return (
-        <div className="fixed inset-0 bg-black/95 backdrop-blur-lg flex items-center justify-center z-modal"
-             role="dialog" aria-modal="true">
-            {/* Epic Confetti & Particle Effects */}
-            {showConfetti && (
-                <>
-                    {/* Canvas-based Confetti Celebration */}
-                    <ConfettiCelebration isActive={showConfetti} />
-                    
-                    {/* Additional Emoji Confetti Layer */}
-                    <div className="absolute inset-0 pointer-events-none overflow-hidden">
-                        {[...Array(50)].map((_, i) => (
-                        <div
-                            key={`confetti-${i}`}
-                            className="absolute animate-bounce"
+        <div
+            role="dialog"
+            aria-modal="true"
+            aria-label={isWinner ? 'Victory — you are the pirate king' : 'Battle complete'}
+            style={{
+                position: 'fixed',
+                inset: 0,
+                background: 'color-mix(in srgb, var(--p8-ink) 92%, transparent)',
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                zIndex: 'var(--p8-z-modal, 60)',
+                overflowY: 'auto',
+                padding: 'var(--p8-space-3)',
+            }}
+        >
+            {showConfetti && <ConfettiCelebration isActive={showConfetti} />}
+
+            <div
+                className="p8-instrument"
+                style={{
+                    maxWidth: 'calc(640 * var(--p8-u))',
+                    width: '100%',
+                    padding: 'var(--p8-space-4)',
+                    borderColor: isWinner ? 'color-mix(in srgb, var(--p8-lamp) 60%, transparent)' : undefined,
+                    position: 'relative',
+                }}
+            >
+                {/* The proclamation — world type carries the theatre */}
+                <div style={{ textAlign: 'center', marginBottom: 'var(--p8-space-3)' }}>
+                    <div style={{ display: 'flex', justifyContent: 'center', marginBottom: 'var(--p8-space-1)' }}>
+                        <Icon
+                            name={isWinner ? 'crown' : 'trophy'}
+                            size={32}
+                            className={isWinner ? 'p8-text-lamp' : 'p8-text-dim'}
+                        />
+                    </div>
+                    <h1
+                        className="p8-world"
+                        style={{
+                            fontSize: 'var(--p8-fs-xl)',
+                            color: isWinner ? 'var(--p8-lamp)' : 'var(--p8-vellum)',
+                            marginBottom: 'var(--p8-space-1)',
+                        }}
+                    >
+                        {isWinner ? 'Pirate King' : 'Battle Complete'}
+                    </h1>
+                    <p
+                        className="p8-text-dim"
+                        style={{ fontSize: 'var(--p8-fs-md)', fontFamily: 'var(--p8-font-ui)' }}
+                    >
+                        {isWinner
+                            ? 'You have conquered the seven seas'
+                            : `${winner?.username || winner?.publicKey?.slice(0, 8) || 'Unknown'} claims the crown`}
+                    </p>
+                    {!isWinner && (
+                        <p
+                            className="p8-text-mute"
+                            style={{ fontSize: 'var(--p8-fs-sm)', fontFamily: 'var(--p8-font-ui)', marginTop: 'calc(2 * var(--p8-u))' }}
+                        >
+                            You finished in {playerRank}{rankSuffix} place
+                        </p>
+                    )}
+
+                    {epicMoment && (
+                        <blockquote
+                            className="p8-world"
                             style={{
-                                left: `${Math.random() * 100}%`,
-                                top: `${Math.random() * 100}%`,
-                                animationDelay: `${Math.random() * 3}s`,
-                                animationDuration: `${2 + Math.random() * 3}s`,
-                                fontSize: `${12 + Math.random() * 20}px`,
-                                transform: `rotate(${Math.random() * 360}deg)`
+                                marginTop: 'var(--p8-space-2)',
+                                padding: 'var(--p8-space-2)',
+                                fontSize: 'var(--p8-fs-md)',
+                                fontStyle: 'italic',
+                                color: 'var(--p8-vellum-dim)',
+                                borderLeft: 'calc(2 * var(--p8-u)) solid var(--p8-brass)',
+                                textAlign: 'left',
                             }}
                         >
-                            {['🎉', '🏆', '⚡', '💰', '🏴‍☠️', '⚔️', '🌊', '💎', '👑', '🔥'][Math.floor(Math.random() * 10)]}
-                        </div>
-                    ))}
-                    </div>
-                </>
-            )}
-
-            {/* Main Victory Modal */}
-            <div className={`bg-gradient-to-br from-slate-900 via-slate-800 to-slate-900 
-                            rounded-3xl border-2 ${isWinner ? 'border-neon-gold' : 'border-neon-cyan'} 
-                            p-8 max-w-4xl w-full mx-4 relative overflow-hidden
-                            shadow-2xl ${isWinner ? 'shadow-neon-gold/30' : 'shadow-neon-cyan/30'}
-                            ${showEpicAnimation ? 'animate-in slide-in-from-bottom-8 duration-700' : ''}`}>
-
-                {/* Animated Background Elements */}
-                <div className="absolute inset-0 overflow-hidden rounded-3xl">
-                    <div className={`absolute -top-20 -right-20 w-40 h-40 ${isWinner ? 'bg-neon-gold/10' : 'bg-neon-cyan/10'} 
-                                    rounded-full blur-3xl animate-pulse`}></div>
-                    <div className={`absolute -bottom-20 -left-20 w-40 h-40 ${isWinner ? 'bg-neon-orange/10' : 'bg-neon-magenta/10'} 
-                                    rounded-full blur-3xl animate-pulse delay-1000`}></div>
+                            {epicMoment}
+                        </blockquote>
+                    )}
                 </div>
 
-                {/* Epic Header */}
-                <div className="relative text-center mb-8">
-                    <div className={`text-8xl mb-4 animate-bounce filter drop-shadow-2xl ${showEpicAnimation ? 'animate-in zoom-in duration-1000 delay-300' : ''}`}>
-                        {isWinner ? '👑' : playerRank <= 2 ? '🥈' : playerRank <= 3 ? '🥉' : '⚔️'}
+                {/* Victory details + personal performance */}
+                <div
+                    style={{
+                        display: 'grid',
+                        gridTemplateColumns: 'repeat(auto-fit, minmax(calc(200 * var(--p8-u)), 1fr))',
+                        gap: 'var(--p8-space-2)',
+                        marginBottom: 'var(--p8-space-3)',
+                    }}
+                >
+                    {winner && (
+                        <div className="p8-instrument" style={{ padding: 'var(--p8-space-2)' }}>
+                            <div className="p8-cell-row" style={{ marginBottom: 'var(--p8-space-1)' }}>
+                                <Icon name="trophy" size={13} className="p8-text-lamp" />
+                                <span className="p8-label">Victory achieved</span>
+                            </div>
+                            <div style={{ display: 'flex', flexDirection: 'column', gap: 'calc(3 * var(--p8-u))' }}>
+                                <LedgerRow label="Dominance" value={winner.totalScore} tone="p8-text-lamp" />
+                                <LedgerRow label="Territories" value={winner.controlledTerritories.length} />
+                                <LedgerRow label="Gold plundered" value={winner.resources.gold.toLocaleString()} />
+                                <LedgerRow
+                                    label="Fleet power"
+                                    value={winner.ships.reduce((total, ship) => total + ship.health, 0)}
+                                />
+                            </div>
+                        </div>
+                    )}
+
+                    {currentPlayer && (
+                        <div className="p8-instrument" style={{ padding: 'var(--p8-space-2)' }}>
+                            <div className="p8-cell-row" style={{ marginBottom: 'var(--p8-space-1)' }}>
+                                <Icon name="stats" size={13} className="p8-text-dim" />
+                                <span className="p8-label">Your performance</span>
+                            </div>
+                            <div style={{ display: 'flex', flexDirection: 'column', gap: 'calc(3 * var(--p8-u))' }}>
+                                <LedgerRow label="Final rank" value={`#${playerRank}`} />
+                                <LedgerRow label="Ships built" value={currentPlayer.ships.length} />
+                                <LedgerRow label="Territories" value={currentPlayer.controlledTerritories.length} />
+                                <LedgerRow
+                                    label="Speed bonus"
+                                    value={`+${currentPlayer.speedBonusAccumulated || 0}`}
+                                    tone="p8-text-signal"
+                                />
+                            </div>
+                        </div>
+                    )}
+                </div>
+
+                {/* Final standings — the ledger's closing entries */}
+                {showStats && (
+                    <div style={{ marginBottom: 'var(--p8-space-3)' }}>
+                        <div className="p8-cell-row" style={{ justifyContent: 'center', marginBottom: 'var(--p8-space-1)' }}>
+                            <span className="p8-label">Final standings</span>
+                        </div>
+                        <div
+                            style={{
+                                display: 'flex',
+                                flexDirection: 'column',
+                                gap: 'var(--p8-space-1)',
+                                maxHeight: 'calc(220 * var(--p8-u))',
+                                overflowY: 'auto',
+                            }}
+                        >
+                            {finalStats.map((player, index) => {
+                                const isMe = player.publicKey === currentPlayerPK;
+                                return (
+                                    <div
+                                        key={player.publicKey}
+                                        className="p8-instrument"
+                                        style={{
+                                            padding: 'var(--p8-space-1) var(--p8-space-2)',
+                                            borderLeft: index === 0
+                                                ? 'calc(2 * var(--p8-u)) solid var(--p8-lamp)'
+                                                : undefined,
+                                        }}
+                                    >
+                                        <div className="p8-cell-row" style={{ justifyContent: 'space-between' }}>
+                                            <span className="p8-cell-row" style={{ minWidth: 0 }}>
+                                                {index === 0 ? (
+                                                    <Icon name="crown" size={13} className="p8-text-lamp" label="Winner" />
+                                                ) : (
+                                                    <span className="p8-value p8-text-mute" style={{ fontSize: 'var(--p8-fs-xs)' }}>
+                                                        {index + 1}
+                                                    </span>
+                                                )}
+                                                <span
+                                                    className="p8-world"
+                                                    style={{
+                                                        fontSize: 'var(--p8-fs-md)',
+                                                        whiteSpace: 'nowrap',
+                                                        overflow: 'hidden',
+                                                        textOverflow: 'ellipsis',
+                                                    }}
+                                                >
+                                                    {player.username || `${player.publicKey.slice(0, 6)}…${player.publicKey.slice(-4)}`}
+                                                </span>
+                                                {isMe && (
+                                                    <span className="p8-chip" style={{ padding: '0 calc(3 * var(--p8-u))' }}>
+                                                        you
+                                                    </span>
+                                                )}
+                                            </span>
+                                            <span className="p8-cell-row">
+                                                <span className="p8-value p8-text-dim" style={{ fontSize: 'var(--p8-fs-xs)' }}>
+                                                    {player.territoryCount} terr · {player.fleetPower} fleet · {player.resourceValue} res
+                                                </span>
+                                                <span className="p8-value p8-text-lamp" style={{ fontSize: 'var(--p8-fs-md)' }}>
+                                                    {player.totalScore}
+                                                </span>
+                                            </span>
+                                        </div>
+                                    </div>
+                                );
+                            })}
+                        </div>
                     </div>
+                )}
 
-                    <h1 className={`text-6xl font-black mb-4 drop-shadow-2xl
-                                   ${isWinner ? 'text-transparent bg-clip-text bg-gradient-to-r from-neon-gold via-neon-orange to-neon-gold animate-pulse'
-                            : 'text-transparent bg-clip-text bg-gradient-to-r from-neon-cyan via-neon-blue to-neon-cyan'}
-                                   ${showEpicAnimation ? 'animate-in slide-in-from-top duration-1000 delay-500' : ''}`}>
-                        {isWinner ? 'PIRATE KING!' : 'BATTLE COMPLETE'}
-                    </h1>
-
-                    <p className={`text-2xl font-bold mb-2 ${isWinner ? 'text-neon-gold' : 'text-neon-cyan'}
-                                  ${showEpicAnimation ? 'animate-in fade-in duration-1000 delay-700' : ''}`}>
-                        {isWinner
-                            ? 'You have conquered the seven seas!'
-                            : `${winner?.username || winner?.publicKey?.slice(0, 8) || 'Unknown'} claims the crown!`
-                        }
-                    </p>
-
-                    {!isWinner && (
-                        <p className={`text-lg text-gray-300 font-semibold
-                                      ${showEpicAnimation ? 'animate-in fade-in duration-1000 delay-900' : ''}`}>
-                            You finished in {playerRank}{playerRank === 1 ? 'st' : playerRank === 2 ? 'nd' : playerRank === 3 ? 'rd' : 'th'} place
+                {/* Practice upsell */}
+                {isPracticeMode && (
+                    <div className="p8-instrument" style={{ padding: 'var(--p8-space-2)', marginBottom: 'var(--p8-space-3)' }}>
+                        <div className="p8-cell-row" style={{ marginBottom: 'calc(3 * var(--p8-u))' }}>
+                            <Icon name="link" size={13} className="p8-text-lamp" />
+                            <span className="p8-label" style={{ color: 'var(--p8-lamp)' }}>
+                                Ready for real battles?
+                            </span>
+                        </div>
+                        <p
+                            className="p8-text-dim"
+                            style={{ fontSize: 'var(--p8-fs-sm)', fontFamily: 'var(--p8-font-ui)' }}
+                        >
+                            Connect a Solana wallet to compete on-chain for real rankings, rewards, and glory.
                         </p>
-                    )}
+                    </div>
+                )}
 
-                    {/* Epic Moment Display */}
-                    {epicMoment && (
-                        <div className={`mt-4 p-4 bg-gradient-to-r ${isWinner ? 'from-neon-gold/20 to-neon-orange/20 border-neon-gold'
-                            : 'from-neon-cyan/20 to-neon-blue/20 border-neon-cyan'} 
-                                        border-2 rounded-xl backdrop-blur-sm
-                                        ${showEpicAnimation ? 'animate-in slide-in-from-bottom duration-1000 delay-1100' : ''}`}>
-                            <p className="text-xl font-bold text-white drop-shadow-lg">{epicMoment}</p>
-                        </div>
-                    )}
-                </div>
-
-                {/* Share Button - Prominent Placement */}
-                <div className={`text-center mb-6 ${showEpicAnimation ? 'animate-in fade-in duration-1000 delay-1300' : ''}`}>
+                {/* Actions — the lever is the one primary */}
+                <div style={{ display: 'flex', gap: 'var(--p8-space-2)', flexWrap: 'wrap' }}>
+                    <button onClick={onReturnToLobby} className="p8-btn" style={{ flex: 1, minWidth: 'calc(120 * var(--p8-u))' }}>
+                        <Icon name="anchor" size={14} />
+                        Return to harbor
+                    </button>
                     <button
                         onClick={() => setShowShareModal(true)}
-                        className="group relative overflow-hidden bg-gradient-to-r from-neon-magenta via-neon-orange to-neon-gold 
-                                   text-black font-black py-4 px-8 rounded-xl border-2 border-neon-gold
-                                   hover:shadow-2xl hover:shadow-neon-gold/50 hover:scale-105 
-                                   active:scale-95 transition-all duration-300 text-lg"
+                        className="p8-btn"
+                        style={{ flex: 1, minWidth: 'calc(120 * var(--p8-u))' }}
                     >
-                        <div className="absolute inset-0 bg-gradient-to-r from-transparent via-white/20 to-transparent 
-                                        translate-x-[-100%] group-hover:translate-x-[100%] transition-transform duration-700"></div>
-                        <div className="relative flex items-center justify-center gap-3">
-                            <span className="text-2xl animate-pulse">🚀</span>
-                            <span>SHARE CHALLENGE</span>
-                            <span className="text-2xl animate-pulse">⚔️</span>
-                        </div>
+                        <Icon name="message" size={14} />
+                        Share challenge
+                    </button>
+                    <button onClick={onNewGame} className="p8-lever" style={{ flex: 2, minWidth: 'calc(140 * var(--p8-u))' }}>
+                        <Icon name="attack" size={15} />
+                        Battle again
                     </button>
                 </div>
 
-                {/* Victory Reason & Stats */}
-                <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-6">
-                    {/* Victory Details */}
-                    {winner && (
-                        <div className={`p-6 bg-gradient-to-br from-slate-800/90 to-slate-700/90 
-                                        rounded-xl border border-neon-gold/50 backdrop-blur-sm
-                                        ${showEpicAnimation ? 'animate-in slide-in-from-left duration-1000 delay-800' : ''}`}>
-                            <h3 className="text-xl font-black text-neon-gold mb-4 flex items-center gap-2">
-                                <span className="text-2xl">🏆</span>
-                                Victory Achieved
-                            </h3>
-                            <div className="space-y-3">
-                                <div className="flex items-center justify-between">
-                                    <span className="text-gray-300">Dominance Score:</span>
-                                    <span className="text-xl font-bold text-neon-gold">{winner.totalScore}</span>
-                                </div>
-                                <div className="flex items-center justify-between">
-                                    <span className="text-gray-300">Territories:</span>
-                                    <span className="text-lg font-bold text-neon-cyan">{winner.controlledTerritories.length}</span>
-                                </div>
-                                <div className="flex items-center justify-between">
-                                    <span className="text-gray-300">Gold Plundered:</span>
-                                    <span className="text-lg font-bold text-neon-gold">{winner.resources.gold.toLocaleString()}</span>
-                                </div>
-                                <div className="flex items-center justify-between">
-                                    <span className="text-gray-300">Fleet Power:</span>
-                                    <span className="text-lg font-bold text-neon-orange">
-                                        {winner.ships.reduce((total, ship) => total + ship.health, 0)}
-                                    </span>
-                                </div>
-                            </div>
-                        </div>
-                    )}
-
-                    {/* Personal Performance */}
-                    {currentPlayer && (
-                        <div className={`p-6 bg-gradient-to-br from-slate-800/90 to-slate-700/90 
-                                        rounded-xl border border-neon-cyan/50 backdrop-blur-sm
-                                        ${showEpicAnimation ? 'animate-in slide-in-from-right duration-1000 delay-1000' : ''}`}>
-                            <h3 className="text-xl font-black text-neon-cyan mb-4 flex items-center gap-2">
-                                <span className="text-2xl">📊</span>
-                                Your Performance
-                            </h3>
-                            <div className="space-y-3">
-                                <div className="flex items-center justify-between">
-                                    <span className="text-gray-300">Final Rank:</span>
-                                    <span className="text-xl font-bold text-neon-orange">#{playerRank}</span>
-                                </div>
-                                <div className="flex items-center justify-between">
-                                    <span className="text-gray-300">Ships Built:</span>
-                                    <span className="text-lg font-bold text-neon-blue">{currentPlayer.ships.length}</span>
-                                </div>
-                                <div className="flex items-center justify-between">
-                                    <span className="text-gray-300">Territories:</span>
-                                    <span className="text-lg font-bold text-neon-magenta">{currentPlayer.controlledTerritories.length}</span>
-                                </div>
-                                <div className="flex items-center justify-between">
-                                    <span className="text-gray-300">Speed Bonus:</span>
-                                    <span className="text-lg font-bold text-neon-green">+{currentPlayer.speedBonusAccumulated || 0}</span>
-                                </div>
-                            </div>
-                        </div>
-                    )}
-                </div>
-
-                {/* Final Standings */}
-                {showStats && (
-                    <div className={`mb-6 ${showEpicAnimation ? 'animate-in fade-in duration-1000 delay-1200' : ''}`}>
-                        <h3 className="text-2xl font-black text-neon-cyan mb-4 text-center flex items-center justify-center gap-2">
-                            <span className="text-3xl">🏴‍☠️</span>
-                            FINAL STANDINGS
-                            <span className="text-3xl">🏴‍☠️</span>
-                        </h3>
-                        <div className="grid grid-cols-1 md:grid-cols-2 gap-4 max-h-64 overflow-y-auto custom-scrollbar">
-                            {finalStats.map((player, index) => (
-                                <div
-                                    key={player.publicKey}
-                                    className={`p-4 rounded-xl border-2 transition-all duration-300 hover:scale-105
-                                               ${player.publicKey === currentPlayerPK
-                                            ? 'border-neon-orange bg-neon-orange/10 shadow-lg shadow-neon-orange/20'
-                                            : index === 0
-                                                ? 'border-neon-gold bg-neon-gold/10 shadow-lg shadow-neon-gold/20'
-                                                : 'border-slate-600 bg-slate-800/50'
-                                        }`}
-                                >
-                                    <div className="flex items-center justify-between mb-3">
-                                        <div className="flex items-center gap-3">
-                                            <span className="text-2xl">
-                                                {index === 0 ? '👑' : index === 1 ? '🥈' : index === 2 ? '🥉' : '⚔️'}
-                                            </span>
-                                            <div>
-                                                <div className="font-black text-lg">
-                                                    {player.username || `${player.publicKey.slice(0, 6)}...${player.publicKey.slice(-4)}`}
-                                                </div>
-                                                {player.publicKey === currentPlayerPK && (
-                                                    <span className="text-xs bg-neon-orange text-black px-2 py-1 rounded-full font-bold">YOU</span>
-                                                )}
-                                            </div>
-                                        </div>
-                                        <div className="text-xl font-black text-neon-gold">
-                                            {player.totalScore}
-                                        </div>
-                                    </div>
-
-                                    <div className="grid grid-cols-3 gap-2 text-sm">
-                                        <div className="text-center">
-                                            <div className="text-neon-cyan font-bold">🏴‍☠️</div>
-                                            <div className="text-xs text-gray-400">Territories</div>
-                                            <div className="font-bold">{player.territoryCount}</div>
-                                        </div>
-                                        <div className="text-center">
-                                            <div className="text-neon-orange font-bold">🚢</div>
-                                            <div className="text-xs text-gray-400">Fleet</div>
-                                            <div className="font-bold">{player.fleetPower}</div>
-                                        </div>
-                                        <div className="text-center">
-                                            <div className="text-neon-gold font-bold">💰</div>
-                                            <div className="text-xs text-gray-400">Resources</div>
-                                            <div className="font-bold">{player.resourceValue}</div>
-                                        </div>
-                                    </div>
-                                </div>
-                            ))}
-                        </div>
-                    </div>
-                )}
-
-                {/* Practice Mode Upsell */}
-                {isPracticeMode && (
-                    <div className={`bg-gradient-to-r from-neon-gold/20 to-neon-orange/20 border border-neon-gold/50 
-                                    rounded-xl p-4 mb-4 ${showEpicAnimation ? 'animate-in slide-in-from-bottom duration-1000 delay-1300' : ''}`}>
-                        <div className="flex items-center gap-3 mb-2">
-                            <span className="text-2xl">⛓️</span>
-                            <h4 className="font-bold text-neon-gold">Ready for Real Battles?</h4>
-                        </div>
-                        <p className="text-sm text-gray-300 mb-3">
-                            Connect a Solana wallet to compete on-chain for real rankings, rewards, and glory!
-                        </p>
-                        <div className="flex flex-wrap gap-2 text-xs">
-                            <span className="bg-slate-700/50 px-2 py-1 rounded">🏆 Leaderboard ranking</span>
-                            <span className="bg-slate-700/50 px-2 py-1 rounded">💰 SOL rewards</span>
-                            <span className="bg-slate-700/50 px-2 py-1 rounded">🔒 Private entry via Zcash</span>
-                        </div>
-                    </div>
-                )}
-
-                {/* Action Buttons */}
-                <div className={`flex flex-col sm:flex-row gap-4 ${showEpicAnimation ? 'animate-in slide-in-from-bottom duration-1000 delay-1400' : ''}`}>
-                    <button
-                        onClick={onReturnToLobby}
-                        className="flex-1 py-4 px-6 rounded-xl bg-slate-600/80 hover:bg-slate-500/80 
-                                   text-white font-bold transition-all duration-300 border border-slate-500
-                                   hover:scale-105 active:scale-95"
-                    >
-                        🏠 Return to Harbor
-                    </button>
-                    <button
-                        onClick={onNewGame}
-                        className="flex-1 py-4 px-6 rounded-xl bg-gradient-to-r from-neon-cyan to-neon-blue 
-                                   hover:from-neon-blue hover:to-neon-cyan text-black font-black transition-all duration-300
-                                   hover:shadow-2xl hover:shadow-neon-cyan/50 hover:scale-105 active:scale-95
-                                   border-2 border-neon-cyan"
-                    >
-                        ⚔️ Battle Again!
-                    </button>
-                </div>
-
-                {/* Game Duration */}
-                <div className={`text-center mt-6 text-sm text-gray-400 font-mono
-                                ${showEpicAnimation ? 'animate-in fade-in duration-1000 delay-1600' : ''}`}>
-                    ⏱️ Epic Battle Duration: {gameState.turnNumber} strategic turns
-                </div>
+                <p
+                    className="p8-text-mute"
+                    style={{
+                        textAlign: 'center',
+                        marginTop: 'var(--p8-space-2)',
+                        fontSize: 'var(--p8-fs-xs)',
+                        fontFamily: 'var(--p8-font-mono)',
+                        fontVariantNumeric: 'tabular-nums',
+                    }}
+                >
+                    {gameState.turnNumber} strategic turns
+                </p>
             </div>
 
-            {/* Share Modal */}
+            {/* Share modal — a smaller ledger above the closing entry */}
             {showShareModal && (
-                <div className="absolute inset-0 bg-black/80 backdrop-blur-sm flex items-center justify-center z-10">
-                    <div className="bg-gradient-to-br from-slate-900 to-slate-800 rounded-2xl border-2 border-neon-magenta 
-                                    p-8 max-w-md w-full mx-4 shadow-2xl shadow-neon-magenta/30 animate-in zoom-in duration-300">
-                        <h3 className="text-2xl font-black text-neon-magenta mb-6 text-center flex items-center justify-center gap-2">
-                            <span className="text-3xl">🚀</span>
-                            Share The Challenge
-                        </h3>
+                <div
+                    style={{
+                        position: 'absolute',
+                        inset: 0,
+                        background: 'color-mix(in srgb, var(--p8-ink) 85%, transparent)',
+                        display: 'flex',
+                        alignItems: 'center',
+                        justifyContent: 'center',
+                        padding: 'var(--p8-space-3)',
+                    }}
+                    onClick={() => setShowShareModal(false)}
+                >
+                    <div
+                        className="p8-instrument"
+                        style={{ maxWidth: 'calc(380 * var(--p8-u))', width: '100%', padding: 'var(--p8-space-3)' }}
+                        onClick={(e) => e.stopPropagation()}
+                        role="dialog"
+                        aria-label="Share the challenge"
+                    >
+                        <div className="p8-cell-row" style={{ justifyContent: 'center', marginBottom: 'var(--p8-space-2)' }}>
+                            <span className="p8-label">Share the challenge</span>
+                        </div>
 
-                        <div className="mb-4 rounded-xl border border-neon-cyan/30 bg-slate-950/70 p-3 text-xs leading-5 text-gray-300 whitespace-pre-wrap">
+                        <div
+                            className="p8-text-dim"
+                            style={{
+                                padding: 'var(--p8-space-2)',
+                                background: 'var(--p8-ink)',
+                                borderRadius: 'var(--p8-radius)',
+                                border: 'var(--p8-hairline) solid var(--p8-brass-line)',
+                                fontSize: 'var(--p8-fs-xs)',
+                                fontFamily: 'var(--p8-font-ui)',
+                                lineHeight: 1.5,
+                                whiteSpace: 'pre-wrap',
+                                marginBottom: 'var(--p8-space-2)',
+                            }}
+                        >
                             {shareText}
                         </div>
 
-                        <div className="space-y-4">
-                            <button
-                                onClick={() => handleShare('twitter')}
-                                className="w-full p-4 bg-blue-500 hover:bg-blue-600 text-white font-bold rounded-xl 
-                                           transition-all duration-300 hover:scale-105 active:scale-95 flex items-center justify-center gap-3"
-                            >
-                                <span className="text-xl">🐦</span>
-                                Share on Twitter
+                        <div style={{ display: 'flex', flexDirection: 'column', gap: 'var(--p8-space-1)' }}>
+                            <button onClick={() => handleShare('twitter')} className="p8-btn" style={{ width: '100%' }}>
+                                <Icon name="link" size={14} />
+                                Share on X
                             </button>
-
-                            <button
-                                onClick={() => handleShare('discord')}
-                                className="w-full p-4 bg-indigo-500 hover:bg-indigo-600 text-white font-bold rounded-xl 
-                                           transition-all duration-300 hover:scale-105 active:scale-95 flex items-center justify-center gap-3"
-                            >
-                                <span className="text-xl">💬</span>
-                                Copy for Discord
+                            <button onClick={() => handleShare('copy')} className="p8-btn" style={{ width: '100%' }}>
+                                <Icon name={copied ? 'check' : 'box'} size={14} />
+                                {copied ? 'Copied' : 'Copy to clipboard'}
                             </button>
-
-                            <button
-                                onClick={() => handleShare('copy')}
-                                className="w-full p-4 bg-gray-600 hover:bg-gray-500 text-white font-bold rounded-xl 
-                                           transition-all duration-300 hover:scale-105 active:scale-95 flex items-center justify-center gap-3"
-                            >
-                                <span className="text-xl">📋</span>
-                                Copy to Clipboard
+                            <button onClick={() => setShowShareModal(false)} className="p8-btn" style={{ width: '100%' }}>
+                                Close
                             </button>
                         </div>
-
-                        <button
-                            onClick={() => setShowShareModal(false)}
-                            className="w-full mt-6 p-3 bg-slate-700 hover:bg-slate-600 text-white font-bold rounded-xl 
-                                       transition-all duration-300"
-                        >
-                            Close
-                        </button>
                     </div>
                 </div>
             )}

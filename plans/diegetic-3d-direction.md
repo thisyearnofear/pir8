@@ -247,6 +247,11 @@ Goal: one screen, real game state, no new rules. If this doesn't feel better, st
       cost as have/need numerals (insufficiency written AND toned), port
       list, commission lever. Ledger interior complete: stats, actions,
       build all token-native.
+- [x] **Slice 6 — Closing entry (VictoryScreen)**: proclamation in world
+      type, battle tale as logbook blockquote, standings as final ledger
+      entries. Emoji rain (50 random absolutely-positioned emoji) deleted;
+      canvas confetti kept — celebration is content, not chrome. Share
+      modal token-native with copy feedback. One lever: battle again.
 - [ ] Compass rose, brass gauge, sextant, barometer replace panels
 - [ ] `setPrompt` single contextual action
 - [ ] Turn handoff: out → in, two-phase, overlapping, **locked** (Wide's discipline)
