@@ -1,0 +1,12 @@
+[toolchain]
+anchor_version = "0.32.1"
+
+[programs.localnet]
+vrf_compat_check = "88YCejHKiTb1psuXt7nWjvf3L36GgQ14sWNWHqNtk2Qd"
+
+[programs.devnet]
+vrf_compat_check = "88YCejHKiTb1psuXt7nWjvf3L36GgQ14sWNWHqNtk2Qd"
+
+[provider]
+cluster = "devnet"
+wallet = "~/.config/solana/id.json"

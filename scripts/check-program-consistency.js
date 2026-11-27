@@ -66,14 +66,19 @@ const anchorIds = extractProgramIdsFromAnchorToml(read(paths.anchorToml));
 const envId = extractProgramIdFromEnv(read(paths.envLocal));
 const targetIdlId = extractProgramIdFromIdl(read(paths.targetIdl));
 const publicIdlId = extractProgramIdFromIdl(read(paths.publicIdl));
-const keypairId = extractDeployKeypairPubkey(paths.deployKeypair);
+let keypairId = null;
+try {
+  keypairId = extractDeployKeypairPubkey(paths.deployKeypair);
+} catch {
+  console.log(`WARN Deploy keypair missing: ${paths.deployKeypair} (run anchor build/keys to regenerate)`);
+}
 const pinnedAnchorVersion = getAnchorVersion();
 const installedAnchorVersion = getInstalledAnchorVersion();
 
 const canonical = rustId;
 const checks = [
   ["Rust declare_id", rustId],
-  ["Deploy keypair", keypairId],
+  ...(keypairId ? [["Deploy keypair", keypairId]] : []),
   [".env.local NEXT_PUBLIC_PROGRAM_ID", envId],
   ["target IDL address", targetIdlId],
   ["public IDL address", publicIdlId],
@@ -93,6 +98,8 @@ for (const [label, value] of checks) {
 if (!pinnedAnchorVersion) {
   console.log("ERR Anchor.toml missing [toolchain].anchor_version");
   ok = false;
+} else if (!installedAnchorVersion) {
+  console.log(`WARN Anchor CLI not installed (pinned=${pinnedAnchorVersion}) - program rebuild unavailable, frontend IDL checks still apply`);
 } else {
   const versionPass = installedAnchorVersion === pinnedAnchorVersion;
   console.log(`${versionPass ? "OK " : "ERR"} Anchor CLI version: installed=${installedAnchorVersion} pinned=${pinnedAnchorVersion}`);

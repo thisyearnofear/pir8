@@ -53,3 +53,7 @@ coverage/
 *.tar.gz
 
 tsconfig.tsbuildinfo
+
+# spike deploy/player keypairs (secret keys, never commit)
+spikes/**/spike-keypair.json
+spikes/**/player*.json
