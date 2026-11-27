@@ -2,6 +2,7 @@
 
 import { useState } from 'react';
 import { useSafeWallet } from '@/components/SafeWalletProvider';
+import WeatherControl from './WeatherControl';
 import { Ship, GameState, Player } from '../types/game';
 import { SHIP_EMOJIS } from '../utils/constants';
 
@@ -659,7 +660,7 @@ export default function PirateControls({
         </div>
 
         {/* Weather & Conditions - Right side balance */}
-        {gameState?.globalWeather && (
+        {gameState?.globalWeather && gameState?.gameId && (
           <div className="weather-preview bg-gray-800 rounded-lg p-3 border border-gray-700">
             <h4 className="text-xs font-bold text-neon-orange mb-2">🌊 WEATHER</h4>
             <div className="flex items-center gap-2 mb-2">
@@ -669,6 +670,7 @@ export default function PirateControls({
                 <div className="text-xs text-neon-cyan">{gameState.globalWeather.duration} turns</div>
               </div>
             </div>
+            <WeatherControl gameId={gameState.gameId} />
           </div>
         )}
 

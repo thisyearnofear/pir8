@@ -74,6 +74,12 @@ export interface OnChainSlice {
     wallet: any,
   ) => Promise<boolean>;
   endTurn: (gameId: number, wallet: any) => Promise<void>;
+  requestWeather: (gameId: number, wallet: any) => Promise<number | null>;
+  fetchWeatherState: (
+    gameId: number,
+    wallet: any,
+  ) => Promise<{ pendingSeed: number; requestCount: number; fulfilledCount: number } | null>;
+  debugSettleWeather: (gameId: number, wallet: any) => Promise<boolean>;
 }
 
 export interface PracticeSlice {

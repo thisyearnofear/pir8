@@ -382,5 +382,46 @@ export const createOnChainSlice: StateCreator<
         // Keep silent behavior consistent with previous implementation.
       }
     },
+
+    requestWeather: async (gameId: number, wallet: any): Promise<number | null> => {
+      try {
+        const walletAdapter = await createWalletAdapterOrNull(wallet);
+        if (!walletAdapter) throw new Error("Wallet not connected");
+        const { requestWeather } = await import("../lib/client/transactionBuilder");
+        const { seed } = await withOnChainAction(
+          () => requestWeather(walletAdapter, gameId),
+          { gameId, wallet, errorMessage: "Failed to request weather" },
+        );
+        return seed;
+      } catch {
+        return null;
+      }
+    },
+
+    fetchWeatherState: async (gameId: number, wallet: any) => {
+      try {
+        const walletAdapter = await createWalletAdapterOrNull(wallet);
+        if (!walletAdapter) return null;
+        const { fetchWeatherState } = await import("../lib/client/transactionBuilder");
+        return await fetchWeatherState(walletAdapter, gameId);
+      } catch {
+        return null;
+      }
+    },
+
+    debugSettleWeather: async (gameId: number, wallet: any): Promise<boolean> => {
+      try {
+        const walletAdapter = await createWalletAdapterOrNull(wallet);
+        if (!walletAdapter) throw new Error("Wallet not connected");
+        const { debugSettleWeather } = await import("../lib/client/transactionBuilder");
+        await withOnChainAction(
+          () => debugSettleWeather(walletAdapter, gameId),
+          { gameId, wallet, errorMessage: "Failed to settle weather (dev)" },
+        );
+        return true;
+      } catch {
+        return false;
+      }
+    },
   };
 };

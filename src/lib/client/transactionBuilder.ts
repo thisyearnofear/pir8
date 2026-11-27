@@ -13,7 +13,13 @@ import {
   SystemProgram,
 } from "@solana/web3.js";
 import { SOLANA_CONFIG } from "@/utils/constants";
-import { getGamePDA, getAgentRegistryPDA } from "../anchor";
+import { getGamePDA, getAgentRegistryPDA, getWeatherPDA } from "../anchor";
+
+/** Default MagicBlock VRF oracle queue on devnet */
+export const DEFAULT_VRF_QUEUE = new PublicKey(
+  process.env['NEXT_PUBLIC_VRF_QUEUE'] ||
+    "Cuj97ggrhhidhbu39TijNVqE74xvKJ69gDervRUXAxGh",
+);
 import type { WalletAdapter } from "@coral-xyz/anchor";
 
 // ============================================================================
@@ -406,6 +412,96 @@ export const buildClaimWinningsTx = async (
       systemProgram: SystemProgram.programId,
     })
     .transaction();
+};
+
+// ============================================================================
+// VRF WEATHER TRANSACTION BUILDERS
+// ============================================================================
+
+export interface WeatherRequestState {
+  pendingSeed: number;
+  requestCount: number;
+  fulfilledCount: number;
+}
+
+/** Request VRF weather for a game (authority only). Fresh non-zero seed per attempt. */
+export const buildRequestWeatherTx = async (
+  wallet: WalletAdapter,
+  gameId: number,
+  clientSeed: number,
+  highPriority = false,
+): Promise<Transaction> => {
+  const program = await getClientProgram(wallet);
+  const [gamePDA] = getGamePDA(gameId);
+  const [weatherPDA] = getWeatherPDA(gamePDA);
+
+  return await resolveProgramMethod(program, "requestWeatherRandomness", "request_weather_randomness")(
+    clientSeed,
+    highPriority,
+  )
+    .accounts({
+      game: gamePDA,
+      weather: weatherPDA,
+      authority: wallet.publicKey!,
+      oracleQueue: DEFAULT_VRF_QUEUE,
+      systemProgram: SystemProgram.programId,
+    })
+    .transaction();
+};
+
+export const requestWeather = async (
+  wallet: WalletAdapter,
+  gameId: number,
+  highPriority = false,
+): Promise<{ signature: string; seed: number }> => {
+  const seed = 1 + Math.floor(Math.random() * 255);
+  const tx = await buildRequestWeatherTx(wallet, gameId, seed, highPriority);
+  const signature = await executeTransaction(wallet, tx);
+  return { signature, seed };
+};
+
+/** DEV-ONLY: settle pending weather without the oracle (authority only). */
+export const debugSettleWeather = async (
+  wallet: WalletAdapter,
+  gameId: number,
+): Promise<string> => {
+  const program = await getClientProgram(wallet);
+  const [gamePDA] = getGamePDA(gameId);
+  const [weatherPDA] = getWeatherPDA(gamePDA);
+  const randomness = Array.from(crypto.getRandomValues(new Uint8Array(32)));
+
+  const tx = await resolveProgramMethod(program, "debugSettleWeather", "debug_settle_weather")(
+    randomness,
+  )
+    .accounts({
+      game: gamePDA,
+      weather: weatherPDA,
+      authority: wallet.publicKey!,
+    })
+    .transaction();
+  return await executeTransaction(wallet, tx);
+};
+
+/** Read the per-game weather request tracker (null when never requested). */
+export const fetchWeatherState = async (
+  wallet: WalletAdapter,
+  gameId: number,
+): Promise<WeatherRequestState | null> => {
+  const program = await getClientProgram(wallet);
+  const [gamePDA] = getGamePDA(gameId);
+  const [weatherPDA] = getWeatherPDA(gamePDA);
+
+  try {
+    const account = (program as any).account as Record<string, { fetch: (pk: PublicKey) => Promise<unknown> }> | undefined;
+    const raw = await account?.["weatherState"]?.fetch(weatherPDA) as {
+      pendingSeed: number; requestCount: unknown; fulfilledCount: unknown;
+    } | undefined;
+    if (!raw) return null;
+    const num = (v: unknown) => (typeof v === "number" ? v : Number((v as { toNumber: () => number }).toNumber()));
+    return { pendingSeed: raw.pendingSeed, requestCount: num(raw.requestCount), fulfilledCount: num(raw.fulfilledCount) };
+  } catch {
+    return null;
+  }
 };
 
 // ============================================================================

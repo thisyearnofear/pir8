@@ -44,4 +44,6 @@ pub enum GameError {
     GhostFleetAlreadyActive,
     #[msg("Invalid weather seed (must be non-zero)")]
     InvalidWeatherSeed,
+    #[msg("No live weather request to settle")]
+    NoWeatherRequestPending,
 }

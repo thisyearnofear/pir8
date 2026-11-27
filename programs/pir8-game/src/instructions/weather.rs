@@ -132,8 +132,49 @@ pub fn callback_weather_randomness(
         );
         return Ok(());
     }
-    let roll = vrf::rnd::random_u8_with_range(&randomness, 1, 100);
-    let game = &mut ctx.accounts.game;
+    apply_weather_settlement(weather, &mut ctx.accounts.game, &randomness);
+    Ok(())
+}
+
+/// DEV-ONLY demo helper: lets the game authority settle pending weather with
+/// explicit randomness so the client loop can be exercised without the live
+/// VRF oracle. Has no VRF signer gate — remove before any competitive use.
+#[derive(Accounts)]
+pub struct DebugSettleWeather<'info> {
+    #[account(
+        mut,
+        seeds = [GAME_SEED, game.game_id.to_le_bytes().as_ref()],
+        bump = game.bump,
+        has_one = authority,
+    )]
+    pub game: Account<'info, PirateGame>,
+    #[account(mut, has_one = game)]
+    pub weather: Account<'info, WeatherState>,
+    pub authority: Signer<'info>,
+}
+
+pub fn debug_settle_weather(
+    ctx: Context<DebugSettleWeather>,
+    randomness: [u8; 32],
+) -> Result<()> {
+    require!(
+        ctx.accounts.weather.pending_seed != 0,
+        GameError::NoWeatherRequestPending
+    );
+    apply_weather_settlement(
+        &mut ctx.accounts.weather,
+        &mut ctx.accounts.game,
+        &randomness,
+    );
+    Ok(())
+}
+
+fn apply_weather_settlement(
+    weather: &mut WeatherState,
+    game: &mut PirateGame,
+    randomness: &[u8; 32],
+) {
+    let roll = vrf::rnd::random_u8_with_range(randomness, 1, 100);
     game.weather_type = if roll <= 40 {
         WeatherType::Calm
     } else if roll <= 70 {
@@ -147,5 +188,4 @@ pub fn callback_weather_randomness(
     weather.pending_seed = 0;
     weather.fulfilled_count = weather.fulfilled_count.saturating_add(1);
     msg!("Weather settled: {:?} for {} turns", game.weather_type, game.weather_duration);
-    Ok(())
 }

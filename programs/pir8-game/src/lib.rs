@@ -154,6 +154,15 @@ pub mod pir8_game {
         instructions::callback_weather_randomness(ctx, randomness, client_seed)
     }
 
+    /// DEV-ONLY: authority settles pending weather without the VRF oracle.
+    /// Remove before any competitive use.
+    pub fn debug_settle_weather(
+        ctx: Context<DebugSettleWeather>,
+        randomness: [u8; 32],
+    ) -> Result<()> {
+        instructions::debug_settle_weather(ctx, randomness)
+    }
+
     // ============================================================================
     // ADMIN
     // ============================================================================

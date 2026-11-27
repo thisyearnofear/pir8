@@ -124,5 +124,8 @@ export const useOnChainActions = () =>
       startGame: state.startGame,
       fetchGameState: state.fetchGameState,
       findOrCreateGame: state.findOrCreateGame,
+      requestWeather: state.requestWeather,
+      fetchWeatherState: state.fetchWeatherState,
+      debugSettleWeather: state.debugSettleWeather,
     })),
   );

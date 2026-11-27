@@ -57,6 +57,17 @@ export const getGamePDA = (
   );
 };
 
+/** Weather PDA - derives from ["weather", game_pda] */
+export const getWeatherPDA = (
+  gamePDA: PublicKey,
+  programId: PublicKey = PROGRAM_ID,
+): [PublicKey, number] => {
+  return PublicKey.findProgramAddressSync(
+    [Buffer.from("weather"), gamePDA.toBytes()],
+    programId,
+  );
+};
+
 /** Agent Registry PDA - derives from ["agent", owner_pubkey] */
 export const getAgentRegistryPDA = (
   ownerPubkey: PublicKey,

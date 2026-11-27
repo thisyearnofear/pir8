@@ -30,6 +30,9 @@ Canonical: program `2TZwkCc8ffz7NGWYF3koXyRm75DHq9VL9kvHxXZu8kLy`, devnet, Ancho
 - [x] `src/instructions/weather.rs`: `request_weather_randomness(seed, high_priority)` + `callback_weather_randomness`, `WeatherState` PDA per game, stale-seed rejection, roll 1-100 mapped Calm/TradeWinds/Storm/Fog + `2 + rnd%4` turn duration
 - [x] Deployed to canonical devnet program; `scripts/prove-weather-vrf.mjs`: game created + 3 requests accepted (`2zeXTHpa…`, `4K8Q2SX…`, `ckyZGnt…`), `requests=3 fulfilled=0` — code path live, oracle silent
 - [x] `public/idl/pir8_game.json` regenerated and synced
+- [x] `debug_settle_weather` (authority-only, dev demo): proven on devnet — game 8840044: request → settle → `fog/2 turns/fulfilled=1`
+- [x] Client: `getWeatherPDA` + `requestWeather`/`fetchWeatherState`/`debugSettleWeather` builders, store slice actions, `WeatherControl` widget mounted in PirateControls weather panel (polls 10s, dev-settle gated by `NEXT_PUBLIC_ENABLE_WEATHER_DEBUG`)
+- [x] Hygiene: removed unused `MapPin` import (unblocked pre-push lint); added `scripts/deploy-canonical.sh` (always `--program-id 2TZwkCc8ffz...` — local keypair file does NOT match canonical)
 
 ## Phase 2 — PIR8 VRF wedge (only if Phase 1 passes)
 - [ ] Add `request_weather_randomness` / `callback_weather_randomness` + seed/status/turn fields to `PirateGame`
