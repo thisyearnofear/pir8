@@ -14,8 +14,13 @@ import {
   Wallet,
 } from "lucide-react";
 import type { LucideIcon } from "lucide-react";
+import dynamic from "next/dynamic";
 import CompetitivePlatform from "@/components/CompetitivePlatform";
-import LobbyBrowser from "@/components/LobbyBrowser";
+
+// Wallet-gated and web3-touching: only loads after a wallet connects.
+const LobbyBrowser = dynamic(() => import("@/components/LobbyBrowser"), {
+  ssr: false,
+});
 
 interface EmptyStateViewProps {
   isConnected: boolean;

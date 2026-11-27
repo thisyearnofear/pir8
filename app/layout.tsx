@@ -91,6 +91,30 @@ export default function RootLayout({
         />
       </head>
       <body className={`${inter.className} bg-[var(--p8-ink)] text-[var(--p8-vellum)] min-h-screen safe-area-inset`}>
+        {/* Boot splash: static HTML paints instantly on first load, before any
+            JS downloads. Removed by StartupDiagnostics once React mounts. */}
+        <div
+          id="pir8-boot"
+          style={{
+            position: "fixed",
+            inset: 0,
+            zIndex: 9999,
+            display: "flex",
+            flexDirection: "column",
+            alignItems: "center",
+            justifyContent: "center",
+            gap: "12px",
+            background: "#0b1418",
+            color: "#e8dfc8",
+            fontFamily: "Georgia, serif",
+            letterSpacing: "0.3em",
+          }}
+        >
+          <div style={{ fontSize: "28px" }}>PIR8</div>
+          <div style={{ fontSize: "11px", color: "#9a7b3f" }}>
+            SETTING SAIL…
+          </div>
+        </div>
         <SafeWalletProvider>
           <div className="min-h-screen bg-[var(--p8-ink)] text-[var(--p8-vellum)]">
             {children}

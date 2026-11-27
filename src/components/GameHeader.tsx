@@ -2,6 +2,7 @@
 
 import dynamic from "next/dynamic";
 import { Eye, Radio, Share2, Trophy } from "lucide-react";
+import { useSafeWallet } from "@/components/SafeWalletProvider";
 
 const WalletButtonWrapper = dynamic(
   () =>
@@ -27,6 +28,9 @@ export default function GameHeader({
   onOpenLeaderboard,
   playerCount,
 }: GameHeaderProps) {
+  // WalletMultiButton throws without its provider chain, which loads after
+  // first paint — hold a quiet placeholder until then.
+  const { ready: walletReady } = useSafeWallet();
   return (
     <header className="mb-5 rounded-lg border border-white/10 bg-slate-950/70 px-3 py-3 shadow-2xl shadow-slate-950/40 backdrop-blur sm:px-4">
       <div className="flex flex-col gap-3 lg:flex-row lg:items-center lg:justify-between">
@@ -83,7 +87,16 @@ export default function GameHeader({
           </button>
 
           <div className="min-h-[40px]">
-            <WalletButtonWrapper />
+            {walletReady ? (
+              <WalletButtonWrapper />
+            ) : (
+              <div
+                aria-hidden="true"
+                className="inline-flex min-h-[40px] items-center rounded-md border border-white/10 bg-white/[0.04] px-3 py-2 text-sm font-bold text-slate-500"
+              >
+                Select Wallet
+              </div>
+            )}
           </div>
         </div>
       </div>

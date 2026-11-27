@@ -1,5 +1,6 @@
 import { Player, Resources } from '@/types/game';
-import { PublicKey } from '@solana/web3.js';
+// Type-only: web3.js must not ride along with first paint via this helper.
+import type { PublicKey } from '@solana/web3.js';
 
 const DEFAULT_RESOURCES: Resources = {
   gold: 1000,

@@ -7,7 +7,9 @@ import {
   PhantomWalletAdapter,
   SolflareWalletAdapter,
 } from "@solana/wallet-adapter-wallets";
-import { clusterApiUrl } from "@solana/web3.js";
+// NOTE: clusterApiUrl deliberately not imported — it pulls all of web3.js
+// into first paint. This literal is exactly what clusterApiUrl("devnet")
+// returns.
 import {
   getPlatformWalletAdapter,
   isSolanaDappStore
@@ -24,7 +26,7 @@ export function WalletContextProvider({
     if (heliusUrl && !heliusUrl.includes("YOUR_API_KEY")) {
       return heliusUrl;
     }
-    return clusterApiUrl("devnet");
+    return "https://api.devnet.solana.com";
   }, []);
 
   const wallets = useMemo(() => {

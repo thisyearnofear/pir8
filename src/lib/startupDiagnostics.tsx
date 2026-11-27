@@ -41,6 +41,9 @@ export function StartupDiagnostics() {
   useEffect(() => {
     if (typeof window === "undefined") return;
 
+    // First paint is ours now — drop the static boot splash.
+    document.getElementById("pir8-boot")?.remove();
+
     markStartupStart();
 
     const onError = (event: ErrorEvent) => {
