@@ -70,7 +70,7 @@
   font-size: var(--p8-fs-xs);
   letter-spacing: 0.14em;
   text-transform: uppercase;
-  color: var(--p8-vellum-mute);
+  color: var(--p8-vellum-dim);
 }
 
 .p8-value {
@@ -169,4 +169,124 @@
     animation: none !important;
     transition: none !important;
   }
+}
+
+/* ==========================================================================
+   Instrument strip — the brass rail at the table's edge (DESIGN.md §1, §6).
+   One continuous housing, cells divided by hairlines. Numbers are mono and
+   tabular so a ticking value never reflows its neighbours.
+   ========================================================================== */
+
+.p8-strip {
+  display: flex;
+  align-items: stretch;
+  gap: var(--p8-space-2);
+  padding: var(--p8-space-1) var(--p8-space-2);
+  background: var(--p8-ink);
+  border-bottom: var(--p8-hairline) solid var(--p8-brass-line);
+  overflow-x: auto;
+  scrollbar-width: none;
+}
+.p8-strip::-webkit-scrollbar {
+  display: none;
+}
+
+/* A group of cells in one instrument housing. */
+.p8-cluster {
+  display: flex;
+  align-items: stretch;
+  background: var(--p8-deep);
+  border: var(--p8-hairline) solid var(--p8-brass-line);
+  border-radius: var(--p8-radius);
+  box-shadow: var(--p8-shadow-instrument);
+  flex-shrink: 0;
+}
+
+.p8-cell {
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  gap: calc(1 * var(--p8-u));
+  padding: var(--p8-space-1) var(--p8-space-2);
+  min-width: 0;
+}
+.p8-cell + .p8-cell {
+  border-left: var(--p8-hairline) solid var(--p8-brass-line);
+}
+
+.p8-cell-row {
+  display: flex;
+  align-items: center;
+  gap: var(--p8-space-1);
+}
+
+/* The helm when it is your watch: the only place the lamp is allowed to glow
+   in the strip. Light where light would fall — on the active captain. */
+.p8-cell-lit {
+  background: color-mix(in srgb, var(--p8-lamp) 9%, var(--p8-deep));
+  box-shadow: inset 0 0 calc(10 * var(--p8-u)) color-mix(in srgb, var(--p8-lamp) 12%, transparent);
+}
+.p8-cell-lit .p8-value {
+  color: var(--p8-lamp);
+}
+
+.p8-text-signal { color: var(--p8-signal); }
+.p8-text-lamp { color: var(--p8-lamp); }
+.p8-text-threat { color: var(--p8-threat); }
+.p8-text-dim { color: var(--p8-vellum-dim); }
+.p8-text-mute { color: var(--p8-vellum-mute); }
+
+/* Small mode chip (PRACTICE). A marker, not a button. */
+.p8-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: calc(3 * var(--p8-u));
+  padding: calc(2 * var(--p8-u)) var(--p8-space-1);
+  border: var(--p8-hairline) solid var(--p8-brass-line);
+  border-radius: var(--p8-radius);
+  font-family: var(--p8-font-instrument);
+  font-size: var(--p8-fs-xs);
+  letter-spacing: 0.14em;
+  color: var(--p8-vellum-dim);
+  white-space: nowrap;
+}
+
+/* Brass instrument button — the only interactive shape in the strip. */
+.p8-iconbtn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: calc(44 * var(--p8-u));
+  min-height: 44px;
+  padding: var(--p8-space-1);
+  background: var(--p8-deep);
+  border: var(--p8-hairline) solid var(--p8-brass-line);
+  border-radius: var(--p8-radius);
+  box-shadow: var(--p8-shadow-instrument);
+  color: var(--p8-vellum-dim);
+  cursor: pointer;
+  flex-shrink: 0;
+  align-self: center;
+  transition: color 120ms ease, border-color 120ms ease;
+}
+.p8-iconbtn:hover {
+  color: var(--p8-vellum);
+  border-color: var(--p8-brass);
+}
+.p8-iconbtn:focus-visible {
+  outline: calc(2 * var(--p8-u)) solid var(--p8-lamp);
+  outline-offset: calc(1 * var(--p8-u));
+}
+.p8-iconbtn[aria-expanded="true"] {
+  color: var(--p8-lamp);
+  border-color: color-mix(in srgb, var(--p8-lamp) 55%, transparent);
+}
+
+/* Responsive stowing — one instrument, restowed for narrow tables. These live
+   here, after the display rules above, so they always win over .p8-cell. */
+@media (max-width: 639px) {
+  .p8-stow-sm { display: none !important; }
+}
+@media (max-width: 767px) {
+  .p8-stow-md { display: none !important; }
 }

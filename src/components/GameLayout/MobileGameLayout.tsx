@@ -22,6 +22,7 @@ import TerritoryBonusPanel from '../TerritoryBonusPanel';
 import GameEventLog from '../GameEventLog';
 import ResourceBar from '../ResourceBar';
 import ShipActionModal from '../ShipActionModal';
+import InstrumentStrip from '../hud/InstrumentStrip';
 import { useMobileOptimized } from '@/hooks/useMobileOptimized';
 import { Haptic } from '@/utils/haptics';
 import { GameState, Ship, Player } from '@/types/game';
@@ -112,10 +113,8 @@ export function MobileGameLayout({
     
   const selectedShip = selectedShipId ? allShips.find(s => s.id === selectedShipId) : null;
   
-  const formatTime = (ms: number) => `${Math.floor(ms / 1000)}s`;
-
   return (
-    <div className={`h-screen flex flex-col bg-gradient-to-br from-slate-900 via-slate-800 to-slate-900 overflow-hidden ${classes.container}`}>
+    <div className={`h-screen flex flex-col bg-[var(--p8-ink)] overflow-hidden ${classes.container}`}>
       {/* Ship Action Modal */}
       {shipActionModalShip && (
         <ShipActionModal
@@ -126,44 +125,26 @@ export function MobileGameLayout({
         />
       )}
 
-      {/* ===== MOBILE HUD ===== */}
-      <div className="flex items-center justify-between px-3 py-2 bg-slate-900/95 border-b border-neon-cyan/30 z-40">
-        <div className="flex items-center gap-2">
-          <div className={`px-3 py-1 rounded-full font-bold text-xs ${
-            isMyTurn ? 'bg-neon-cyan text-black' : 'bg-slate-700 text-gray-300'
-          }`}>
-            {isMyTurn ? '⚔️ You' : `⏳ ${currentPlayerName.slice(0, 8)}`}
-          </div>
-          
-          {isMyTurn && (
-            <div className={`text-xs font-mono ${
-              decisionTimeMs < 5000 ? 'text-green-400' : 
-              decisionTimeMs < 10000 ? 'text-yellow-400' : 'text-red-400'
-            }`}>
-              ⏱️ {formatTime(decisionTimeMs)}
-            </div>
-          )}
-        </div>
-        
-        <div className="flex items-center gap-2">
-          {isPracticeMode && (
-            <span className="bg-neon-purple/20 text-neon-purple px-2 py-0.5 rounded text-[10px] border border-neon-purple/30">
-              ⚡ Practice
-            </span>
-          )}
-          
-          <button
-            onClick={() => {
-              Haptic.light();
-              setMenuOpen(prev => !prev);
-            }}
-            className={`p-2 rounded-lg transition-all min-w-[44px] min-h-[44px] flex items-center justify-center ${
-              menuOpen ? 'bg-neon-cyan text-black' : 'bg-slate-700 text-white'
-            }`}
-          >
-            {menuOpen ? '✕' : '☰'}
-          </button>
-        </div>
+      {/* ===== INSTRUMENT STRIP =====
+          The same brass rail as the desktop table, restowed for a narrow
+          cabin — density changes inside the strip, the instrument does not
+          fork (DESIGN.md §9). */}
+      <div className="relative z-40">
+        <InstrumentStrip
+          isMyTurn={isMyTurn}
+          currentPlayerName={currentPlayerName}
+          decisionTimeMs={decisionTimeMs}
+          turnNumber={gameState.turnNumber}
+          playerCount={gameState.players.length}
+          weather={gameState.globalWeather}
+          resources={currentPlayer?.resources ?? null}
+          isPracticeMode={isPracticeMode}
+          menuOpen={menuOpen}
+          onToggleMenu={() => {
+            Haptic.light();
+            setMenuOpen(prev => !prev);
+          }}
+        />
       </div>
 
       {/* ===== MAIN MAP AREA ===== */}

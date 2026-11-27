@@ -199,6 +199,16 @@ Goal: one screen, real game state, no new rules. If this doesn't feel better, st
 - [x] Camera glide on match start (`ChartStage glideKey` — pass a fresh match id; skipped under reduced motion)
 
 ### Phase 3 — Instruments (3–4 days)
+- [x] **Slice 1 — Instrument strip** (`src/components/hud/InstrumentStrip.tsx`):
+      brass rail replacing both layouts' neon top bars — helm (turn state,
+      lamp-lit only on your watch), decision clock with speed bonus as digits
+      not hue, weather named in text with duration, six stores mono/tabular,
+      turn + fleet count, practice chip, one menu button. One component for all
+      widths; density stows responsively (`.p8-stow-*`), no fork. Fixed
+      `.p8-label` contrast (~3.2:1 → ~5.9:1) contract-wide.
+- [ ] **Slice 2 — Primary-action rail**: bottom bar rebuilt as instruments —
+      End Turn the single brass lever, selected-ship readout as a plaque,
+      quick-stats as instruments not emoji stacks
 - [ ] Compass rose, brass gauge, sextant, barometer replace panels
 - [ ] `setPrompt` single contextual action
 - [ ] Turn handoff: out → in, two-phase, overlapping, **locked** (Wide's discipline)

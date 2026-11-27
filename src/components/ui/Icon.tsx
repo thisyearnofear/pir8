@@ -25,6 +25,8 @@ import {
   ChevronRight,
   CircleDot,
   Clock,
+  CloudFog,
+  CloudLightning,
   Coins,
   Compass,
   Crown,
@@ -58,6 +60,7 @@ import {
   Ship,
   Skull,
   Sparkles,
+  Sun,
   Swords,
   Target,
   TrendingDown,
@@ -99,6 +102,9 @@ export type IconName =
   | 'whirlpool'
   | 'fortress'
   | 'landmark'
+  | 'fog'
+  | 'calm'
+  | 'trade-winds'
   // intel & privacy
   | 'scan'
   | 'radar'
@@ -164,7 +170,10 @@ const registry: Record<IconName, LucideIcon> = {
   water: Waves,
   island: MapIcon,
   port: Anchor,
-  storm: Wind,
+  storm: CloudLightning,
+  fog: CloudFog,
+  calm: Sun,
+  'trade-winds': Wind,
   reef: Boxes,
   whirlpool: RotateCcw,
   fortress: Shield,

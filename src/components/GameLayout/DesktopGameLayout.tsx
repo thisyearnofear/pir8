@@ -21,6 +21,7 @@ import TerritoryBonusPanel from "../TerritoryBonusPanel";
 import GameEventLog from "../GameEventLog";
 import ResourceBar from "../ResourceBar";
 import ShipActionModal from "../ShipActionModal";
+import InstrumentStrip from "../hud/InstrumentStrip";
 import { Haptic } from "@/utils/haptics";
 import { GameState, Ship, Player } from "@/types/game";
 import { AIReasoning } from "@/lib/pirateGameEngine";
@@ -142,8 +143,6 @@ export function DesktopGameLayout({
     ? allShips.find((s) => s.id === selectedShipId)
     : null;
 
-  const formatTime = (ms: number) => `${Math.floor(ms / 1000)}s`;
-
   return (
     <>
       {/* Ship Action Modal */}
@@ -157,84 +156,25 @@ export function DesktopGameLayout({
       )}
 
       {/* ===== DESKTOP GAME LAYOUT ===== */}
-      <div className="h-screen flex flex-col bg-gradient-to-br from-slate-900 via-slate-800 to-slate-900">
-        {/* ===== TOP HUD BAR ===== */}
-        <div className="flex items-center justify-between px-2 sm:px-4 py-1.5 sm:py-2 bg-slate-900/80 border-b border-neon-cyan/30">
-          {/* Turn Indicator */}
-          <div className="flex items-center gap-2 sm:gap-3">
-            <div
-              className={`px-2 sm:px-3 py-1 rounded-full font-bold text-xs sm:text-sm ${
-                isMyTurn
-                  ? "bg-neon-cyan text-black"
-                  : "bg-slate-700 text-gray-300"
-              }`}
-            >
-              {isMyTurn
-                ? "⚔️ You"
-                : `⏳ ${currentPlayerName.slice(0, 8)}${currentPlayerName.length > 8 ? "..." : ""}`}
-              <span className="hidden sm:inline">
-                {isMyTurn ? "r Turn" : "'s Turn"}
-              </span>
-            </div>
-
-            {/* Timer with Tooltip */}
-            {isMyTurn && (
-              <Tooltip
-                content="Speed bonus: <5s = +100 | <10s = +50 | <15s = +25"
-                position="bottom"
-              >
-                <div
-                  className={`text-xs sm:text-sm font-mono cursor-help ${
-                    decisionTimeMs < 5000
-                      ? "text-green-400"
-                      : decisionTimeMs < 10000
-                        ? "text-yellow-400"
-                        : "text-red-400"
-                  }`}
-                >
-                  ⏱️ {formatTime(decisionTimeMs)}
-                </div>
-              </Tooltip>
-            )}
-          </div>
-
-          {/* Game Info */}
-          <div className="flex items-center gap-2 sm:gap-4 text-xs sm:text-sm">
-            <span className="text-gray-400 hidden sm:inline">
-              Turn {gameState.turnNumber}
-            </span>
-            <span className="text-neon-gold hidden md:inline">
-              🏴‍☠️ {gameState.players.length} Pirates
-            </span>
-            {isPracticeMode && (
-              <Tooltip
-                content="Local game - connect wallet for on-chain battles"
-                position="bottom"
-              >
-                <span className="bg-neon-purple/20 text-neon-purple px-1.5 sm:px-2 py-0.5 sm:py-1 rounded text-xs cursor-help border border-neon-purple/30">
-                  ⚡ <span className="hidden sm:inline">Practice</span>
-                </span>
-              </Tooltip>
-            )}
-          </div>
-
-          {/* Menu Toggle */}
-          <Tooltip content="Game Menu (M)" position="bottom">
-            <button
-              onClick={() => {
-                Haptic.light();
-                setMenuOpen(!menuOpen);
-              }}
-              className={`p-3 rounded-lg transition-all min-w-[48px] min-h-[48px] ${
-                menuOpen
-                  ? "bg-neon-cyan text-black"
-                  : "bg-slate-700 text-white hover:bg-slate-600"
-              }`}
-            >
-              {menuOpen ? "✕" : "☰"}
-            </button>
-          </Tooltip>
-        </div>
+      <div className="h-screen flex flex-col bg-[var(--p8-ink)]">
+        {/* ===== INSTRUMENT STRIP =====
+            The brass rail at the table's edge: helm, weather, stores, log.
+            Same instrument on every screen size (DESIGN.md §9). */}
+        <InstrumentStrip
+          isMyTurn={isMyTurn}
+          currentPlayerName={currentPlayerName}
+          decisionTimeMs={decisionTimeMs}
+          turnNumber={gameState.turnNumber}
+          playerCount={gameState.players.length}
+          weather={gameState.globalWeather}
+          resources={currentPlayer?.resources ?? null}
+          isPracticeMode={isPracticeMode}
+          menuOpen={menuOpen}
+          onToggleMenu={() => {
+            Haptic.light();
+            setMenuOpen(!menuOpen);
+          }}
+        />
 
         {/* ===== MAIN CONTENT - MAP AS HERO ===== */}
         <div className="flex-1 flex items-center justify-center p-4 relative overflow-hidden">
