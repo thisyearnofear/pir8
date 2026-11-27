@@ -76,10 +76,6 @@ const SHEET_MARGIN = 1.08;
 /** Half the margin, as a fraction of the board box. The canvas overscans by this
  * amount so the shader's inner 10x10 chart lands exactly under the DOM hit grid. */
 const CANVAS_OVERSCAN = (SHEET_MARGIN - 1) / 2;
-/** Near-top-down play camera. A lower angle is more cinematic, but perspective
- * shears the 3D grid away from the invisible DOM hit grid; 70° keeps the theatre
- * without making clicks lie. */
-const PLAY_TILT_DEG = 70;
 
 export default function ChartStage({
   gridSize,
@@ -133,7 +129,11 @@ export default function ChartStage({
     const size = live.current.gridSize;
 
     const scene = new THREE.Scene();
-    const camera = new THREE.PerspectiveCamera(38, 1, 0.1, 200);
+    // Orthographic top-down play camera. A tilted perspective camera projects
+    // the square chart as a trapezoid, which cannot line up with the square DOM
+    // hit grid; the theatre comes from light, relief, water and fog instead.
+    const camera = new THREE.OrthographicCamera(-1, 1, 1, -1, 0.1, 200);
+    camera.up.set(0, 0, -1);
 
     const renderer = new THREE.WebGLRenderer({
       antialias: true,
