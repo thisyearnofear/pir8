@@ -358,6 +358,73 @@
   outline: calc(2 * var(--p8-u)) solid var(--p8-vellum);
   outline-offset: calc(2 * var(--p8-u));
 }
+/* Secondary brass button — the default action inside instruments and
+   ledgers. Never lamp-lit: the lever is the one primary action. */
+.p8-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: var(--p8-space-1);
+  min-height: calc(36 * var(--p8-u));
+  padding: calc(5 * var(--p8-u)) var(--p8-space-2);
+  background: color-mix(in srgb, var(--p8-brass) 14%, var(--p8-depth));
+  border: var(--p8-hairline) solid var(--p8-brass-line);
+  border-radius: var(--p8-radius);
+  color: var(--p8-vellum);
+  font-family: var(--p8-font-ui);
+  font-weight: 600;
+  font-size: var(--p8-fs-sm);
+  cursor: pointer;
+  transition: background 120ms ease, border-color 120ms ease, transform 80ms ease;
+}
+.p8-btn:hover:not(:disabled) {
+  background: color-mix(in srgb, var(--p8-brass) 24%, var(--p8-depth));
+  border-color: var(--p8-brass);
+}
+.p8-btn:active:not(:disabled) {
+  transform: translateY(1px);
+}
+.p8-btn:focus-visible {
+  outline: calc(2 * var(--p8-u)) solid var(--p8-lamp);
+  outline-offset: calc(2 * var(--p8-u));
+}
+.p8-btn:disabled {
+  opacity: 0.45;
+  cursor: not-allowed;
+}
+.p8-btn svg {
+  width: calc(14 * var(--p8-u));
+  height: calc(14 * var(--p8-u));
+}
+/* Threat-toned variant for destructive or hostile actions (attack). */
+.p8-btn-threat {
+  border-color: color-mix(in srgb, var(--p8-threat) 55%, transparent);
+  color: var(--p8-threat);
+}
+.p8-btn-threat:hover:not(:disabled) {
+  background: color-mix(in srgb, var(--p8-threat) 16%, var(--p8-depth));
+  border-color: var(--p8-threat);
+}
+
+.p8-input {
+  width: 100%;
+  padding: calc(6 * var(--p8-u)) var(--p8-space-2);
+  background: var(--p8-ink);
+  border: var(--p8-hairline) solid var(--p8-brass-line);
+  border-radius: var(--p8-radius);
+  color: var(--p8-vellum);
+  font-family: var(--p8-font-mono);
+  font-size: var(--p8-fs-sm);
+}
+.p8-input::placeholder {
+  color: var(--p8-vellum-mute);
+}
+.p8-input:focus {
+  outline: none;
+  border-color: var(--p8-lamp);
+  box-shadow: 0 0 0 calc(1.5 * var(--p8-u)) color-mix(in srgb, var(--p8-lamp) 35%, transparent);
+}
+
 .p8-lever kbd {
   font-family: var(--p8-font-instrument);
   font-size: var(--p8-fs-xs);

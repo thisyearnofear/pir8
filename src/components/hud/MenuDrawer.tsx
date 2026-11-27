@@ -54,6 +54,8 @@ export interface MenuDrawerProps {
   onShipAction: (shipId: string, action: 'move' | 'attack' | 'claim' | 'collect' | 'build') => void;
   onEndTurn: () => void;
   onCollectResources: () => Promise<boolean>;
+  /** On-chain scan; undefined in practice where scanning is not a mechanic. */
+  onScanCoordinate?: (x: number, y: number) => Promise<void>;
   onBuildShip: (shipType: string, portX: number, portY: number) => Promise<boolean>;
   onPracticeMode: () => void;
   onToggleAIReasoning?: () => void;
@@ -93,6 +95,7 @@ export function MenuDrawer({
   onShipAction,
   onEndTurn,
   onCollectResources,
+  onScanCoordinate,
   onBuildShip,
   onPracticeMode,
   onToggleAIReasoning,
@@ -259,7 +262,7 @@ export function MenuDrawer({
                 onClearJoinError={onClearJoinError}
                 selectedShipId={selectedShipId || undefined}
                 onShipSelect={onShipSelect}
-                onScanCoordinate={noopAsync}
+                onScanCoordinate={onScanCoordinate}
                 decisionTimeMs={decisionTimeMs}
                 scanChargesRemaining={scanChargesRemaining}
                 speedBonusAccumulated={speedBonusAccumulated}

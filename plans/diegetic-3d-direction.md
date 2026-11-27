@@ -233,6 +233,15 @@ Goal: one screen, real game state, no new rules. If this doesn't feel better, st
       memos unfrozen (turn state never updated), guest-practice turn ownership
       game-state-derived, currentPlayer no longer flips to the opponent,
       PirateMap ship/threat lookups indexed once per fleet change.
+- [x] **Slice 4 — Actions page (PirateControls) + truth repairs**:
+      Token-native rewrite of the actions tab. Removed duplication (turn/
+      weather/battlefield/skill readouts live in strip + ledgers; End Turn
+      is the rail lever). Removed the broken build section (literal 'build'
+      passed as ship id; build tab owns shipbuilding). Scan was a placebo —
+      wired end-to-end (GameContainer→layouts→drawer) for on-chain games,
+      hidden in practice where scan resolution does not exist. WeatherControl
+      oracle widget converted. New tokens: .p8-btn/.p8-btn-threat/.p8-input.
+      Collapse-to-localStorage machinery dropped with the bloat it managed.
 - [ ] Compass rose, brass gauge, sextant, barometer replace panels
 - [ ] `setPrompt` single contextual action
 - [ ] Turn handoff: out → in, two-phase, overlapping, **locked** (Wide's discipline)

@@ -3,6 +3,7 @@
 import { useCallback, useEffect, useState } from 'react';
 import { useSafeWallet } from '@/components/SafeWalletProvider';
 import { useOnChainActions } from '@/store/gameStore';
+import { Icon } from './ui/Icon';
 
 interface WeatherControlProps {
   gameId: string | number;
@@ -82,8 +83,11 @@ export default function WeatherControl({ gameId }: WeatherControlProps) {
   const pending = status !== null && status.pendingSeed !== 0;
 
   return (
-    <div className="weather-control mt-2 space-y-2">
-      <div className="text-xs text-gray-300">
+    <div style={{ display: 'flex', flexDirection: 'column', gap: 'var(--p8-space-1)', marginTop: 'var(--p8-space-1)' }}>
+      <div
+        className="p8-text-dim"
+        style={{ fontSize: 'var(--p8-fs-xs)', fontFamily: 'var(--p8-font-mono)', fontVariantNumeric: 'tabular-nums' }}
+      >
         {status === null && 'No weather request yet.'}
         {status !== null && !pending && (
           <>Settled ×{status.fulfilledCount} · {status.requestCount} request(s) total</>
@@ -92,33 +96,39 @@ export default function WeatherControl({ gameId }: WeatherControlProps) {
           <>Awaiting oracle… seed {status.pendingSeed} · attempt {status.requestCount} · settled ×{status.fulfilledCount}</>
         )}
       </div>
-      <div className="flex gap-2">
+      <div style={{ display: 'flex', gap: 'var(--p8-space-1)' }}>
         <button
           onClick={handleRequest}
           disabled={isRequesting}
-          className="flex-1 px-3 py-1.5 text-xs font-bold rounded-lg bg-neon-cyan/80 hover:bg-neon-cyan
-                     text-black transition-all disabled:opacity-50 disabled:cursor-not-allowed"
+          className="p8-btn"
+          style={{ flex: 1 }}
           title="Request VRF weather randomness (game authority only)"
         >
-          {isRequesting ? '⏳ Requesting…' : pending ? '🔄 Retry weather' : '🌊 Call for wind'}
-        </button>      {debugEnabled && pending && (
-          <div className="flex gap-1">
+          <Icon name={pending ? 'undo' : 'trade-winds'} size={13} />
+          {isRequesting ? 'Requesting…' : pending ? 'Retry weather' : 'Call for wind'}
+        </button>
+        {debugEnabled && pending && (
+          <div style={{ display: 'flex', gap: 'calc(2 * var(--p8-u))' }}>
             {(['calm', 'storm', 'fog'] as const).map((preset) => (
               <button
                 key={preset}
                 onClick={() => handleDebugSettle(preset)}
                 disabled={settlingPreset !== null}
-                className="px-2 py-1.5 text-xs font-bold rounded-lg bg-amber-500/80 hover:bg-amber-500
-                         text-black transition-all disabled:opacity-50 capitalize"
+                className="p8-btn"
+                style={{ minHeight: 'auto', padding: 'calc(4 * var(--p8-u)) calc(6 * var(--p8-u))', textTransform: 'capitalize' }}
                 title={`DEV ONLY: settle pending weather as ${preset} without the oracle`}
               >
-                {settlingPreset === preset ? '⏳…' : `🧪 ${preset}`}
+                {settlingPreset === preset ? '…' : preset}
               </button>
             ))}
           </div>
         )}
       </div>
-      {error && <div className="text-xs text-red-400">{error}</div>}
+      {error && (
+        <div className="p8-text-threat" style={{ fontSize: 'var(--p8-fs-xs)', fontFamily: 'var(--p8-font-ui)' }} role="alert">
+          {error}
+        </div>
+      )}
     </div>
   );
 }

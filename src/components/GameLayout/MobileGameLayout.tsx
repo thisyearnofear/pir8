@@ -55,6 +55,7 @@ interface MobileGameLayoutProps {
   onCloseShipActionModal: () => void;
   onEndTurn: () => void;
   onCollectResources: () => Promise<boolean>;
+  onScanCoordinate?: (x: number, y: number) => Promise<void>;
   onBuildShip: (shipType: string, portX: number, portY: number) => Promise<boolean>;
   
   // AI Reasoning
@@ -91,6 +92,7 @@ export function MobileGameLayout({
   onCloseShipActionModal,
   onEndTurn,
   onCollectResources,
+  onScanCoordinate,
   onBuildShip,
   aiReasoning,
   showAIReasoning,
@@ -228,6 +230,7 @@ export function MobileGameLayout({
         onShipAction={onShipAction}
         onEndTurn={onEndTurn}
         onCollectResources={onCollectResources}
+          onScanCoordinate={onScanCoordinate}
         onBuildShip={onBuildShip}
         onPracticeMode={onPracticeMode}
         onToggleAIReasoning={onToggleAIReasoning}

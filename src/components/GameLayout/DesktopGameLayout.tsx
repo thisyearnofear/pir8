@@ -57,6 +57,7 @@ interface DesktopGameLayoutProps {
   onCloseShipActionModal: () => void;
   onEndTurn: () => void;
   onCollectResources: () => Promise<boolean>;
+  onScanCoordinate?: (x: number, y: number) => Promise<void>;
   onBuildShip: (
     shipType: string,
     portX: number,
@@ -107,6 +108,7 @@ export function DesktopGameLayout({
   onCloseShipActionModal,
   onEndTurn,
   onCollectResources,
+  onScanCoordinate,
   onBuildShip,
   onCreateGame,
   onQuickStart,
@@ -266,6 +268,7 @@ export function DesktopGameLayout({
           onShipAction={onShipAction}
           onEndTurn={onEndTurn}
           onCollectResources={onCollectResources}
+          onScanCoordinate={onScanCoordinate}
           onBuildShip={onBuildShip}
           onPracticeMode={onPracticeMode}
           onToggleAIReasoning={onToggleAIReasoning}

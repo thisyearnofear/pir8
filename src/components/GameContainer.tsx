@@ -20,6 +20,7 @@ import { FirstTimeTutorial } from './onboarding/FirstTimeTutorial';
 import { ContextualHints, HINT_TEMPLATES } from './onboarding/ContextualHints';
 import { Ship } from '@/types/game';
 import { useGame } from '@/contexts/GameContext';
+import { usePirateGameStore } from '@/store/gameStore';
 
 // =============================================================================
 // TYPES
@@ -71,6 +72,7 @@ export default function GameContainer(props: GameContainerProps) {
   } = props;
 
   const { isMobile } = useMobileOptimized();
+  const scanCoordinate = usePirateGameStore((state) => state.scanCoordinate);
 
   // Local UI state
   const [showTutorial, setShowTutorial] = useState(false);
@@ -154,6 +156,14 @@ export default function GameContainer(props: GameContainerProps) {
     return collectResources(Number(gameState.gameId), wallet);
   }, [gameState, isMyTurn, isPracticeMode, collectResources, wallet]);
 
+  // Scanning is an on-chain oracle mechanic only — practice tracks scan
+  // charges in state but implements no scan resolution, so the control
+  // hides itself in practice by passing undefined.
+  const handleScanCoordinate = useCallback(async (x: number, y: number) => {
+    if (!gameState || !isMyTurn || isPracticeMode) return;
+    await scanCoordinate(Number(gameState.gameId), x, y, wallet);
+  }, [gameState, isMyTurn, isPracticeMode, scanCoordinate, wallet]);
+
   // =============================================================================
   // KEYBOARD SHORTCUTS
   // =============================================================================
@@ -223,6 +233,7 @@ export default function GameContainer(props: GameContainerProps) {
         gameState.players[gameState.currentPlayerIndex]?.username || 'Pirate',
       onEndTurn: handleEndTurn,
       onCollectResources: handleCollectResources,
+      onScanCoordinate: isPracticeMode ? undefined : handleScanCoordinate,
     };
 
     return (
