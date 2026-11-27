@@ -194,10 +194,10 @@ Goal: one screen, real game state, no new rules. If this doesn't feel better, st
 **Exit criteria:** a stranger can look at the slice and read *where they can move, what they can hit, what is hidden* — and it looks like a place.
 
 ### Phase 2 — Diegetic shell (2–3 days)
-- [ ] Cabin lobby replaces `EmptyStateView` dashboard
-- [ ] "Charting the waters…" loader with key art + calm-frame-gated reveal
-- [ ] Staged intro: table → chart unrolls → tokens settle → instruments fade in
-- [ ] Camera glide on match start
+- [ ] Cabin lobby replaces `EmptyStateView` dashboard (open — owned by the UI pass)
+- [x] "Charting the waters…" loader with key art + calm-frame-gated reveal (`ChartingLoader` + `useStagedIntro`; mount where the shell gates on readiness)
+- [ ] Staged intro sequencing table → unroll → tokens → instruments (hook ready; parent wires `signalReady()` to its load completion)
+- [x] Camera glide on match start (`ChartStage glideKey` — pass a fresh match id; skipped under reduced motion)
 
 ### Phase 3 — Instruments (3–4 days)
 - [ ] Compass rose, brass gauge, sextant, barometer replace panels
