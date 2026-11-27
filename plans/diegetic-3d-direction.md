@@ -252,10 +252,36 @@ Goal: one screen, real game state, no new rules. If this doesn't feel better, st
       entries. Emoji rain (50 random absolutely-positioned emoji) deleted;
       canvas confetti kept — celebration is content, not chrome. Share
       modal token-native with copy feedback. One lever: battle again.
-- [ ] Compass rose, brass gauge, sextant, barometer replace panels
 - [ ] `setPrompt` single contextual action
 - [ ] Turn handoff: out → in, two-phase, overlapping, **locked** (Wide's discipline)
 - [ ] Attack: hit-frame feedback wired to the single clock (reuse `ScreenShake`, `DamageNumber`, `ConfettiCelebration`)
+
+#### Remaining neon surfaces — next slices, ranked by player visibility
+
+Every screen during and at the end of a battle is token-native. What is
+left lives at the edges of the session:
+
+- [ ] **Slice 7 — Visual verification pass** (BLOCKING before further conversion):
+      one dev-server session, screenshot the practice loop end-to-end —
+      chart alignment, strip/rail stow breakpoints at desktop + mobile
+      widths, ledger drawer, guest-practice turn ownership, scan execution.
+      Six slices are build/type/lint-clean but none have been seen rendered.
+- [ ] **Slice 8 — First-run surfaces**: `FirstTimeTutorial`, `ContextualHints`,
+      onboarding modal — what a new player sees before anything else.
+      NOTE: parallel agent commit `9a25cb6` touched onboarding/victory HUD;
+      re-read before converting to avoid trampling in-flight work.
+- [ ] **Slice 9 — AIReasoningPanel + pseudo-tab wiring**: the AI "tab" in the
+      drawer toggles a floating panel and closes the drawer instead of
+      switching tabs — redesign as a real ledger page or honest overlay.
+- [ ] **Slice 10 — GameHeader + lobby screens**: "Shadow Seas" header is
+      already Lucide but pre-token; lobby flow precedes the game frame.
+- [ ] **Slice 11 — Data-layer emoji cleanup**: event `description` strings
+      and `src/lib/territoryBonuses.ts` carry emoji as content. Once clean,
+      delete the transitional EVENT_ICONS/BONUS_ICONS translation maps in
+      GameEventLog/TerritoryBonusPanel.
+- [ ] **Slice 12 — Contract enforcement** (moves Phase 4 forward): lint rule
+      or pre-commit scan banning emoji/neon- utilities in `src/components`,
+      so the converted surfaces can't regress under parallel agents.
 
 ### Phase 4 — Enforcement (ongoing)
 - [ ] Lint/pre-commit: no raw hex in components, no emoji in `src/components`
