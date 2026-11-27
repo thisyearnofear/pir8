@@ -141,7 +141,7 @@ interface GhostFleetTutorial {
 2. Player's next 3 moves are hidden from AI
 3. AI makes "mistakes" because it can't predict
 4. Player wins the engagement
-5. Reveal: "This is what session key privacy enables - true strategic surprise. Your main wallet identity never appears on the game."
+5. Reveal: "This is what session-key play enables - strategic surprise and fewer wallet-touching actions. The delegation link is still public, so stronger privacy would require additional design."
 
 ### 5. The "Whale Watching" Scenario (MEV Demo)
 
@@ -334,10 +334,10 @@ interface PracticeModeMetadata {
 │                                         │
 │  🔒 UPGRADE TO FULL PIRACY:             │
 │                                         │
-│  • Session key privacy (unlinkable ID)  │
+│  • Session key privacy (pseudonymous ID)│
 │  • True strategic surprise              │
 │  • Fair play - no AI prediction         │
-│  • Real rewards on Solana               │
+│  • Verifiable rewards on Solana         │
 │                                         │
 │  [Connect Wallet]  [Practice Again]     │
 └─────────────────────────────────────────┘

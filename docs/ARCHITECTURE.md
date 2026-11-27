@@ -1,304 +1,254 @@
 # PIR8 Architecture
 
-## System Overview
+## System overview
 
-PIR8 is a full-stack Web3 gaming platform built on Solana with privacy features powered by session key architecture. The architecture prioritizes speed, security, and skill-based gameplay.
+PIR8 is a full-stack Solana game with a Next.js web client, shared TypeScript game logic, an Anchor program for match state and value flow, and session-key delegation for privacy-oriented gameplay.
 
-## Technology Stack
+The current canonical deployment is:
 
-### Blockchain Layer
-- **Solana Devnet/Mainnet**: Primary execution layer
-- **Anchor Framework 0.30+**: Smart contract development
-- **Session Keys**: Ephemeral identity via AgentRegistry delegate pattern
-- **Helius RPC**: Enhanced transaction monitoring
+- **Program ID:** `2TZwkCc8ffz7NGWYF3koXyRm75DHq9VL9kvHxXZu8kLy`
+- **Network:** Solana devnet
+- **IDL:** `public/idl/pir8_game.json`
+- **Anchor:** `0.32.1`
 
-### Frontend
-- **Next.js 14**: React framework with App Router
-- **TypeScript**: Type-safe development
-- **Tailwind CSS**: Utility-first styling
-- **Solana Wallet Adapter**: Multi-wallet support
+Older devnet deployments may still exist, but they are legacy artifacts and should not be used by the frontend.
 
-### Backend Services
-- **Node.js**: CLI tools and automation
-- **Helius WebSocket**: Real-time game monitoring
-## Smart Contract Architecture
+## Technology stack
 
-### Core Contracts
+### On-chain and blockchain-adjacent
 
-#### Game Contract (`pir8_game`)
-**Location**: `/programs/pir8-game/src/lib.rs`
-**Deployed Address (Devnet)**: `2TZwkCc8ffz7NGWYF3koXyRm75DHq9VL9kvHxXZu8kLy`
+- Solana devnet
+- Anchor `0.32.1`
+- `@coral-xyz/anchor` `0.32.x`
+- `@solana/web3.js`
+- Helius RPC/WebSocket monitoring
+- Session keys through the program's `AgentRegistry` delegate pattern
 
-**Key Instructions**:
-```rust
-pub mod pir8_game {
-...
-    // Configuration
-    pub fn initialize_config(...)  // One-time platform setup
+### Web application
 
-    // Game Lifecycle
-    pub fn create_game(...)        // Create new game instance
-    pub fn join_game(...)          // Player joins with entry fee
-    pub fn start_game(...)         // Begin gameplay
-    pub fn make_move(...)          // Move ship within speed range
-    pub fn attack_ship(...)        // Deal damage to enemy vessel
-    pub fn claim_territory(...)    // Claim port/island/treasure
-    pub fn collect_resources(...)  // Harvest resources from territory
-    pub fn build_ship(...)         // Build new ship at controlled port
-    pub fn complete_game(...)      // Finalize and determine winner
-    pub fn claim_winnings(...)     // Winner withdraws prize
+- Next.js 16
+- React 19
+- TypeScript
+- Tailwind CSS
+- Zustand
+- Solana Wallet Adapter
 
-    // Skill Mechanics
-    pub fn scan_coordinate(...)    // Reveal territory type
-    pub fn make_move_timed(...)    // Move with timing bonus
-}
+### Shared/mobile surfaces
+
+- `packages/core`: shared game engine, types, validation, balance utilities
+- `packages/mobile`: React Native/Expo mobile client surface
+
+## High-level runtime flow
+
+```text
+Player action in web/mobile UI
+  → local game-rule validation
+  → transaction builder / Anchor client
+  → wallet or session-key signature
+  → Solana devnet program
+  → chain account refresh + Helius/event monitoring
+  → UI, replay, challenge, leaderboard state update
 ```
 
-**Account Structures**:
-```rust
-// Platform configuration (PDA)
-pub struct GameConfig {
-    pub authority: Pubkey,           // Admin key
-    pub default_entry_fee: u64,      // Base entry (0.1 SOL)
-    pub platform_fee_bps: u16,       // Fee in basis points (500 = 5%)
-    pub treasury: Pubkey,            // Fee recipient
-    pub total_games: u64,            // Game counter
-}
+Practice mode can run locally without a wallet. On-chain competitive and challenge flows must reconcile against program state.
 
-// Individual game state (PDA)
-pub struct Game {
-    pub game_id: u64,                // Unique identifier
-    pub creator: Pubkey,             // Game creator
-    pub status: GameStatus,          // Waiting/Active/Completed
-    pub players: Vec<PlayerState>,   // Up to 4 players
-    pub game_map: GameMap,           // 10x10 strategic map
-    pub entry_fee: u64,              // Entry cost
-    pub total_pot: u64,              // Prize pool
-    pub winner: Option<Pubkey>,      // Winner address
-    pub turn_number: u64,            // Current turn
-    pub current_player_index: u64,   // Index of current player
-}
+## Program architecture
 
-// Player state within game
-pub struct PlayerState {
-    pub player_key: Pubkey,          // Player address
-    pub resources: Resources,        // Gold, crew, cannons, supplies
-    pub ships: Vec<Ship>,            // Player's fleet
-    pub controlled_territories: Vec<String>,
-    pub total_score: u64,
-    pub scan_charges: u8,
-    pub speed_bonus_accumulated: u64,
-}
-```
+The canonical Anchor source path is `programs/pir8-game`. The frontend consumes the generated IDL rather than duplicating instruction layouts manually. If the program source is absent in a local working tree, restore it before making program changes.
 
-**Ship Types**:
-```rust
-pub struct Ship {
-    pub id: String,
-    pub ship_type: ShipType,         // Sloop, Frigate, Galleon, Flagship
-    pub health: u8,
-    pub max_health: u8,
-    pub attack: u8,
-    pub defense: u8,
-    pub speed: u8,
-    pub position: Coordinate,
-}
+### Current IDL instructions
 
-pub enum ShipType {
-    Sloop,      // Fast scout (Speed 3, 100 HP, 500 gold)
-    Frigate,    // Balanced (Speed 2, 200 HP, 1200 gold)
-    Galleon,    // Heavy (Speed 1, 350 HP, 2500 gold)
-    Flagship,   // Ultimate (Speed 1, 500 HP, 5000 gold)
-}
-```
+The checked-in IDL exposes these instructions:
 
-**Resource System**:
-```rust
-pub struct Resources {
-    pub gold: u64,       // Currency for building
-    pub crew: u64,       // Manpower for ships
-    pub cannons: u64,    // Weaponry for combat
-    pub supplies: u64,   // Materials for maintenance
-}
-```
+- `create_game`
+- `join_game`
+- `join_game_via_delegate`
+- `start_game`
+- `move_ship`
+- `move_ship_via_delegate`
+- `attack_ship`
+- `claim_territory`
+- `collect_resources`
+- `build_ship`
+- `scan_coordinate`
+- `end_turn`
+- `check_and_complete_game`
+- `claim_winnings`
+- `reset_game`
+- `activate_ghost_fleet`
+- `register_agent`
+- `delegate_agent_control`
 
-**Territory Types**:
-```rust
-pub enum TerritoryType {
-    Water,      // Safe passage
-    Island,     // Supplies generation (+3/turn)
-    Port,       // Ship building hub (+5 gold, +2 crew/turn)
-    Treasure,   // Wealth generator (+10 gold/turn)
-    Storm,      // Hazard (-50% movement)
-    Reef,       // Hidden hazard (-20 health if hit)
-    Whirlpool,  // Deadly trap (-100 health)
-}
-```
+### Core accounts and state
 
-### Security Features
+#### `PirateGame`
 
-**Access Control**:
-- PDA-based account derivation
-- Signer validation on state-changing instructions
-- Authority checks for admin functions
+Represents one match. Important fields include:
 
-**Economic Security**:
-- Entry fee validation (minimum thresholds)
-- Platform fee caps (max 10%)
-- Overflow protection on all arithmetic
+- `game_id`
+- `authority`
+- `status` (`Waiting`, `Active`, `Completed`)
+- `mode` (`Casual`, `Competitive`, `AgentArena`)
+- `players`
+- `current_player_index`
+- `turn_number`
+- `winner`
+- `weather_type` and `weather_duration`
+- flattened `territory_map`
 
-**Game Integrity**:
-- Coordinate validation (A1-J10 on 10x10 map)
-- Duplicate move prevention
-- Turn order enforcement
-- Winner determination on-chain
+#### `PlayerData`
 
-## Frontend Architecture
+Per-player state inside a match:
 
-### Component Structure
-```
+- resources: gold, crew, cannons, supplies
+- fleet: ships with health, attack, defense, speed, position, and last action turn
+- controlled territories
+- scan charges and scanned-coordinate bookkeeping
+- Ghost Fleet state
+- timing/speed bonus metrics
+
+#### `AgentRegistry`
+
+Tracks identity/delegation metadata:
+
+- owner wallet
+- optional delegate/session key
+- public profile metadata
+- games played and wins
+- activity timestamp
+
+This registry is the basis for the current session-key privacy flow.
+
+## PDA layout
+
+The frontend derives the core program accounts in `src/lib/anchor.ts`:
+
+- config PDA from `["config"]`
+- game PDA from `["pirate_game", game_id]`
+- agent registry PDA from `["agent", owner]`
+
+Keep TypeScript PDA derivation synchronized with the program whenever seeds change.
+
+## Frontend architecture
+
+```text
 app/
-├── page.tsx              # Main game interface
-├── layout.tsx            # Root layout with providers
-└── globals.css           # Pirate-themed styling
+├── page.tsx                      # primary game entry
+├── api/actions/challenge/        # Solana Action challenge endpoint
+├── api/challenges/               # challenge APIs
+├── api/competitive/              # competitive/leaderboard APIs
+├── api/moments/                  # battle-moment/replay APIs
+└── replay/[id]/                  # replay viewer
 
 src/
-├── components/
-│   ├── GameCockpit/      # Main game UI components
-│   ├── PirateControls.tsx
-│   ├── PirateMap.tsx
-│   ├── PlayerStats.tsx
-│   ├── BattleInfoPanel.tsx
-│   └── WalletProvider.tsx
-│
-├── hooks/
-│   ├── usePirateGameState.ts
-│   ├── useSessionKey.ts      # Privacy via ephemeral wallets
-│   ├── useOnChainSync.ts
-│   └── useHeliusMonitor.ts
-│
+├── components/                   # cockpit, map, onboarding, privacy, mobile UI
+├── hooks/                        # game lifecycle, challenge, session key, replay, sound
 ├── lib/
-│   ├── integrations.ts       # Helius/Pump integrations
-│   ├── anchorClient.ts       # Anchor transactions
-│   ├── gameLogic.ts          # Core game rules
-│   └── pirateGameEngine.ts
-│
-└── types/
-    └── game.ts               # TypeScript interfaces
+│   ├── client/transactionBuilder # Anchor transaction construction
+│   ├── engine/                   # gameplay engine helpers
+│   ├── solana/                   # Solana helpers
+│   ├── anchor.ts                 # program IDs and PDA derivation
+│   └── privacySimulation.ts      # practice-mode privacy education
+├── store/                        # Zustand state slices
+└── types/                        # TypeScript domain types
 ```
 
-### State Management
+### State management
 
-**Game State Flow**:
-```typescript
-interface GameState {
-  gameId: string;
-  players: Player[];
-  gameMap: GameMap;
-  currentPlayerIndex: number;
-  status: 'waiting' | 'active' | 'completed';
-  winner?: string;
-  turnNumber: number;
-}
+Zustand slices coordinate UI and chain state. Chain-backed actions should follow this order:
 
-// Sync with on-chain state
-1. User action (move ship, attack, claim)
-2. Frontend validation
-3. Submit transaction to Solana
-4. Helius monitors transaction
-5. Update local state on confirmation
-6. Emit events to other players
-```
+1. local validation;
+2. transaction construction;
+3. explicit wallet/session-key signature;
+4. submission through configured RPC;
+5. refresh from chain;
+6. UI update.
 
-### Real-Time Updates
+Do not treat a locally successful game-engine transition as proof that an on-chain transaction succeeded.
 
-**Helius WebSocket Integration**:
-```typescript
-// Real-time transaction monitoring
-const { isConnected } = useHeliusMonitor({
-  gameId: 'pirate_5',
-  onGameEvent: (event) => {
-    switch (event.type) {
-      case 'playerJoined':
-        setMessage('⚡ Player joined via blockchain!');
-        break;
-      case 'shipMoved':
-        updateShipPosition(event.shipId, event.newPosition);
-        break;
-      case 'territoryClaimed':
-        updateTerritoryOwnership(event.territory, event.player);
-        break;
-    }
-  }
-});
-```
+## Privacy architecture
 
-**On-Chain Synchronization**:
-```typescript
-// Automatic UI sync with blockchain state
-const { heliusConnected, lastSync } = useOnChainSync(gameState?.gameId);
+### Implemented session-key pattern
 
-// Features:
-// ✅ Real-time player count updates when CLI joins games
-// ✅ 30-second polling backup for missed events
-// ✅ Visual feedback for sync operations
-```
+The current privacy design uses ephemeral session keys:
 
-## Privacy Layer
+1. Player generates an ephemeral keypair in the browser.
+2. Main wallet calls the delegation instruction for that key.
+3. Session key signs supported gameplay actions.
+4. Main wallet is not required to sign every routine move.
+5. Registry state links delegated identity back for controlled reward/reputation flows.
 
-### Session Key Architecture
+This reduces wallet friction and can provide weak operational pseudonymity, but it is not a zero-knowledge system and should not be described as one. Because the delegation transaction, registry, and match account are public, the current design does not provide strong anonymity or unlinkability. Likewise, Ghost Fleet should be treated as a gameplay/visibility abstraction unless hidden positions are actually kept out of public account data.
 
-PIR8 achieves privacy without cross-chain bridges or server-side signing by leveraging the existing `AgentRegistry` delegate pattern already deployed in the Solana program.
+### Privacy as gameplay
 
-**How It Works**:
-```
-1. Player generates ephemeral keypair in-browser (session key)
-   ↓
-2. Player calls delegate_agent_control(session_pubkey) from main wallet
-   ↓
-3. Session key joins and plays the game — main wallet never touches game PDA
-   ↓
-4. All gameplay transactions signed by session key (user funds it with small SOL amount)
-   ↓
-5. At game end, rewards claimable back to main wallet via AgentRegistry link
-   ↓
-6. AgentRegistry PDA can be closed after game — session key becomes unlinkable
-```
+Practice mode intentionally teaches information leakage through systems such as:
 
-**Why This Works**:
-- **~2 second** join time (vs ~2 minutes with cross-chain bridge)
-- **Zero server cost** — user pays their own gas with the session key
-- **Real privacy** — session key is unlinkable to main wallet on-chain
-- **Self-custody** — user controls both keys, no trust in server
+- Ghost Fleet;
+- leakage-meter concepts;
+- transparent-versus-private play comparison;
+- bounty/replay moments.
 
-**On-Chain Contract Support** (already deployed):
-```rust
-// programs/pir8-game/src/instructions/gameplay.rs
-pub struct AgentRegistry {
-    pub owner: Pubkey,
-    pub delegate: Option<Pubkey>,  // ← Session key goes here
-    // ...
-}
+These are product/education mechanics, not independent cryptographic privacy guarantees.
 
-pub fn delegate_agent_control(ctx, delegate: Option<Pubkey>) -> Result<()>
-```
+## Challenge, replay, and competitive surfaces
 
-**Architecture Components**:
-1. **Session Key Generator**: In-browser ephemeral keypair creation
-2. **AgentRegistry**: On-chain delegate pattern (already deployed)
-3. **PrivacySimulator**: Educational privacy layer for practice mode (Ghost Fleet, Leakage Meter, Bounty Board)
+The repo includes API and UI surfaces for:
 
-**Future Enhancement**: `JoinGameViaDelegate` and `MakeMoveViaDelegate` instruction variants that accept a session key signer whose `AgentRegistry.delegate` matches are already implemented and deployed. The frontend "Play Privately" toggle wires this flow end-to-end.
+- challenge creation and acceptance;
+- spectator/watch flows;
+- battle-moment capture;
+- replay persistence and replay viewing;
+- captain/competitive profiles;
+- leaderboard-style aggregation.
 
-## Agentic Infrastructure
+These surfaces are important to the Entertainment Finance positioning because they convert matches into watchable and shareable market events rather than isolated games.
 
-- **Multi-Game Factory**: Dynamic PDA derivation for unlimited concurrent games
-- **Agent Observation**: Event streams, account snapshots, machine-readable IDL
-- **Agent Registry**: On-chain identity tracking for autonomous agents
+## MagicBlock integration status
 
-## Performance Optimization
+MagicBlock is **not currently integrated**.
 
-- **Compute Units**: ~50k per move (well under 200k limit)
-- **Account Size**: <10KB optimized for Solana realloc limits
-- **Frontend**: Code splitting, debounced re-renders, throttled WebSocket
-- **Scalability**: Unlimited concurrent games, 65k TPS capacity
+The documented proposal is in [MAGICBLOCK_INTEGRATION.md](./MAGICBLOCK_INTEGRATION.md). The two candidate integration layers are:
+
+### 1. MagicBlock VRF
+
+Use verifiable randomness for weather, hazard, or combat-variance seeds.
+
+Recommended first milestone because it is bounded and produces clear explorer evidence.
+
+### 2. Ephemeral Rollup match sessions
+
+Delegate active match state during gameplay, execute low-friction session actions, then commit/undelegate final state back to Solana.
+
+This is architecturally deeper but significantly more invasive. If pursued, delegate active gameplay state only; keep entry-fee escrow, winner settlement, and durable reputation on base-layer Solana.
+
+### Important framing constraint
+
+PIR8 is turn-based. Do not claim that it inherently requires 10ms block times. The credible ER argument is gasless/low-friction session play, fewer wallet interruptions, fast UI feedback, and improved spectator responsiveness.
+
+## Security and integrity considerations
+
+- Validate signer authority for all state-changing instructions.
+- Enforce turn order and player membership on-chain.
+- Keep arithmetic bounded and checked.
+- Treat frontend validation as UX only; program validation is authoritative.
+- Do not expose or log private keys/session keys.
+- Clearly separate devnet test value from any future real-value tournament design.
+
+## Performance considerations
+
+- Keep transaction construction narrow and avoid unnecessary account passing.
+- Debounce high-frequency UI updates.
+- Use event/WebSocket updates where available, with polling fallback.
+- Keep replay/moment storage bounded.
+- Measure mobile performance separately from desktop.
+
+## Documentation invariant
+
+When any of these change, update `README.md`, `docs/GETTING_STARTED.md`, `docs/DEVELOPMENT.md`, this file, and `.env.local.example` together:
+
+- canonical program ID;
+- Anchor/SDK versions;
+- transaction scripts;
+- implemented versus proposed privacy/randomness features;
+- deployment network.
