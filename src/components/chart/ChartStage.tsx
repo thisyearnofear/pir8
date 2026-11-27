@@ -48,6 +48,12 @@ export interface ChartStageProps {
   turnProgress?: number;
   /** When false the loop stops and the canvas fades out (flat chart view). */
   active?: boolean;
+  /**
+   * Set to a fresh non-null value (e.g. the match id) to play the 3.4s
+   * intro glide (MOTION.md 09 GLIDE) from wide to the fitted framing.
+   * Skipped under reduced motion.
+   */
+  glideKey?: string | number | null;
   className?: string;
 }
 
@@ -82,6 +88,7 @@ export default function ChartStage({
   selected = null,
   turnProgress = 1,
   active = true,
+  glideKey = null,
   className,
 }: ChartStageProps) {
   const hostRef = useRef<HTMLDivElement>(null);
@@ -102,6 +109,7 @@ export default function ChartStage({
     syncTerrain: (cells: ChartCell[], gridSize: number) => void;
     syncShips: (ships: ChartShip[], selected: { x: number; y: number } | null) => void;
     setActive: (active: boolean) => void;
+    startGlide: () => void;
   } | null>(null);
 
   // Rebuild tokens only when something visible about them actually changed.
@@ -430,6 +438,14 @@ export default function ChartStage({
     let elapsed = 0;
     const lampTarget = new THREE.Vector3();
 
+    // Intro glide state (MOTION.md 09 GLIDE, 3400ms linear). Null when idle.
+    const glide = {
+      active: false,
+      t0: 0,
+      from: new THREE.Vector3(),
+    };
+    const GLIDE_MS = 3400;
+
     const render = () => {
       const dt = Math.min(clock.getDelta(), 0.05);
       const t = reduced ? 0 : (elapsed += dt);
@@ -457,6 +473,14 @@ export default function ChartStage({
         lampTarget.set(0, 4.2, 0.8);
       }
       lantern.position.lerp(lampTarget, 1 - Math.pow(0.001, dt));
+
+      // Intro glide: wide framing settles onto the fitted table (09 GLIDE).
+      if (glide.active) {
+        const k = Math.min(1, (performance.now() - glide.t0) / GLIDE_MS);
+        camera.position.lerpVectors(glide.from, fitted, k);
+        camera.lookAt(0, 0, 0);
+        if (k >= 1) glide.active = false;
+      }
 
       // Tokens bob; the selected one lifts toward the light (01 RAISE).
       for (const child of tokenRoot.children) {
@@ -486,6 +510,16 @@ export default function ChartStage({
       setActive: (isActive: boolean) => {
         renderer.setAnimationLoop(isActive ? render : null);
         renderer.domElement.style.opacity = isActive ? '1' : '0';
+      },
+      startGlide: () => {
+        if (reduced) return;
+        glide.from.copy(camera.position);
+        // Pull back and up: the table is revealed from the cabin dark.
+        glide.from.multiplyScalar(1.45);
+        glide.from.y += size * 0.55;
+        camera.position.copy(glide.from);
+        glide.t0 = performance.now();
+        glide.active = true;
       },
     };
 
@@ -532,6 +566,12 @@ export default function ChartStage({
   useEffect(() => {
     api.current?.setActive(active);
   }, [active]);
+
+  useEffect(() => {
+    if (glideKey !== null && glideKey !== undefined) api.current?.startGlide();
+    // Glide fires on key change only; the scene reads it imperatively.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [glideKey]);
 
   return (
     <div
