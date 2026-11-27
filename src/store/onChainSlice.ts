@@ -409,13 +409,13 @@ export const createOnChainSlice: StateCreator<
       }
     },
 
-    debugSettleWeather: async (gameId: number, wallet: any): Promise<boolean> => {
+    debugSettleWeather: async (gameId: number, wallet: any, preset?: "calm" | "storm" | "fog"): Promise<boolean> => {
       try {
         const walletAdapter = await createWalletAdapterOrNull(wallet);
         if (!walletAdapter) throw new Error("Wallet not connected");
         const { debugSettleWeather } = await import("../lib/client/transactionBuilder");
         await withOnChainAction(
-          () => debugSettleWeather(walletAdapter, gameId),
+          () => debugSettleWeather(walletAdapter, gameId, preset),
           { gameId, wallet, errorMessage: "Failed to settle weather (dev)" },
         );
         return true;

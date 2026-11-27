@@ -30,7 +30,7 @@ export default function WeatherControl({ gameId }: WeatherControlProps) {
     fulfilledCount: number;
   } | null>(null);
   const [isRequesting, setIsRequesting] = useState(false);
-  const [isSettling, setIsSettling] = useState(false);
+  const [settlingPreset, setSettlingPreset] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
 
   const numericId = normalizeGameId(gameId);
@@ -65,16 +65,16 @@ export default function WeatherControl({ gameId }: WeatherControlProps) {
     }
   };
 
-  const handleDebugSettle = async () => {
-    if (numericId === null || isSettling) return;
-    setIsSettling(true);
+  const handleDebugSettle = async (preset: 'calm' | 'storm' | 'fog') => {
+    if (numericId === null || settlingPreset) return;
+    setSettlingPreset(preset);
     setError(null);
     try {
-      const ok = await debugSettleWeather(numericId, wallet);
+      const ok = await debugSettleWeather(numericId, wallet, preset);
       if (!ok) setError('Dev settle failed — needs a live pending request.');
       await refresh();
     } finally {
-      setIsSettling(false);
+      setSettlingPreset(null);
     }
   };
 
@@ -101,17 +101,21 @@ export default function WeatherControl({ gameId }: WeatherControlProps) {
           title="Request VRF weather randomness (game authority only)"
         >
           {isRequesting ? '⏳ Requesting…' : pending ? '🔄 Retry weather' : '🌊 Call for wind'}
-        </button>
-        {debugEnabled && pending && (
-          <button
-            onClick={handleDebugSettle}
-            disabled={isSettling}
-            className="px-3 py-1.5 text-xs font-bold rounded-lg bg-amber-500/80 hover:bg-amber-500
-                       text-black transition-all disabled:opacity-50"
-            title="DEV ONLY: settle pending weather without the oracle"
-          >
-            {isSettling ? '⏳…' : '🧪 Dev settle'}
-          </button>
+        </button>      {debugEnabled && pending && (
+          <div className="flex gap-1">
+            {(['calm', 'storm', 'fog'] as const).map((preset) => (
+              <button
+                key={preset}
+                onClick={() => handleDebugSettle(preset)}
+                disabled={settlingPreset !== null}
+                className="px-2 py-1.5 text-xs font-bold rounded-lg bg-amber-500/80 hover:bg-amber-500
+                         text-black transition-all disabled:opacity-50 capitalize"
+                title={`DEV ONLY: settle pending weather as ${preset} without the oracle`}
+              >
+                {settlingPreset === preset ? '⏳…' : `🧪 ${preset}`}
+              </button>
+            ))}
+          </div>
         )}
       </div>
       {error && <div className="text-xs text-red-400">{error}</div>}

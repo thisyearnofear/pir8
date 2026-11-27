@@ -79,7 +79,7 @@ export interface OnChainSlice {
     gameId: number,
     wallet: any,
   ) => Promise<{ pendingSeed: number; requestCount: number; fulfilledCount: number } | null>;
-  debugSettleWeather: (gameId: number, wallet: any) => Promise<boolean>;
+  debugSettleWeather: (gameId: number, wallet: any, preset?: "calm" | "storm" | "fog") => Promise<boolean>;
 }
 
 export interface PracticeSlice {

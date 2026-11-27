@@ -460,15 +460,37 @@ export const requestWeather = async (
   return { signature, seed };
 };
 
+/**
+ * DEV-ONLY deterministic randomness presets for the demo.
+ * `random_u8_with_range` scans bytes[31] first and returns 1 + (b % 100)
+ * when b < 200, so fixing bytes[31] fixes the roll; bytes[0] fixes the
+ * duration via 2 + (bytes[0] % 4).
+ */
+export const WEATHER_DEMO_PRESETS = {
+  calm: { label: 'Calm seas', bytes31: 19, bytes0: 1 },
+  storm: { label: 'Storm', bytes31: 74, bytes0: 2 },
+  fog: { label: 'Fog', bytes31: 94, bytes0: 0 },
+} as const;
+export type WeatherDemoPreset = keyof typeof WEATHER_DEMO_PRESETS;
+
 /** DEV-ONLY: settle pending weather without the oracle (authority only). */
 export const debugSettleWeather = async (
   wallet: WalletAdapter,
   gameId: number,
+  preset?: WeatherDemoPreset,
 ): Promise<string> => {
   const program = await getClientProgram(wallet);
   const [gamePDA] = getGamePDA(gameId);
   const [weatherPDA] = getWeatherPDA(gamePDA);
-  const randomness = Array.from(crypto.getRandomValues(new Uint8Array(32)));
+  let randomness: number[];
+  if (preset) {
+    const p = WEATHER_DEMO_PRESETS[preset];
+    randomness = new Array(32).fill(0);
+    randomness[0] = p.bytes0;
+    randomness[31] = p.bytes31;
+  } else {
+    randomness = Array.from(crypto.getRandomValues(new Uint8Array(32)));
+  }
 
   const tx = await resolveProgramMethod(program, "debugSettleWeather", "debug_settle_weather")(
     randomness,
