@@ -30,10 +30,28 @@ export const createGameSlice: StateCreator<PirateGameStore, [], [], GameSlice> =
   },
 
   isMyTurn: (walletPk) => {
-    const { gameState } = get();
-    if (!gameState || gameState.gameStatus !== "active" || !walletPk) return false;
+    const { gameState, gameMode } = get();
+    if (!gameState || gameState.gameStatus !== "active") return false;
     const current = gameState.players[gameState.currentPlayerIndex];
-    return current?.publicKey === walletPk;
+    if (!current) return false;
+    // Practice turn ownership is game-state-derived: the helm is yours whenever
+    // a non-AI player holds it. Guest practice has no wallet at all.
+    if (gameMode === "practice") return !current.publicKey.startsWith("AI_");
+    if (!walletPk) return false;
+    return current.publicKey === walletPk;
+  },
+
+  // The player the UI is operated by — stable across turns. Not to be confused
+  // with getCurrentPlayer(), which answers *whose turn it is* and flips to the
+  // opponent during their watch.
+  getMyPlayer: (walletPk) => {
+    const { gameState, gameMode } = get();
+    if (!gameState) return null;
+    if (gameMode === "practice") {
+      return gameState.players.find((p) => !p.publicKey.startsWith("AI_")) || null;
+    }
+    if (!walletPk) return null;
+    return gameState.players.find((p) => p.publicKey === walletPk) || null;
   },
 
   getAllShips: () => {

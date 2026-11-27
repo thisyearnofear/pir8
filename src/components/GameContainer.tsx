@@ -219,7 +219,8 @@ export default function GameContainer(props: GameContainerProps) {
         setShipActionModalShip(ship);
       },
       decisionTimeMs: decisionTime,
-      currentPlayerName: currentPlayer?.username || 'Pirate',
+      currentPlayerName:
+        gameState.players[gameState.currentPlayerIndex]?.username || 'Pirate',
       onEndTurn: handleEndTurn,
       onCollectResources: handleCollectResources,
     };

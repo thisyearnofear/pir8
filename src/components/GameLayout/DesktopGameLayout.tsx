@@ -319,12 +319,14 @@ export function DesktopGameLayout({
 
                 {activeTab === "actions" && (
                   <>
-                    <ResourceCollectionPanel
-                      gameState={gameState}
-                      currentPlayer={currentPlayer}
-                      onCollectResources={onCollectResources}
-                      isMyTurn={isMyTurn}
-                    />
+                    {!isPracticeMode && (
+                      <ResourceCollectionPanel
+                        gameState={gameState}
+                        currentPlayer={currentPlayer}
+                        onCollectResources={onCollectResources}
+                        isMyTurn={isMyTurn}
+                      />
+                    )}
                     <PirateControls
                       gameState={gameState}
                       onCreateGame={onCreateGame}

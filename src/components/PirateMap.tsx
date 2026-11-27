@@ -8,7 +8,14 @@ import { GameBalance } from "../lib/gameBalance";
 import TerritoryTooltip from "./TerritoryTooltip";
 import { useMobileOptimized } from "@/hooks/useMobileOptimized";
 import { buildVisibilityProjection } from "@/lib/visibility";
-import ChartStage, { type ChartCell, type ChartShip } from "./chart/ChartStage";
+import dynamic from "next/dynamic";
+import type { ChartCell, ChartShip } from "./chart/ChartStage";
+
+// three.js (~1MB) must not ride along with first paint: the chart canvas only
+// mounts after boot when chart mode is on, so split it into its own chunk.
+const ChartStage = dynamic(() => import("./chart/ChartStage"), {
+  ssr: false,
+});
 import { Icon } from "./ui/Icon";
 
 interface PlayerInfo {
@@ -273,8 +280,18 @@ export default function PirateMap({
     setTooltipPosition({ x: event.clientX, y: event.clientY });
   };
 
+  const gridSize = getGridSize();
+
+  const shipByCoordinate = useMemo(() => {
+    const index = new Map<string, Ship>();
+    for (const ship of visibleShips) {
+      index.set(PirateGameManager.coordinateToString(ship.position), ship);
+    }
+    return index;
+  }, [visibleShips]);
+
   const getShipAtPosition = (coordinate: string): Ship | undefined => {
-    return visibleShips.find(ship => PirateGameManager.coordinateToString(ship.position) === coordinate);
+    return shipByCoordinate.get(coordinate);
   };
 
   const isMyShip = (ship: Ship): boolean => {
@@ -304,17 +321,26 @@ export default function PirateMap({
     );
   };
 
+  const threatenedCoordinates = useMemo(() => {
+    const threatened = new Set<string>();
+    if (!currentPlayerPK) return threatened;
+    for (const ship of visibleShips) {
+      if (ship.health <= 0) continue;
+      if (ship.id.startsWith(currentPlayerPK)) continue;
+      const range = GameBalance.SHIP_BALANCE[ship.type].range;
+      for (let x = 0; x < gridSize; x++) {
+        for (let y = 0; y < gridSize; y++) {
+          if (PirateGameManager.calculateDistance(ship.position, { x, y }) <= range) {
+            threatened.add(`${x},${y}`);
+          }
+        }
+      }
+    }
+    return threatened;
+  }, [visibleShips, currentPlayerPK, gridSize]);
+
   const isCoordinateThreatened = (coordinate: string): boolean => {
-    if (!currentPlayerPK) return false;
-    return visibleShips.some((ship) => {
-      if (!isEnemyShip(ship) || ship.health <= 0) return false;
-      const enemyRange = GameBalance.SHIP_BALANCE[ship.type].range;
-      const enemyDistance = PirateGameManager.calculateDistance(
-        ship.position,
-        PirateGameManager.stringToCoordinate(coordinate),
-      );
-      return enemyDistance <= enemyRange;
-    });
+    return threatenedCoordinates.has(coordinate);
   };
 
   const getTacticalState = (coordinate: string) => {
@@ -408,7 +434,6 @@ export default function PirateMap({
     return null;
   };
 
-  const gridSize = getGridSize();
   const totalCells = gridSize * gridSize;
 
   // Indexed once per map change instead of `flatCells.find` inside the cell loop.

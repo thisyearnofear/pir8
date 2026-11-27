@@ -18,6 +18,7 @@ export interface GameSlice {
 
   // Common Getters
   getCurrentPlayer: () => Player | null;
+  getMyPlayer: (walletPk?: string) => Player | null;
   getMyShips: (playerPK: string) => Ship[];
   isMyTurn: (walletPk?: string) => boolean;
   getAllShips: () => Ship[];

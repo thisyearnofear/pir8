@@ -50,7 +50,7 @@ export function GameProvider({ children, wallet }: { children: React.ReactNode, 
   const decisionTime = usePirateGameStore((state) => state.decisionTime);
   const scanChargesRemaining = usePirateGameStore((state) => state.scanChargesRemaining);
   const speedBonusAccumulated = usePirateGameStore((state) => state.speedBonusAccumulated);
-  const getScannedCoordinates = usePirateGameStore((state) => state.getScannedCoordinates);
+  const scannedCoordinatesSet = usePirateGameStore((state) => state.scannedCoordinates);
   const selectShip = usePirateGameStore((state) => state.selectShip);
   const endTurn = usePirateGameStore((state) => state.endTurn);
   const collectResources = usePirateGameStore((state) => state.collectResources);
@@ -59,30 +59,37 @@ export function GameProvider({ children, wallet }: { children: React.ReactNode, 
   const attackWithShip = usePirateGameStore((state) => state.attackWithShip);
   const claimTerritory = usePirateGameStore((state) => state.claimTerritory);
   const passPracticeTurn = usePirateGameStore((state) => state.passPracticeTurn);
-  const getCurrentPlayer = usePirateGameStore((state) => state.getCurrentPlayer);
+  const getMyPlayer = usePirateGameStore((state) => state.getMyPlayer);
   const isMyTurnForWallet = usePirateGameStore((state) => state.isMyTurn);
   const getMyShips = usePirateGameStore((state) => state.getMyShips);
   const getAllShips = usePirateGameStore((state) => state.getAllShips);
 
   const currentPlayer = useMemo(() => {
-    return getCurrentPlayer();
-  }, [getCurrentPlayer]);
+    return getMyPlayer(wallet?.publicKey?.toBase58());
+    // gameState identity drives recompute — the action reference is stable.
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- gameState identity is the reactive input; the getter reads it imperatively
+  }, [getMyPlayer, wallet?.publicKey, gameState]);
 
   const isMyTurn = useMemo(() => {
     return isMyTurnForWallet(wallet?.publicKey?.toBase58());
-  }, [isMyTurnForWallet, wallet?.publicKey]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- gameState/gameMode identity are the reactive inputs; the getter reads them imperatively
+  }, [isMyTurnForWallet, wallet?.publicKey, gameState, gameMode]);
 
   const myShips = useMemo(() => {
-    return wallet?.publicKey ? getMyShips(wallet.publicKey.toBase58()) : [];
-  }, [getMyShips, wallet?.publicKey]);
+    return wallet?.publicKey
+      ? getMyShips(wallet.publicKey.toBase58())
+      : (currentPlayer?.ships.filter((s) => s.health > 0) ?? []);
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- as above
+  }, [getMyShips, wallet?.publicKey, gameState, currentPlayer]);
 
   const allShips = useMemo(() => {
     return getAllShips();
-  }, [getAllShips]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- as above
+  }, [getAllShips, gameState]);
 
   const scannedCoordinates = useMemo(() => {
-    return getScannedCoordinates();
-  }, [getScannedCoordinates]);
+    return Array.from(scannedCoordinatesSet ?? []);
+  }, [scannedCoordinatesSet]);
 
   const value = {
     gameState,
