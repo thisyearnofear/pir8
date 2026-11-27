@@ -1,256 +1,156 @@
 'use client';
 
+/**
+ * BattleInfoPanel — the conditions page of the captain's ledger.
+ *
+ * Token-native rewrite of the neon "BATTLE COMMAND CENTER". What is unique
+ * here stays: the phase and what it means, the weather and what it does,
+ * battlefield totals. What merely repeated the instrument strip (turn number
+ * readouts, weather glyphs as decoration) is gone — one glance hierarchy,
+ * reference detail lives in the ledger.
+ */
+
 import { GameState, WeatherEffect } from '../types/game';
+import { Icon, type IconName } from './ui/Icon';
 
 interface BattleInfoPanelProps {
   gameState: GameState | null;
 }
 
+const WEATHER_DISPLAY: Record<string, { icon: IconName; label: string; description: string }> = {
+  calm: {
+    icon: 'calm',
+    label: 'Calm seas',
+    description: 'Perfect for resource gathering',
+  },
+  trade_winds: {
+    icon: 'trade-winds',
+    label: 'Trade winds',
+    description: 'Swift sailing conditions',
+  },
+  storm: {
+    icon: 'storm',
+    label: 'Storm',
+    description: 'Treacherous waters ahead',
+  },
+  fog: {
+    icon: 'fog',
+    label: 'Fog',
+    description: 'Visibility severely limited',
+  },
+};
+
+const PHASE_DISPLAY: Record<string, { icon: IconName; description: string }> = {
+  deployment: {
+    icon: 'anchor',
+    description: 'Deploy the fleet across the chart',
+  },
+  movement: {
+    icon: 'navigation',
+    description: 'Navigate with tactical precision',
+  },
+  combat: {
+    icon: 'attack',
+    description: 'Ship-to-ship combat',
+  },
+  resource_collection: {
+    icon: 'collect',
+    description: 'Gather resources from controlled territory',
+  },
+};
+
+function Row({ label, children }: { label: string; children: React.ReactNode }) {
+  return (
+    <div className="p8-cell-row" style={{ justifyContent: 'space-between' }}>
+      <span className="p8-label">{label}</span>
+      <span className="p8-value" style={{ fontSize: 'var(--p8-fs-sm)' }}>
+        {children}
+      </span>
+    </div>
+  );
+}
+
 export default function BattleInfoPanel({ gameState }: BattleInfoPanelProps) {
-  const getWeatherEmoji = (weather?: WeatherEffect): string => {
-    if (!weather) return '☀️';
-
-    switch (weather.type) {
-      case 'calm': return '🌊';
-      case 'trade_winds': return '💨';
-      case 'storm': return '⛈️';
-      case 'fog': return '🌫️';
-      default: return '☀️';
-    }
-  };
-
-  const getWeatherDescription = (weather?: WeatherEffect): string => {
-    if (!weather) return 'Clear skies ahead';
-
-    switch (weather.type) {
-      case 'calm':
-        return 'Calm seas - perfect for resource gathering';
-      case 'trade_winds':
-        return 'Trade winds - swift sailing conditions';
-      case 'storm':
-        return 'Violent storm - treacherous waters ahead';
-      case 'fog':
-        return 'Dense fog - visibility severely limited';
-      default:
-        return 'Clear weather conditions';
-    }
-  };
-
-  const getPhaseDescription = (phase: string): string => {
-    switch (phase) {
-      case 'deployment': return 'Deploy your fleet strategically across the battlefield';
-      case 'movement': return 'Navigate the treacherous waters with tactical precision';
-      case 'combat': return 'Engage in fierce ship-to-ship combat';
-      case 'resource_collection': return 'Gather precious resources from controlled territories';
-      default: return 'Strategic planning and coordination phase';
-    }
-  };
-
-  const getPhaseEmoji = (phase: string): string => {
-    switch (phase) {
-      case 'deployment': return '⚓';
-      case 'movement': return '🧭';
-      case 'combat': return '⚔️';
-      case 'resource_collection': return '💰';
-      default: return '🏴‍☠️';
-    }
-  };
-
   if (!gameState) {
     return (
-      <div className="battle-info-panel bg-gradient-to-br from-slate-900 via-slate-800 to-slate-900 
-                      rounded-2xl border-2 border-neon-cyan/30 p-6 relative overflow-hidden">
-        {/* Background elements */}
-        <div className="absolute inset-0 bg-gradient-to-br from-neon-cyan/5 to-neon-gold/5 rounded-2xl"></div>
-        <div className="absolute top-4 right-4 w-16 h-16 bg-neon-cyan/10 rounded-full blur-xl"></div>
-        <div className="absolute bottom-4 left-4 w-12 h-12 bg-neon-gold/10 rounded-full blur-lg"></div>
-
-        <div className="relative text-center">
-          <div className="text-6xl mb-4 filter drop-shadow-2xl">⚓</div>
-          <h3 className="text-xl font-black text-transparent bg-clip-text 
-                         bg-gradient-to-r from-neon-cyan to-neon-gold mb-2">
-            BATTLE COMMAND CENTER
-          </h3>
-          <p className="text-gray-400 font-semibold">Awaiting battle initialization...</p>
-
-          {/* Status indicators */}
-          <div className="mt-6 space-y-3">
-            <div className="flex items-center justify-center gap-2 bg-slate-700/60 rounded-full px-4 py-2">
-              <div className="w-2 h-2 bg-orange-400 rounded-full"></div>
-              <span className="text-sm font-mono text-orange-400">STANDBY</span>
-            </div>
-          </div>
-        </div>
+      <div className="p8-instrument" style={{ padding: 'var(--p8-space-2)' }}>
+        <span className="p8-label">Conditions</span>
+        <p
+          className="p8-text-mute"
+          style={{ fontSize: 'var(--p8-fs-sm)', fontFamily: 'var(--p8-font-ui)', marginTop: 'var(--p8-space-1)' }}
+        >
+          Awaiting battle initialization…
+        </p>
       </div>
     );
   }
 
+  const weather: WeatherEffect | undefined = gameState.globalWeather;
+  const weatherDisplay = weather ? WEATHER_DISPLAY[weather.type] : undefined;
+  const phase = PHASE_DISPLAY[gameState.currentPhase];
+
+  const activeShips = gameState.players.reduce(
+    (total, player) => total + player.ships.filter((ship) => ship.health > 0).length,
+    0,
+  );
+  const controlledTerritories = gameState.players.reduce(
+    (total, player) => total + player.controlledTerritories.length,
+    0,
+  );
+
   return (
-    <div className="battle-info-panel bg-gradient-to-br from-slate-900 via-slate-800 to-slate-900 
-                    rounded-2xl border-2 border-neon-cyan/50 p-6 space-y-6 relative overflow-hidden
-                    shadow-2xl shadow-neon-cyan/20">
-
-      {/* Background elements */}
-      <div className="absolute inset-0 bg-gradient-to-br from-neon-cyan/5 to-neon-gold/5 rounded-2xl"></div>
-      <div className="absolute top-4 right-4 w-20 h-20 bg-neon-cyan/10 rounded-full blur-xl"></div>
-      <div className="absolute bottom-4 left-4 w-16 h-16 bg-neon-gold/10 rounded-full blur-lg"></div>
-
-      {/* Battle Status - Enhanced */}
-      <div className="relative bg-gradient-to-r from-neon-cyan via-neon-blue to-neon-cyan 
-                      rounded-xl p-4 border-2 border-neon-cyan shadow-lg shadow-neon-cyan/30">
-        <div className="flex items-center justify-between mb-3">
-          <h3 className="text-xl font-black text-black drop-shadow-lg flex items-center gap-2">
-            ⚔️ BATTLE COMMAND
-          </h3>
-          <div className="flex items-center gap-2 bg-black/20 rounded-full px-3 py-1">
-            <div className="w-2 h-2 bg-green-400 rounded-full"></div>
-            <span className="text-xs font-bold text-black">ACTIVE</span>
-          </div>
+    <div style={{ display: 'flex', flexDirection: 'column', gap: 'var(--p8-space-3)' }}>
+      {/* Phase — what the fleet is doing this turn */}
+      <div className="p8-instrument" style={{ padding: 'var(--p8-space-2)' }}>
+        <div className="p8-cell-row" style={{ justifyContent: 'space-between', marginBottom: 'var(--p8-space-1)' }}>
+          <span className="p8-label">Phase</span>
+          <span className="p8-cell-row">
+            {phase && <Icon name={phase.icon} size={12} className="p8-text-mute" />}
+            <span className="p8-value" style={{ fontSize: 'var(--p8-fs-sm)', textTransform: 'capitalize' }}>
+              {gameState.currentPhase.replace('_', ' ')}
+            </span>
+          </span>
         </div>
+        {phase && (
+          <p
+            className="p8-text-dim"
+            style={{ fontSize: 'var(--p8-fs-xs)', fontFamily: 'var(--p8-font-ui)', lineHeight: 1.4 }}
+          >
+            {phase.description}
+          </p>
+        )}
+      </div>
 
-        <div className="grid grid-cols-2 gap-4 text-sm">
-          <div className="bg-black/20 rounded-lg p-3">
-            <div className="flex items-center gap-2 mb-1">
-              <span className="text-lg">🎯</span>
-              <span className="text-black font-bold">Turn</span>
-            </div>
-            <span className="text-2xl font-black text-neon-gold drop-shadow">#{gameState.turnNumber}</span>
-          </div>
-
-          <div className="bg-black/20 rounded-lg p-3">
-            <div className="flex items-center gap-2 mb-1">
-              <span className="text-lg">{getPhaseEmoji(gameState.currentPhase)}</span>
-              <span className="text-black font-bold">Phase</span>
-            </div>
-            <span className="text-lg font-black text-neon-gold drop-shadow">
-              {gameState.currentPhase.toUpperCase()}
+      {/* Weather — the sky and what it does to the chart */}
+      {weather && weatherDisplay && (
+        <div className="p8-instrument" style={{ padding: 'var(--p8-space-2)' }}>
+          <div className="p8-cell-row" style={{ justifyContent: 'space-between', marginBottom: 'var(--p8-space-1)' }}>
+            <span className="p8-label">Weather</span>
+            <span className="p8-cell-row">
+              <Icon name={weatherDisplay.icon} size={12} className="p8-text-mute" />
+              <span className="p8-value" style={{ fontSize: 'var(--p8-fs-sm)' }}>
+                {weatherDisplay.label}
+              </span>
             </span>
           </div>
-        </div>
-
-        <div className="mt-3 bg-black/20 rounded-lg p-3">
-          <p className="text-sm text-black font-bold leading-relaxed">
-            {getPhaseDescription(gameState.currentPhase)}
+          <p
+            className="p8-text-dim"
+            style={{ fontSize: 'var(--p8-fs-xs)', fontFamily: 'var(--p8-font-ui)', lineHeight: 1.4, marginBottom: 'var(--p8-space-1)' }}
+          >
+            {weatherDisplay.description}
           </p>
-        </div>
-      </div>
-
-      {/* Weather Conditions - Enhanced */}
-      {gameState.globalWeather && (
-        <div className="relative bg-gradient-to-br from-slate-800/90 to-slate-700/90 
-                        rounded-xl p-4 border border-neon-magenta/50 backdrop-blur-sm">
-          <h4 className="text-lg font-black text-neon-magenta mb-3 flex items-center gap-2">
-            🌊 WEATHER CONDITIONS
-          </h4>
-
-          <div className="flex items-center gap-4 mb-3">
-            <div className="text-4xl filter drop-shadow-lg">
-              {getWeatherEmoji(gameState.globalWeather)}
-            </div>
-            <div className="flex-1">
-              <div className="text-xl font-bold text-neon-cyan capitalize mb-1">
-                {gameState.globalWeather.type.replace('_', ' ')}
-              </div>
-              <div className="text-sm text-gray-300 leading-relaxed">
-                {getWeatherDescription(gameState.globalWeather)}
-              </div>
-            </div>
-          </div>
-
-          <div className="flex items-center justify-between bg-slate-900/60 rounded-lg p-3">
-            <span className="text-sm font-bold text-neon-magenta">Duration:</span>
-            <div className="flex items-center gap-2">
-              <span className="text-lg font-black text-neon-gold">
-                {gameState.globalWeather.duration}
-              </span>
-              <span className="text-sm text-gray-400">turns remaining</span>
-            </div>
-          </div>
+          <Row label="Turns remaining">{weather.duration}</Row>
         </div>
       )}
 
-      {/* Battle Statistics - New */}
-      <div className="relative bg-gradient-to-br from-slate-800/90 to-slate-700/90 
-                      rounded-xl p-4 border border-neon-gold/50 backdrop-blur-sm">
-        <h4 className="text-lg font-black text-neon-gold mb-3 flex items-center gap-2">
-          📊 BATTLEFIELD INTEL
-        </h4>
-
-        <div className="grid grid-cols-2 gap-3">
-          <div className="bg-slate-900/60 rounded-lg p-3 text-center">
-            <div className="text-2xl mb-1">🚢</div>
-            <div className="text-xl font-black text-neon-cyan">
-              {gameState.players.reduce((total, player) =>
-                total + player.ships.filter(ship => ship.health > 0).length, 0
-              )}
-            </div>
-            <div className="text-xs text-gray-400">Active Ships</div>
-          </div>
-
-          <div className="bg-slate-900/60 rounded-lg p-3 text-center">
-            <div className="text-2xl mb-1">🏴‍☠️</div>
-            <div className="text-xl font-black text-neon-magenta">
-              {gameState.players.reduce((total, player) =>
-                total + player.controlledTerritories.length, 0
-              )}
-            </div>
-            <div className="text-xs text-gray-400">Territories</div>
-          </div>
-
-          <div className="bg-slate-900/60 rounded-lg p-3 text-center">
-            <div className="text-2xl mb-1">💰</div>
-            <div className="text-xl font-black text-neon-gold">
-              {gameState.players.reduce((total, player) =>
-                total + player.resources.gold, 0
-              ).toLocaleString()}
-            </div>
-            <div className="text-xs text-gray-400">Total Gold</div>
-          </div>
-
-          <div className="bg-slate-900/60 rounded-lg p-3 text-center">
-            <div className="text-2xl mb-1">👥</div>
-            <div className="text-xl font-black text-neon-blue">
-              {gameState.players.length}
-            </div>
-            <div className="text-xs text-gray-400">Pirates</div>
-          </div>
+      {/* Battlefield totals */}
+      <div className="p8-instrument" style={{ padding: 'var(--p8-space-2)' }}>
+        <div style={{ display: 'flex', flexDirection: 'column', gap: 'var(--p8-space-1)' }}>
+          <span className="p8-label">Battlefield</span>
+          <Row label="Ships afloat">{activeShips}</Row>
+          <Row label="Territory held">{controlledTerritories}</Row>
         </div>
       </div>
-
-      {/* Recent Events - Enhanced */}
-      {gameState.eventLog && gameState.eventLog.length > 0 && (
-        <div className="relative bg-gradient-to-br from-slate-800/90 to-slate-700/90 
-                        rounded-xl p-4 border border-neon-orange/50 backdrop-blur-sm">
-          <h4 className="text-lg font-black text-neon-orange mb-3 flex items-center gap-2">
-            📜 BATTLE LOG
-          </h4>
-
-          <div className="space-y-2 max-h-32 overflow-y-auto custom-scrollbar">
-            {gameState.eventLog?.slice(-5).reverse().map((event) => (
-              <div key={event.id}
-                className="bg-slate-900/60 rounded-lg p-3 border-l-4 border-neon-cyan/50
-                              hover:bg-slate-800/60 transition-all duration-200">
-                <div className="flex items-center gap-2 mb-1">
-                  <span className="bg-neon-cyan/20 text-neon-cyan px-2 py-1 rounded text-xs font-mono font-bold">
-                    T{event.turnNumber}
-                  </span>
-                  <span className="text-xs text-gray-400">
-                    {new Date(event.timestamp || Date.now()).toLocaleTimeString()}
-                  </span>
-                </div>
-                <p className="text-sm text-gray-200 leading-relaxed">{event.description}</p>
-              </div>
-            ))}
-          </div>
-
-          {gameState.eventLog?.length === 0 && (
-            <div className="text-center text-gray-400 py-4">
-              <div className="text-2xl mb-2">📝</div>
-              <p className="text-sm">No battle events yet...</p>
-            </div>
-          )}
-        </div>
-      )}
     </div>
   );
 }

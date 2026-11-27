@@ -224,6 +224,15 @@ Goal: one screen, real game state, no new rules. If this doesn't feel better, st
       (passing is legal on-chain, so practice supports it; guarded on
       human-at-helm from game state, not wallet presence). Keyboard E/C wired
       for the first time; hint row stripped of M/Q which never had handlers.
+- [x] **Slice 3 — Ledger drawer + floating instruments + correctness**:
+      MenuDrawer shared by both layouts (bottom sheet narrow, starboard panel
+      wide — one component, Esc closes, no backdrop-blur). PlayerStats and
+      BattleInfoPanel rewritten token-native (was gradient text, blur orbs,
+      emoji medals); GameEventLog/TerritoryBonusPanel overlays rewritten as
+      instruments, dead full-size variants removed. Correctness: GameContext
+      memos unfrozen (turn state never updated), guest-practice turn ownership
+      game-state-derived, currentPlayer no longer flips to the opponent,
+      PirateMap ship/threat lookups indexed once per fleet change.
 - [ ] Compass rose, brass gauge, sextant, barometer replace panels
 - [ ] `setPrompt` single contextual action
 - [ ] Turn handoff: out → in, two-phase, overlapping, **locked** (Wide's discipline)

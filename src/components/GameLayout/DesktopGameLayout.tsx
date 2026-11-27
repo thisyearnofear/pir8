@@ -11,17 +11,13 @@
 
 import { useState } from "react";
 import PirateMap from "../PirateMap";
-import PlayerStats from "../PlayerStats";
-import BattleInfoPanel from "../BattleInfoPanel";
-import ResourceCollectionPanel from "../ResourceCollectionPanel";
-import PirateControls from "../PirateControls";
-import ShipBuildingPanel from "../ShipBuildingPanel";
 import AIReasoningPanel from "../AIReasoningPanel";
 import TerritoryBonusPanel from "../TerritoryBonusPanel";
 import GameEventLog from "../GameEventLog";
 import ShipActionModal from "../ShipActionModal";
 import InstrumentStrip from "../hud/InstrumentStrip";
 import ActionRail from "../hud/ActionRail";
+import MenuDrawer from "../hud/MenuDrawer";
 import { Haptic } from "@/utils/haptics";
 import { GameState, Ship, Player } from "@/types/game";
 import { AIReasoning } from "@/lib/pirateGameEngine";
@@ -248,120 +244,40 @@ export function DesktopGameLayout({
           <span><kbd>Esc</kbd> Deselect</span>
         </div>
 
-        {/* ===== SLIDE-IN MENU PANEL ===== */}
-        {menuOpen && (
-          <div className="fixed inset-0 z-50 flex">
-            {/* Backdrop */}
-            <div
-              className="absolute inset-0 bg-black/60 backdrop-blur-sm"
-              onClick={() => setMenuOpen(false)}
-            />
-
-            {/* Panel */}
-            <div className="relative ml-auto w-full max-w-md bg-slate-900 border-l border-neon-cyan/30 overflow-y-auto animate-in slide-in-from-right duration-300">
-              {/* Header */}
-              <div className="sticky top-0 bg-slate-900 border-b border-slate-700 p-4 flex items-center justify-between">
-                <h2 className="text-xl font-bold text-neon-cyan">Game Menu</h2>
-                <button
-                  onClick={() => {
-                    Haptic.light();
-                    setMenuOpen(false);
-                  }}
-                  className="p-2 rounded-lg bg-slate-800 hover:bg-slate-700 text-white"
-                >
-                  ✕
-                </button>
-              </div>
-
-              {/* Tab Navigation */}
-              <div className="flex border-b border-slate-700">
-                {(["stats", "actions", "build", "ai"] as const).map((tab) => (
-                  <button
-                    key={tab}
-                    onClick={() => {
-                      setActiveTab(tab);
-                      if (tab === "ai" && onToggleAIReasoning) {
-                        onToggleAIReasoning();
-                        setMenuOpen(false);
-                      }
-                    }}
-                    className={`flex-1 py-3 text-sm font-bold transition-all ${
-                      activeTab === tab
-                        ? "text-neon-cyan border-b-2 border-neon-cyan bg-slate-800/50"
-                        : "text-gray-400 hover:text-white"
-                    }`}
-                  >
-                    {tab === "stats" && "📊 Stats"}
-                    {tab === "actions" && "⚔️ Actions"}
-                    {tab === "build" && "🔨 Build"}
-                    {tab === "ai" && "🧠 AI"}
-                  </button>
-                ))}
-              </div>
-
-              {/* Tab Content */}
-              <div className="p-4 space-y-4">
-                {activeTab === "stats" && (
-                  <>
-                    <PlayerStats
-                      players={gameState.players}
-                      currentPlayerIndex={gameState.currentPlayerIndex}
-                      gameStatus={gameState.gameStatus}
-                      decisionTimeMs={decisionTimeMs}
-                      scanChargesRemaining={scanChargesRemaining}
-                      speedBonusAccumulated={speedBonusAccumulated}
-                      averageDecisionTimeMs={averageDecisionTimeMs}
-                      scannedCoordinates={scannedCoordinates}
-                    />
-                    <BattleInfoPanel gameState={gameState} />
-                  </>
-                )}
-
-                {activeTab === "actions" && (
-                  <>
-                    {!isPracticeMode && (
-                      <ResourceCollectionPanel
-                        gameState={gameState}
-                        currentPlayer={currentPlayer}
-                        onCollectResources={onCollectResources}
-                        isMyTurn={isMyTurn}
-                      />
-                    )}
-                    <PirateControls
-                      gameState={gameState}
-                      onCreateGame={onCreateGame}
-                      onQuickStart={onQuickStart}
-                      onStartGame={onStartGame}
-                      onJoinGame={onJoinGame}
-                      onShipAction={onShipAction}
-                      onEndTurn={onEndTurn}
-                      isCreating={isCreatingGame}
-                      isJoining={isJoining}
-                      joinError={joinError}
-                      onClearJoinError={onClearJoinError}
-                      selectedShipId={selectedShipId || undefined}
-                      onShipSelect={onShipSelect}
-                      onScanCoordinate={async () => {}}
-                      decisionTimeMs={decisionTimeMs}
-                      scanChargesRemaining={scanChargesRemaining}
-                      speedBonusAccumulated={speedBonusAccumulated}
-                      onPracticeMode={onPracticeMode}
-                    />
-                  </>
-                )}
-
-                {activeTab === "build" && (
-                  <ShipBuildingPanel
-                    gameState={gameState}
-                    currentPlayer={currentPlayer}
-                    onBuildShip={onBuildShip}
-                    isMyTurn={isMyTurn}
-                  />
-                )}
-              </div>
-            </div>
-          </div>
-        )}
+        {/* ===== CAPTAIN'S LEDGER =====
+            One drawer for every screen — bottom sheet narrow, starboard
+            panel wide. Panels inside migrate to the token system by slice. */}
+        <MenuDrawer
+          open={menuOpen}
+          onClose={() => setMenuOpen(false)}
+          activeTab={activeTab}
+          onTabChange={setActiveTab}
+          gameState={gameState}
+          currentPlayer={currentPlayer}
+          isMyTurn={isMyTurn}
+          isPracticeMode={isPracticeMode}
+          decisionTimeMs={decisionTimeMs}
+          scanChargesRemaining={scanChargesRemaining}
+          speedBonusAccumulated={speedBonusAccumulated}
+          averageDecisionTimeMs={averageDecisionTimeMs}
+          scannedCoordinates={scannedCoordinates}
+          selectedShipId={selectedShipId}
+          onShipSelect={onShipSelect}
+          onShipAction={onShipAction}
+          onEndTurn={onEndTurn}
+          onCollectResources={onCollectResources}
+          onBuildShip={onBuildShip}
+          onPracticeMode={onPracticeMode}
+          onToggleAIReasoning={onToggleAIReasoning}
+          onCreateGame={onCreateGame}
+          onQuickStart={onQuickStart}
+          onStartGame={onStartGame}
+          onJoinGame={onJoinGame}
+          isCreatingGame={isCreatingGame}
+          isJoining={isJoining}
+          joinError={joinError}
+          onClearJoinError={onClearJoinError}
+        />
       </div>
     </>
   );
