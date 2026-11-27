@@ -127,8 +127,9 @@ A credible hackathon or ecosystem demo should include:
 
 - canonical program ID: `2TZwkCc8ffz7NGWYF3koXyRm75DHq9VL9kvHxXZu8kLy`;
 - public repository with the integration visible in the program diff;
-- Solana Explorer links for the VRF request/callback or ER delegate/commit/undelegate transactions;
-- a short video showing one complete match loop;
+- Solana Explorer links for the VRF request transactions (`2zeXTHpa…`, `4K8Q2SX…`, `ckyZGnt…`) — callback fulfillment pending the shared devnet oracle;
+- the dev-settle proof (game 8840044 → fog/2 turns/fulfilled=1) with the dev-only caveat stated on the record;
+- a short video showing one complete match loop (see `plans/demo-script-vrf-weather.md`);
 - an honest architecture note separating implemented features from design;
 - devnet/test-token framing only.
 
@@ -136,9 +137,9 @@ A credible hackathon or ecosystem demo should include:
 
 Use positioning along these lines, then rewrite it in the team’s own words for any submission:
 
-> PIR8 is a skill-based pirate tournament game where players compete in transparent stake-backed matches. MagicBlock Ephemeral Rollups can make in-match actions fast and gasless, while VRF can make weather and tactical randomness provably fair. Final settlement remains anchored to Solana.
+> PIR8 is a skill-based pirate tournament game where players compete in transparent stake-backed matches. MagicBlock VRF drives the weather loop (request path live on devnet; oracle fulfillment pending), and Ephemeral Rollups can later make in-match actions fast and gasless. Final settlement remains anchored to Solana.
 
-Do not present the current repository as if this integration already exists.
+Present VRF weather as implemented-with-oracle-pending, ER match sessions as designed-only.
 
 ## Risk notes
 

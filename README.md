@@ -263,7 +263,7 @@ pnpm test
 
 **Near-term execution priorities:**
 1. Prove the challenge → match → replay loop end-to-end
-2. Validate whether MagicBlock VRF or Ephemeral Rollups can be integrated without destabilizing the game program
+2. MagicBlock VRF weather is integrated (request path live on devnet, oracle fulfillment pending); Ephemeral Rollup match sessions still to be evaluated
 3. Tournament bracket UI
 4. Privacy-aware onboarding flow
 5. Current demo video and submission-ready explorer evidence

@@ -37,7 +37,7 @@ See [MAGICBLOCK_INTEGRATION.md](./MAGICBLOCK_INTEGRATION.md) for the proposed Ma
 - **Seasonal Competitions**: Monthly/quarterly tournaments with transparent prize accounting
 - **Community Tokens**: Tournament-specific incentives backed by explicit liquidity design
 - **Performance Rewards**: Top finishers earn rewards based on verifiable competitive outcomes
-- **Execution Layer Exploration**: MagicBlock VRF and Ephemeral Rollups are candidate primitives for provably fair randomness and low-friction match sessions; neither is currently implemented
+- **Execution Layer Exploration**: MagicBlock VRF weather is live on devnet (request path + client loop; oracle fulfillment pending); Ephemeral Rollup match sessions remain a candidate primitive, not implemented
 
 ### 4. Viral Growth
 - **Challenge Links**: "Beat my fleet in 5 minutes" as the default share object
@@ -92,7 +92,7 @@ See [MAGICBLOCK_INTEGRATION.md](./MAGICBLOCK_INTEGRATION.md) for the proposed Ma
 ### Phase 3A: Verifiable Match Infrastructure
 **Goal**: Make randomness, session execution, and settlement evidence credible before scaling stakes
 
-- 🔲 **VRF evaluation**: Determine whether MagicBlock VRF can drive weather/hazard outcomes without destabilizing the current Anchor program
+- ✅ **VRF evaluation**: Proven — `request_weather_randomness`/`callback_weather_randomness` + `WeatherState` PDA ship in the game program without destabilizing it (Anchor 0.32.1 + ephemeral-rollups-sdk 0.18)
 - 🔲 **ER evaluation**: Prototype delegation of active match state only if SDK/version compatibility is proven
 - 🔲 **Explorer evidence**: Every competitive demo should link the relevant program transactions
 - 🔲 **Honest boundaries**: Document what is implemented versus designed; do not market planned cryptography as shipped privacy or randomness
@@ -193,8 +193,8 @@ The older dated targets in this document were planning assumptions, not verified
 
 ### Verifiable-infrastructure validation
 
-- If MagicBlock is attempted: working explorer proof for VRF request/callback or ER delegate/commit/undelegate
-- No claims of implemented VRF/ER without corresponding transaction evidence
+- VRF requests carry working explorer proof; the devnet oracle callback is still pending — demos use `debug_settle_weather` (dev-only) until the oracle answers
+- No claims of implemented ER without corresponding transaction evidence
 - Clear separation of devnet test stakes from any future real-value tournament design
 
 ### Growth validation

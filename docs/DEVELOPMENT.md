@@ -136,14 +136,22 @@ When program instructions change:
 
 ## MagicBlock development status
 
-MagicBlock Ephemeral Rollups and VRF are **not currently integrated**. The design path is documented in [MAGICBLOCK_INTEGRATION.md](./MAGICBLOCK_INTEGRATION.md).
+VRF weather is **live on devnet** (request path proven, client loop wired — see [MAGICBLOCK_INTEGRATION.md](./MAGICBLOCK_INTEGRATION.md)); Ephemeral Rollup match sessions remain **designed, not implemented**.
 
-Before implementing it:
+Rules that still apply:
 
-- verify Anchor/SDK compatibility;
-- choose either the VRF weather milestone or the ER match-session milestone;
-- do not claim both in demos unless both are actually working;
+- do not claim ER in demos — it is not working;
+- live VRF fulfillment depends on the shared devnet oracle; `debug_settle_weather` is a demo stand-in, never a competitive path;
 - keep devnet prize/settlement framing explicit.
+
+## Deploying the game program (canonical)
+
+Always deploy with the explicit canonical program ID — the local keypair file (`programs/pir8-game/target/deploy/pir8_game-keypair.json`) does **not** match it, and a bare deploy publishes to the wrong address:
+
+```bash
+./scripts/deploy-canonical.sh
+# equivalent: solana program deploy <SO> --program-id 2TZwkCc8ffz7NGWYF3koXyRm75DHq9VL9kvHxXZu8kLy --url devnet
+```
 
 ## Testing
 

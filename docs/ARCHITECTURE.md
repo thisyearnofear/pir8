@@ -206,17 +206,15 @@ These surfaces are important to the Entertainment Finance positioning because th
 
 ## MagicBlock integration status
 
-MagicBlock is **not currently integrated**.
+MagicBlock VRF weather is **integrated on devnet** (program `2TZwkCc8ffz7NGWYF3koXyRm75DHq9VL9kvHxXZu8kLy`); Ephemeral Rollups remain **designed, not implemented**.
 
-The documented proposal is in [MAGICBLOCK_INTEGRATION.md](./MAGICBLOCK_INTEGRATION.md). The two candidate integration layers are:
+Full research notes and proof links are in [MAGICBLOCK_INTEGRATION.md](./MAGICBLOCK_INTEGRATION.md).
 
-### 1. MagicBlock VRF
+### 1. MagicBlock VRF (live request path)
 
-Use verifiable randomness for weather, hazard, or combat-variance seeds.
+`request_weather_randomness` / `callback_weather_randomness` plus a per-game `WeatherState` PDA (`pending_seed`/`request_count`/`fulfilled_count`; stale callbacks ignored). Requests are accepted on-chain (explorer-proven); live fulfillment depends on the shared devnet oracle. Client loop (`WeatherControl` + store actions) polls `WeatherState` and treats pending as the normal state. `debug_settle_weather` (authority-only, dev demo) exercises the settle path without the oracle — remove before competitive use.
 
-Recommended first milestone because it is bounded and produces clear explorer evidence.
-
-### 2. Ephemeral Rollup match sessions
+### 2. Ephemeral Rollup match sessions (designed, not implemented)
 
 Delegate active match state during gameplay, execute low-friction session actions, then commit/undelegate final state back to Solana.
 
