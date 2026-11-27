@@ -1,307 +1,232 @@
 # PIR8 Development Guide
 
-## Project Structure
+## Repository structure
 
-```
+```text
 pir8/
-├── programs/                 # Solana smart contracts
-│   └── pir8-game/
-│       ├── src/
-│       │   └── lib.rs       # Main program logic
-│       ├── Cargo.toml
-│       └── Anchor.toml
-│
-├── app/                      # Next.js app directory
-│   ├── page.tsx             # Main game interface
-│   ├── layout.tsx           # Root layout
-│   └── globals.css          # Styling
+├── app/                         # Next.js app routes and API routes
+│   ├── api/actions/challenge/   # Solana Action challenge endpoint
+│   ├── api/challenges/          # Challenge data endpoints
+│   ├── api/competitive/         # Competitive profile/leaderboard endpoints
+│   ├── api/moments/             # Replay and battle-moment endpoints
+│   └── replay/[id]/             # Replay viewer route
 │
 ├── src/
-│   ├── components/          # React components
-│   │   ├── GameCockpit/     # Main game UI components
-│   │   ├── PirateControls.tsx
-│   │   ├── PirateMap.tsx
-│   │   └── ...
-│   │
-│   ├── hooks/               # Custom React hooks
-│   │   ├── usePirateGameState.ts
-│   │   ├── useSessionKey.ts     # Privacy via ephemeral wallets
-│   │   └── ...
-│   │
-│   ├── lib/                 # Core libraries
-│   │   ├── integrations.ts  # Helius/Pump integrations
-│   │   ├── anchorClient.ts  # Blockchain interactions
-│   │   ├── gameLogic.ts     # Game rules engine
-│   │   └── ...
-│   │
-│   ├── cli/                 # CLI commands
-│   │   └── commands/
-│   │       ├── game.ts
-│   │       ├── monitor.ts
-│   │       └── token.ts
-│   │
-│   └── types/               # TypeScript types
-│       └── game.ts
+│   ├── agents/                  # Agent and AI opponent logic
+│   ├── components/              # React UI components
+│   ├── contexts/                # React providers/context
+│   ├── hooks/                   # Game, privacy, challenge, replay, audio hooks
+│   ├── lib/
+│   │   ├── client/              # Browser transaction construction
+│   │   ├── engine/              # Game engine logic
+│   │   ├── sdk/                 # Shared SDK helpers
+│   │   ├── server/              # Server-side helpers
+│   │   ├── solana/              # Solana utilities
+│   │   └── anchor.ts            # Program/PDA helpers
+│   ├── store/                   # Zustand state slices
+│   ├── types/                   # TypeScript types
+│   └── utils/                   # Shared utilities
 │
-├── docs/                    # Documentation
-├── tests/                   # Integration tests
-├── Anchor.toml              # Anchor configuration
-├── package.json             # Node dependencies
-└── README.md               # Project overview
+├── packages/
+│   ├── core/                    # Shared game engine/types/utilities
+│   └── mobile/                  # React Native / Expo mobile surface
+│
+├── programs/pir8-game/          # Canonical Anchor program source
+├── public/idl/pir8_game.json    # IDL used by the frontend
+├── scripts/                     # Deployment and verification utilities
+├── tests/                       # Jest/integration tests
+├── docs/                        # Documentation
+├── Anchor.toml                  # Anchor workspace configuration
+└── package.json                 # pnpm workspace scripts and dependencies
 ```
 
-## Development Workflow
+## Canonical on-chain deployment
 
-### Smart Contract Development
+- **Program ID:** `2TZwkCc8ffz7NGWYF3koXyRm75DHq9VL9kvHxXZu8kLy`
+- **Network:** Solana devnet
+- **Anchor:** `0.32.1`
+- **Frontend IDL:** `public/idl/pir8_game.json`
 
-#### Build Contracts
+Do not use older devnet program IDs in new documentation, demos, or environment files unless you are intentionally testing a legacy deployment.
+
+## Package scripts
+
 ```bash
-# Build Anchor program
-anchor build
-
-# Generate TypeScript types
-anchor build --idl
-
-# View program ID
-solana address -k target/deploy/pir8_game-keypair.json
-```
-
-#### Test Contracts
-```bash
-# Run Anchor tests
-anchor test
-
-# Run specific test
-anchor test --skip-deploy -- --test test_create_game
-```
-
-#### Deploy to Devnet
-```bash
-# Install Solana CLI (if not already installed)
-sh -c "$(curl -sSfL https://release.anza.xyz/stable/install)"
-export PATH="$HOME/.local/share/solana/install/active_release/bin:$PATH"
-
-# Configure for devnet
-solana config set --url devnet
-
-# Build program binary
-cd programs/pir8-game
-cargo build-sbf
-
-# Deploy (note: use cargo build-sbf + solana program deploy, not anchor deploy)
-solana program deploy target/deploy/pir8_game.so
-
-# Verify deployment
-solana program show DkkuBQySAxKTADdxQVyx8rjxudZVSwA7ZjRCqRquH5FU
-```
-
-> **Note**: `anchor build` IDL generation has a known incompatibility between `anchor-syn 0.30.1` and the Rust edition 2024 toolchain bundled with Solana CLI 3.x. Use `cargo build-sbf` directly to build the program binary.
-
-### Frontend Development
-
-#### Run Development Server
-```bash
-# Start Next.js dev server
+# Frontend
 pnpm run dev
-
-# Build production bundle
 pnpm run build
-
-# Start production server
 pnpm start
-```
 
-#### Code Quality
-```bash
-# Type checking
-pnpm run type-check
-
-# Linting
+# Quality checks
+pnpm run typecheck
 pnpm run lint
+pnpm test
 
-# Format code
-pnpm run format
+# Mobile workspace
+pnpm run dev:mobile
+pnpm run build:mobile
+
+# Program utilities
+pnpm run anchor:check-program
+pnpm run anchor:deploy-program
+
+# Cleanup
+pnpm run clean
 ```
 
-### CLI Tools
+There is no root `format`, `cli`, or `type-check` script. Use the exact script names above.
 
-#### Initialize Platform
+## Frontend development
+
+### Start the app
+
 ```bash
-# Initialize game configuration (one-time)
-pnpm run cli -- init
-
-# View configuration
-solana account <CONFIG_PDA>
+cp .env.local.example .env.local
+# fill in NEXT_PUBLIC_HELIUS_RPC_URL and NEXT_PUBLIC_PROGRAM_ID
+pnpm run dev
 ```
 
-#### Create & Join Games
+Required core variables:
+
 ```bash
-# Create new game
-pnpm run cli -- create
-
-# Join existing game
-pnpm run cli -- join 0
-
-# Start game (when enough players)
-pnpm run cli -- start 0
+NEXT_PUBLIC_HELIUS_RPC_URL=https://devnet.helius-rpc.com/?api-key=YOUR_KEY
+NEXT_PUBLIC_PROGRAM_ID=2TZwkCc8ffz7NGWYF3koXyRm75DHq9VL9kvHxXZu8kLy
+NEXT_PUBLIC_SOLANA_NETWORK=devnet
 ```
 
-#### Monitor Transactions
+### State and transaction flow
+
+The expected flow for an on-chain action is:
+
+1. Validate the action in local game state.
+2. Build the transaction with the checked-in IDL.
+3. Request a wallet or session-key signature.
+4. Send the transaction through the configured RPC.
+5. Refresh local state from chain or the event/monitoring path.
+6. Surface failures honestly in the UI.
+
+Avoid adding mock success paths for failed chain transactions. The competitive and challenge surfaces are only credible if chain state, local state, and UI state can be reconciled.
+
+## Smart-contract development
+
+The canonical Anchor source path is `programs/pir8-game`. If that directory is absent in a local working tree, restore it before attempting program changes.
+
+Before building or deploying:
+
 ```bash
-# Watch for game events
-pnpm run cli -- monitor
-
-# Create winner token (when game completes)
-pnpm run cli -- token 0
+pnpm run anchor:check-program
 ```
 
-## Code Quality Standards
+Typical workflow:
 
-### TypeScript Best Practices
-
-**Use Strict Typing**:
-```typescript
-interface Player {
-  id: string;
-  resources: Resources;
-  ships: Ship[];
-}
+```bash
+anchor build
+anchor test
+pnpm run anchor:deploy-program
+solana program show 2TZwkCc8ffz7NGWYF3koXyRm75DHq9VL9kvHxXZu8kLy --url devnet
 ```
 
-**Use Utility Types**:
-```typescript
-type PlayerUpdate = Partial<Player>;
-```
+When program instructions change:
 
-### Rust Best Practices
+1. Regenerate the IDL.
+2. Update `public/idl/pir8_game.json` and any generated types.
+3. Update transaction builders in `src/lib/client/`.
+4. Update architecture documentation.
+5. Run typecheck, lint, and relevant tests.
 
-**Error Handling**:
-```rust
-require!(
-    player.resources.gold >= SHIP_COST,
-    PIR8Error::InsufficientFunds
-);
-```
+## MagicBlock development status
 
-**Event Emission**:
-```rust
-emit!(ShipMoved {
-    player: player.key(),
-    ship_id: ship.id,
-    from: ship.position,
-    to: new_position,
-    timestamp: Clock::get()?.unix_timestamp,
-});
-```
+MagicBlock Ephemeral Rollups and VRF are **not currently integrated**. The design path is documented in [MAGICBLOCK_INTEGRATION.md](./MAGICBLOCK_INTEGRATION.md).
 
-**Security Checks**:
-```rust
-#[access_control(check_game_active(&ctx.accounts.game))]
-pub fn make_move(ctx: Context<MakeMove>) -> Result<()> {
-    // Implementation
-}
-```
+Before implementing it:
 
-## Git Workflow
-
-### Branch Naming
-- Feature branches: `feature/description-of-feature`
-- Bug fixes: `fix/description-of-fix`
-- Hotfixes: `hotfix/urgent-fix-description`
-
-### Commit Messages
-
-Follow conventional commits format:
-```
-feat: add new ship type to game
-fix: resolve issue with territory claiming
-refactor: optimize game state serialization
-docs: update architecture documentation
-test: add unit tests for combat system
-```
-
-### Pull Request Process
-
-1. Create PR early, link to issues
-2. Include screenshots for UI changes
-3. Self-review, then request team reviews
-4. Address feedback promptly
-5. Update documentation with code changes
+- verify Anchor/SDK compatibility;
+- choose either the VRF weather milestone or the ER match-session milestone;
+- do not claim both in demos unless both are actually working;
+- keep devnet prize/settlement framing explicit.
 
 ## Testing
 
-### Unit Tests
+### TypeScript and lint gates
 
-Test game logic, utilities, components, and hooks:
-
-```typescript
-import { calculateShipMovement } from '@/lib/gameLogic';
-
-describe('calculateShipMovement', () => {
-  test('should calculate valid move distance', () => {
-    const result = calculateShipMovement({ x: 0, y: 0 }, { x: 2, y: 1 });
-    expect(result.distance).toBe(3);
-  });
-});
+```bash
+pnpm run typecheck
+pnpm run lint
 ```
 
-### Integration Tests
+### Jest tests
 
-Test full game flows and blockchain interactions:
-
-```typescript
-import { initializeGame, joinGame, moveShip } from '@/lib/client/transactionBuilder';
-
-describe('Full Game Flow', () => {
-  test('should complete a full game', async () => {
-    const wallet1 = mockWallet();
-    const wallet2 = mockWallet();
-
-    await initializeGame(wallet1);
-    await joinGame(wallet1);
-    await joinGame(wallet2);
-    await startGame(wallet1);
-    await moveShip(wallet1, 'ship1', 1, 1);
-
-    const finalState = await fetchGlobalGameState();
-    expect(finalState.currentPlayerIndex).toBe(1);
-  });
-});
+```bash
+pnpm test
 ```
+
+### Useful manual verification paths
+
+- practice match without wallet;
+- wallet connect on devnet;
+- challenge creation/joining;
+- on-chain create/join transaction construction;
+- spectator/replay route;
+- mobile responsive surface;
+- program ID consistency check.
+
+For any chain-facing change, include at least one explorer transaction or a clear explanation of why the change cannot produce one.
 
 ## Debugging
 
-**Smart Contracts**:
+### Solana
+
 ```bash
-solana-test-validator              # Start local validator
-solana confirm -v <SIGNATURE>      # Get transaction logs
-solana logs <PROGRAM_ID>           # View program logs
-solana account <ACCOUNT_ADDRESS>   # Check account data
+solana confirm -v <SIGNATURE> --url devnet
+solana program show 2TZwkCc8ffz7NGWYF3koXyRm75DHq9VL9kvHxXZu8kLy --url devnet
+solana logs 2TZwkCc8ffz7NGWYF3koXyRm75DHq9VL9kvHxXZu8kLy --url devnet
 ```
 
-**Frontend**:
+### Frontend
+
+Use descriptive temporary logs while debugging, but remove noisy logs before committing:
+
 ```typescript
-console.debug('[PIR8] Game state updated:', gameState);
-console.warn('[PIR8] Slow transaction detected:', duration);
-console.error('[PIR8] Critical error:', error);
+console.debug("[PIR8] Game state updated", gameState);
+console.warn("[PIR8] Slow transaction detected", durationMs);
+console.error("[PIR8] Transaction failed", error);
 ```
 
-## Deployment
+## Git workflow
 
-**Pre-deployment Checklist**:
-- [ ] All tests pass
-- [ ] Code reviewed
-- [ ] Documentation updated
+### Branch naming
 
-**Deploy to Devnet**:
-```bash
-anchor deploy --provider.cluster devnet
-solana program show <PROGRAM_ID>
-anchor test --skip-local-validator
+- Features: `feature/description`
+- Fixes: `fix/description`
+- Documentation: `docs/description`
+
+### Commit style
+
+Use conventional commits where possible:
+
+```text
+feat: add weather randomness request instruction
+fix: correct challenge transaction account ordering
+docs: clarify canonical program id
+test: cover replay persistence edge case
 ```
 
-## Contributing
+### Pull requests
 
-**Code Review**: Be constructive, specific, and test assumptions.
+Before opening a PR:
 
-**Documentation**: Keep current, be clear, include examples, link related pages.
+- run `pnpm run typecheck`;
+- run `pnpm run lint`;
+- run relevant tests;
+- update docs when behavior, scripts, program IDs, or architecture change;
+- do not mix unrelated refactors with chain-integration changes.
+
+## Documentation expectations
+
+Keep these facts synchronized across `README.md`, `docs/`, `.env.local.example`, and deployment scripts:
+
+- canonical program ID;
+- Anchor version;
+- Next.js/package-manager commands;
+- implemented versus proposed features;
+- whether MagicBlock integration is designed, in progress, or live.

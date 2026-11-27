@@ -1,15 +1,15 @@
 # 🏴‍☠️ PIR8
 
-> **Strategic fleet warfare meets privacy-first blockchain technology**
+> **Strategic fleet warfare meets privacy-oriented blockchain technology**
 
-**✅ LIVE ON DEVNET**: `DkkuBQySAxKTADdxQVyx8rjxudZVSwA7ZjRCqRquH5FU`
+**✅ LIVE ON DEVNET**: `2TZwkCc8ffz7NGWYF3koXyRm75DHq9VL9kvHxXZu8kLy`
 
-A multiplayer pirate naval combat game built on Solana with privacy-first session key architecture. Command your fleet, dominate territories, and earn real rewards through skill-based competitive play.
+A multiplayer pirate naval combat game built on Solana with privacy-oriented session key architecture. Command your fleet, dominate territories, and compete in transparent, stake-backed matches on devnet.
 
 [![Solana](https://img.shields.io/badge/Solana-Devnet-9945FF)](https://solana.com)
-[![Next.js](https://img.shields.io/badge/Next.js-14-black)](https://nextjs.org)
-[![TypeScript](https://img.shields.io/badge/TypeScript-5.0-blue)](https://www.typescriptlang.org)
-[![Anchor](https://img.shields.io/badge/Anchor-0.30-purple)](https://www.anchor-lang.com)
+[![Next.js](https://img.shields.io/badge/Next.js-16-black)](https://nextjs.org)
+[![TypeScript](https://img.shields.io/badge/TypeScript-5.3-blue)](https://www.typescriptlang.org)
+[![Anchor](https://img.shields.io/badge/Anchor-0.32.1-purple)](https://www.anchor-lang.com)
 [![Monolith Hackathon](https://img.shields.io/badge/Monolith-Hackathon-orange)](https://devpost.com)
 
 ---
@@ -26,11 +26,20 @@ PIR8 is a **skill-based strategic naval warfare game** where players command pir
 
 ### Tournament Model
 
-Players compete in **multi-stage tournaments** with real stakes:
+The target competitive model is **multi-stage tournaments** with transparent stakes and rewards:
 - 50-400 players per tournament
 - Performance-based token distribution
-- Liquidity-backed rewards (not worthless meme coins)
+- Liquidity-backed rewards as a design goal, subject to implementation and jurisdiction review
 - Seasonal championships with escalating prizes
+
+### Entertainment Finance / MagicBlock Fit
+
+PIR8 is a natural fit for **Entertainment Finance**: skill-based competition, stake-backed tournaments, resource ownership, and shareable spectator moments. MagicBlock is a possible execution layer for two specific mechanics:
+
+- **Verifiable randomness** for weather, hazards, and combat variance
+- **Ephemeral Rollup match sessions** for low-friction, gasless in-match actions
+
+**Status:** this is a documented integration path, not an implemented MagicBlock integration. See [docs/MAGICBLOCK_INTEGRATION.md](./docs/MAGICBLOCK_INTEGRATION.md).
 
 ---
 
@@ -38,14 +47,14 @@ Players compete in **multi-stage tournaments** with real stakes:
 
 ```bash
 # Install dependencies
-npm install
+pnpm install
 
 # Set up environment
 cp .env.local.example .env.local
 # Add your Helius RPC URL
 
 # Run development server
-npm run dev
+pnpm run dev
 ```
 
 Open [http://localhost:3000](http://localhost:3000) and connect your Solana wallet!
@@ -140,41 +149,40 @@ Open [http://localhost:3000](http://localhost:3000) and connect your Solana wall
 
 ## 🏆 Tournament Economics
 
-### How It Works
+### Economic model status
 
-```
-400 Captains × 0.1 SOL Entry = 40 SOL Prize Pool
+Tournament economics are still a design surface, not a finalized or audited monetary system. An older draft mixed token-supply percentages with SOL prize-pool backing and did not sum to 100%, so it should not be reused as-is.
 
-Token Distribution:
-├─ Pirate King (1st):   5% supply  (~2 SOL value)
-├─ Admiral Fleet:      15% supply  (~6 SOL value)
-├─ Captain's Circle:   20% supply  (~8 SOL value)
-├─ Crew Members:       25% supply (~10 SOL value)
-├─ Active Pirates:     15% supply  (~6 SOL value)
-├─ Treasure Vault:     50% supply (20 SOL backing)
-└─ Harbor Fees:        10% supply  (~4 SOL revenue)
-```
+Before any real-value tournament, the project needs an explicit published split for:
 
-### Why This Model Works
+- gross player entries;
+- winner and performance rewards;
+- liquidity/treasury backing;
+- platform or harbor fees;
+- refunds, cancellations, and abandoned matches.
 
-1. **Real Liquidity**: 50% of pool backs token value
-2. **Broad Distribution**: 100+ players earn rewards
-3. **Skill-Based**: Top performers get most value
-4. **Sustainable**: Platform fees cover operations
-5. **Community**: Shared tournament creates token holders
+Current development and demonstrations should use Solana devnet/test value only. Real-money prize, gaming, custody, and jurisdiction requirements are not solved by the current contracts.
+
+### Design goals
+
+1. **Transparent accounting**: prize and fee allocation is published before entry
+2. **Broad participation**: rewards are not limited to a single winner
+3. **Skill-weighted outcomes**: performance matters more than wallet size
+4. **Sustainable operations**: fees and treasury usage are explicit
+5. **Community formation**: tournaments create repeatable competition and spectator interest
 
 ---
 
 ## 🛠️ Tech Stack
 
 ### Blockchain
-- **Solana**: Sub-second finality, low fees, 65k TPS capacity
-- **Anchor Framework**: Type-safe smart contracts in Rust
+- **Solana**: Low-latency confirmation and low transaction fees
+- **Anchor Framework 0.32.1**: Type-safe smart contracts in Rust
 - **Helius**: Enhanced RPC, real-time WebSocket monitoring
-- **Session Keys**: Ephemeral wallet identity for private gameplay (leveraging AgentRegistry delegate pattern)
+- **Session Keys**: Ephemeral delegated keys for lower-friction, pseudonymous gameplay (using the AgentRegistry delegate pattern)
 
 ### Frontend
-- **Next.js 14**: React framework with App Router
+- **Next.js 16**: React framework with App Router
 - **TypeScript**: Type-safe development
 - **Tailwind CSS**: Utility-first styling
 - **Solana Wallet Adapter**: Multi-wallet support
@@ -193,7 +201,8 @@ Token Distribution:
 | [docs/ARCHITECTURE.md](./docs/ARCHITECTURE.md) | System architecture and technical details |
 | [docs/DEVELOPMENT.md](./docs/DEVELOPMENT.md) | Development workflow and contributing |
 | [docs/VISION.md](./docs/VISION.md) | Project vision and roadmap |
-| [docs/PRODUCT_EXECUTION_PLAN.md](./docs/PRODUCT_EXECUTION_PLAN.md) | Product repositioning, game loop, growth hooks, and execution roadmap |
+| [docs/MAGICBLOCK_INTEGRATION.md](./docs/MAGICBLOCK_INTEGRATION.md) | Proposed Ephemeral Rollup / VRF integration path |
+| [plans/practice-mode-privacy-design.md](./plans/practice-mode-privacy-design.md) | Practice-mode privacy education design |
 
 ---
 
@@ -202,89 +211,76 @@ Token Distribution:
 ### Smart Contracts
 
 ```bash
-# Build Anchor program
-anchor build
+# Check program configuration before building
+pnpm run anchor:check-program
 
-# Run tests
+# Build/test when the Anchor program source is present
+anchor build
 anchor test
 
-# Deploy to devnet
-anchor deploy --provider.cluster devnet
+# Use the repository deployment workflow
+pnpm run anchor:deploy-program
 ```
 
-### CLI Tools
-
-```bash
-# Initialize platform config
-npm run cli -- init
-
-# Create game
-npm run cli -- create
-
-# Join game
-npm run cli -- join 0
-
-# Monitor transactions
-npm run cli -- monitor
-```
 
 ### Testing
 
 ```bash
 # Type checking
-npm run type-check
+pnpm run typecheck
 
 # Linting
-npm run lint
+pnpm run lint
 
 # Integration tests
-npm run test
+pnpm test
 ```
 
 ---
 
 ## 🎯 Current Status
 
-### Phase 1B: MVP Deployed & Working (April 2026)
+### November 2026 documentation refresh
 
 **✅ Deployed to Solana Devnet:**
-- **Program ID**: `DkkuBQySAxKTADdxQVyx8rjxudZVSwA7ZjRCqRquH5FU`
-- **Anchor**: 0.30 / Solana CLI 3.1.12
-- **Working Instructions**: full game lifecycle + session key delegate instructions
-- **Frontend**: TypeScript clean, session key flow wired end-to-end
+- **Program ID**: `2TZwkCc8ffz7NGWYF3koXyRm75DHq9VL9kvHxXZu8kLy`
+- **Anchor**: 0.32.1 / Solana CLI 3.x
+- **IDL instructions**: full game lifecycle + session-key delegate instructions
+- **Frontend**: transaction builders consume the checked-in IDL and canonical program ID
 
-**✅ What Works Right Now:**
+**Documented capabilities:**
 - Connect wallet → create lobby → join game
-- "Play Privately" toggle: generates ephemeral session key, delegates via AgentRegistry, joins game without exposing main wallet
+- "Play Privately" toggle: generates an ephemeral session key and delegates through AgentRegistry so routine gameplay actions do not require the main wallet
 - Real-time updates via Helius WebSocket
 - Multi-wallet support (Phantom, Solflare, Backpack)
 
-**🚧 Next Up:**
+**Active product directions:**
 1. End-to-end session key smoke test with live users
 2. Ghost Fleet game design (privacy as a mechanic: ambush bonus, reduced scan range)
 3. Lobby split: Public Arena / Shadow Arena
-3. Create UI for "Private Entry via Session Key" flow
-4. Demo: Player joins game with ephemeral identity, main wallet unlinkable
+4. Create UI for "Private Entry via Session Key" flow
+5. Demo: Player joins game with an ephemeral session identity; document the remaining public delegation link honestly
 
-**Days 7+**: Polish & Zypherpunk Submission
-1. Tournament bracket UI
-2. Privacy-first onboarding flow
-3. Zypherpunk submission docs: Privacy narrative + gameplay video
-4. Security audit report (contract hardening already complete)
+**Near-term execution priorities:**
+1. Prove the challenge → match → replay loop end-to-end
+2. Validate whether MagicBlock VRF or Ephemeral Rollups can be integrated without destabilizing the game program
+3. Tournament bracket UI
+4. Privacy-aware onboarding flow
+5. Current demo video and submission-ready explorer evidence
 
-### Phase 2: Skill Depth (After Zypherpunk - Weeks 2-3)
+### Phase 2: Skill Depth
 - [ ] Advanced fog of war mechanics
 - [ ] Intel/reconnaissance system
 - [ ] Timing-based bonuses for fast decisions
 - [ ] Combo reward system for multi-turn strategies
 
-### Phase 3: Tournaments (After Phase 1 & 2)
+### Phase 3: Tournaments
 - [ ] Tournament smart contracts with bracket management
 - [ ] Token distribution (Pump.fun integration)
 - [ ] Reputation/ELO system
 - [ ] Spectator mode
 
-**See [ROADMAP.md](./docs/ROADMAP.md) for detailed timeline**
+**See [docs/VISION.md](./docs/VISION.md) for the current roadmap**
 
 ---
 
@@ -296,22 +292,22 @@ npm run test
 - Pay-to-win dominance
 - Unsustainable token economics
 - Luck-based gameplay
-- No privacy
+- Transparent gameplay information leakage
 - Poor UX
 
 ✅ **Our Solutions**:
 - Skill-based competition
-- Liquidity-backed tokens
+- Transparently backed tournament incentives
 - Strategic depth (70% skill / 30% luck)
-- Session key privacy (no server signing required)
+- Pseudonymous session-key delegation (no server signing required)
 - Solana speed + familiar UI
 
 ### Competitive Advantages
 
-1. **First Privacy-Focused Competitive Game**
-2. **Proven Tournament Model** (poker, esports)
-3. **Sustainable Economics** (no ponzi mechanics)
-4. **Production-Ready Code** (not vaporware)
+1. **Distinctive privacy-oriented tactical game design**
+2. **Tournament model inspired by proven competitive formats**
+3. **Sustainable economics as a design constraint**
+4. **Working devnet prototype**
 5. **Community-Driven** (tournaments build organic growth)
 
 ---
@@ -355,6 +351,6 @@ This project is licensed under the MIT License - see [LICENSE](./License.txt) fo
 
 ---
 
-**Built with ⚡ Solana, 🔥 Helius, 🔒 Privacy, and 🏴‍☠️ Pirate Spirit**
+**Built with ⚡ Solana, 🔥 Helius, 🔑 session keys, and 🏴‍☠️ pirate spirit**
 
 *Join the crew. Master the seas. Earn real treasure.*

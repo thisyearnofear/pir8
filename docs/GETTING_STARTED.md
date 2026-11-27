@@ -2,256 +2,173 @@
 
 ## Overview
 
-PIR8 is a privacy-first strategic naval combat platform combining session key privacy architecture with skill-based competitive gameplay on Solana.
+PIR8 is a privacy-oriented strategic naval combat game on Solana. Players command fleets, contest territory, manage resources, and compete in stake-backed matches and tournaments.
+
+The current frontend uses the canonical devnet program and checked-in IDL. Rebuilding or modifying the on-chain program requires the Anchor/Rust toolchain; running the frontend does not.
+
+## Canonical deployment
+
+- **Devnet program ID:** `2TZwkCc8ffz7NGWYF3koXyRm75DHq9VL9kvHxXZu8kLy`
+- **Public IDL:** `public/idl/pir8_game.json`
+- **Anchor version:** `0.32.1`
+- **Network:** Solana devnet
+
+Older program IDs may still exist on devnet, but they are not the canonical target for this repository.
 
 ## Prerequisites
 
-- Node.js 18+ installed
-- Rust 1.75+ (for Anchor contract development)
-- Solana CLI 3.1+ installed
-- Anchor CLI 0.30+ installed
+For the frontend:
+
+- Node.js 20+ recommended
+- pnpm 10+
 - Solana wallet (Phantom, Solflare, or Backpack)
-- ~1 SOL on Devnet (for testing)
+- Helius devnet RPC key
+
+For smart-contract development:
+
+- Rust toolchain compatible with Anchor `0.32.1`
+- Solana CLI 3.x
+- Anchor CLI `0.32.1`
+- Devnet SOL for deployment/testing
 
 ## Installation
 
 ```bash
-# Clone repository
 git clone https://github.com/thisyearnofear/pir8.git
 cd pir8
-
-# Install dependencies
 pnpm install
-
-# Set up environment
 cp .env.local.example .env.local
 ```
 
-## Environment Configuration
+## Environment configuration
 
-Add these variables to your `.env.local` file:
+Set these variables in `.env.local`:
 
 ```bash
-# Solana RPC URL (get from helius.dev)
-NEXT_PUBLIC_HELIUS_RPC=https://devnet.helius-rpc.com/?api-key=YOUR_KEY
+# Helius devnet RPC
+NEXT_PUBLIC_HELIUS_RPC_URL=https://devnet.helius-rpc.com/?api-key=YOUR_KEY
+HELIUS_API_KEY=YOUR_KEY
 
-# Program ID (deployed to devnet)
-NEXT_PUBLIC_PROGRAM_ID=DkkuBQySAxKTADdxQVyx8rjxudZVSwA7ZjRCqRquH5FU
-
-# Solana network
+# Canonical PIR8 devnet program
+NEXT_PUBLIC_PROGRAM_ID=2TZwkCc8ffz7NGWYF3koXyRm75DHq9VL9kvHxXZu8kLy
 NEXT_PUBLIC_SOLANA_NETWORK=devnet
 ```
 
-## Quick Start
+Optional services such as Supabase, Venice AI, and Pump.fun are not required for the core local game loop.
 
-### Build & Deploy Contracts
-
-```bash
-# Build program binary (note: anchor build IDL step has a known toolchain issue)
-cd programs/pir8-game
-cargo build-sbf
-
-# Deploy to devnet
-export PATH="$HOME/.local/share/solana/install/active_release/bin:$PATH"
-solana config set --url devnet
-solana program deploy target/deploy/pir8_game.so
-
-# Run the frontend
-cd ../..
-npm run dev
-# Opens http://localhost:3000 with wallet connection UI
-```
-
-## Development Commands
-
-### Smart Contract Development
+## Run the app
 
 ```bash
-# Build Anchor program
-anchor build
-
-# Generate TypeScript types
-anchor build --idl
-
-# Run Anchor tests
-anchor test
-
-# Deploy to devnet
-anchor deploy --provider.cluster devnet
-
-# Verify deployment
-solana program show <PROGRAM_ID>
-```
-
-### Frontend Development
-
-```bash
-# Start Next.js dev server
 pnpm run dev
+```
 
-# Build production bundle
+Open [http://localhost:3000](http://localhost:3000), connect a devnet wallet, and use the practice or challenge flow.
+
+## Useful commands
+
+```bash
+# Production build
 pnpm run build
 
-# Start production server
-pnpm start
+# TypeScript validation
+pnpm run typecheck
 
-# Type checking
-pnpm run type-check
-
-# Linting
+# Lint app and src
 pnpm run lint
 
-# Format code
-pnpm run format
+# Jest tests
+pnpm test
+
+# Check program ID / IDL / env consistency
+pnpm run anchor:check-program
+
+# Build and deploy the program through the repository script
+pnpm run anchor:deploy-program
 ```
 
-### CLI Tools
+There is currently no root `format`, `cli`, or `type-check` package script. Older documentation that references those commands is stale.
+
+## Smart-contract workflow
+
+The canonical Anchor source path is `programs/pir8-game`. The frontend integration uses the deployed program ID plus `public/idl/pir8_game.json`.
+
+Typical contract workflow:
 
 ```bash
-# Initialize game configuration (one-time)
-pnpm run cli -- init
+# Check configuration consistency first
+pnpm run anchor:check-program
 
-# Create new game
-pnpm run cli -- create
+# Build with Anchor when the program source is present
+anchor build
 
-# Join existing game
-pnpm run cli -- join 0
+# Or use the repository deployment workflow
+pnpm run anchor:deploy-program
 
-# Start game (when enough players)
-pnpm run cli -- start 0
-
-# Watch for game events
-pnpm run cli -- monitor
+# Verify the canonical deployment
+solana program show 2TZwkCc8ffz7NGWYF3koXyRm75DHq9VL9kvHxXZu8kLy --url devnet
 ```
 
-## Session Key Privacy
+If `programs/pir8-game` is absent in a local working tree, frontend development can still proceed against the checked-in IDL, but program rebuilding cannot. Restore the program source before attempting contract changes.
 
-### Overview
+## Session-key privacy flow
 
-PIR8 uses **ephemeral session keys** for private gameplay — no cross-chain bridge or server-side signing required:
+PIR8 uses ephemeral session keys for lower-friction, pseudonymous gameplay rather than a cross-chain bridge or server-side signing service:
 
-1. Player generates an ephemeral keypair in-browser
-2. Player calls `delegate_agent_control(session_pubkey)` from their main wallet (one signature)
-3. Player funds the session key with a small amount of SOL for gas
-4. Session key joins and plays the game — main wallet never touches the game PDA
-5. At game end, rewards are claimable back to the main wallet via the AgentRegistry link
-6. **Privacy preserved**: Session key is unlinkable to main wallet on-chain
+1. The player generates an ephemeral keypair in the browser.
+2. The main wallet delegates limited control to that session key.
+3. The session key signs gameplay transactions.
+4. The main wallet does not need to appear directly on routine game actions.
+5. Rewards or final outcomes can be linked back through the registry/delegation flow.
 
-### Why Session Keys Instead of Cross-Chain Bridges?
+The delegation link is public on-chain. Session keys reduce direct main-wallet interaction and improve operational pseudonymity, but they do not provide strong anonymity or unlinkability by themselves. Public match accounts can still reveal gameplay state; stronger privacy would require additional cryptographic or execution-layer design.
 
-| | Session Keys | Cross-Chain Bridge |
-|---|---|---|
-| **Join time** | ~2 seconds | ~2 minutes |
-| **Server cost** | Zero (user pays gas) | Requires funded relay wallet |
-| **Privacy model** | Unlinkable ephemeral identity | Bridge server knows both identities |
-| **Complexity** | Solana-native, no external deps | Requires Zcash node + gRPC + relay |
-| **User experience** | One extra signature | Send Zcash tx, wait, hope it works |
+This session-key design is separate from MagicBlock Ephemeral Rollups. MagicBlock integration is currently a proposal, not implemented functionality; see [MAGICBLOCK_INTEGRATION.md](./MAGICBLOCK_INTEGRATION.md).
 
-## Key Concepts
+## Game flow
 
-### Game Flow
-
-1. **Create Game**
-   - Creator sets entry fee and max players (2-4)
-   - Game enters "Waiting" status
-   - 10x10 strategic map generated with biomes
-   - Starting fleets deployed at player corners
-
-2. **Join Game**
-   - Players pay entry fee
-   - Entry fee split: 95% to pot, 5% to platform
-   - Each player gets 2 starting ships (Sloop + Frigate)
-   - Game auto-starts when min players (2) join
-
-3. **Gameplay** (Turn-based, 10x10 map)
-   - Players move ships within speed range
-   - Attack enemy ships within adjacent range
-   - Claim territories (ports, islands, treasures)
-   - Collect resources from controlled territories
-   - Build new ships at controlled ports
-   - Dynamic weather affects movement and combat
-
-4. **Victory Conditions** (First to achieve wins)
-   - **Fleet Dominance**: Control 65% of naval power
-   - **Territory Control**: Own 50% of valuable territories
-   - **Economic Victory**: Accumulate 10,000+ resource value
-
-5. **Completion**
-   - Winner determined by victory condition achieved
-   - Winner claims prize from pot (85% of total)
-   - Game account closed, rent returned
-
-### Territory Types
-
-| Territory | Resources | Strategic Value |
-|-----------|-----------|-----------------|
-| **Port** | 5 gold/2 crew | Ship building hub |
-| **Island** | 3 supplies | Supply line |
-| **Treasure** | 10 gold | Wealth generator |
-| **Water** | None | Safe passage |
-| **Storm** | Damage | Hazard (-50% movement) |
-| **Reef** | Damage | Hidden hazard |
-| **Whirlpool** | Deadly | Extreme danger |
-
-### Ship Types
-
-| Ship | Speed | HP | Cost | Role |
-|------|-------|----|----|----|
-| **Sloop** | 3 | 100 | 500 | Fast scout |
-| **Frigate** | 2 | 200 | 1200 | Balanced warship |
-| **Galleon** | 1 | 350 | 2500 | Heavy battleship |
-| **Flagship** | 1 | 500 | 5000 | Ultimate vessel |
-
-### Skill Mechanics (70% Skill / 30% Luck)
-
-**Fleet Management** (Strategic):
-- Choose ship types based on role (scout, fighter, heavy)
-- Balance speed vs. durability
-- Position for optimal attack/defense
-
-**Economic Depth** (Strategic):
-- Resource allocation for ship building
-- Territory control for passive income
-- Supply chain management
-
-**Tactical Combat** (Strategic):
-- Range management (adjacent only)
-- Damage calculation (attack - defense)
-- Weather advantage timing
-
-**Timing Bonuses**:
-- Fast decisions earn experience
-- <5s: +100 points, <10s: +50 points, <15s: +25 points
+1. **Create or join a match** — a creator configures entry terms and players join through the program.
+2. **Command the fleet** — move ships, attack opponents, scan coordinates, claim territories, collect resources, and build ships.
+3. **Adapt to the map** — ports, islands, treasure sites, storms, reefs, and whirlpools have different strategic effects.
+4. **Win the match** — victory is determined by fleet dominance, territorial control, or economic strength.
+5. **Share the outcome** — challenge, replay, leaderboard, and spectator surfaces are intended to turn matches into distribution loops.
 
 ## Troubleshooting
 
-### "Insufficient funds" Error
-```bash
-# Airdrop SOL on devnet
-solana airdrop 2
+### Program ID mismatch
 
-# Check balance
-solana balance
+The canonical ID is `2TZwkCc8ffz7NGWYF3koXyRm75DHq9VL9kvHxXZu8kLy`. If the app reports a mismatch, compare:
+
+- `NEXT_PUBLIC_PROGRAM_ID` in `.env.local`
+- `public/idl/pir8_game.json`
+- `Anchor.toml`
+- `src/lib/anchor.ts`
+- `src/utils/constants.ts`
+
+Then run:
+
+```bash
+pnpm run anchor:check-program
 ```
 
-### "Program not found" Error
-```bash
-# Verify program is deployed
-solana program show <PROGRAM_ID>
+### Insufficient devnet funds
 
-# Redeploy if needed
-anchor deploy --provider.cluster devnet
+```bash
+solana airdrop 2 --url devnet
+solana balance --url devnet
 ```
 
-### Wallet Connection Issues
-- Clear browser cache
-- Try different wallet (Phantom vs Solflare vs Backpack)
-- Check network settings (devnet vs mainnet)
+### Wallet connection issues
 
-### Build Errors
+- Confirm the wallet is on devnet.
+- Clear stale wallet adapter state/browser storage.
+- Try Phantom, Solflare, or Backpack.
+- Check that the Helius RPC URL includes a valid API key.
+
+### Frontend build issues
+
 ```bash
-# Clean and reinstall
-rm -rf node_modules .next
+pnpm run clean
 pnpm install
+pnpm run typecheck
 pnpm run build
 ```

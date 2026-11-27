@@ -121,10 +121,7 @@ async function main() {
     } catch (error) {
         if (error.message.includes("Account does not exist")) {
             console.log("❌ Game not initialized yet!");
-            console.log("\nTo initialize:");
-            console.log("  anchor test --skip-deploy");
-            console.log("  or");
-            console.log("  npm run cli -- init");
+            console.log("\nCreate or initialize a game through the app or the program test workflow.");
         } else {
             console.log("❌ Error fetching game state:");
             console.log(error.message);

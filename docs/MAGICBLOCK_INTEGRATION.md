@@ -1,6 +1,6 @@
 # MagicBlock Integration Plan
 
-**Status:** design notes only. PIR8 does **not** currently integrate MagicBlock Ephemeral Rollups or VRF.
+**Status:** PIR8 does **not** currently integrate MagicBlock Ephemeral Rollups or VRF in its game program. The VRF request/callback pattern is **proven by an isolated spike** (`spikes/vrf-compat-check`, devnet program `88YCejHKiTb1psuXt7nWjvf3L36GgQ14sWNWHqNtk2Qd`): Anchor 0.32.1 + `ephemeral-rollups-sdk@0.18` builds, requests are accepted on devnet with correct fees, MagicSVM delivers the callback in-process, and the callback body simulates at 849 CU. Shared-oracle fulfillment on devnet is the remaining ops question; see [VRF request lifecycle](#vrf-request-lifecycle-researched-2026-11-27) and `plans/blitz-vrf-spike-plan.md`.
 
 Last reviewed: 2026-11-27
 
