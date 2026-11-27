@@ -24,7 +24,12 @@ Canonical: program `2TZwkCc8ffz7NGWYF3koXyRm75DHq9VL9kvHxXZu8kLy`, devnet, Ancho
 - [x] GATE (compile+deploy+request): PASSED — spike builds, deploys, requests accepted. Fulfillment pending oracle-side; proceeding with retry-tolerant design.
 - [x] Retry loop in spike: `retry-test.mjs` (fresh `caller_seed` per attempt, 60s timeout, `request_randomness(seed, high_priority)` + stale-seed-rejecting callback + `pending_seed/request_count/fulfilled_count` state). 5 attempts, no false fulfillment — mechanics proven, oracle silent.
 - [x] Local-oracle validation PASSED: MagicSVM test green (`tests-magicsvm/tests/vrf_retry.rs`), warp delivers exactly 1 callback through the identity gate; callback body = 849 CU on devnet via `debug_settle_demo` probe. Code path proven; devnet fulfillment is ops-only.
-- [ ] Ask Telegram engineers with both sigs (`41Tromay...` unfulfilled vs `bdYPqo...` fulfilled, queue `Cuj97...`)
+- [ ] Ask Telegram engineers with both sigs (`41Tromay...` unfulfilled vs `bdYPqo...` fulfilled, queue `Cuj97...`) — DEFERRED (deadline): proceeding without live-oracle confirmation
+
+## Phase 4 — PIR8 port (DONE 2026-11-27, no oracle response)
+- [x] `src/instructions/weather.rs`: `request_weather_randomness(seed, high_priority)` + `callback_weather_randomness`, `WeatherState` PDA per game, stale-seed rejection, roll 1-100 mapped Calm/TradeWinds/Storm/Fog + `2 + rnd%4` turn duration
+- [x] Deployed to canonical devnet program; `scripts/prove-weather-vrf.mjs`: game created + 3 requests accepted (`2zeXTHpa…`, `4K8Q2SX…`, `ckyZGnt…`), `requests=3 fulfilled=0` — code path live, oracle silent
+- [x] `public/idl/pir8_game.json` regenerated and synced
 
 ## Phase 2 — PIR8 VRF wedge (only if Phase 1 passes)
 - [ ] Add `request_weather_randomness` / `callback_weather_randomness` + seed/status/turn fields to `PirateGame`

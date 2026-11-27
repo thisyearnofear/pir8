@@ -135,6 +135,26 @@ pub mod pir8_game {
     }
 
     // ============================================================================
+    // VRF WEATHER
+    // ============================================================================
+
+    pub fn request_weather_randomness(
+        ctx: Context<RequestWeatherRandomness>,
+        client_seed: u8,
+        high_priority: bool,
+    ) -> Result<()> {
+        instructions::request_weather_randomness(ctx, client_seed, high_priority)
+    }
+
+    pub fn callback_weather_randomness(
+        ctx: Context<CallbackWeatherRandomness>,
+        randomness: [u8; 32],
+        client_seed: u8,
+    ) -> Result<()> {
+        instructions::callback_weather_randomness(ctx, randomness, client_seed)
+    }
+
+    // ============================================================================
     // ADMIN
     // ============================================================================
 

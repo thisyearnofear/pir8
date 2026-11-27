@@ -181,6 +181,55 @@
       ]
     },
     {
+      "name": "callback_weather_randomness",
+      "discriminator": [
+        69,
+        64,
+        210,
+        49,
+        39,
+        167,
+        157,
+        114
+      ],
+      "accounts": [
+        {
+          "name": "vrf_program_identity",
+          "docs": [
+            "Scoped VRF identity PDA, bound to this program. Its presence as a signer proves",
+            "the callback was issued by the VRF program for this program."
+          ],
+          "signer": true
+        },
+        {
+          "name": "weather",
+          "writable": true
+        },
+        {
+          "name": "game",
+          "writable": true,
+          "relations": [
+            "weather"
+          ]
+        }
+      ],
+      "args": [
+        {
+          "name": "randomness",
+          "type": {
+            "array": [
+              "u8",
+              32
+            ]
+          }
+        },
+        {
+          "name": "client_seed",
+          "type": "u8"
+        }
+      ]
+    },
+    {
       "name": "check_and_complete_game",
       "discriminator": [
         246,
@@ -930,6 +979,128 @@
       ]
     },
     {
+      "name": "request_weather_randomness",
+      "discriminator": [
+        89,
+        33,
+        86,
+        91,
+        52,
+        175,
+        90,
+        21
+      ],
+      "accounts": [
+        {
+          "name": "game",
+          "writable": true,
+          "pda": {
+            "seeds": [
+              {
+                "kind": "const",
+                "value": [
+                  112,
+                  105,
+                  114,
+                  97,
+                  116,
+                  101,
+                  95,
+                  103,
+                  97,
+                  109,
+                  101
+                ]
+              },
+              {
+                "kind": "account",
+                "path": "game.game_id",
+                "account": "PirateGame"
+              }
+            ]
+          }
+        },
+        {
+          "name": "weather",
+          "writable": true,
+          "pda": {
+            "seeds": [
+              {
+                "kind": "const",
+                "value": [
+                  119,
+                  101,
+                  97,
+                  116,
+                  104,
+                  101,
+                  114
+                ]
+              },
+              {
+                "kind": "account",
+                "path": "game"
+              }
+            ]
+          }
+        },
+        {
+          "name": "authority",
+          "writable": true,
+          "signer": true,
+          "relations": [
+            "game"
+          ]
+        },
+        {
+          "name": "oracle_queue",
+          "writable": true
+        },
+        {
+          "name": "system_program",
+          "address": "11111111111111111111111111111111"
+        },
+        {
+          "name": "program_identity",
+          "pda": {
+            "seeds": [
+              {
+                "kind": "const",
+                "value": [
+                  105,
+                  100,
+                  101,
+                  110,
+                  116,
+                  105,
+                  116,
+                  121
+                ]
+              }
+            ]
+          }
+        },
+        {
+          "name": "vrf_program",
+          "address": "Vrf1RNUjXmQGjmQrQLvJHs9SNkvDJEsRVFPkfSQUwGz"
+        },
+        {
+          "name": "slot_hashes",
+          "address": "SysvarS1otHashes111111111111111111111111111"
+        }
+      ],
+      "args": [
+        {
+          "name": "client_seed",
+          "type": "u8"
+        },
+        {
+          "name": "high_priority",
+          "type": "bool"
+        }
+      ]
+    },
+    {
       "name": "reset_game",
       "discriminator": [
         97,
@@ -1117,6 +1288,19 @@
         66,
         115,
         85
+      ]
+    },
+    {
+      "name": "WeatherState",
+      "discriminator": [
+        220,
+        116,
+        222,
+        54,
+        27,
+        194,
+        33,
+        81
       ]
     }
   ],
@@ -1378,6 +1562,11 @@
       "code": 6019,
       "name": "GhostFleetAlreadyActive",
       "msg": "Ghost Fleet is already active"
+    },
+    {
+      "code": 6020,
+      "name": "InvalidWeatherSeed",
+      "msg": "Invalid weather seed (must be non-zero)"
     }
   ],
   "types": [
@@ -2066,6 +2255,33 @@
           {
             "name": "territory_y",
             "type": "u8"
+          }
+        ]
+      }
+    },
+    {
+      "name": "WeatherState",
+      "docs": [
+        "Per-game VRF weather tracker. Separate PDA so `PirateGame` layout is untouched."
+      ],
+      "type": {
+        "kind": "struct",
+        "fields": [
+          {
+            "name": "game",
+            "type": "pubkey"
+          },
+          {
+            "name": "pending_seed",
+            "type": "u8"
+          },
+          {
+            "name": "request_count",
+            "type": "u32"
+          },
+          {
+            "name": "fulfilled_count",
+            "type": "u32"
           }
         ]
       }

@@ -42,4 +42,6 @@ pub enum GameError {
     UnauthorizedDelegate,
     #[msg("Ghost Fleet is already active")]
     GhostFleetAlreadyActive,
+    #[msg("Invalid weather seed (must be non-zero)")]
+    InvalidWeatherSeed,
 }
