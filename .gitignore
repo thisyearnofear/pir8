@@ -19,6 +19,20 @@ target/
 test-ledger/
 .solana/
 
+# Agent session scaffolding (local-only working dirs, not judging material)
+.agents/
+.claude/
+agent/
+skills-lock.json
+
+# Demo videos ship via YouTube, never the repo
+*.mp4
+*.mov
+*.avi
+*.mkv
+*.webm
+*.m4v
+
 # IDE and AI coding assistants
 .vscode/
 .idea/
