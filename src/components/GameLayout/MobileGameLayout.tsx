@@ -23,6 +23,7 @@ import GameEventLog from '../GameEventLog';
 import ResourceBar from '../ResourceBar';
 import ShipActionModal from '../ShipActionModal';
 import InstrumentStrip from '../hud/InstrumentStrip';
+import ActionRail from '../hud/ActionRail';
 import { useMobileOptimized } from '@/hooks/useMobileOptimized';
 import { Haptic } from '@/utils/haptics';
 import { GameState, Ship, Player } from '@/types/game';
@@ -189,50 +190,26 @@ export function MobileGameLayout({
         )}
       </div>
 
-      {/* ===== BOTTOM ACTION BAR =====
-          Single source of truth for primary actions. The floating
-          QuickActionsBar that used to overlay this bar rendered a duplicate
-          End Turn (DESIGN.md §9). */}
-      <div className="flex items-center justify-between px-3 py-2 bg-slate-900/95 border-t border-neon-cyan/30 z-40 gap-2">
-        {/* Selected Ship Mini-Info */}
-        <button
-          onClick={() => {
+      {/* ===== ACTION RAIL =====
+          The same rail as the desktop table — plaque, stowed disposition,
+          single End Turn lever. No fork (DESIGN.md §9). */}
+      <div className="relative z-40">
+        <ActionRail
+          selectedShip={selectedShip ?? null}
+          onShipPlaqueClick={() => {
             if (selectedShip) {
               Haptic.light();
               onShipClick(selectedShip);
             }
           }}
-          className="flex-1 flex items-center gap-2 bg-slate-800 px-3 py-1.5 rounded-lg border border-neon-cyan/30 min-h-[48px]"
-        >
-          <span className="text-xl">🚢</span>
-          <div className="text-left overflow-hidden">
-            <div className="text-[10px] font-bold text-neon-cyan truncate">
-              {selectedShip ? selectedShip.type.toUpperCase() : 'NO SHIP'}
-            </div>
-            <div className="text-[10px] text-gray-400">
-              {selectedShip ? `${selectedShip.health} HP` : 'Tap to select'}
-            </div>
-          </div>
-        </button>
-        
-        {/* Action Buttons */}
-        <div className="flex items-center gap-2">
-          {isMyTurn ? (
-            <button
-              onClick={() => {
-                Haptic.heavy();
-                onEndTurn();
-              }}
-              className="px-4 py-3 bg-gradient-to-r from-neon-cyan to-neon-blue text-black rounded-lg font-bold text-sm shadow-lg shadow-neon-cyan/20 active:scale-95 transition-all min-h-[48px]"
-            >
-              End Turn ⏭️
-            </button>
-          ) : (
-            <div className="flex items-center gap-2 px-3 py-2 bg-slate-800/50 rounded-lg text-[10px] text-gray-400 border border-slate-700">
-              <span className="animate-pulse">⏳</span> Waiting...
-            </div>
-          )}
-        </div>
+          fleetCount={currentPlayer?.ships.filter((s) => s.health > 0).length ?? 0}
+          territoryCount={currentPlayer?.controlledTerritories.length ?? 0}
+          isMyTurn={isMyTurn}
+          onEndTurn={() => {
+            Haptic.heavy();
+            onEndTurn();
+          }}
+        />
       </div>
 
       {/* ===== SLIDE-UP MENU OVERLAY ===== */}

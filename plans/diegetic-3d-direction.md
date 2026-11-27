@@ -206,9 +206,14 @@ Goal: one screen, real game state, no new rules. If this doesn't feel better, st
       turn + fleet count, practice chip, one menu button. One component for all
       widths; density stows responsively (`.p8-stow-*`), no fork. Fixed
       `.p8-label` contrast (~3.2:1 → ~5.9:1) contract-wide.
-- [ ] **Slice 2 — Primary-action rail**: bottom bar rebuilt as instruments —
-      End Turn the single brass lever, selected-ship readout as a plaque,
-      quick-stats as instruments not emoji stacks
+- [x] **Slice 2 — Primary-action rail** (`src/components/hud/ActionRail.tsx`):
+      both bottom bars rebuilt as one shared rail — selected-ship plaque in the
+      world register with mono HP, fleet/territory disposition as instruments
+      (gold stays in the strip's stores, not duplicated), and End Turn as the
+      single lamp-lit lever with inset brass press physics. Off-watch the lever
+      becomes an inert "awaiting opponent" instrument so the rail never shows
+      a dead control. Keyboard hints restyled into tokens (was slate-500,
+      below the contrast floor).
 - [ ] Compass rose, brass gauge, sextant, barometer replace panels
 - [ ] `setPrompt` single contextual action
 - [ ] Turn handoff: out → in, two-phase, overlapping, **locked** (Wide's discipline)

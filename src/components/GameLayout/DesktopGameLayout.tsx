@@ -22,6 +22,7 @@ import GameEventLog from "../GameEventLog";
 import ResourceBar from "../ResourceBar";
 import ShipActionModal from "../ShipActionModal";
 import InstrumentStrip from "../hud/InstrumentStrip";
+import ActionRail from "../hud/ActionRail";
 import { Haptic } from "@/utils/haptics";
 import { GameState, Ship, Player } from "@/types/game";
 import { AIReasoning } from "@/lib/pirateGameEngine";
@@ -289,101 +290,33 @@ export function DesktopGameLayout({
           )}
         </div>
 
-        {/* ===== BOTTOM ACTION BAR =====
-            One primary action, in one place. The floating QuickActionsBar that
-            used to sit here rendered a second End Turn button over the bottom
-            bar (DESIGN.md §9). The bottom bar is the single source of truth. */}
-        <div className="flex items-center justify-between px-3 py-2 bg-slate-900/90 border-t border-neon-cyan/30 gap-2">
-          {/* Selected Ship Info */}
-          <button
-            onClick={() => {
-              if (selectedShip) {
-                Haptic.light();
-                onShipClick(selectedShip);
-              }
-            }}
-            className="flex items-center gap-2 bg-slate-800 px-3 py-2 rounded-xl border border-neon-cyan/50 min-h-[48px] active:scale-95 transition-all flex-shrink-0"
-          >
-            {selectedShip ? (
-              <>
-                <span className="text-xl">🚢</span>
-                <div className="text-left">
-                  <div className="text-sm font-bold text-neon-cyan">
-                    {selectedShip.type}
-                  </div>
-                  <div className="text-xs text-gray-400">
-                    {selectedShip.health}/{selectedShip.maxHealth} HP
-                  </div>
-                </div>
-              </>
-            ) : (
-              <span className="text-sm text-gray-400">Tap ship to select</span>
-            )}
-          </button>
+        {/* ===== ACTION RAIL =====
+            The near edge of the table: selected-ship plaque, disposition
+            instruments, and the single End Turn lever (DESIGN.md §8.3). */}
+        <ActionRail
+          selectedShip={selectedShip ?? null}
+          onShipPlaqueClick={() => {
+            if (selectedShip) {
+              Haptic.light();
+              onShipClick(selectedShip);
+            }
+          }}
+          fleetCount={currentPlayer?.ships.filter((s) => s.health > 0).length ?? 0}
+          territoryCount={currentPlayer?.controlledTerritories.length ?? 0}
+          isMyTurn={isMyTurn}
+          onEndTurn={() => {
+            Haptic.heavy();
+            onEndTurn();
+          }}
+        />
 
-          {/* Quick Stats */}
-          <div className="flex items-center gap-3 text-sm flex-shrink-0">
-            {currentPlayer && (
-              <>
-                <Tooltip content="Gold - Collect from treasure & territories">
-                  <div className="flex flex-col items-center cursor-help">
-                    <span className="text-lg">💰</span>
-                    <span className="text-xs text-neon-gold font-bold">
-                      {currentPlayer.resources.gold}
-                    </span>
-                  </div>
-                </Tooltip>
-                <Tooltip content="Active ships in your fleet">
-                  <div className="flex flex-col items-center cursor-help">
-                    <span className="text-lg">🚢</span>
-                    <span className="text-xs text-neon-cyan font-bold">
-                      {currentPlayer.ships.filter((s) => s.health > 0).length}
-                    </span>
-                  </div>
-                </Tooltip>
-                <Tooltip content="Territories you control">
-                  <div className="flex flex-col items-center cursor-help">
-                    <span className="text-lg">🏴‍☠️</span>
-                    <span className="text-xs text-neon-magenta font-bold">
-                      {currentPlayer.controlledTerritories.length}
-                    </span>
-                  </div>
-                </Tooltip>
-              </>
-            )}
-          </div>
-
-          {/* End Turn Button */}
-          {isMyTurn && (
-            <button
-              onClick={() => {
-                Haptic.heavy();
-                onEndTurn();
-              }}
-              className="bg-gradient-to-r from-neon-cyan to-neon-blue text-black font-bold px-5 py-3 rounded-xl hover:scale-105 active:scale-95 transition-all shadow-lg shadow-neon-cyan/30 min-h-[48px] min-w-[120px] text-sm"
-            >
-              End Turn ⏭️
-            </button>
-          )}
-        </div>
-
-        {/* Keyboard Shortcuts Hint */}
-        <div className="hidden sm:flex justify-center gap-4 py-1 bg-slate-900/50 text-xs text-gray-500">
-          <span>
-            <kbd className="bg-slate-700 px-1 rounded">E</kbd> End Turn
-          </span>
-          <span>
-            <kbd className="bg-slate-700 px-1 rounded">M</kbd> Menu
-          </span>
-          <span>
-            <kbd className="bg-slate-700 px-1 rounded">Q</kbd> Quick Actions
-          </span>
-          <span>
-            <kbd className="bg-slate-700 px-1 rounded">C</kbd> Collect
-          </span>
-          <span>
-            <kbd className="bg-slate-700 px-1 rounded">Esc</kbd> Deselect
-          </span>
+        {/* Keyboard Shortcuts Hint — inside the token system, stowed on narrow tables */}
+        <div className="p8-keyhints p8-stow-sm">
+          <span><kbd>E</kbd> End Turn</span>
+          <span><kbd>M</kbd> Menu</span>
+          <span><kbd>Q</kbd> Quick Actions</span>
+          <span><kbd>C</kbd> Collect</span>
+          <span><kbd>Esc</kbd> Deselect</span>
         </div>
 
         {/* ===== SLIDE-IN MENU PANEL ===== */}
@@ -502,7 +435,5 @@ export function DesktopGameLayout({
     </>
   );
 }
-
-import { Tooltip } from "@/components/Tooltip";
 
 export default DesktopGameLayout;

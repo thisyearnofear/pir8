@@ -58,6 +58,7 @@ import {
   Settings,
   Shield,
   Ship,
+  SkipForward,
   Skull,
   Sparkles,
   Sun,
@@ -121,6 +122,7 @@ export type IconName =
   | 'claim'
   | 'collect'
   | 'move'
+  | 'end-turn'
   | 'undo'
   | 'target'
   // status & ui
@@ -194,6 +196,7 @@ const registry: Record<IconName, LucideIcon> = {
   claim: Flag,
   collect: Coins,
   move: ArrowRightLeft,
+  'end-turn': SkipForward,
   undo: RotateCcw,
   target: Target,
 

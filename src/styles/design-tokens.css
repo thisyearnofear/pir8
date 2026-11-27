@@ -282,6 +282,109 @@
   border-color: color-mix(in srgb, var(--p8-lamp) 55%, transparent);
 }
 
+/* ==========================================================================
+   Action rail — the near edge of the table, where the captain's hands rest.
+   Exactly one primary action: the End Turn lever (DESIGN.md §8.3).
+   ========================================================================== */
+
+.p8-rail {
+  display: flex;
+  align-items: stretch;
+  gap: var(--p8-space-2);
+  padding: var(--p8-space-1) var(--p8-space-2);
+  background: var(--p8-ink);
+  border-top: var(--p8-hairline) solid var(--p8-brass-line);
+}
+
+/* The selected ship's plaque — an instrument that is also a button. */
+.p8-plaque {
+  display: flex;
+  align-items: center;
+  gap: var(--p8-space-2);
+  padding: var(--p8-space-1) var(--p8-space-2);
+  min-height: 48px;
+  background: var(--p8-deep);
+  border: var(--p8-hairline) solid var(--p8-brass-line);
+  border-radius: var(--p8-radius);
+  box-shadow: var(--p8-shadow-instrument);
+  color: var(--p8-vellum);
+  cursor: pointer;
+  text-align: left;
+  transition: border-color 120ms ease;
+}
+.p8-plaque:hover {
+  border-color: var(--p8-brass);
+}
+.p8-plaque:focus-visible {
+  outline: calc(2 * var(--p8-u)) solid var(--p8-lamp);
+  outline-offset: calc(1 * var(--p8-u));
+}
+.p8-plaque:disabled,
+.p8-plaque[aria-disabled="true"] {
+  cursor: default;
+}
+
+/* The End Turn lever. The lamp is the only glow in the room, and it falls on
+   the one thing the captain can do next. Ink text on lamp, never white. */
+.p8-lever {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: var(--p8-space-1);
+  min-height: 48px;
+  min-width: calc(120 * var(--p8-u));
+  padding: var(--p8-space-1) var(--p8-space-3);
+  background: var(--p8-lamp);
+  border: var(--p8-hairline) solid color-mix(in srgb, var(--p8-lamp) 70%, var(--p8-ink));
+  border-radius: var(--p8-radius);
+  box-shadow: var(--p8-shadow-instrument), inset 0 -2px 0 color-mix(in srgb, var(--p8-ink) 28%, transparent);
+  color: var(--p8-ink);
+  font-family: var(--p8-font-ui);
+  font-weight: 700;
+  font-size: var(--p8-fs-md);
+  cursor: pointer;
+  white-space: nowrap;
+  transition: transform 80ms ease, box-shadow 120ms ease;
+}
+.p8-lever:hover {
+  box-shadow: var(--p8-shadow-instrument), inset 0 -2px 0 color-mix(in srgb, var(--p8-ink) 28%, transparent),
+    0 0 calc(14 * var(--p8-u)) color-mix(in srgb, var(--p8-lamp) 30%, transparent);
+}
+.p8-lever:active {
+  transform: translateY(1px);
+  box-shadow: var(--p8-shadow-instrument), inset 0 1px 0 color-mix(in srgb, var(--p8-ink) 28%, transparent);
+}
+.p8-lever:focus-visible {
+  outline: calc(2 * var(--p8-u)) solid var(--p8-vellum);
+  outline-offset: calc(2 * var(--p8-u));
+}
+.p8-lever kbd {
+  font-family: var(--p8-font-instrument);
+  font-size: var(--p8-fs-xs);
+  border: var(--p8-hairline) solid color-mix(in srgb, var(--p8-ink) 45%, transparent);
+  border-radius: var(--p8-radius);
+  padding: 0 calc(3 * var(--p8-u));
+}
+
+/* Keyboard hint row — non-essential decoration, but still inside the token
+   system rather than slate-500 on slate-950. */
+.p8-keyhints {
+  display: flex;
+  justify-content: center;
+  gap: var(--p8-space-3);
+  padding: calc(2 * var(--p8-u)) 0;
+  background: var(--p8-ink);
+  font-family: var(--p8-font-instrument);
+  font-size: var(--p8-fs-xs);
+  color: var(--p8-vellum-dim);
+}
+.p8-keyhints kbd {
+  color: var(--p8-vellum-dim);
+  border: var(--p8-hairline) solid var(--p8-brass-line);
+  border-radius: var(--p8-radius);
+  padding: 0 calc(3 * var(--p8-u));
+}
+
 /* Responsive stowing — one instrument, restowed for narrow tables. These live
    here, after the display rules above, so they always win over .p8-cell. */
 @media (max-width: 639px) {
