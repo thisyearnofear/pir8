@@ -83,6 +83,7 @@ export interface OnChainSlice {
 }
 
 export interface PracticeSlice {
+  passPracticeTurn: () => boolean;
   // AI vs AI Demo Mode State
   playbackSpeed: number;
   isAIvsAIMode: boolean;

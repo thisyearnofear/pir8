@@ -20,7 +20,6 @@ import ShipBuildingPanel from '../ShipBuildingPanel';
 import AIReasoningPanel from '../AIReasoningPanel';
 import TerritoryBonusPanel from '../TerritoryBonusPanel';
 import GameEventLog from '../GameEventLog';
-import ResourceBar from '../ResourceBar';
 import ShipActionModal from '../ShipActionModal';
 import InstrumentStrip from '../hud/InstrumentStrip';
 import ActionRail from '../hud/ActionRail';
@@ -173,7 +172,6 @@ export function MobileGameLayout({
         {/* Floating Components - Left */}
         {currentPlayer && (
           <div className="absolute top-2 left-2 z-30 flex flex-col gap-2 max-w-[140px]">
-            <ResourceBar resources={currentPlayer.resources} isCompact={true} />
             <GameEventLog events={gameState.eventLog} maxVisible={3} isCompact={true} />
           </div>
         )}

@@ -29,6 +29,8 @@ interface GameContextValue {
   // Actions
   selectShip: (shipId: string | null) => void;
   endTurn: (gameId: number, wallet: any) => Promise<void>;
+  passPracticeTurn: () => boolean;
+  wallet?: any;
   collectResources: (gameId: number, wallet: any) => Promise<boolean>;
   buildShip: (gameId: number, shipType: string, portX: number, portY: number, wallet: any) => Promise<boolean>;
   moveShip: (gameId: number, shipId: string, toX: number, toY: number, wallet: any) => Promise<boolean>;
@@ -56,6 +58,7 @@ export function GameProvider({ children, wallet }: { children: React.ReactNode, 
   const moveShip = usePirateGameStore((state) => state.moveShip);
   const attackWithShip = usePirateGameStore((state) => state.attackWithShip);
   const claimTerritory = usePirateGameStore((state) => state.claimTerritory);
+  const passPracticeTurn = usePirateGameStore((state) => state.passPracticeTurn);
   const getCurrentPlayer = usePirateGameStore((state) => state.getCurrentPlayer);
   const isMyTurnForWallet = usePirateGameStore((state) => state.isMyTurn);
   const getMyShips = usePirateGameStore((state) => state.getMyShips);
@@ -104,6 +107,8 @@ export function GameProvider({ children, wallet }: { children: React.ReactNode, 
     moveShip,
     attackWithShip,
     claimTerritory,
+    passPracticeTurn,
+    wallet,
   };
 
   return (

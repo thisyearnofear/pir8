@@ -19,7 +19,6 @@ import ShipBuildingPanel from "../ShipBuildingPanel";
 import AIReasoningPanel from "../AIReasoningPanel";
 import TerritoryBonusPanel from "../TerritoryBonusPanel";
 import GameEventLog from "../GameEventLog";
-import ResourceBar from "../ResourceBar";
 import ShipActionModal from "../ShipActionModal";
 import InstrumentStrip from "../hud/InstrumentStrip";
 import ActionRail from "../hud/ActionRail";
@@ -133,7 +132,6 @@ export function DesktopGameLayout({
   const [activeTab, setActiveTab] = useState<
     "stats" | "actions" | "build" | "ai"
   >("stats");
-  const [showQuickActions, setShowQuickActions] = useState(false);
 
   const allShips = gameState.players
     ? gameState.players
@@ -202,10 +200,6 @@ export function DesktopGameLayout({
           {/* LEFT SIDE PANELS */}
           {currentPlayer && (
             <div className="absolute top-4 left-4 z-30 flex flex-col gap-3 max-w-xs">
-              <ResourceBar
-                resources={currentPlayer.resources}
-                isCompact={true}
-              />
               <GameEventLog
                 events={gameState.eventLog}
                 maxVisible={4}
@@ -222,70 +216,6 @@ export function DesktopGameLayout({
                 gameState={gameState}
                 isCompact={true}
               />
-            </div>
-          )}
-
-          {/* FLOATING QUICK ACTIONS */}
-          {isMyTurn && (
-            <div className="absolute bottom-20 right-4 flex flex-col gap-2">
-              {/* Toggle Button */}
-              <button
-                onClick={() => {
-                  Haptic.light();
-                  setShowQuickActions(!showQuickActions);
-                }}
-                className={`w-14 h-14 rounded-full shadow-lg transition-all flex items-center justify-center text-2xl ${
-                  showQuickActions
-                    ? "bg-neon-cyan text-black rotate-45"
-                    : "bg-slate-800 text-white border border-neon-cyan/50 hover:bg-slate-700"
-                }`}
-                title="Quick Actions (Q)"
-              >
-                +
-              </button>
-
-              {/* Expanded Actions */}
-              {showQuickActions && (
-                <div className="flex flex-col gap-2 animate-in slide-in-from-bottom duration-200">
-                  <button
-                    onClick={() => {
-                      Haptic.medium();
-                      onCollectResources();
-                      setShowQuickActions(false);
-                    }}
-                    className="w-16 h-16 rounded-full bg-neon-gold text-black shadow-lg hover:scale-110 active:scale-95 transition-all flex items-center justify-center text-2xl"
-                    title="Collect Resources (C)"
-                  >
-                    💰
-                  </button>
-
-                  <button
-                    onClick={() => {
-                      Haptic.light();
-                      setActiveTab("build");
-                      setMenuOpen(true);
-                      setShowQuickActions(false);
-                    }}
-                    className="w-16 h-16 rounded-full bg-neon-purple text-white shadow-lg hover:scale-110 active:scale-95 transition-all flex items-center justify-center text-2xl"
-                    title="Build Ship (3)"
-                  >
-                    🔨
-                  </button>
-
-                  <button
-                    onClick={() => {
-                      Haptic.light();
-                      setActiveTab("stats");
-                      setMenuOpen(true);
-                      setShowQuickActions(false);
-                    }}
-                    className="w-16 h-16 rounded-full bg-slate-700 text-white shadow-lg border border-slate-600 hover:scale-110 active:scale-95 transition-all flex items-center justify-center text-2xl"
-                    title="View Stats (1)"
-                  >
-                    📊
-                  </button>
-                </div>
-              )}
             </div>
           )}
         </div>
@@ -313,9 +243,8 @@ export function DesktopGameLayout({
         {/* Keyboard Shortcuts Hint — inside the token system, stowed on narrow tables */}
         <div className="p8-keyhints p8-stow-sm">
           <span><kbd>E</kbd> End Turn</span>
-          <span><kbd>M</kbd> Menu</span>
-          <span><kbd>Q</kbd> Quick Actions</span>
-          <span><kbd>C</kbd> Collect</span>
+          {!isPracticeMode && <span><kbd>C</kbd> Collect</span>}
+          <span><kbd>T</kbd> Chart view</span>
           <span><kbd>Esc</kbd> Deselect</span>
         </div>
 

@@ -171,6 +171,25 @@ export const createPracticeSlice: StateCreator<
     return false;
   },
 
+  passPracticeTurn: () => {
+    const { gameState, gameMode } = get();
+    if (!gameState || gameMode !== "practice") return false;
+
+    const currentPlayer = gameState.players[gameState.currentPlayerIndex];
+    if (!currentPlayer || currentPlayer.publicKey.startsWith("AI_")) return false;
+
+    const advancedState = PirateGameManager.advanceTurn(gameState);
+    savePracticeGame(advancedState);
+
+    set({
+      gameState: advancedState,
+      selectedShipId: null,
+    });
+
+    setTimeout(() => get().processAITurn(), 1000);
+    return true;
+  },
+
   processAITurn: () => {
     const {
       gameState,

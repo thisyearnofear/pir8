@@ -50,7 +50,10 @@ export default function GameContainer(props: GameContainerProps) {
     gameState,
     isPracticeMode,
     isMyTurn,
-    endTurn: _endTurn,
+    endTurn,
+    collectResources,
+    passPracticeTurn,
+    wallet,
     selectedShipId,
     selectShip,
     decisionTime,
@@ -126,6 +129,31 @@ export default function GameContainer(props: GameContainerProps) {
     setHintTrigger(null);
   };
 
+
+  // =============================================================================
+  // PRIMARY ACTIONS — the one truthful wiring path for the rail and the keyboard
+  // =============================================================================
+
+  const handleEndTurn = useCallback(async () => {
+    if (!gameState) return;
+    if (isPracticeMode) {
+      // passPracticeTurn validates human-at-helm from game state itself;
+      // context isMyTurn is wallet-derived and unreliable for guest practice.
+      passPracticeTurn();
+      return;
+    }
+    if (!isMyTurn) return;
+    await endTurn(Number(gameState.gameId), wallet);
+  }, [gameState, isMyTurn, isPracticeMode, passPracticeTurn, endTurn, wallet]);
+
+  const handleCollectResources = useCallback(async (): Promise<boolean> => {
+    if (!gameState || !isMyTurn) return false;
+    // Practice economies accrue from controlled territories at the turn
+    // boundary; the collect instruction is an on-chain mechanic.
+    if (isPracticeMode) return false;
+    return collectResources(Number(gameState.gameId), wallet);
+  }, [gameState, isMyTurn, isPracticeMode, collectResources, wallet]);
+
   // =============================================================================
   // KEYBOARD SHORTCUTS
   // =============================================================================
@@ -137,8 +165,7 @@ export default function GameContainer(props: GameContainerProps) {
       case 'e':
         if (isMyTurn && gameState) {
           Haptic.medium();
-          // We'll need gameId and wallet here, but for now we'll rely on props/context
-          // This is a simplification
+          handleEndTurn();
         }
         break;
       case 'escape':
@@ -147,13 +174,13 @@ export default function GameContainer(props: GameContainerProps) {
         }
         break;
       case 'c':
-        if (isMyTurn) {
+        if (isMyTurn && !isPracticeMode) {
           Haptic.light();
-          // collectResources
+          handleCollectResources();
         }
         break;
     }
-  }, [isMyTurn, gameState, selectedShipId, selectShip]);
+  }, [isMyTurn, gameState, selectedShipId, selectShip, isPracticeMode, handleEndTurn, handleCollectResources]);
 
   useEffect(() => {
     window.addEventListener('keydown', handleKeyDown);
@@ -193,6 +220,8 @@ export default function GameContainer(props: GameContainerProps) {
       },
       decisionTimeMs: decisionTime,
       currentPlayerName: currentPlayer?.username || 'Pirate',
+      onEndTurn: handleEndTurn,
+      onCollectResources: handleCollectResources,
     };
 
     return (

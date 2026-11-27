@@ -214,6 +214,16 @@ Goal: one screen, real game state, no new rules. If this doesn't feel better, st
       becomes an inert "awaiting opponent" instrument so the rail never shows
       a dead control. Keyboard hints restyled into tokens (was slate-500,
       below the contrast floor).
+- [x] **Slice 2.5 — Deletion + truthful wiring**: ResourceBar deleted (strip
+      stores carry resources), desktop floating quick-actions cluster deleted
+      (all destinations reachable via menu/keys). Found while deleting: no file
+      in the app ever provided `onEndTurn`/`onCollectResources` to the layouts
+      — every End Turn control called `undefined`. Wired truthfully in
+      GameContainer: on-chain via store actions with numeric game id + wallet
+      (now exposed through GameContext), practice via new `passPracticeTurn`
+      (passing is legal on-chain, so practice supports it; guarded on
+      human-at-helm from game state, not wallet presence). Keyboard E/C wired
+      for the first time; hint row stripped of M/Q which never had handlers.
 - [ ] Compass rose, brass gauge, sextant, barometer replace panels
 - [ ] `setPrompt` single contextual action
 - [ ] Turn handoff: out → in, two-phase, overlapping, **locked** (Wide's discipline)
