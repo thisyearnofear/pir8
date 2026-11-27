@@ -3,6 +3,7 @@
 import { useMemo } from "react";
 import { GameBalance } from "@/lib/gameBalance";
 import type { GameState, Player } from "@/types/game";
+import { Icon, type IconName } from "./ui/Icon";
 
 interface VictoryProgressProps {
   gameState: GameState;
@@ -49,7 +50,7 @@ export default function VictoryProgress({
       {
         id: "territory",
         label: "Territory",
-        icon: "🏴‍☠️",
+        icon: "claim" as IconName,
         ratio: totalTerritory > 0 ? playerTerritory / totalTerritory : 0,
         goal: territoryControlThreshold,
         goalLabel: `${Math.round(territoryControlThreshold * 100)}%`,
@@ -57,7 +58,7 @@ export default function VictoryProgress({
       {
         id: "fleet",
         label: "Supremacy",
-        icon: "⚔️",
+        icon: "attack" as IconName,
         ratio: totalFleet > 0 ? playerFleet / totalFleet : 0,
         goal: fleetDominanceThreshold,
         goalLabel: `${Math.round(fleetDominanceThreshold * 100)}%`,
@@ -65,7 +66,7 @@ export default function VictoryProgress({
       {
         id: "riches",
         label: "Riches",
-        icon: "💰",
+        icon: "gold" as IconName,
         ratio: Math.min(1, playerRiches / resourceDominanceThreshold),
         goal: 1,
         goalLabel: `${Math.round(resourceDominanceThreshold / 1000)}k`,
@@ -96,8 +97,12 @@ export default function VictoryProgress({
         return (
           <div key={p.id} className="min-w-0">
             <div className="mb-1 flex items-center justify-between gap-1 text-[11px] font-bold uppercase tracking-[0.14em]">
-              <span className={isLeader ? "text-amber-200" : "text-slate-300"}>
-                {p.icon} {p.label}
+              <span
+                className={
+                  isLeader ? "text-amber-200" : "text-slate-300"
+                }
+              >
+                <Icon name={p.icon} size={12} /> {p.label}
               </span>
               <span className="font-mono text-slate-400">
                 {Math.round(p.ratio * 100)}%<span className="text-slate-600">/{p.goalLabel}</span>

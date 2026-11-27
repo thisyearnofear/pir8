@@ -264,8 +264,14 @@ left lives at the edges of the session:
 - [ ] **Slice 7 — Visual verification pass** (BLOCKING before further conversion):
       one dev-server session, screenshot the practice loop end-to-end —
       chart alignment, strip/rail stow breakpoints at desktop + mobile
-      widths, ledger drawer, guest-practice turn ownership, scan execution.
-      Six slices are build/type/lint-clean but none have been seen rendered.
+      widths, ledger drawer, guest-practice turn ownership, scan execution,
+      PLUS the post-roadmap arrivals: 3-step tutorial render, VictoryProgress
+      bars (shared GameBalance math), ambush hint firing + sprung/expired
+      states (clear `pir8_ambush_scripted` + saved practice from localStorage
+      to force the scripted path). Six slices + the 9/10 design push are
+      build/type/lint-clean but none have been seen rendered. NOTE: browser
+      control sits with the human (ego-browser handoff) — this slice needs
+      ~20min of human click-through; agents fix from filed observations.
 - [ ] **Slice 8 — First-run surfaces**: `FirstTimeTutorial`, `ContextualHints`,
       onboarding modal — what a new player sees before anything else.
       NOTE: parallel agent commit `9a25cb6` touched onboarding/victory HUD;
@@ -279,9 +285,14 @@ left lives at the edges of the session:
       and `src/lib/territoryBonuses.ts` carry emoji as content. Once clean,
       delete the transitional EVENT_ICONS/BONUS_ICONS translation maps in
       GameEventLog/TerritoryBonusPanel.
-- [ ] **Slice 12 — Contract enforcement** (moves Phase 4 forward): lint rule
-      or pre-commit scan banning emoji/neon- utilities in `src/components`,
-      so the converted surfaces can't regress under parallel agents.
+- [x] **Slice 12 — Contract enforcement** (moves Phase 4 forward):
+      `scripts/check-design-contract.mjs` (`pnpm check-contract`, wired into
+      lint-staged for `src/components/**`) bans `neon-*` utilities and emoji
+      iconography across the 12 converted surfaces; `VictoryProgress` emoji
+      icons converted to the shared `Icon` component to comply.
+      Single exemption: `BONUS_ICONS` translation map in TerritoryBonusPanel
+      (data-layer emoji keys, cleaned in slice 11). Negative-tested: script
+      exits 1 on both violation classes.
 
 ### Phase 4 — Enforcement (ongoing)
 - [ ] Lint/pre-commit: no raw hex in components, no emoji in `src/components`

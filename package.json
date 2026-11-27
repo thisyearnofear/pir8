@@ -14,11 +14,15 @@
     "clean": "rm -rf .next out dist node_modules/.cache",
     "anchor:check-program": "node scripts/check-program-consistency.js",
     "anchor:deploy-program": "bash scripts/deploy-program.sh",
-    "prepare": "husky"
+    "prepare": "husky",
+    "check-contract": "node scripts/check-design-contract.mjs"
   },
   "lint-staged": {
     "*.{ts,tsx}": [
       "eslint --fix"
+    ],
+    "src/components/**/*.{ts,tsx}": [
+      "node scripts/check-design-contract.mjs"
     ]
   },
   "dependencies": {
