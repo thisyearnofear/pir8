@@ -242,6 +242,11 @@ Goal: one screen, real game state, no new rules. If this doesn't feel better, st
       hidden in practice where scan resolution does not exist. WeatherControl
       oracle widget converted. New tokens: .p8-btn/.p8-btn-threat/.p8-input.
       Collapse-to-localStorage machinery dropped with the bloat it managed.
+- [x] **Slice 5 — Shipwright's page (ShipBuildingPanel)**: build tab now
+      brass — vessel cards with Lucide type icons, mono measurements,
+      cost as have/need numerals (insufficiency written AND toned), port
+      list, commission lever. Ledger interior complete: stats, actions,
+      build all token-native.
 - [ ] Compass rose, brass gauge, sextant, barometer replace panels
 - [ ] `setPrompt` single contextual action
 - [ ] Turn handoff: out → in, two-phase, overlapping, **locked** (Wide's discipline)

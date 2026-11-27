@@ -1,8 +1,18 @@
 'use client';
 
+/**
+ * ShipBuildingPanel — the shipwright's page of the captain's ledger.
+ *
+ * Token-native rewrite. The flow is unchanged (type -> cost check -> port ->
+ * build); the surface is brass and ink. Affordability is written in numbers
+ * (have / need) and tone — never hue alone. The final build is the page's
+ * one lever, since commissioning a ship is why this page exists.
+ */
+
 import { useState } from 'react';
 import { GameState, Player, ShipType, Resources } from '../types/game';
 import { SHIP_CONFIGS } from '../types/game';
+import { Icon, type IconName } from './ui/Icon';
 
 interface ShipBuildingPanelProps {
     gameState: GameState | null;
@@ -19,17 +29,26 @@ const SHIP_COSTS: Record<ShipType, Partial<Resources>> = {
 };
 
 const SHIP_DESCRIPTIONS = {
-    sloop: 'Fast scout ship - High speed, low health',
-    frigate: 'Balanced warship - Good all-around stats',
-    galleon: 'Heavy battleship - High health, slow speed',
-    flagship: 'Ultimate vessel - Maximum firepower'
+    sloop: 'Fast scout ship — high speed, low health',
+    frigate: 'Balanced warship — good all-around stats',
+    galleon: 'Heavy battleship — high health, slow speed',
+    flagship: 'Ultimate vessel — maximum firepower'
 };
 
-const SHIP_EMOJIS = {
-    sloop: '⛵',
-    frigate: '🚢',
-    galleon: '🛳️',
-    flagship: '🚤'
+const SHIP_ICON: Record<ShipType, IconName> = {
+    sloop: 'ship-scout',
+    frigate: 'ship',
+    galleon: 'ship-heavy',
+    flagship: 'ship-heavy',
+};
+
+const RESOURCE_ICON: Record<string, IconName> = {
+    gold: 'gold',
+    crew: 'crew',
+    cannons: 'cannons',
+    supplies: 'supplies',
+    wood: 'wood',
+    rum: 'rum',
 };
 
 export default function ShipBuildingPanel({
@@ -47,7 +66,6 @@ export default function ShipBuildingPanel({
         return null;
     }
 
-    // Find controlled ports
     const getControlledPorts = () => {
         const ports: Array<{ x: number; y: number; coordinate: string }> = [];
 
@@ -100,88 +118,144 @@ export default function ShipBuildingPanel({
     const selectedCost = SHIP_COSTS[selectedShipType];
 
     return (
-        <div className="bg-slate-800 rounded-lg border border-neon-cyan border-opacity-30 p-4">
-            <div className="flex items-center justify-between mb-3">
-                <h3 className="text-lg font-bold text-neon-cyan flex items-center gap-2">
-                    🛠️ Ship Building
-                </h3>
-                <div className="text-sm text-gray-400">
-                    {controlledPorts.length} ports
-                </div>
+        <div style={{ display: 'flex', flexDirection: 'column', gap: 'var(--p8-space-3)' }}>
+            <div className="p8-cell-row" style={{ justifyContent: 'space-between' }}>
+                <span className="p8-cell-row">
+                    <Icon name="build" size={13} className="p8-text-dim" />
+                    <span className="p8-label">Shipwright</span>
+                </span>
+                <span className="p8-value p8-text-dim" style={{ fontSize: 'var(--p8-fs-xs)' }}>
+                    {controlledPorts.length} port{controlledPorts.length === 1 ? '' : 's'}
+                </span>
             </div>
 
             {controlledPorts.length === 0 ? (
-                <div className="text-center py-4">
-                    <div className="text-4xl mb-2">⚓</div>
-                    <p className="text-gray-400 text-sm">
+                <div className="p8-instrument" style={{ padding: 'var(--p8-space-3)', textAlign: 'center' }}>
+                    <div style={{ display: 'flex', justifyContent: 'center', marginBottom: 'var(--p8-space-1)' }}>
+                        <Icon name="anchor" size={20} className="p8-text-mute" />
+                    </div>
+                    <p className="p8-text-dim" style={{ fontSize: 'var(--p8-fs-sm)', fontFamily: 'var(--p8-font-ui)' }}>
                         No ports controlled
                     </p>
-                    <p className="text-gray-500 text-xs mt-1">
+                    <p className="p8-text-mute" style={{ fontSize: 'var(--p8-fs-xs)', fontFamily: 'var(--p8-font-ui)', marginTop: 'calc(2 * var(--p8-u))' }}>
                         Claim ports to build ships
                     </p>
                 </div>
             ) : (
                 <>
-                    {/* Ship Type Selection */}
-                    <div className="mb-4">
-                        <h4 className="text-sm font-semibold text-gray-300 mb-2">Select Ship Type:</h4>
-                        <div className="grid grid-cols-2 gap-2">
-                            {(Object.keys(SHIP_COSTS) as ShipType[]).map((shipType) => (
-                                <button
-                                    key={shipType}
-                                    onClick={() => setSelectedShipType(shipType)}
-                                    className={`p-2 rounded border text-sm transition-all ${selectedShipType === shipType
-                                        ? 'border-neon-cyan bg-neon-cyan bg-opacity-20 text-neon-cyan'
-                                        : 'border-gray-600 hover:border-gray-500 text-gray-300'
-                                        }`}
-                                >
-                                    <div className="flex items-center gap-1 mb-1">
-                                        <span className="text-lg">{SHIP_EMOJIS[shipType]}</span>
-                                        <span className="font-semibold capitalize">{shipType}</span>
-                                    </div>
-                                    <div className="text-xs text-gray-400">
-                                        {SHIP_DESCRIPTIONS[shipType]}
-                                    </div>
-                                </button>
+                    {/* Ship type — the vessel to commission */}
+                    <div className="p8-instrument" style={{ padding: 'var(--p8-space-2)' }}>
+                        <span className="p8-label">Vessel</span>
+                        <div
+                            style={{
+                                display: 'grid',
+                                gridTemplateColumns: 'repeat(2, 1fr)',
+                                gap: 'var(--p8-space-1)',
+                                marginTop: 'var(--p8-space-1)',
+                            }}
+                        >
+                            {(Object.keys(SHIP_COSTS) as ShipType[]).map((shipType) => {
+                                const sel = selectedShipType === shipType;
+                                const affordable = canAffordShip(shipType);
+                                return (
+                                    <button
+                                        key={shipType}
+                                        onClick={() => setSelectedShipType(shipType)}
+                                        aria-pressed={sel}
+                                        style={{
+                                            padding: 'var(--p8-space-1)',
+                                            borderRadius: 'var(--p8-radius)',
+                                            border: `${sel ? 'calc(1.5 * var(--p8-u))' : 'var(--p8-hairline)'} solid ${
+                                                sel ? 'var(--p8-lamp)' : 'var(--p8-brass-line)'
+                                            }`,
+                                            background: sel
+                                                ? 'color-mix(in srgb, var(--p8-lamp) 10%, var(--p8-depth))'
+                                                : 'color-mix(in srgb, var(--p8-brass) 8%, var(--p8-depth))',
+                                            cursor: 'pointer',
+                                            textAlign: 'left',
+                                            opacity: affordable ? 1 : 0.55,
+                                            transition: 'border-color 120ms ease, background 120ms ease',
+                                        }}
+                                    >
+                                        <div className="p8-cell-row">
+                                            <Icon
+                                                name={SHIP_ICON[shipType]}
+                                                size={14}
+                                                className={sel ? 'p8-text-lamp' : 'p8-text-dim'}
+                                            />
+                                            <span className="p8-label" style={sel ? { color: 'var(--p8-lamp)' } : undefined}>
+                                                {shipType}
+                                            </span>
+                                        </div>
+                                        <p
+                                            className="p8-text-mute"
+                                            style={{
+                                                fontSize: 'var(--p8-fs-xs)',
+                                                fontFamily: 'var(--p8-font-ui)',
+                                                marginTop: 'calc(3 * var(--p8-u))',
+                                                lineHeight: 1.35,
+                                            }}
+                                        >
+                                            {SHIP_DESCRIPTIONS[shipType]}
+                                        </p>
+                                    </button>
+                                );
+                            })}
+                        </div>
+                    </div>
+
+                    {/* Measurements + cost — mono tabular throughout */}
+                    <div className="p8-instrument" style={{ padding: 'var(--p8-space-2)' }}>
+                        <span className="p8-label">Measurements</span>
+                        <div
+                            style={{
+                                display: 'grid',
+                                gridTemplateColumns: 'repeat(2, 1fr)',
+                                gap: 'calc(3 * var(--p8-u))',
+                                marginTop: 'var(--p8-space-1)',
+                            }}
+                        >
+                            {(['maxHealth', 'attack', 'defense', 'speed'] as const).map((stat) => (
+                                <div key={stat} className="p8-cell-row" style={{ justifyContent: 'space-between' }}>
+                                    <span className="p8-label">{stat === 'maxHealth' ? 'health' : stat}</span>
+                                    <span className="p8-value" style={{ fontSize: 'var(--p8-fs-sm)' }}>
+                                        {SHIP_CONFIGS[selectedShipType][stat]}
+                                    </span>
+                                </div>
                             ))}
                         </div>
                     </div>
 
-                    {/* Ship Stats */}
-                    <div className="mb-4 p-3 bg-slate-700 rounded">
-                        <h4 className="text-sm font-semibold text-gray-300 mb-2">
-                            {SHIP_EMOJIS[selectedShipType]} {selectedShipType.charAt(0).toUpperCase() + selectedShipType.slice(1)} Stats:
-                        </h4>
-                        <div className="grid grid-cols-2 gap-2 text-xs">
-                            <div>Health: {SHIP_CONFIGS[selectedShipType].maxHealth}</div>
-                            <div>Attack: {SHIP_CONFIGS[selectedShipType].attack}</div>
-                            <div>Defense: {SHIP_CONFIGS[selectedShipType].defense}</div>
-                            <div>Speed: {SHIP_CONFIGS[selectedShipType].speed}</div>
-                        </div>
-                    </div>
-
-                    {/* Cost Display */}
-                    <div className="mb-4 p-3 bg-slate-700 rounded">
-                        <h4 className="text-sm font-semibold text-gray-300 mb-2">Cost:</h4>
-                        <div className="grid grid-cols-2 gap-2 text-sm">
+                    <div className="p8-instrument" style={{ padding: 'var(--p8-space-2)' }}>
+                        <span className="p8-label">Cost — have / need</span>
+                        <div
+                            style={{
+                                display: 'flex',
+                                flexDirection: 'column',
+                                gap: 'calc(3 * var(--p8-u))',
+                                marginTop: 'var(--p8-space-1)',
+                            }}
+                        >
                             {Object.entries(selectedCost).map(([resource, cost]) => {
                                 const playerAmount = currentPlayer.resources[resource as keyof Resources] || 0;
                                 const canAffordThis = playerAmount >= (cost || 0);
 
                                 return (
-                                    <div
-                                        key={resource}
-                                        className={`flex items-center gap-1 ${canAffordThis ? 'text-green-400' : 'text-red-400'
-                                            }`}
-                                    >
-                                        <span>
-                                            {resource === 'gold' ? '🪙' :
-                                                resource === 'crew' ? '👥' :
-                                                    resource === 'cannons' ? '💣' : '📦'}
+                                    <div key={resource} className="p8-cell-row" style={{ justifyContent: 'space-between' }}>
+                                        <span className="p8-cell-row">
+                                            <Icon
+                                                name={RESOURCE_ICON[resource] ?? 'supplies'}
+                                                size={12}
+                                                className={canAffordThis ? 'p8-text-dim' : 'p8-text-threat'}
+                                            />
+                                            <span className="p8-label">{resource}</span>
                                         </span>
-                                        <span>{cost} {resource}</span>
-                                        <span className="text-xs text-gray-500">
-                                            ({playerAmount} available)
+                                        <span
+                                            className={`p8-value ${canAffordThis ? '' : 'p8-text-threat'}`}
+                                            style={{ fontSize: 'var(--p8-fs-sm)' }}
+                                            aria-label={`${playerAmount} of ${cost} ${resource} available${canAffordThis ? '' : ' — insufficient'}`}
+                                        >
+                                            {playerAmount}/{cost}
                                         </span>
                                     </div>
                                 );
@@ -189,69 +263,80 @@ export default function ShipBuildingPanel({
                         </div>
                     </div>
 
-                    {/* Port Selection */}
+                    {/* Port selection + commission */}
                     {!showPortSelector ? (
                         <button
                             onClick={() => setShowPortSelector(true)}
                             disabled={!canAfford}
-                            className={`w-full py-2 px-4 rounded font-semibold transition-all mb-2 ${!canAfford
-                                ? 'bg-gray-600 text-gray-400 cursor-not-allowed'
-                                : 'bg-blue-600 hover:bg-blue-500 text-white hover:shadow-lg hover:shadow-blue-500/20'
-                                }`}
+                            className="p8-btn"
+                            style={{ width: '100%' }}
                         >
-                            {canAfford ? 'Select Port Location' : 'Insufficient Resources'}
+                            <Icon name="port" size={14} />
+                            {canAfford ? 'Select port' : 'Insufficient resources'}
                         </button>
                     ) : (
-                        <div className="mb-4">
-                            <h4 className="text-sm font-semibold text-gray-300 mb-2">Select Port:</h4>
-                            <div className="space-y-2 max-h-32 overflow-y-auto">
-                                {controlledPorts.map((port) => (
-                                    <button
-                                        key={port.coordinate}
-                                        onClick={() => setSelectedPort(port)}
-                                        className={`w-full p-2 rounded text-sm transition-all ${selectedPort?.x === port.x && selectedPort?.y === port.y
-                                            ? 'border border-neon-cyan bg-neon-cyan bg-opacity-20 text-neon-cyan'
-                                            : 'border border-gray-600 hover:border-gray-500 text-gray-300'
-                                            }`}
-                                    >
-                                        ⚓ Port at ({port.x}, {port.y})
-                                    </button>
-                                ))}
+                        <div className="p8-instrument" style={{ padding: 'var(--p8-space-2)' }}>
+                            <span className="p8-label">Port</span>
+                            <div
+                                style={{
+                                    display: 'flex',
+                                    flexDirection: 'column',
+                                    gap: 'calc(3 * var(--p8-u))',
+                                    marginTop: 'var(--p8-space-1)',
+                                    maxHeight: 'calc(120 * var(--p8-u))',
+                                    overflowY: 'auto',
+                                }}
+                            >
+                                {controlledPorts.map((port) => {
+                                    const sel = selectedPort?.x === port.x && selectedPort?.y === port.y;
+                                    return (
+                                        <button
+                                            key={port.coordinate}
+                                            onClick={() => setSelectedPort(port)}
+                                            aria-pressed={sel}
+                                            className="p8-btn"
+                                            style={{
+                                                justifyContent: 'flex-start',
+                                                borderColor: sel ? 'var(--p8-lamp)' : undefined,
+                                                color: sel ? 'var(--p8-lamp)' : undefined,
+                                            }}
+                                        >
+                                            <Icon name="anchor" size={13} />
+                                            <span className="p8-value" style={{ fontSize: 'var(--p8-fs-sm)' }}>
+                                                ({port.x}, {port.y})
+                                            </span>
+                                        </button>
+                                    );
+                                })}
                             </div>
 
-                            <div className="flex gap-2 mt-2">
+                            <div style={{ display: 'flex', gap: 'var(--p8-space-1)', marginTop: 'var(--p8-space-2)' }}>
                                 <button
                                     onClick={() => setShowPortSelector(false)}
-                                    className="flex-1 py-2 px-4 rounded bg-gray-600 hover:bg-gray-500 text-white"
+                                    className="p8-btn"
+                                    style={{ flex: 1 }}
                                 >
                                     Cancel
                                 </button>
                                 <button
                                     onClick={handleBuildShip}
                                     disabled={!selectedPort || !isMyTurn || isBuilding}
-                                    className={`flex-1 py-2 px-4 rounded font-semibold transition-all ${!selectedPort || !isMyTurn
-                                        ? 'bg-gray-600 text-gray-400 cursor-not-allowed'
-                                        : isBuilding
-                                            ? 'bg-blue-600 text-white cursor-wait'
-                                            : 'bg-blue-600 hover:bg-blue-500 text-white hover:shadow-lg hover:shadow-blue-500/20'
-                                        }`}
+                                    className="p8-lever"
+                                    style={{ flex: 2, minWidth: 0, opacity: !selectedPort || !isMyTurn || isBuilding ? 0.5 : 1 }}
                                 >
-                                    {isBuilding ? (
-                                        <div className="flex items-center justify-center gap-2">
-                                            <div className="animate-spin w-4 h-4 border-2 border-white border-t-transparent rounded-full"></div>
-                                            Building...
-                                        </div>
-                                    ) : (
-                                        '🛠️ Build Ship'
-                                    )}
+                                    <Icon name="build" size={15} />
+                                    {isBuilding ? 'Building…' : 'Commission ship'}
                                 </button>
                             </div>
                         </div>
                     )}
 
                     {!isMyTurn && (
-                        <p className="text-xs text-gray-500 text-center">
-                            Wait for your turn to build ships
+                        <p
+                            className="p8-text-mute"
+                            style={{ fontSize: 'var(--p8-fs-xs)', fontFamily: 'var(--p8-font-ui)', textAlign: 'center' }}
+                        >
+                            The shipwright waits for your watch
                         </p>
                     )}
                 </>
