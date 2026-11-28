@@ -74,6 +74,8 @@ const PROTECTED = [
   "src/components/AIReasoningPanel.tsx",
   "src/components/AIStreamPanel.tsx",
   "src/components/privacy/LeakageMeter.tsx",
+  // Round 7: boot shell (paints before JS; must never regress to emoji/neon).
+  "app/layout.tsx",
 ];
 
 const NEON_RE = /neon-/g;

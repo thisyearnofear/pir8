@@ -250,6 +250,15 @@ pnpm check-contract
 
 ---
 
+## ⏱️ Try it in 30 seconds (no wallet)
+
+1. Open https://pir8app.netlify.app/ → **SKIP LOGBOOK**.
+2. **START PRIVATE SKIRMISH** → skip or step through the 3-card tutorial.
+3. You are in a live practice game vs the house AI: move, attack, claim,
+   end turn. No wallet, no signature, nothing to install.
+4. Machine players: `POST /api/byte/start` → play via `/api/byte/action` →
+   spectate at `/watch/[runId]` (see `docs/BYTE_MANIFEST.md`).
+
 ## 🎯 Current Status
 
 ### Late November 2026: cabin system, quality, Byte API

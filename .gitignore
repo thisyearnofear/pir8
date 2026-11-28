@@ -74,3 +74,5 @@ spikes/**/player*.json
 
 # Local design research (screenshots, references)
 .screens/
+# Netlify CLI local state
+.netlify/
