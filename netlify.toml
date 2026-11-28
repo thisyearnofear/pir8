@@ -1,0 +1,8 @@
+# Production site: https://pir8app.netlify.app (manual CLI deploys;
+# the site is not connected to the GitHub repo, so pushes do not auto-deploy).
+# Deploy with: netlify deploy --prod --build --site <site-id>
+# The Essential Next.js plugin is auto-installed and serves all routes
+# (including /api/*) through the Next.js Server Handler.
+[build]
+  command = "pnpm build"
+  publish = ".next"
