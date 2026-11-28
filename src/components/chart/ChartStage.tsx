@@ -12,7 +12,7 @@
  * we upload a texture and draw. No game rules live here.
  */
 
-import { useEffect, useMemo, useRef } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 import * as THREE from 'three';
 import { chartFragment, chartVertex, fogFragment, fogVertex } from './chartShaders';
 import { prefersReducedMotion } from '@/lib/motion';
@@ -80,6 +80,23 @@ const CANVAS_OVERSCAN = (SHEET_MARGIN - 1) / 2;
  * change framing in an orthographic camera. */
 const CAMERA_HEIGHT = 24;
 
+/** WebGL is a hard requirement for the three.js chart. Probe it before
+ * touching the renderer: on machines with no or blocked GL (headless flags,
+ * locked-down drivers) `new THREE.WebGLRenderer()` throws *inside three*
+ * itself, which used to take the whole game down into the error boundary.
+ * The DOM hit grid underneath stays fully playable, so we degrade to the
+ * flat chart instead of crashing. */
+function webglAvailable(): boolean {
+  try {
+    const canvas = document.createElement('canvas');
+    return Boolean(
+      canvas.getContext('webgl2') || canvas.getContext('webgl'),
+    );
+  } catch {
+    return false;
+  }
+}
+
 export default function ChartStage({
   gridSize,
   cells,
@@ -123,10 +140,18 @@ export default function ChartStage({
   );
   const selectionSignature = selected ? `${selected.x},${selected.y}` : '';
 
+  // Set when GL is missing/blocked: the effect below bails out and we render
+  // the fallback note instead of a canvas.
+  const [webglMissing, setWebglMissing] = useState(false);
+
   // ---------------------------------------------------------------- scene init
   useEffect(() => {
     const host = hostRef.current;
     if (!host) return;
+    if (!webglAvailable()) {
+      setWebglMissing(true);
+      return;
+    }
 
     const reduced = prefersReducedMotion();
     const size = live.current.gridSize;
@@ -138,12 +163,22 @@ export default function ChartStage({
     const camera = new THREE.OrthographicCamera(-1, 1, 1, -1, 0.1, 200);
     camera.up.set(0, 0, -1);
 
-    const renderer = new THREE.WebGLRenderer({
-      antialias: true,
-      alpha: true,
-      powerPreference: 'high-performance',
-    });
-    renderer.setPixelRatio(Math.min(window.devicePixelRatio || 1, 1.75));
+    // Construction itself can still throw (context lost between probe and
+    // use, driver quirks) — bail to the flat chart rather than the boundary.
+    let renderer: THREE.WebGLRenderer;
+    try {
+      renderer = new THREE.WebGLRenderer({
+        antialias: true,
+        alpha: true,
+        powerPreference: 'high-performance',
+      });
+    } catch {
+      setWebglMissing(true);
+      return;
+    }
+    // Perf: cap DPR at 1.5. At 1.75 a 1080p canvas shades ~2.7M px/frame on
+    // integrated GPUs; 1.5 keeps the chart crisp while cutting shade cost ~25%.
+    renderer.setPixelRatio(Math.min(window.devicePixelRatio || 1, 1.5));
     renderer.outputColorSpace = THREE.SRGBColorSpace;
     renderer.toneMapping = THREE.ACESFilmicToneMapping;
     renderer.toneMappingExposure = 1.12;
@@ -605,6 +640,37 @@ export default function ChartStage({
     // Glide fires on key change only; the scene reads it imperatively.
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [glideKey]);
+
+  // No GL: the DOM hit grid underneath carries the whole game, so the chart
+  // layer degrades to a quiet note instead of a canvas (or a crash).
+  if (webglMissing) {
+    return (
+      <div
+        className={className}
+        style={{
+          position: 'absolute',
+          inset: `${-CANVAS_OVERSCAN * 100}%`,
+          overflow: 'visible',
+          pointerEvents: 'none',
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'center',
+        }}
+      >
+        <p
+          style={{
+            fontFamily: 'var(--p8-font-instrument)',
+            fontSize: 'var(--p8-fs-xs)',
+            letterSpacing: '0.14em',
+            textTransform: 'uppercase',
+            color: 'var(--p8-vellum-mute)',
+          }}
+        >
+          Flat chart — 3D table unavailable
+        </p>
+      </div>
+    );
+  }
 
   return (
     <div

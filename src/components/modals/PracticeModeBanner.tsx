@@ -1,5 +1,7 @@
 "use client";
 
+import { Icon } from "@/components/ui/Icon";
+
 interface PracticeModeBannerProps {
   onExit: () => void;
   onShowDossier: () => void;
@@ -14,17 +16,19 @@ export default function PracticeModeBanner({
   onUpgrade,
 }: PracticeModeBannerProps) {
   return (
-    <div className="fixed top-4 left-4 z-40">
-      <div className="bg-gradient-to-r from-neon-magenta/90 to-neon-purple/90 text-white rounded-xl font-bold shadow-lg overflow-hidden animate-fade-in">
+    <div className="fixed left-4 top-4 z-40">
+      <div className="overflow-hidden rounded-[var(--p8-radius)] border border-[var(--p8-brass-line)] bg-[var(--p8-deep)] font-bold shadow-[0_2px_8px_rgba(0,0,0,.45)]">
         {/* Top Bar */}
-        <div className="flex items-center justify-between px-4 py-3 border-b border-white/20">
+        <div className="flex items-center justify-between border-b border-[var(--p8-brass-line)] px-4 py-3">
           <div className="flex items-center gap-2">
-            <span className="text-lg">🎯</span>
-            <span className="text-sm font-black">PRACTICE MODE</span>
+            <span className="text-[var(--p8-lamp)]">
+              <Icon name="target" size={18} strokeWidth={1.5} />
+            </span>
+            <span className="font-[var(--font-instrument)] text-[11px] uppercase tracking-[0.2em] text-[var(--p8-vellum)]">Practice mode</span>
           </div>
           <button
             onClick={onExit}
-            className="text-xs bg-black/30 px-3 py-1.5 rounded hover:bg-black/50 transition-all"
+            className="rounded-[var(--p8-radius)] border border-[var(--p8-brass-line)] bg-[var(--p8-ink)] px-3 py-1.5 font-[var(--font-instrument)] text-[11px] uppercase tracking-[0.1em] text-[var(--p8-vellum-dim)] transition-colors hover:border-[var(--p8-brass)] hover:text-[var(--p8-vellum)] focus-visible:outline-2 focus-visible:outline-[var(--p8-lamp)]"
             title="Exit practice mode"
           >
             Exit
@@ -32,38 +36,39 @@ export default function PracticeModeBanner({
         </div>
 
         {/* Status Info */}
-        <div className="px-4 py-2 bg-black/20">
-          <p className="text-xs text-white/90">
-            🛡️ Safe environment - no blockchain fees
+        <div className="bg-[var(--p8-ink)] px-4 py-2">
+          <p className="flex items-center gap-2 text-xs text-[var(--p8-vellum-dim)]">
+            <Icon name="shield" size={14} strokeWidth={1.5} />
+            Safe environment — no blockchain fees
           </p>
         </div>
 
         {/* Privacy Education Button */}
-        <div className="px-4 py-2 bg-black/20 border-t border-white/10">
+        <div className="border-t border-[var(--p8-brass-line)] bg-[var(--p8-ink)] px-4 py-2">
           <button
             onClick={onShowDossier}
-            className="w-full text-xs bg-red-500/20 hover:bg-red-500/30 text-red-300 py-2 px-3 rounded-lg transition-all flex items-center justify-center gap-2"
+            className="flex w-full items-center justify-center gap-2 rounded-[var(--p8-radius)] border border-[color-mix(in_srgb,var(--p8-threat)_55%,transparent)] px-3 py-2 text-xs text-[var(--p8-threat)] transition-colors hover:border-[var(--p8-threat)] focus-visible:outline-2 focus-visible:outline-[var(--p8-lamp)]"
           >
-            <span>📋</span>
-            <span>View AI Dossier on You</span>
+            <Icon name="log" size={14} strokeWidth={1.5} />
+            <span>View AI dossier on you</span>
           </button>
-          <p className="text-[10px] text-white/50 mt-1 text-center">
+          <p className="mt-1 text-center font-[var(--font-instrument)] text-[11px] text-[var(--p8-vellum-mute)]">
             See what opponents learn from visible data
           </p>
         </div>
 
         {/* Upgrade Prompt */}
         {showUpgradePrompt && (
-          <div className="px-4 py-3 bg-black/20 space-y-2 border-t border-white/10">
-            <p className="text-xs text-white/90 font-semibold">
-              🏆 Ready for real battles with stakes?
+          <div className="space-y-2 border-t border-[var(--p8-brass-line)] bg-[var(--p8-ink)] px-4 py-3">
+            <p className="flex items-center gap-2 text-xs font-semibold text-[var(--p8-vellum)]">
+              <Icon name="trophy" size={14} className="text-[var(--p8-lamp)]" strokeWidth={1.5} />
+              Ready for real battles with stakes?
             </p>
             <button
               onClick={onUpgrade}
-              className="w-full text-xs bg-gradient-to-r from-neon-cyan to-neon-gold text-black font-bold py-2 px-3 rounded-lg
-                         hover:shadow-lg hover:scale-105 transition-all"
+              className="w-full rounded-[var(--p8-radius)] bg-[var(--p8-lamp)] px-3 py-2 text-xs font-bold text-[#0b1418] transition hover:brightness-110 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--p8-vellum)]"
             >
-              Connect Wallet & Play On-Chain
+              Connect wallet & play on-chain
             </button>
           </div>
         )}

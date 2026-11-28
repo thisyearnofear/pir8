@@ -27,13 +27,17 @@ type Cluster = 'devnet' | 'testnet' | 'mainnet-beta';
 export const APP_IDENTITY = {
   /** Display name of your application */
   name: 'PIR8 Battle Arena',
-  
+
   /** Public URL of your application */
-  uri: process.env['NEXT_PUBLIC_APP_URL'] || 'https://pir8.vercel.app',
-  
+  uri:
+    process.env['NEXT_PUBLIC_APP_URL'] ||
+    'https://pir8app.netlify.app',
+
   /** Icon displayed in wallet connection UI */
   icon: '/icon-192x192.png',
 } as const;
+// Frozen at runtime (separate statement preserves the `as const` type).
+Object.freeze(APP_IDENTITY);
 
 /**
  * Configuration options for mobile wallet adapter
@@ -111,11 +115,13 @@ export function isSolanaDappStore(): boolean {
   
   // Check for mobile wallet adapter protocol
   // @ts-ignore
-  const hasMWA = typeof navigator !== 'undefined' && 
+  const hasMWA = typeof navigator !== 'undefined' &&
                  // @ts-ignore
                  navigator.solana?.isMobileWalletAdapter;
-  
-  return hasSeedVault || hasMWA;
+
+  // Boolean(): `hasMWA` can be undefined (no Solana object), and callers rely
+  // on a strict boolean — `false || undefined` would leak undefined out.
+  return Boolean(hasSeedVault || hasMWA);
 }
 
 /**

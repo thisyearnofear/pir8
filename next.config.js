@@ -10,6 +10,27 @@ const nextConfig = {
   },
   compress: true,
   staticPageGenerationTimeout: 120,
+  async headers() {
+    return [
+      {
+        // Byte arena embeds the spectator screen in an iframe. Allow only
+        // the arena origin; everywhere else keeps the default (no framing).
+        source: "/watch/:path*",
+        headers: [
+          {
+            key: "Content-Security-Policy",
+            value: "frame-ancestors https://app.bytearena.fun",
+          },
+        ],
+      },
+      {
+        source: "/api/byte/:path*",
+        headers: [
+          { key: "Access-Control-Allow-Origin", value: "*" },
+        ],
+      },
+    ];
+  },
   turbopack: {},
   
   // Webpack config to prevent Solana from being bundled server-side

@@ -29,63 +29,11 @@ export const API_ENDPOINTS = {
   GAME_STATE: "/api/game",
 } as const;
 
-// Team Colors - Single source of truth for player visual distinction
-export const TEAM_COLORS = [
-  {
-    tailwind: "text-neon-cyan",
-    ring: "ring-neon-cyan",
-    shadow: "shadow-neon-cyan/50",
-    hex: "#00D9FF",
-    name: "Cyan",
-    bg: "bg-neon-cyan/30",
-    border: "border-neon-cyan",
-  },
-  {
-    tailwind: "text-neon-gold",
-    ring: "ring-neon-gold",
-    shadow: "shadow-neon-gold/50",
-    hex: "#FFD700",
-    name: "Gold",
-    bg: "bg-neon-gold/30",
-    border: "border-neon-gold",
-  },
-  {
-    tailwind: "text-neon-magenta",
-    ring: "ring-neon-magenta",
-    shadow: "shadow-neon-magenta/50",
-    hex: "#FF00FF",
-    name: "Magenta",
-    bg: "bg-neon-magenta/30",
-    border: "border-neon-magenta",
-  },
-  {
-    tailwind: "text-neon-purple",
-    ring: "ring-neon-purple",
-    shadow: "shadow-neon-purple/50",
-    hex: "#BC13FE",
-    name: "Purple",
-    bg: "bg-neon-purple/30",
-    border: "border-neon-purple",
-  },
-] as const;
-
-// Pirate Territory & Ship Mappings
-export const TERRITORY_EMOJIS = {
-  water: "🌊",
-  island: "🏝️",
-  port: "⚓",
-  treasure: "💰",
-  storm: "⛈️",
-  reef: "🪨",
-  whirlpool: "🌀",
-} as const;
-
-export const SHIP_EMOJIS = {
-  sloop: "⛵",
-  frigate: "🚢",
-  galleon: "🛳️",
-  flagship: "🚤",
-} as const;
+// Player distinction now comes from the cabin instrument palette
+// (var(--p8-signal), var(--p8-lamp), …) — see DESIGN.md §5.
+// The dead TEAM_COLORS / TERRITORY_EMOJIS / SHIP_EMOJIS maps were removed:
+// zero consumers, and the data-layer emoji keys that remain live are
+// translated at the boundary (TerritoryBonusPanel BONUS_ICONS).
 
 export const TERRITORY_DESCRIPTIONS = {
   water: "Safe passage for ships",

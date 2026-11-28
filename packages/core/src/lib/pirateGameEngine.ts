@@ -1733,6 +1733,11 @@ export class PirateGameManager {
 
     // Build reasoning object
     const difficultyName = difficulty.debugName || "Pirate";
+    // Display name ships to UI surfaces (reasoning panels, decision modal):
+    // strip the debug glyph prefix at the source so no emoji leaks into chrome.
+    const displayName = difficultyName
+      .replace(/^[\p{Extended_Pictographic}\uFE0F\u200D]+\s*/u, "")
+      .trim();
     const reasoning: AIReasoning = {
       optionsConsidered,
       chosenOption,
@@ -1745,7 +1750,7 @@ export class PirateGameManager {
             : difficultyName.includes("Captain")
               ? "captain"
               : "pirate",
-        name: difficultyName,
+        name: displayName,
         aggressiveness: difficulty.aggressiveness,
       },
       thinkingTime: Date.now() - startTime,

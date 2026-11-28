@@ -6,6 +6,7 @@
 'use client';
 
 import { AIReasoning } from '@/lib/pirateGameEngine';
+import { Icon, type IconName } from '@/components/ui/Icon';
 
 interface AIDecisionModalProps {
   reasoning: AIReasoning | null;
@@ -13,6 +14,14 @@ interface AIDecisionModalProps {
   playerName: string;
   onClose: () => void;
 }
+
+const OPTION_ICONS: Record<string, IconName> = {
+  attack: 'attack',
+  move_ship: 'move',
+  claim_territory: 'claim',
+  build_ship: 'build',
+  pass: 'end-turn',
+};
 
 export default function AIDecisionModal({
   reasoning,
@@ -24,54 +33,75 @@ export default function AIDecisionModal({
 
   const { chosenOption, optionsConsidered = [], gameAnalysis, difficulty, thinkingTime } = reasoning || {};
 
+  const position = gameAnalysis.isWinning
+    ? { label: 'Winning', icon: 'trend-up' as const, className: 'text-[var(--p8-signal)]' }
+    : gameAnalysis.isLosing
+      ? { label: 'Losing', icon: 'trend-down' as const, className: 'text-[var(--p8-threat)]' }
+      : { label: 'Even', icon: 'circle-dot' as const, className: 'text-[var(--p8-lamp)]' };
+
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm animate-fade-in">
-      <div className="bg-gradient-to-br from-slate-900 to-slate-800 border-2 border-neon-cyan/50 rounded-2xl p-6 max-w-2xl w-full mx-4 shadow-2xl shadow-neon-cyan/20 max-h-[80vh] overflow-y-auto">
+    <div
+      className="fixed inset-0 z-50 flex items-center justify-center bg-black/70"
+      onClick={onClose}
+      role="dialog"
+      aria-modal="true"
+      aria-label={`${playerName} decision log`}
+    >
+      <div
+        className="mx-4 max-h-[80vh] w-full max-w-2xl overflow-y-auto rounded-[var(--p8-radius)] border border-[var(--p8-brass-line)] bg-[var(--p8-deep)] p-6 shadow-[0_2px_8px_rgba(0,0,0,.45)]"
+        onClick={(e) => e.stopPropagation()}
+      >
 
         {/* Header */}
-        <div className="flex items-center justify-between mb-4">
-          <div>
-            <h2 className="text-2xl font-black text-neon-cyan flex items-center gap-2">
-              <span>🤖</span>
-              <span>{playerName}&apos;s Turn</span>
-            </h2>
-            <p className="text-sm text-gray-400 mt-1">
-              {difficulty.name} • Thinking time: {thinkingTime}ms
-            </p>
+        <div className="mb-4 flex items-center justify-between">
+          <div className="flex items-center gap-3">
+            <span className="flex h-11 w-11 items-center justify-center rounded-[var(--p8-radius)] border border-[var(--p8-brass-line)] bg-white/[0.02] text-[var(--p8-lamp)]">
+              <Icon name="brain" size={22} strokeWidth={1.5} />
+            </span>
+            <div>
+              <h2 className="font-[var(--font-world)] text-2xl capitalize text-[var(--p8-vellum)]">
+                {playerName}&apos;s turn
+              </h2>
+              <p className="mt-1 font-[var(--font-instrument)] text-[11px] uppercase tracking-[0.14em] text-[var(--p8-vellum-dim)]">
+                {difficulty.name} • Thinking time: {thinkingTime}ms
+              </p>
+            </div>
           </div>
           <button
             onClick={onClose}
-            className="text-gray-400 hover:text-white transition-colors text-2xl"
+            aria-label="Close decision log"
+            className="rounded-[var(--p8-radius)] p-2 text-[var(--p8-vellum-dim)] transition-colors hover:bg-white/[0.04] hover:text-[var(--p8-vellum)] focus-visible:outline-2 focus-visible:outline-[var(--p8-lamp)]"
           >
-            ×
+            <Icon name="close" size={18} strokeWidth={1.5} />
           </button>
         </div>
 
         {/* Game Analysis */}
-        <div className="bg-slate-800/50 border border-slate-700 rounded-xl p-4 mb-4">
-          <h3 className="text-sm font-bold text-neon-gold uppercase mb-3 flex items-center gap-2">
-            <span>📊</span>
-            <span>Situation Analysis</span>
+        <div className="mb-4 rounded-[var(--p8-radius)] border border-[var(--p8-brass-line)] bg-[var(--p8-ink)] p-4">
+          <h3 className="mb-3 flex items-center gap-2 font-[var(--font-instrument)] text-[11px] uppercase tracking-[0.16em] text-[var(--p8-vellum-dim)]">
+            <Icon name="stats" size={14} strokeWidth={1.5} />
+            <span>Situation analysis</span>
           </h3>
           <div className="grid grid-cols-2 gap-3 text-sm">
-            <div className={`p-2 rounded ${gameAnalysis.isWinning ? 'bg-green-500/20 border border-green-500/30' : 'bg-slate-700/50'}`}>
-              <div className="text-gray-400">Position</div>
-              <div className="font-bold text-white">
-                {gameAnalysis.isWinning ? '✅ Winning' : gameAnalysis.isLosing ? '⚠️ Losing' : '⚔️ Even'}
+            <div className="rounded-[var(--p8-radius)] border border-[var(--p8-brass-line)] bg-[var(--p8-deep)] p-2">
+              <div className="font-[var(--font-instrument)] text-[11px] uppercase tracking-[0.1em] text-[var(--p8-vellum-mute)]">Position</div>
+              <div className={`flex items-center gap-1.5 font-bold ${position.className}`}>
+                <Icon name={position.icon} size={15} strokeWidth={1.5} />
+                {position.label}
               </div>
             </div>
-            <div className="bg-slate-700/50 p-2 rounded">
-              <div className="text-gray-400">Territories</div>
-              <div className="font-bold text-white">{gameAnalysis.territoriesControlled}</div>
+            <div className="rounded-[var(--p8-radius)] border border-[var(--p8-brass-line)] bg-[var(--p8-deep)] p-2">
+              <div className="font-[var(--font-instrument)] text-[11px] uppercase tracking-[0.1em] text-[var(--p8-vellum-mute)]">Territories</div>
+              <div className="font-[var(--font-instrument)] font-bold text-[var(--p8-vellum)]">{gameAnalysis.territoriesControlled}</div>
             </div>
-            <div className="bg-slate-700/50 p-2 rounded">
-              <div className="text-gray-400">Ships</div>
-              <div className="font-bold text-white">{gameAnalysis.totalShips}</div>
+            <div className="rounded-[var(--p8-radius)] border border-[var(--p8-brass-line)] bg-[var(--p8-deep)] p-2">
+              <div className="font-[var(--font-instrument)] text-[11px] uppercase tracking-[0.1em] text-[var(--p8-vellum-mute)]">Ships</div>
+              <div className="font-[var(--font-instrument)] font-bold text-[var(--p8-vellum)]">{gameAnalysis.totalShips}</div>
             </div>
-            <div className={`p-2 rounded ${gameAnalysis.resourceAdvantage ? 'bg-blue-500/20 border border-blue-500/30' : 'bg-slate-700/50'}`}>
-              <div className="text-gray-400">Resources</div>
-              <div className="font-bold text-white">
-                {gameAnalysis.resourceAdvantage ? '💰 Rich' : '💸 Average'}
+            <div className="rounded-[var(--p8-radius)] border border-[var(--p8-brass-line)] bg-[var(--p8-deep)] p-2">
+              <div className="font-[var(--font-instrument)] text-[11px] uppercase tracking-[0.1em] text-[var(--p8-vellum-mute)]">Resources</div>
+              <div className={`font-bold ${gameAnalysis.resourceAdvantage ? 'text-[var(--p8-signal)]' : 'text-[var(--p8-vellum-dim)]'}`}>
+                {gameAnalysis.resourceAdvantage ? 'Rich' : 'Steady'}
               </div>
             </div>
           </div>
@@ -79,11 +109,11 @@ export default function AIDecisionModal({
 
         {/* Options Considered */}
         <div className="mb-4">
-          <h3 className="text-sm font-bold text-neon-magenta uppercase mb-3 flex items-center gap-2">
-            <span>🎯</span>
-            <span>Options Evaluated ({(optionsConsidered || []).length})</span>
+          <h3 className="mb-3 flex items-center gap-2 font-[var(--font-instrument)] text-[11px] uppercase tracking-[0.16em] text-[var(--p8-vellum-dim)]">
+            <Icon name="target" size={14} strokeWidth={1.5} />
+            <span>Options evaluated ({(optionsConsidered || []).length})</span>
           </h3>
-          <div className="space-y-2 max-h-48 overflow-y-auto">
+          <div className="max-h-48 space-y-2 overflow-y-auto">
             {(optionsConsidered || []).slice(0, 5).map((option, idx) => {
               const isChosen = chosenOption?.type === option.type &&
                 chosenOption?.shipId === option.shipId &&
@@ -92,42 +122,38 @@ export default function AIDecisionModal({
               return (
                 <div
                   key={idx}
-                  className={`p-3 rounded-lg border-2 transition-all ${isChosen
-                      ? 'border-neon-cyan bg-neon-cyan/20 scale-105'
-                      : 'border-slate-600 bg-slate-800/50'
+                  className={`rounded-[var(--p8-radius)] border p-3 transition-colors ${isChosen
+                      ? 'border-[var(--p8-lamp)] bg-[color-mix(in_srgb,var(--p8-lamp)_8%,transparent)]'
+                      : 'border-[var(--p8-brass-line)] bg-[var(--p8-ink)]'
                     }`}
                 >
-                  <div className="flex items-center justify-between mb-1">
+                  <div className="mb-1 flex items-center justify-between">
                     <div className="flex items-center gap-2">
-                      <span className="text-lg">
-                        {option.type === 'attack' && '⚔️'}
-                        {option.type === 'move_ship' && '🚢'}
-                        {option.type === 'claim_territory' && '🏴‍☠️'}
-                        {option.type === 'build_ship' && '🛠️'}
-                        {option.type === 'pass' && '⏭️'}
+                      <span className={isChosen ? 'text-[var(--p8-lamp)]' : 'text-[var(--p8-vellum-dim)]'}>
+                        <Icon name={OPTION_ICONS[option.type] ?? 'circle-dot'} size={18} strokeWidth={1.5} />
                       </span>
-                      <span className="font-bold text-white capitalize">
+                      <span className="font-bold capitalize text-[var(--p8-vellum)]">
                         {option.type.replace('_', ' ')}
                       </span>
                       {isChosen && (
-                        <span className="text-xs bg-neon-cyan text-black px-2 py-0.5 rounded-full font-bold">
-                          CHOSEN
+                        <span className="rounded-full bg-[var(--p8-lamp)] px-2 py-0.5 font-[var(--font-instrument)] text-[11px] text-[#0b1418]">
+                          Chosen
                         </span>
                       )}
                     </div>
                     <div className="flex items-center gap-2">
-                      <span className="text-xs text-gray-400">Score:</span>
-                      <span className={`font-bold ${option.score >= 80 ? 'text-green-400' :
-                          option.score >= 60 ? 'text-yellow-400' :
-                            'text-gray-400'
+                      <span className="font-[var(--font-instrument)] text-[11px] text-[var(--p8-vellum-mute)]">Score:</span>
+                      <span className={`font-[var(--font-instrument)] font-bold ${option.score >= 80 ? 'text-[var(--p8-signal)]' :
+                          option.score >= 60 ? 'text-[var(--p8-lamp)]' :
+                            'text-[var(--p8-vellum-dim)]'
                         }`}>
                         {option.score}
                       </span>
                     </div>
                   </div>
-                  <p className="text-sm text-gray-300">{option.reason}</p>
+                  <p className="text-sm text-[var(--p8-vellum-dim)]">{option.reason}</p>
                   {option.target && (
-                    <p className="text-xs text-gray-500 mt-1">Target: {option.target}</p>
+                    <p className="mt-1 font-[var(--font-instrument)] text-[11px] text-[var(--p8-vellum-mute)]">Target: {option.target}</p>
                   )}
                 </div>
               );
@@ -137,28 +163,25 @@ export default function AIDecisionModal({
 
         {/* Chosen Action */}
         {chosenOption && (
-          <div className="bg-gradient-to-r from-neon-cyan/20 to-neon-gold/20 border-2 border-neon-cyan rounded-xl p-4 mb-4">
-            <h3 className="text-sm font-bold text-neon-cyan uppercase mb-2 flex items-center gap-2">
-              <span>✨</span>
-              <span>Final Decision</span>
+          <div className="mb-4 rounded-[var(--p8-radius)] border border-[var(--p8-brass-line)] border-l-4 border-l-[var(--p8-lamp)] bg-[var(--p8-ink)] p-4">
+            <h3 className="mb-2 flex items-center gap-2 font-[var(--font-instrument)] text-[11px] uppercase tracking-[0.16em] text-[var(--p8-lamp)]">
+              <Icon name="sparkles" size={14} strokeWidth={1.5} />
+              <span>Final decision</span>
             </h3>
             <div className="flex items-start gap-3">
-              <span className="text-3xl">
-                {chosenOption.type === 'attack' && '⚔️'}
-                {chosenOption.type === 'move_ship' && '🚢'}
-                {chosenOption.type === 'claim_territory' && '🏴‍☠️'}
-                {chosenOption.type === 'build_ship' && '🛠️'}
+              <span className="flex h-11 w-11 shrink-0 items-center justify-center rounded-[var(--p8-radius)] border border-[var(--p8-brass-line)] bg-[var(--p8-deep)] text-[var(--p8-lamp)]">
+                <Icon name={OPTION_ICONS[chosenOption.type] ?? 'circle-dot'} size={22} strokeWidth={1.5} />
               </span>
               <div className="flex-1">
-                <div className="font-bold text-white text-lg capitalize mb-1">
+                <div className="mb-1 text-lg font-bold capitalize text-[var(--p8-vellum)]">
                   {chosenOption.type.replace('_', ' ')}
                 </div>
-                <p className="text-gray-300 text-sm mb-2">{chosenOption.reason}</p>
-                <div className="flex items-center gap-2">
-                  <span className="text-xs bg-neon-gold/20 text-neon-gold px-2 py-1 rounded">
+                <p className="mb-2 text-sm text-[var(--p8-vellum-dim)]">{chosenOption.reason}</p>
+                <div className="flex flex-wrap items-center gap-2">
+                  <span className="rounded-full border border-[var(--p8-brass-line)] px-2 py-1 font-[var(--font-instrument)] text-[11px] text-[var(--p8-lamp)]">
                     Score: {chosenOption.score}
                   </span>
-                  <span className="text-xs bg-neon-magenta/20 text-neon-magenta px-2 py-1 rounded">
+                  <span className="rounded-full border border-[var(--p8-brass-line)] px-2 py-1 font-[var(--font-instrument)] text-[11px] text-[var(--p8-vellum-dim)]">
                     {difficulty.level} AI • {(difficulty.aggressiveness * 100).toFixed(0)}% aggressive
                   </span>
                 </div>
@@ -168,9 +191,9 @@ export default function AIDecisionModal({
         )}
 
         {/* Educational Note */}
-        <div className="bg-slate-800/30 border border-slate-700 rounded-lg p-3 mb-4">
-          <p className="text-xs text-gray-400 italic">
-            💡 <strong>Learning Moment:</strong> The AI evaluates multiple options and scores them based on
+        <div className="mb-4 rounded-[var(--p8-radius)] border border-[var(--p8-brass-line)] bg-[var(--p8-ink)] p-3">
+          <p className="text-xs italic text-[var(--p8-vellum-dim)]">
+            <strong className="not-italic text-[var(--p8-vellum)]">Learning moment:</strong> The AI evaluates multiple options and scores them based on
             the game situation. Higher difficulty AIs consider more factors and make smarter decisions.
             {gameAnalysis.isLosing && " Notice how the AI becomes more aggressive when losing!"}
           </p>
@@ -179,11 +202,10 @@ export default function AIDecisionModal({
         {/* Continue Button */}
         <button
           onClick={onClose}
-          className="w-full py-3 px-4 rounded-xl bg-gradient-to-r from-neon-cyan to-neon-gold 
-                     text-black font-bold hover:shadow-lg hover:shadow-neon-cyan/50 
-                     hover:scale-105 active:scale-95 transition-all"
+          autoFocus
+          className="w-full rounded-[var(--p8-radius)] bg-[var(--p8-lamp)] px-4 py-3 text-sm font-black uppercase tracking-[0.14em] text-[#0b1418] transition hover:brightness-110 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--p8-vellum)]"
         >
-          Continue Watching
+          Continue watching
         </button>
       </div>
     </div>

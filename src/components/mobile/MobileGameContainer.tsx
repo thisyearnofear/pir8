@@ -2,6 +2,7 @@
 
 import React, { useState, useCallback } from 'react';
 import { useMobileOptimized } from '@/hooks/useMobileOptimized';
+import { Icon } from '@/components/ui/Icon';
 
 interface Resources {
   gold: number;
@@ -30,7 +31,7 @@ export function MobileGameContainer({
   children,
 }: MobileGameContainerProps) {
   const [showMobileControls, setShowMobileControls] = useState(false);
-  
+
   const { isMobile, triggerHaptic, touchHandlers } = useMobileOptimized({
     hapticFeedback: true,
     preventZoom: true,
@@ -46,24 +47,25 @@ export function MobileGameContainer({
   }
 
   return (
-    <div 
+    <div
       className="mobile-game-container relative"
       {...touchHandlers}
     >
       {/* Mobile-optimized HUD */}
-      <div className="fixed top-0 left-0 right-0 z-50 bg-gradient-to-b from-black/80 to-transparent pt-safe">
+      <div className="fixed left-0 right-0 top-0 z-50 bg-gradient-to-b from-black/80 to-transparent pt-safe">
         {/* Top bar with player info */}
         <div className="flex items-center justify-between px-3 py-2">
           <div className="flex items-center gap-2">
-            <div className={`w-2 h-2 rounded-full ${isMyTurn ? 'bg-green-400 animate-pulse' : 'bg-red-400'}`} />
-            <span className="text-xs text-white font-mono">
+            <div className={`h-2 w-2 rounded-full ${isMyTurn ? 'animate-pulse bg-[var(--p8-signal)]' : 'bg-[var(--p8-threat)]'}`} />
+            <span className="font-[var(--font-instrument)] text-xs text-[var(--p8-vellum)]">
               {isMyTurn ? 'YOUR TURN' : currentPlayerName}
             </span>
           </div>
-          
+
           {/* Timer */}
           {isMyTurn && (
-            <div className="text-xs font-mono text-neon-cyan">
+            <div className="flex items-center gap-1 font-[var(--font-instrument)] text-xs text-[var(--p8-signal)]">
+              <Icon name="clock" size={12} />
               {Math.floor(decisionTimeMs / 1000)}s
             </div>
           )}
@@ -71,17 +73,17 @@ export function MobileGameContainer({
 
         {/* Resources bar - compact on mobile */}
         {resources && (
-          <div className="flex items-center justify-center gap-2 px-2 py-1 overflow-x-auto">
-            <span className="text-xs text-yellow-400 font-mono">💰{resources.gold}</span>
-            <span className="text-xs text-cyan-400 font-mono">👥{resources.crew}</span>
-            <span className="text-xs text-red-400 font-mono">💣{resources.cannons}</span>
-            <span className="text-xs text-green-400 font-mono">📦{resources.supplies}</span>
+          <div className="flex items-center justify-center gap-2 overflow-x-auto px-2 py-1 font-[var(--font-instrument)] text-xs text-[var(--p8-vellum-dim)]">
+            <span className="flex items-center gap-1"><Icon name="gold" size={12} className="text-[var(--p8-lamp)]" />{resources.gold}</span>
+            <span className="flex items-center gap-1"><Icon name="crew" size={12} className="text-[var(--p8-lamp)]" />{resources.crew}</span>
+            <span className="flex items-center gap-1"><Icon name="cannons" size={12} className="text-[var(--p8-lamp)]" />{resources.cannons}</span>
+            <span className="flex items-center gap-1"><Icon name="supplies" size={12} className="text-[var(--p8-lamp)]" />{resources.supplies}</span>
           </div>
         )}
       </div>
 
       {/* Main game area */}
-      <div className="pt-16 pb-20">
+      <div className="pb-20 pt-16">
         {children}
       </div>
 
@@ -95,27 +97,30 @@ export function MobileGameContainer({
                   triggerHaptic('light');
                   setShowMobileControls(!showMobileControls);
                 }}
-                className="w-12 h-12 rounded-full bg-slate-700 flex items-center justify-center text-lg"
+                aria-label="Show actions"
+                className="flex h-12 w-12 items-center justify-center rounded-full border border-[var(--p8-brass-line)] bg-[var(--p8-deep)] text-[var(--p8-vellum)]"
               >
-                🎯
+                <Icon name="target" size={18} />
               </button>
-              
+
               <button
                 onClick={handleEndTurn}
-                className="flex-1 max-w-[150px] h-12 rounded-xl bg-gradient-to-r from-neon-gold to-neon-orange text-black font-bold text-sm"
+                className="flex h-12 max-w-[150px] flex-1 items-center justify-center gap-2 rounded-[var(--p8-radius)] border border-[var(--p8-lamp)] bg-[var(--p8-lamp)] text-sm font-bold text-[var(--p8-ink)]"
               >
+                <Icon name="end-turn" size={15} />
                 END TURN
               </button>
             </>
           )}
-          
+
           <button
             onClick={() => {
               triggerHaptic('light');
             }}
-            className="w-12 h-12 rounded-full bg-slate-700 flex items-center justify-center text-lg"
+            aria-label="Attack"
+            className="flex h-12 w-12 items-center justify-center rounded-full border border-[var(--p8-brass-line)] bg-[var(--p8-deep)] text-[var(--p8-vellum)]"
           >
-            ⚔️
+            <Icon name="attack" size={18} />
           </button>
         </div>
       </div>
@@ -123,16 +128,16 @@ export function MobileGameContainer({
       {/* Mobile control panel */}
       {showMobileControls && isMyTurn && (
         <div className="fixed inset-0 z-40 bg-black/50" onClick={() => setShowMobileControls(false)}>
-          <div className="absolute bottom-20 left-0 right-0 bg-slate-800 rounded-t-2xl p-4 animate-slide-up">
+          <div className="absolute bottom-20 left-0 right-0 rounded-t-2xl border-t border-[var(--p8-brass-line)] bg-[var(--p8-deep)] p-4">
             <div className="grid grid-cols-3 gap-2">
-              {['Move', 'Attack', 'Claim'].map((action) => (
+              {(['Move', 'Attack', 'Claim'] as const).map((action) => (
                 <button
                   key={action}
                   onClick={() => {
                     triggerHaptic('light');
                     setShowMobileControls(false);
                   }}
-                  className="h-14 rounded-xl bg-slate-700 text-white font-bold text-sm active:bg-neon-cyan/50"
+                  className="h-14 rounded-[var(--p8-radius)] border border-[var(--p8-brass-line)] bg-[var(--p8-ink)] text-sm font-bold text-[var(--p8-vellum)] active:border-[var(--p8-signal)]"
                 >
                   {action}
                 </button>

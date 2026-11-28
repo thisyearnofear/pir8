@@ -4,7 +4,9 @@ import { GameAction } from "../types/game";
 import { PirateGameManager } from "../lib/pirateGameEngine";
 import { getVisibleCoordinates } from "../utils/helpers";
 
-const PRACTICE_GAME_STORAGE_KEY = "pir8_practice_game";
+const PRACTICE_GAME_STORAGE_KEY = "pir8_practice_game_v2";
+// v2 invalidates every pre-hackathon save: old shapes could resume mid-AI-turn
+// with no AI tick scheduled, which reads as a frozen board.
 const AMBUSH_SCRIPTED_KEY = "pir8_ambush_scripted";
 
 /**
@@ -51,13 +53,36 @@ function scriptAmbushSetup(gameState: any, humanPublicKey: string) {
   }
 }
 
+function isResumablePracticeGame(saved: any): boolean {
+  return (
+    !!saved &&
+    saved.gameStatus === "active" &&
+    Array.isArray(saved.players) &&
+    saved.players.length >= 2 &&
+    !!saved.gameMap &&
+    typeof saved.turnNumber === "number" &&
+    typeof saved.currentPlayerIndex === "number"
+  );
+}
+
 const loadSavedPracticeGame = () => {
   if (typeof window === "undefined") return null;
   try {
     const saved = localStorage.getItem(PRACTICE_GAME_STORAGE_KEY);
-    if (saved) return JSON.parse(saved);
+    if (!saved) return null;
+    const parsed = JSON.parse(saved);
+    if (!isResumablePracticeGame(parsed)) {
+      localStorage.removeItem(PRACTICE_GAME_STORAGE_KEY);
+      return null;
+    }
+    return parsed;
   } catch (error) {
     console.error("Failed to load saved practice game:", error);
+    try {
+      localStorage.removeItem(PRACTICE_GAME_STORAGE_KEY);
+    } catch {
+      // Non-fatal.
+    }
   }
   return null;
 };
@@ -90,16 +115,22 @@ export const createPracticeSlice: StateCreator<
   startPracticeGame: (humanPlayer, difficulty = "pirate") => {
     try {
       const savedGame = loadSavedPracticeGame();
-      if (savedGame && savedGame.gameStatus !== "completed") {
+      if (savedGame) {
         set({
           gameState: savedGame,
           gameMode: "practice",
           selectedShipId: null,
           scannedCoordinates: new Set(),
           scanChargesRemaining: 3,
-          showMessage: "⚔️ Resumed your practice battle!",
+          showMessage: "Resumed your practice battle!",
         });
         setTimeout(() => set({ showMessage: null }), 3000);
+        // A save restored mid-AI-turn would otherwise sit forever: the AI
+        // tick is only scheduled after a human move, never on resume.
+        const helm = savedGame.players?.[savedGame.currentPlayerIndex];
+        if (helm?.publicKey?.startsWith("AI_")) {
+          setTimeout(() => get().processAITurn(), 600);
+        }
         return true;
       }
 

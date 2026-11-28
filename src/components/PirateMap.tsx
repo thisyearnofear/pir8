@@ -614,10 +614,10 @@ export default function PirateMap({
                 onKeyDown={(e) => handleCellKeyDown(e, coordinate)}
                 className={`
                   territory-cell cursor-pointer
-                  ${isMyTurn ? "hover:bg-neon-cyan hover:bg-opacity-20" : ""}
-                  ${selectedShipId && getShipAtPosition(coordinate)?.id === selectedShipId ? "ring-2 ring-neon-gold" : ""}
-                  ${tacticalState.isMoveOption ? "ring-1 ring-cyan-300/70 bg-cyan-300/10" : ""}
-                  ${tacticalState.isAttackOption ? "ring-2 ring-red-400/90 bg-red-500/15" : ""}
+                  ${isMyTurn ? "hover:bg-[var(--p8-lamp)] hover:bg-opacity-20" : ""}
+                  ${selectedShipId && getShipAtPosition(coordinate)?.id === selectedShipId ? "ring-2 ring-[var(--p8-lamp)]" : ""}
+                  ${tacticalState.isMoveOption ? "ring-1 ring-[var(--p8-signal)] bg-[var(--p8-signal)] bg-opacity-10" : ""}
+                  ${tacticalState.isAttackOption ? "ring-2 ring-[var(--p8-threat)] bg-[var(--p8-threat)] bg-opacity-15" : ""}
                   ${!tacticalState.isMoveOption && !tacticalState.isAttackOption && tacticalState.isThreatened ? "threat-zone-cell" : ""}
                   ${isFogged ? "fogged-sector" : isStale ? "stale-sector" : isScanned ? "scanned-sector" : ""}
                   ${classes.button}
@@ -632,8 +632,10 @@ export default function PirateMap({
                   {getCellContent(coordinate)}
                 </div>
 
-                {/* Ownership label — the non-colour signal for territory control. */}
-                {chartMode && cellData?.owner && !isFogged && (
+                {/* Ownership label — the non-colour signal for territory control. Rendered in
+                    both views so the flat view needs no second overlay grid (perf: halves
+                    the DOM nodes in flat mode from ~200 to ~100). */}
+                {cellData?.owner && !isFogged && (
                   <span className="territory-control-flag">
                     {cellData.isContested
                       ? "HOT"
@@ -653,7 +655,7 @@ export default function PirateMap({
                   <>
                     <div className="attack-range-arc" />
                     <div className="pointer-events-none absolute inset-x-0 top-0 flex justify-center">
-                      <div className="rounded-b bg-red-500 px-1.5 py-0.5 text-[10px] font-black leading-none text-white shadow-lg">
+                      <div className="rounded-b bg-[var(--p8-threat)] px-1.5 py-0.5 text-[11px] font-black leading-none text-white shadow-lg">
                         {damagePreview ? `~${damagePreview}` : "HIT"}
                       </div>
                     </div>
@@ -664,51 +666,10 @@ export default function PirateMap({
           })}
         </div>
 
-        {/* Conquest overlay — only in flat view. The shader owns the ownership
-            wash in chart view, and the per-cell flag above carries the label. */}
-        {!chartMode && (
-          <div
-            className="grid absolute inset-0 pointer-events-none"
-            style={{
-              gridTemplateColumns: `repeat(${gridSize}, minmax(0, 1fr))`,
-            }}
-          >
-            {Array.from({ length: totalCells }, (_, index) => {
-              const x = index % gridSize;
-              const y = Math.floor(index / gridSize);
-              const coordinate = PirateGameManager.coordinateToString({ x, y });
-              const cell = getCellAt(coordinate);
-              const intelState = visibility.getCoordinateIntel(coordinate);
-
-              if (!cell?.owner || intelState === "hidden") return <div key={`overlay-${coordinate}`} />;
-
-              const isPlayerControlled = cell.owner === currentPlayerPK;
-              const isAIControlled = cell.owner.startsWith('AI_');
-
-              return (
-                <div
-                  key={`conquest-${coordinate}`}
-                  className={`relative transition-all duration-500 rounded ${cell.isContested ? 'animate-pulse' : ''}`}
-                  style={{
-                    backgroundColor: isPlayerControlled
-                      ? 'rgba(34, 211, 238, 0.15)'
-                      : isAIControlled
-                        ? 'rgba(239, 68, 68, 0.15)'
-                        : 'rgba(251, 191, 36, 0.15)',
-                    border: `2px solid ${
-                      isPlayerControlled ? '#22d3ee' :
-                      isAIControlled ? '#ef4444' : '#fbbf24'
-                    }`,
-                  }}
-                >
-                  <div className="territory-control-flag">
-                    {cell.isContested ? "HOT" : isPlayerControlled ? "YOU" : isAIControlled ? "AI" : "CAP"}
-                  </div>
-                </div>
-              );
-            })}
-          </div>
-        )}
+        {/* Conquest overlay removed (perf): the per-cell flag above already carries
+            the ownership label in both views. The old second grid doubled the DOM
+            nodes and ran an animate-pulse per contested cell. */}
+        {null}
       </div>
 
       {/* View toggle + the one contextual hint. */}
@@ -739,7 +700,7 @@ export default function PirateMap({
           <div className="text-xs sm:text-sm text-cyan-100 font-mono truncate">
             {selectedShip?.type ?? "Ship"} selected
           </div>
-          <div className="mt-2 grid grid-cols-3 gap-1 text-[10px] uppercase tracking-wide">
+          <div className="mt-2 grid grid-cols-3 gap-1 text-[11px] uppercase tracking-wide">
             <span className="rounded border border-cyan-300/30 bg-cyan-300/10 px-1.5 py-1 text-cyan-100">
               Move {selectedShip?.speed ?? "-"}
             </span>
@@ -760,15 +721,15 @@ export default function PirateMap({
             Pos: {hoveredCoordinate}
           </div>
           {getCellAt(hoveredCoordinate) && (
-            <div className="text-xs text-neon-cyan truncate">
+            <div className="text-xs text-[var(--p8-signal)] truncate">
               {getCellAt(hoveredCoordinate)?.type}
               {getCellAt(hoveredCoordinate)?.owner && (
-                <span className="text-neon-orange"> (Ctrl)</span>
+                <span className="text-[var(--p8-lamp)]"> (Ctrl)</span>
               )}
             </div>
           )}
           {getShipAtPosition(hoveredCoordinate) && (
-            <div className="text-xs text-neon-magenta truncate">
+            <div className="text-xs text-[var(--p8-threat)] truncate">
               {getShipAtPosition(hoveredCoordinate)!.type} -
               {getShipAtPosition(hoveredCoordinate)!.health}HP
             </div>

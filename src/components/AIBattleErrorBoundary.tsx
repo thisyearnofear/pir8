@@ -1,6 +1,7 @@
 'use client';
 
 import React from 'react';
+import { Icon } from './ui/Icon';
 
 interface AIBattleErrorBoundaryState {
     hasError: boolean;
@@ -58,32 +59,37 @@ export class AIBattleErrorBoundary extends React.Component<AIBattleErrorBoundary
     override render() {
         if (this.state.hasError) {
             return (
-                <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-slate-900 via-slate-800 to-slate-900">
-                    <div className="pirate-card max-w-md mx-4 text-center">
-                        <div className="text-6xl mb-4">🤖⚔️</div>
-                        <h2 className="text-xl font-bold text-neon-cyan mb-4">
+                <div className="flex min-h-screen items-center justify-center bg-[var(--p8-ink)]">
+                    <div className="mx-4 max-w-md rounded-[var(--p8-radius)] border border-[var(--p8-threat)] bg-[var(--p8-deep)] p-6 text-center shadow-[var(--p8-shadow-instrument)]">
+                        <div className="mb-4 flex items-center justify-center gap-3 text-[var(--p8-threat)]">
+                            <Icon name="brain" size={32} />
+                            <Icon name="attack" size={32} />
+                        </div>
+                        <h2 className="mb-4 text-xl font-bold text-[var(--p8-vellum)]">
                             AI Battle Interrupted!
                         </h2>
-                        <p className="text-gray-300 mb-6">
+                        <p className="mb-6 text-[var(--p8-vellum-dim)]">
                             The AI pirates encountered rough seas. Let&apos;s get them back to battle!
                         </p>
-                        <div className="bg-red-900 bg-opacity-30 rounded-lg p-4 mb-6">
-                            <p className="text-sm text-red-300 font-mono break-words">
+                        <div className="mb-6 rounded-[var(--p8-radius)] border border-[var(--p8-threat)] bg-[var(--p8-ink)] p-4">
+                            <p className="break-words font-[var(--font-instrument)] text-sm text-[var(--p8-threat)]">
                                 {this.state.error?.message || 'Unknown error'}
                             </p>
                         </div>
                         <div className="space-y-3">
                             <button
                                 onClick={this.resetError}
-                                className="pirate-button w-full"
+                                className="flex w-full items-center justify-center gap-2 rounded-[var(--p8-radius)] border border-[var(--p8-lamp)] bg-[var(--p8-lamp)] px-4 py-3 font-bold text-[var(--p8-ink)] transition-colors hover:bg-[var(--p8-lamp-glow)]"
                             >
-                                🔄 Restart AI Battle
+                                <Icon name="undo" size={16} />
+                                Restart AI Battle
                             </button>
                             <button
                                 onClick={() => window.location.reload()}
-                                className="w-full px-4 py-2 bg-gray-700 hover:bg-gray-600 rounded-lg transition-colors text-sm"
+                                className="flex w-full items-center justify-center gap-2 rounded-[var(--p8-radius)] border border-[var(--p8-brass-line)] bg-[var(--p8-ink)] px-4 py-2 text-sm text-[var(--p8-vellum-dim)] transition-colors hover:border-[var(--p8-brass)] hover:text-[var(--p8-vellum)]"
                             >
-                                🚢 Reload Game
+                                <Icon name="ship" size={15} />
+                                Reload Game
                             </button>
                         </div>
                     </div>

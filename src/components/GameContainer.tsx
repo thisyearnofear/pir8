@@ -289,66 +289,59 @@ interface GamePlaceholderProps {
 
 function GamePlaceholder({ onPracticeMode, onOpenLeaderboard }: GamePlaceholderProps) {
   return (
-    <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-slate-900 via-slate-800 to-slate-900">
-      <div className="max-w-2xl mx-auto px-6 py-12 text-center">
+    <div className="flex min-h-screen items-center justify-center bg-[var(--p8-ink)]">
+      <div className="mx-auto max-w-2xl px-6 py-12 text-center">
         {/* Hero */}
         <div className="mb-8">
-          <div className="text-8xl mb-4 filter drop-shadow-2xl">🏴‍☠️</div>
-          <h1 className="text-4xl sm:text-5xl font-black text-transparent bg-clip-text 
-                         bg-gradient-to-r from-neon-cyan via-neon-gold to-neon-cyan mb-4">
+          <p className="mb-3 font-[var(--font-instrument)] text-[11px] uppercase tracking-[0.2em] text-[var(--p8-vellum-dim)]">
+            Captain&apos;s table · practice waters
+          </p>
+          <h1 className="mb-4 font-[var(--font-world)] text-4xl text-[var(--p8-vellum)] sm:text-5xl">
             Pir8
           </h1>
-          <p className="text-lg text-gray-300 mb-2">
-            Strategic naval warfare on <span className="text-neon-cyan font-bold">Solana</span>
+          <p className="mb-2 text-lg text-[var(--p8-vellum)]">
+            Strategic naval warfare on Solana
           </p>
-          <p className="text-sm text-gray-400">
+          <p className="text-sm text-[var(--p8-vellum-dim)]">
             Fast battles, tactical decisions, pirate glory
           </p>
         </div>
 
         {/* CTA Buttons */}
-        <div className="flex flex-col sm:flex-row gap-4 justify-center mb-8">
+        <div className="mb-8 flex flex-col justify-center gap-4 sm:flex-row">
           <button
             onClick={onPracticeMode}
-            className="bg-gradient-to-r from-neon-cyan to-neon-blue text-black font-bold 
-                       py-4 px-8 rounded-xl hover:scale-105 active:scale-95 transition-all
-                       shadow-lg shadow-neon-cyan/30"
+            autoFocus
+            className="rounded-[var(--p8-radius)] bg-[var(--p8-lamp)] px-8 py-4 text-sm font-black uppercase tracking-[0.16em] text-[#0b1418] transition hover:brightness-110 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--p8-vellum)]"
           >
-            <span className="text-xl mr-2">⚔️</span>
             Play Now (Free)
           </button>
 
           <button
             onClick={onOpenLeaderboard}
-            className="bg-slate-700 text-white font-bold py-4 px-8 rounded-xl 
-                       border border-neon-gold/50 hover:bg-slate-600 transition-all"
+            className="rounded-[var(--p8-radius)] border border-[var(--p8-brass-line)] bg-[var(--p8-deep)] px-8 py-4 text-sm font-black uppercase tracking-[0.16em] text-[var(--p8-vellum)] transition hover:border-[var(--p8-brass)] focus-visible:outline-2 focus-visible:outline-[var(--p8-lamp)]"
           >
-            <span className="text-xl mr-2">🏆</span>
             Leaderboard
           </button>
         </div>
 
         {/* Quick Features */}
         <div className="grid grid-cols-2 gap-4 text-sm">
-          <div className="bg-slate-800/50 rounded-lg p-4 border border-slate-700">
-            <div className="text-2xl mb-2">⚡</div>
-            <div className="text-neon-cyan font-bold">Speed Rewards</div>
-            <div className="text-gray-400 text-xs">Fast decisions = bonus points</div>
+          <div className="rounded-[var(--p8-radius)] border border-[var(--p8-brass-line)] bg-[var(--p8-deep)] p-4">
+            <div className="font-bold text-[var(--p8-vellum)]">Speed Rewards</div>
+            <div className="text-xs text-[var(--p8-vellum-dim)]">Fast decisions = bonus points</div>
           </div>
-          <div className="bg-slate-800/50 rounded-lg p-4 border border-slate-700">
-            <div className="text-2xl mb-2">🔍</div>
-            <div className="text-neon-gold font-bold">Strategic Scouting</div>
-            <div className="text-gray-400 text-xs">3 scans to reveal the map</div>
+          <div className="rounded-[var(--p8-radius)] border border-[var(--p8-brass-line)] bg-[var(--p8-deep)] p-4">
+            <div className="font-bold text-[var(--p8-vellum)]">Strategic Scouting</div>
+            <div className="text-xs text-[var(--p8-vellum-dim)]">3 scans to reveal the map</div>
           </div>
-          <div className="bg-slate-800/50 rounded-lg p-4 border border-slate-700">
-            <div className="text-2xl mb-2">🚢</div>
-            <div className="text-neon-purple font-bold">Fleet Command</div>
-            <div className="text-gray-400 text-xs">Build your armada</div>
+          <div className="rounded-[var(--p8-radius)] border border-[var(--p8-brass-line)] bg-[var(--p8-deep)] p-4">
+            <div className="font-bold text-[var(--p8-vellum)]">Fleet Command</div>
+            <div className="text-xs text-[var(--p8-vellum-dim)]">Build your armada</div>
           </div>
-          <div className="bg-slate-800/50 rounded-lg p-4 border border-slate-700">
-            <div className="text-2xl mb-2">🏴‍☠️</div>
-            <div className="text-neon-orange font-bold">Conquer Territory</div>
-            <div className="text-gray-400 text-xs">Dominate the seas</div>
+          <div className="rounded-[var(--p8-radius)] border border-[var(--p8-brass-line)] bg-[var(--p8-deep)] p-4">
+            <div className="font-bold text-[var(--p8-vellum)]">Conquer Territory</div>
+            <div className="text-xs text-[var(--p8-vellum-dim)]">Dominate the seas</div>
           </div>
         </div>
       </div>

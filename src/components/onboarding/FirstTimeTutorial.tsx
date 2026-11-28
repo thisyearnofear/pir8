@@ -9,6 +9,7 @@
 
 import { useState, useEffect, useCallback } from 'react';
 import { useSoundEffects } from '@/hooks/useSoundEffects';
+import { Icon } from '@/components/ui/Icon';
 import { Haptic } from '@/utils/haptics';
 
 interface TutorialStep {
@@ -23,13 +24,13 @@ interface TutorialStep {
 const TUTORIAL_STEPS: TutorialStep[] = [
   {
     id: 1,
-    title: "Welcome, Captain! 🏴‍☠️",
+    title: "Welcome, Captain!",
     description: "Three moves to learn: sail, strike, and spring the ambush. Thirty seconds, then the seas are yours.",
-    skipable: false,
+    skipable: true,
   },
   {
     id: 2,
-    title: "Sail & Strike ⛵",
+    title: "Sail & Strike",
     description: "Tap a ship to select it, tap an adjacent cell to move, tap an enemy to attack. The map is yours.",
     action: 'select_ship',
     targetElement: 'ship',
@@ -37,7 +38,7 @@ const TUTORIAL_STEPS: TutorialStep[] = [
   },
   {
     id: 3,
-    title: "Spring the Ambush 🐺",
+    title: "Spring the Ambush",
     description: "Territories pay you every turn. Strike from fog, decide fast for bonus points, and End Turn before the trail goes cold.",
     action: 'end_turn',
     targetElement: 'end-turn-button',
@@ -109,22 +110,19 @@ export function FirstTimeTutorial({
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center">
       {/* Backdrop */}
-      <div 
-        className="absolute inset-0 bg-black/70 backdrop-blur-sm"
-        onClick={step?.skipable ? handleSkip : undefined}
+      <div
+        className="absolute inset-0 bg-black/70"
+        onClick={handleSkip}
       />
 
       {/* Tutorial Modal */}
-      <div 
-        className={`relative bg-gradient-to-br from-slate-900 via-slate-800 to-slate-900 
-                    border-2 border-neon-cyan rounded-2xl shadow-2xl shadow-neon-cyan/50
-                    max-w-md w-full mx-4 overflow-hidden
-                    animate-in fade-in zoom-in duration-300`}
+      <div
+        className="relative rounded-[var(--p8-radius)] border border-[var(--p8-brass-line)] bg-[var(--p8-deep)] shadow-[0_2px_8px_rgba(0,0,0,.45)] max-w-md w-full mx-4 overflow-hidden"
       >
         {/* Progress Bar */}
-        <div className="h-1 bg-slate-700">
-          <div 
-            className="h-full bg-gradient-to-r from-neon-cyan to-neon-blue transition-all duration-500 ease-out"
+        <div className="h-1 bg-[var(--p8-ink)]">
+          <div
+            className="h-full bg-[var(--p8-lamp)] transition-all duration-500 ease-out"
             style={{ width: `${progress}%` }}
           />
         </div>
@@ -133,106 +131,113 @@ export function FirstTimeTutorial({
         <div className={`p-6 transition-all duration-300 ${isTransitioning ? 'opacity-0 scale-95' : 'opacity-100 scale-100'}`}>
           {/* Step Number */}
           <div className="flex items-center justify-between mb-4">
-            <span className="text-xs font-bold text-neon-cyan tracking-wider">
-              STEP {currentStep + 1} OF {TUTORIAL_STEPS.length}
+            <span className="font-[var(--font-instrument)] text-[11px] uppercase tracking-[0.16em] text-[var(--p8-vellum-dim)]">
+              Step {currentStep + 1} of {TUTORIAL_STEPS.length}
             </span>
             {step?.skipable && (
               <button
                 onClick={handleSkip}
-                className="text-xs text-gray-400 hover:text-white transition-colors"
+                className="font-[var(--font-instrument)] text-[11px] uppercase tracking-[0.16em] text-[var(--p8-vellum-dim)] opacity-70 transition-opacity hover:opacity-100 focus-visible:outline-2 focus-visible:outline-[var(--p8-lamp)]"
               >
-                SKIP →
+                Skip →
               </button>
             )}
           </div>
 
           {/* Title */}
-          <h2 className="text-2xl font-black text-transparent bg-clip-text 
-                         bg-gradient-to-r from-neon-cyan via-neon-gold to-neon-cyan 
-                         mb-3 animate-pulse-slow">
+          <h2 className="font-[var(--font-world)] text-2xl text-[var(--p8-vellum)] mb-3">
             {step?.title}
           </h2>
 
           {/* Description */}
-          <p className="text-gray-300 text-lg leading-relaxed mb-6">
+          <p className="text-[var(--p8-vellum-dim)] text-lg leading-relaxed mb-6">
             {step?.description}
           </p>
 
           {/* Visual Demo Area */}
-          <div className="bg-slate-800/50 rounded-xl p-4 mb-6 border border-slate-700 min-h-[120px] flex items-center justify-center">
+          <div className="rounded-[var(--p8-radius)] border border-[var(--p8-brass-line)] bg-[var(--p8-ink)] p-4 mb-6 min-h-[120px] flex items-center justify-center">
             {/* Dynamic content based on step */}
             {step?.action === 'select_ship' && (
-              <div className="text-center animate-float">
-                <div className="text-4xl mb-2">⚓</div>
-                <div className="text-sm text-neon-cyan">← Tap a ship like this</div>
+              <div className="text-center">
+                <span className="mx-auto mb-2 flex h-11 w-11 items-center justify-center rounded-[var(--p8-radius)] border border-[var(--p8-brass-line)] bg-[var(--p8-deep)] text-[var(--p8-lamp)]">
+                  <Icon name="anchor" size={22} strokeWidth={1.5} />
+                </span>
+                <div className="text-sm text-[var(--p8-vellum)]">Tap a ship like this</div>
               </div>
             )}
-            
+
             {step?.action === 'move_ship' && (
               <div className="text-center">
-                <div className="text-2xl mb-2">⛵ → ⬜</div>
-                <div className="text-sm text-neon-cyan">Move to adjacent cells</div>
+                <span className="mx-auto mb-2 flex h-11 w-11 items-center justify-center rounded-[var(--p8-radius)] border border-[var(--p8-brass-line)] bg-[var(--p8-deep)] text-[var(--p8-lamp)]">
+                  <Icon name="move" size={22} strokeWidth={1.5} />
+                </span>
+                <div className="text-sm text-[var(--p8-vellum)]">Move to adjacent cells</div>
               </div>
             )}
-            
+
             {step?.action === 'attack' && (
               <div className="text-center">
-                <div className="text-2xl mb-2">💥 -5</div>
-                <div className="text-sm text-neon-cyan">Damage appears!</div>
+                <span className="mx-auto mb-2 flex h-11 w-11 items-center justify-center rounded-[var(--p8-radius)] border border-[var(--p8-brass-line)] bg-[var(--p8-deep)] text-[var(--p8-threat)]">
+                  <Icon name="attack" size={22} strokeWidth={1.5} />
+                </span>
+                <div className="text-sm text-[var(--p8-vellum)]">Damage appears!</div>
               </div>
             )}
-            
+
             {step?.action === 'collect' && (
-              <div className="text-center animate-pulse">
-                <div className="text-3xl mb-2">💰 +100</div>
-                <div className="text-sm text-neon-gold">Resources collected</div>
+              <div className="text-center">
+                <span className="mx-auto mb-2 flex h-11 w-11 items-center justify-center rounded-[var(--p8-radius)] border border-[var(--p8-brass-line)] bg-[var(--p8-deep)] text-[var(--p8-lamp)]">
+                  <Icon name="gold" size={22} strokeWidth={1.5} />
+                </span>
+                <div className="text-sm text-[var(--p8-vellum)]">+100 resources collected</div>
               </div>
             )}
-            
+
             {step?.action === 'end_turn' && (
               <div className="text-center">
-                <div className="text-2xl mb-2">⏱️ &lt;5s = +100</div>
-                <div className="text-sm text-neon-green">Speed bonus!</div>
+                <span className="mx-auto mb-2 flex h-11 w-11 items-center justify-center rounded-[var(--p8-radius)] border border-[var(--p8-brass-line)] bg-[var(--p8-deep)] text-[var(--p8-signal)]">
+                  <Icon name="clock" size={22} strokeWidth={1.5} />
+                </span>
+                <div className="text-sm text-[var(--p8-vellum)]">Under 5s earns +100</div>
               </div>
             )}
-            
+
             {!step?.action && (
               <div className="text-center">
-                <div className="text-5xl mb-2">🏴‍☠️</div>
-                <div className="text-sm text-neon-cyan">Let&apos;s begin!</div>
+                <span className="mx-auto mb-2 flex h-11 w-11 items-center justify-center rounded-[var(--p8-radius)] border border-[var(--p8-brass-line)] bg-[var(--p8-deep)] text-[var(--p8-lamp)]">
+                  <Icon name="compass" size={22} strokeWidth={1.5} />
+                </span>
+                <div className="text-sm text-[var(--p8-vellum)]">Let&apos;s begin!</div>
               </div>
             )}
           </div>
 
           {/* Navigation */}
           <div className="flex gap-3">
-            {currentStep > 0 && (
-              <button
-                onClick={() => {
+            {currentStep > 0 && (            <button
+              onClick={() => {
                   setCurrentStep(prev => prev - 1);
                   play('button_click');
                 }}
-                className="flex-1 px-4 py-3 bg-slate-700 text-white rounded-xl 
-                           font-bold hover:bg-slate-600 transition-all button-click"
+                className="flex-1 rounded-[var(--p8-radius)] border border-[var(--p8-brass-line)] bg-[var(--p8-ink)] px-4 py-3 text-sm font-bold text-[var(--p8-vellum)] transition-colors hover:border-[var(--p8-brass)] focus-visible:outline-2 focus-visible:outline-[var(--p8-lamp)]"
               >
-                ← BACK
+                ← Back
               </button>
             )}
-            
+
             <button
               onClick={handleNext}
-              className="flex-1 px-4 py-3 bg-gradient-to-r from-neon-cyan to-neon-blue 
-                         text-black rounded-xl font-bold hover:scale-105 active:scale-95 
-                         transition-all shadow-lg shadow-neon-cyan/30 button-click"
+              autoFocus={currentStep === 0}
+              className="flex-1 rounded-[var(--p8-radius)] bg-[var(--p8-lamp)] px-4 py-3 text-sm font-black uppercase tracking-[0.14em] text-[#0b1418] transition hover:brightness-110 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--p8-vellum)]"
             >
-              {currentStep === TUTORIAL_STEPS.length - 1 ? 'START PLAYING!' : 'NEXT →'}
+              {currentStep === TUTORIAL_STEPS.length - 1 ? 'Start playing' : 'Next →'}
             </button>
           </div>
 
           {/* Keyboard Hint */}
-          <div className="mt-4 text-center text-xs text-gray-500">
-            Press <kbd className="bg-slate-700 px-2 py-0.5 rounded">Enter</kbd> to continue
-            {step?.skipable && ' or <kbd className="bg-slate-700 px-2 py-0.5 rounded ml-1">Esc</kbd> to skip'}
+          <div className="mt-4 text-center font-[var(--font-instrument)] text-[11px] text-[var(--p8-vellum-dim)]">
+            Press <kbd className="rounded border border-[var(--p8-brass-line)] bg-[var(--p8-ink)] px-2 py-0.5">Enter</kbd> to continue
+            {step?.skipable && (<> or <kbd className="rounded border border-[var(--p8-brass-line)] bg-[var(--p8-ink)] px-2 py-0.5">Esc</kbd> to skip</>)}
           </div>
         </div>
       </div>

@@ -16,6 +16,16 @@
   --p8-signal: #4fb3a8;
   --p8-threat: #c2453c;
 
+  /* bare channels for Tailwind opacity modifiers
+     (rgb(var(--p8-signal-ch) / <alpha-value>)). Values mirror the hex above. */
+  --p8-ink-ch: 11 20 24;
+  --p8-deep-ch: 18 35 43;
+  --p8-vellum-ch: 232 223 200;
+  --p8-lamp-ch: 240 178 74;
+  --p8-brass-ch: 154 123 63;
+  --p8-signal-ch: 79 179 168;
+  --p8-threat-ch: 194 69 60;
+
   /* derived */
   --p8-vellum-dim: color-mix(in srgb, var(--p8-vellum) 62%, var(--p8-ink));
   --p8-vellum-mute: color-mix(in srgb, var(--p8-vellum) 40%, var(--p8-ink));

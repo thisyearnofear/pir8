@@ -21,12 +21,20 @@ export default function Preloader({ isVisible, message = "INITIALIZING SCANNER" 
     const centerY = canvas.height / 2;
     let time = 0;
     let lastTime = 0;
+    let lastFrame = 0;
     const maxRadius = 55;
-    const circleCount = 5;
-    const dotCount = 16;
+    const circleCount = 3;
+    const dotCount = 12;
 
     function animate(timestamp: number) {
       if (!isVisible || !ctx) return;
+      // Perf: throttle the loader to 30fps — it is decoration, and 60fps
+      // here burned a full core behind the boot sequence.
+      if (timestamp - lastFrame < 33) {
+        requestAnimationFrame(animate);
+        return;
+      }
+      lastFrame = timestamp;
       
       if (!lastTime) lastTime = timestamp;
       const deltaTime = timestamp - lastTime;

@@ -97,6 +97,9 @@ No `text-[10px]`. No `px-2 sm:px-4` drift. If a size is needed, it comes from he
 - **Lucide only.** `src/components/ui/Icon.tsx` is the single entry point.
 - Emoji count in UI: **0**. Emoji in *content strings* (event log copy, AI chatter)
   is a separate, lower-priority cleanup — but no emoji may act as an icon.
+- Where game logic emits emoji that reaches the screen (bonus icons, viral
+  events, AI difficulty debug names), translate it to instruments at the
+  render boundary or strip it at the source — never render it raw.
 - Icons are `strokeWidth={1.5}` at the interface register, `2` at instrument scale.
 - An icon never appears without either a text label or an `aria-label`.
 

@@ -19,7 +19,12 @@ const mockMatchMedia = jest.fn();
 
 beforeEach(() => {
   jest.clearAllMocks();
-  
+
+  // testEnvironment is node: window/navigator may not exist yet.
+  const g = global as any;
+  if (typeof g.window === 'undefined') g.window = {};
+  if (typeof g.navigator === 'undefined') g.navigator = {};
+
   // Setup mocks
   Object.defineProperty(global.navigator, 'vibrate', {
     value: mockVibrate,

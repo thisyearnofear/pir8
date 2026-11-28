@@ -8,6 +8,7 @@
 
 import { useState } from "react";
 import { useSpectatorMode } from "@/hooks/useSpectatorMode";
+import { Icon } from "@/components/ui/Icon";
 import PirateMap from "./PirateMap";
 import PlayerStats from "./PlayerStats";
 import BattleInfoPanel from "./BattleInfoPanel";
@@ -83,14 +84,13 @@ export default function SpectatorView({
         <div className="max-w-md w-full">
           {/* Header */}
           <div className="text-center mb-8">
-            <div className="text-6xl mb-4">👁️</div>
-            <h2
-              className="text-3xl font-black text-transparent bg-clip-text 
-                           bg-gradient-to-r from-neon-cyan to-neon-gold mb-2"
-            >
-              Spectator Mode
+            <span className="mx-auto mb-4 flex h-14 w-14 items-center justify-center rounded-[var(--p8-radius)] border border-[var(--p8-brass-line)] bg-[var(--p8-deep)] text-[var(--p8-lamp)]">
+              <Icon name="eye" size={28} strokeWidth={1.5} />
+            </span>
+            <h2 className="mb-2 font-[var(--font-world)] text-3xl text-[var(--p8-vellum)]">
+              Spectator mode
             </h2>
-            <p className="text-gray-400">
+            <p className="text-[var(--p8-vellum-dim)]">
               Watch live battles unfold in real-time. No wallet required.
             </p>
           </div>
@@ -106,28 +106,23 @@ export default function SpectatorView({
                   clearError();
                 }}
                 placeholder="Enter Game ID..."
-                className="w-full bg-slate-900/80 border-2 border-neon-cyan/50 rounded-xl px-5 py-4 
-                           text-white font-mono text-lg focus:ring-2 focus:ring-neon-cyan 
-                           focus:border-neon-cyan transition-all placeholder-gray-500"
+                className="w-full rounded-[var(--p8-radius)] border border-[var(--p8-brass-line)] bg-[var(--p8-ink)] px-5 py-4 font-[var(--font-instrument)] text-lg text-[var(--p8-vellum)] placeholder:text-[var(--p8-vellum-mute)] transition-colors focus:border-[var(--p8-lamp)] focus:outline-none"
               />
-              <div className="absolute right-4 top-1/2 transform -translate-y-1/2 text-neon-cyan text-2xl">
-                🔍
+              <div className="absolute right-4 top-1/2 -translate-y-1/2 text-[var(--p8-vellum-dim)]">
+                <Icon name="scan" size={22} strokeWidth={1.5} />
               </div>
             </div>
 
             {error && (
-              <div className="bg-red-900/50 border border-red-500/50 rounded-lg p-3 text-red-200 text-sm">
-                ⚠️ {error}
+              <div className="rounded-[var(--p8-radius)] border border-[color-mix(in_srgb,var(--p8-threat)_55%,transparent)] bg-[color-mix(in_srgb,var(--p8-threat)_12%,transparent)] p-3 text-sm text-[var(--p8-vellum)]" role="alert">
+                {error}
               </div>
             )}
 
             <button
               type="submit"
               disabled={isLoading || !gameIdInput.trim()}
-              className="w-full bg-gradient-to-r from-neon-cyan to-neon-blue text-black 
-                         font-black py-4 rounded-xl hover:shadow-lg hover:shadow-neon-cyan/50
-                         hover:scale-[1.02] active:scale-[0.98] transition-all duration-300 
-                         disabled:opacity-50 disabled:hover:scale-100 disabled:cursor-not-allowed"
+              className="w-full rounded-[var(--p8-radius)] bg-[var(--p8-lamp)] py-4 text-sm font-black uppercase tracking-[0.14em] text-[#0b1418] transition hover:brightness-110 disabled:cursor-not-allowed disabled:opacity-50 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--p8-vellum)]"
             >
               {isLoading ? (
                 <div className="flex items-center justify-center gap-2">
@@ -142,9 +137,14 @@ export default function SpectatorView({
 
           {/* Popular Games */}
           <div className="mt-8">
-            <h3 className="text-sm font-bold text-gray-500 uppercase tracking-wider mb-3">
-              Popular Active Games
-            </h3>
+            <div className="mb-3 flex items-center gap-2">
+              <h3 className="font-[var(--font-instrument)] text-[11px] uppercase tracking-[0.16em] text-[var(--p8-vellum-dim)]">
+                Demo games
+              </h3>
+              <span className="rounded-full border border-[var(--p8-brass-line)] px-2 py-0.5 font-[var(--font-instrument)] text-[11px] text-[var(--p8-vellum-mute)]">
+                DEMO
+              </span>
+            </div>
             <div className="space-y-2">
               {["battle_001", "pirate_war_42", "treasure_hunt_7"].map((id) => (
                 <button
@@ -153,15 +153,13 @@ export default function SpectatorView({
                     setGameIdInput(id);
                     setGameId(id);
                   }}
-                  className="w-full flex items-center justify-between p-3 bg-slate-800/50 
-                             border border-slate-700 rounded-lg hover:border-neon-cyan/50 
-                             hover:bg-slate-800 transition-all text-left"
+                  className="flex w-full items-center justify-between rounded-[var(--p8-radius)] border border-[var(--p8-brass-line)] bg-[var(--p8-deep)] p-3 text-left transition-colors hover:border-[var(--p8-brass)] focus-visible:outline-2 focus-visible:outline-[var(--p8-lamp)]"
                 >
                   <div className="flex items-center gap-3">
-                    <span className="w-2 h-2 bg-green-500 rounded-full animate-pulse" />
-                    <span className="font-mono text-neon-cyan">{id}</span>
+                    <span className="h-2 w-2 rounded-full bg-[var(--p8-signal)]" />
+                    <span className="font-[var(--font-instrument)] text-[var(--p8-vellum)]">{id}</span>
                   </div>
-                  <span className="text-xs text-gray-500">
+                  <span className="font-[var(--font-instrument)] text-[11px] text-[var(--p8-vellum-mute)]">
                     4 players • Turn 23
                   </span>
                 </button>
@@ -173,9 +171,9 @@ export default function SpectatorView({
           {onClose && (
             <button
               onClick={onClose}
-              className="w-full mt-6 py-3 text-gray-400 hover:text-white transition-colors"
+              className="mt-6 w-full rounded-[var(--p8-radius)] py-3 text-sm font-bold text-[var(--p8-vellum-dim)] transition-colors hover:text-[var(--p8-vellum)] focus-visible:outline-2 focus-visible:outline-[var(--p8-lamp)]"
             >
-              ← Back to Main Menu
+              ← Back to main menu
             </button>
           )}
         </div>
@@ -187,26 +185,28 @@ export default function SpectatorView({
   return (
     <div className="h-screen max-h-[900px] flex flex-col">
       {/* Spectator Header */}
-      <div className="bg-slate-900/90 border-b border-neon-cyan/30 p-4">
+      <div className="border-b border-[var(--p8-brass-line)] bg-[var(--p8-ink)] p-4">
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-4">
             <div className="flex items-center gap-2">
-              <span className="text-2xl">👁️</span>
-              <span className="font-bold text-neon-cyan">SPECTATOR MODE</span>
+              <span className="text-[var(--p8-lamp)]">
+                <Icon name="eye" size={18} strokeWidth={1.5} />
+              </span>
+              <span className="font-[var(--font-instrument)] text-[11px] uppercase tracking-[0.2em] text-[var(--p8-vellum)]">Spectator mode</span>
             </div>
 
             {/* Live indicator */}
-            <div className="flex items-center gap-2 bg-slate-800 rounded-full px-3 py-1">
+            <div className="flex items-center gap-2 rounded-full border border-[var(--p8-brass-line)] bg-[var(--p8-deep)] px-3 py-1">
               <span
-                className={`w-2 h-2 rounded-full ${isLive ? "bg-green-500 animate-pulse" : "bg-gray-500"}`}
+                className={`h-2 w-2 rounded-full ${isLive ? "bg-[var(--p8-signal)]" : "bg-[var(--p8-vellum-mute)]"}`}
               />
-              <span className="text-xs text-gray-400">
-                {isLive ? "LIVE" : "ENDED"}
+              <span className="font-[var(--font-instrument)] text-[11px] text-[var(--p8-vellum-dim)]">
+                {isLive ? "Live" : "Ended"}
               </span>
             </div>
 
             {/* Last update */}
-            <span className="text-xs text-gray-500">
+            <span className="font-[var(--font-instrument)] text-[11px] text-[var(--p8-vellum-mute)]">
               Updated {formatLastUpdate(lastUpdate)}
             </span>
           </div>
@@ -216,37 +216,34 @@ export default function SpectatorView({
             <button
               onClick={refresh}
               disabled={isLoading}
-              className="p-2 rounded-lg bg-slate-800 hover:bg-slate-700 transition-colors
-                         disabled:opacity-50"
+              className="rounded-[var(--p8-radius)] border border-[var(--p8-brass-line)] bg-[var(--p8-deep)] p-2 text-[var(--p8-vellum-dim)] transition-colors hover:border-[var(--p8-brass)] hover:text-[var(--p8-vellum)] disabled:opacity-50 focus-visible:outline-2 focus-visible:outline-[var(--p8-lamp)]"
               title="Refresh"
+              aria-label="Refresh game state"
             >
               {isLoading ? (
-                <div className="w-5 h-5 border-2 border-neon-cyan border-t-transparent rounded-full animate-spin" />
+                <div className="h-5 w-5 animate-spin rounded-full border-2 border-[var(--p8-brass-line)] border-t-[var(--p8-lamp)]" />
               ) : (
-                <span className="text-neon-cyan">🔄</span>
+                <Icon name="undo" size={16} strokeWidth={1.5} />
               )}
             </button>
 
             {/* Share button */}
             <button
               onClick={handleShare}
-              className="p-2 rounded-lg bg-slate-800 hover:bg-slate-700 transition-colors"
+              className="rounded-[var(--p8-radius)] border border-[var(--p8-brass-line)] bg-[var(--p8-deep)] p-2 text-[var(--p8-vellum-dim)] transition-colors hover:border-[var(--p8-brass)] hover:text-[var(--p8-vellum)] focus-visible:outline-2 focus-visible:outline-[var(--p8-lamp)]"
               title="Share game link"
+              aria-label="Share game link"
             >
-              <span className={copied ? "text-green-400" : "text-neon-cyan"}>
-                {copied ? "✓" : "🔗"}
-              </span>
+              <Icon name={copied ? "check" : "link"} size={16} strokeWidth={1.5} />
             </button>
 
             {/* Join button */}
             {onJoinGame && isLive && (
               <button
                 onClick={() => onJoinGame(gameState.gameId)}
-                className="px-4 py-2 bg-gradient-to-r from-neon-gold to-neon-orange 
-                           text-black font-bold rounded-lg hover:shadow-lg 
-                           hover:shadow-neon-gold/50 transition-all"
+                className="rounded-[var(--p8-radius)] bg-[var(--p8-lamp)] px-4 py-2 font-bold text-[#0b1418] transition hover:brightness-110 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--p8-vellum)]"
               >
-                Join Battle
+                Join battle
               </button>
             )}
 
@@ -254,31 +251,32 @@ export default function SpectatorView({
             {onClose && (
               <button
                 onClick={onClose}
-                className="p-2 rounded-lg bg-slate-800 hover:bg-slate-700 transition-colors"
+                className="rounded-[var(--p8-radius)] border border-[var(--p8-brass-line)] bg-[var(--p8-deep)] p-2 text-[var(--p8-vellum-dim)] transition-colors hover:border-[var(--p8-brass)] hover:text-[var(--p8-vellum)] focus-visible:outline-2 focus-visible:outline-[var(--p8-lamp)]"
                 title="Close"
+                aria-label="Close spectator view"
               >
-                ✕
+                <Icon name="close" size={16} strokeWidth={1.5} />
               </button>
             )}
           </div>
         </div>
 
         {/* Game info bar */}
-        <div className="flex items-center gap-6 mt-3 text-sm">
-          <span className="text-gray-400">
+        <div className="mt-3 flex items-center gap-6 text-sm">
+          <span className="text-[var(--p8-vellum-dim)]">
             Game:{" "}
-            <span className="font-mono text-neon-cyan">{gameState.gameId}</span>
+            <span className="font-[var(--font-instrument)] text-[var(--p8-signal)]">{gameState.gameId}</span>
           </span>
-          <span className="text-gray-400">
-            Turn: <span className="text-white">{gameState.turnNumber}</span>
+          <span className="text-[var(--p8-vellum-dim)]">
+            Turn: <span className="font-[var(--font-instrument)] text-[var(--p8-vellum)]">{gameState.turnNumber}</span>
           </span>
-          <span className="text-gray-400">
+          <span className="text-[var(--p8-vellum-dim)]">
             Players:{" "}
-            <span className="text-white">{gameState.players.length}</span>
+            <span className="font-[var(--font-instrument)] text-[var(--p8-vellum)]">{gameState.players.length}</span>
           </span>
-          <span className="text-gray-400">
+          <span className="text-[var(--p8-vellum-dim)]">
             Phase:{" "}
-            <span className="capitalize text-white">
+            <span className="capitalize text-[var(--p8-vellum)]">
               {gameState.currentPhase}
             </span>
           </span>
@@ -301,23 +299,23 @@ export default function SpectatorView({
           />
 
           {/* Event Log */}
-          <div className="mt-4 bg-slate-900/50 border border-slate-700 rounded-xl p-4">
-            <h3 className="text-sm font-bold text-gray-400 uppercase mb-3">
-              Recent Events
+          <div className="mt-4 rounded-[var(--p8-radius)] border border-[var(--p8-brass-line)] bg-[var(--p8-deep)] p-4">
+            <h3 className="mb-3 font-[var(--font-instrument)] text-[11px] uppercase tracking-[0.16em] text-[var(--p8-vellum-dim)]">
+              Recent events
             </h3>
-            <div className="space-y-2 max-h-48 overflow-y-auto">
+            <div className="max-h-48 space-y-2 overflow-y-auto">
               {gameState.eventLog
                 .slice(-5)
                 .reverse()
                 .map((event) => (
                   <div
                     key={event.id}
-                    className="text-xs p-2 bg-slate-800/50 rounded"
+                    className="rounded-[var(--p8-radius)] bg-[var(--p8-ink)] p-2 text-xs"
                   >
-                    <span className="text-gray-500">
+                    <span className="font-[var(--font-instrument)] text-[var(--p8-vellum-mute)]">
                       Turn {event.turnNumber}:
                     </span>
-                    <p className="text-gray-300 mt-1">{event.description}</p>
+                    <p className="mt-1 text-[var(--p8-vellum-dim)]">{event.description}</p>
                   </div>
                 ))}
             </div>
@@ -346,21 +344,17 @@ export default function SpectatorView({
           <BattleInfoPanel gameState={gameState} />
 
           {/* Spectator Call-to-Action */}
-          <div
-            className="mt-4 bg-gradient-to-br from-neon-cyan/20 to-neon-gold/20 
-                          border border-neon-cyan/50 rounded-xl p-4"
-          >
-            <h3 className="font-bold text-neon-cyan mb-2">Want to Play?</h3>
-            <p className="text-sm text-gray-300 mb-3">
+          <div className="mt-4 rounded-[var(--p8-radius)] border border-[var(--p8-brass-line)] bg-[var(--p8-deep)] p-4">
+            <h3 className="mb-2 font-[var(--font-world)] text-[var(--p8-vellum)]">Want to play?</h3>
+            <p className="mb-3 text-sm text-[var(--p8-vellum-dim)]">
               Connect your wallet to join battles and earn real rewards!
             </p>
             {onJoinGame && isLive && (
               <button
                 onClick={() => onJoinGame(gameState.gameId)}
-                className="w-full py-2 bg-neon-cyan text-black font-bold rounded-lg
-                           hover:bg-neon-cyan/80 transition-colors"
+                className="w-full rounded-[var(--p8-radius)] bg-[var(--p8-lamp)] py-2 font-bold text-[#0b1418] transition hover:brightness-110 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--p8-vellum)]"
               >
-                Join This Game
+                Join this game
               </button>
             )}
           </div>

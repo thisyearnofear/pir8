@@ -77,30 +77,31 @@ export function ContextualHints({
           }}
         >
           <div className={`
-            relative bg-slate-900/95 backdrop-blur border-l-4 rounded-lg shadow-xl p-4
-            ${hint.priority === 'high' ? 'border-neon-orange' : 
-              hint.priority === 'medium' ? 'border-neon-gold' : 'border-neon-cyan'}
+            relative rounded-[var(--p8-radius)] border border-[var(--p8-brass-line)] bg-[var(--p8-deep)]
+            shadow-[0_2px_8px_rgba(0,0,0,.45)] border-l-4 p-4
+            ${hint.priority === 'high' ? 'border-l-[var(--p8-threat)]' :
+              hint.priority === 'medium' ? 'border-l-[var(--p8-lamp)]' : 'border-l-[var(--p8-signal)]'}
           `}>
             {/* Close button */}
             <button
               onClick={() => handleDismiss(hint.id)}
-              className="absolute top-2 right-2 text-gray-400 hover:text-white transition-colors"
+              className="absolute top-2 right-2 text-[var(--p8-vellum-dim)] opacity-70 transition-opacity hover:opacity-100 focus-visible:outline-2 focus-visible:outline-[var(--p8-lamp)]"
               aria-label="Dismiss hint"
             >
-              ✕
+              ×
             </button>
 
             {/* Content */}
-            <p className="text-sm text-gray-200 pr-6">
+            <p className="text-sm text-[var(--p8-vellum)] pr-6">
               {hint.text}
             </p>
 
             {/* Progress bar for timed hints */}
             {hint.duration && hint.duration > 0 && (
-              <div className="mt-2 h-0.5 bg-slate-700 rounded-full overflow-hidden">
-                <div 
-                  className="h-full bg-neon-cyan animate-pulse"
-                  style={{ 
+              <div className="mt-2 h-0.5 bg-[var(--p8-ink)] rounded-full overflow-hidden">
+                <div
+                  className="h-full bg-[var(--p8-lamp)]"
+                  style={{
                     animation: `shrink ${hint.duration}ms linear forwards`,
                   }}
                 />
@@ -125,63 +126,63 @@ export const HINT_TEMPLATES = {
   // First game hints
   FIRST_SHIP_SELECT: {
     id: 'first_ship_select',
-    text: '👆 Tap a ship to select it and see its options',
+    text: 'Tap a ship to select it and see its options',
     priority: 'high' as const,
     duration: 5000,
   },
   
   FIRST_MOVE: {
     id: 'first_move',
-    text: '🎯 With a ship selected, tap an adjacent cell to move',
+    text: 'With a ship selected, tap an adjacent cell to move',
     priority: 'high' as const,
     duration: 6000,
   },
   
   FIRST_ATTACK: {
     id: 'first_attack',
-    text: '⚔️ Tap an enemy ship to attack. Watch for damage numbers!',
+    text: 'Tap an enemy ship to attack. Watch for damage numbers!',
     priority: 'high' as const,
     duration: 5000,
   },
   
   FIRST_COLLECT: {
     id: 'first_collect',
-    text: '💰 Click "Collect" to gather resources from your territories',
+    text: 'Click "Collect" to gather resources from your territories',
     priority: 'medium' as const,
     duration: 5000,
   },
   
   SPEED_BONUS: {
     id: 'speed_bonus',
-    text: '⚡ Fast decisions earn bonus points! <5s = +100 pts',
+    text: 'Fast decisions earn bonus points! <5s = +100 pts',
     priority: 'medium' as const,
     duration: 4000,
   },
   
   TERRITORY_CONTROL: {
     id: 'territory_control',
-    text: '🏴‍☠️ Control territories to earn passive income each turn',
+    text: 'Control territories to earn passive income each turn',
     priority: 'medium' as const,
     duration: 5000,
   },
   
   AMBUSH_WINDOW: {
     id: 'ambush_window',
-    text: '🐺 AMBUSH! An enemy ship drifted into range. Attack it now — masked strikes hit hardest!',
+    text: 'AMBUSH! An enemy ship drifted into range. Attack it now — masked strikes hit hardest!',
     priority: 'high' as const,
     duration: 9000,
   },
   
   LOW_HEALTH: {
     id: 'low_health',
-    text: '❤️ Your ship is low on health! Consider retreating or repairing',
+    text: 'Your ship is low on health! Consider retreating or repairing',
     priority: 'high' as const,
     duration: 4000,
   },
   
   VICTORY_CONDITION: {
     id: 'victory_condition',
-    text: '🏆 Three paths to glory: 50% territory, 65% fleet power, or 10k riches. Watch the bars up top!',
+    text: 'Three paths to glory: 50% territory, 65% fleet power, or 10k riches. Watch the bars up top!',
     priority: 'low' as const,
     duration: 6000,
   },

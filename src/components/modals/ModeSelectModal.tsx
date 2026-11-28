@@ -2,12 +2,43 @@
 
 import { useRef, useEffect, useCallback } from "react";
 import { useFocusTrap } from "@/hooks/useAccessibility";
+import { Icon, type IconName } from "../ui/Icon";
 
 interface ModeSelectModalProps {
   isOpen: boolean;
   onClose: () => void;
   onModeSelected: (mode: "Casual" | "Competitive" | "AgentArena") => void;
 }
+
+const MODES: { mode: "Casual" | "Competitive" | "AgentArena"; title: string; blurb: string; icon: IconName; accent: string }[] = [
+  {
+    mode: "Casual",
+    title: "Casual Arena",
+    blurb: "Mixed battles. Humans and Agents welcome. Great for quick matches.",
+    icon: "ship",
+    accent: "signal",
+  },
+  {
+    mode: "Competitive",
+    title: "Competitive",
+    blurb: "Humans only. Prove your skill against real players.",
+    icon: "trophy",
+    accent: "lamp",
+  },
+  {
+    mode: "AgentArena",
+    title: "Agent Arena",
+    blurb: "Bot battles. Test your agents against others or the house AI.",
+    icon: "brain",
+    accent: "vellum",
+  },
+];
+
+const ACCENT_TEXT: Record<string, string> = {
+  signal: "text-[var(--p8-signal)]",
+  lamp: "text-[var(--p8-lamp)]",
+  vellum: "text-[var(--p8-vellum)]",
+};
 
 export default function ModeSelectModal({
   isOpen,
@@ -33,70 +64,42 @@ export default function ModeSelectModal({
   if (!isOpen) return null;
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/80 backdrop-blur-sm">
+    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/80">
       <div
         ref={containerRef}
         role="dialog"
         aria-modal="true"
         aria-labelledby="mode-select-title"
-        className="bg-slate-900 border-2 border-neon-cyan/50 rounded-2xl p-8 max-w-md w-full mx-4 shadow-2xl shadow-neon-cyan/20 transform transition-all duration-300"
+        className="mx-4 w-full max-w-md rounded-[var(--p8-radius)] border border-[var(--p8-brass-line)] bg-[var(--p8-deep)] p-8 shadow-[var(--p8-shadow-instrument)]"
       >
         <h2
           id="mode-select-title"
-          className="text-3xl font-black text-transparent bg-clip-text bg-gradient-to-r from-neon-cyan to-neon-gold mb-4"
+          className="mb-4 text-2xl font-black text-[var(--p8-vellum)]"
         >
           Choose Battle Arena
         </h2>
         <div className="space-y-4">
-          <button
-            onClick={() => onModeSelected("Casual")}
-            className="w-full p-4 bg-slate-800 border-2 border-neon-cyan rounded-xl hover:bg-slate-700 transition-all text-left group"
-          >
-            <div className="flex items-center justify-between mb-2">
-              <span className="text-xl font-bold text-neon-cyan">
-                Casual Arena
-              </span>
-              <span className="text-2xl">🏴‍☠️</span>
-            </div>
-            <p className="text-slate-400 text-sm">
-              Mixed battles. Humans and Agents welcome. Great for quick
-              matches.
-            </p>
-          </button>
-
-          <button
-            onClick={() => onModeSelected("Competitive")}
-            className="w-full p-4 bg-slate-800 border-2 border-neon-gold rounded-xl hover:bg-slate-700 transition-all text-left group"
-          >
-            <div className="flex items-center justify-between mb-2">
-              <span className="text-xl font-bold text-neon-gold">
-                Competitive
-              </span>
-              <span className="text-2xl">🏆</span>
-            </div>
-            <p className="text-slate-400 text-sm">
-              Humans only. Prove your skill against real players.
-            </p>
-          </button>
-
-          <button
-            onClick={() => onModeSelected("AgentArena")}
-            className="w-full p-4 bg-slate-800 border-2 border-neon-magenta rounded-xl hover:bg-slate-700 transition-all text-left group"
-          >
-            <div className="flex items-center justify-between mb-2">
-              <span className="text-xl font-bold text-neon-magenta">
-                Agent Arena
-              </span>
-              <span className="text-2xl">🤖</span>
-            </div>
-            <p className="text-slate-400 text-sm">
-              Bot battles. Test your agents against others or the house AI.
-            </p>
-          </button>
+          {MODES.map(({ mode, title, blurb, icon, accent }) => (
+            <button
+              key={mode}
+              onClick={() => onModeSelected(mode)}
+              className="w-full rounded-[var(--p8-radius)] border border-[var(--p8-brass-line)] bg-[var(--p8-ink)] p-4 text-left transition-colors hover:border-[var(--p8-brass)]"
+            >
+              <div className="mb-2 flex items-center justify-between">
+                <span className={`flex items-center gap-2 text-xl font-bold ${ACCENT_TEXT[accent]}`}>
+                  <Icon name={icon} size={20} />
+                  {title}
+                </span>
+              </div>
+              <p className="text-sm text-[var(--p8-vellum-dim)]">
+                {blurb}
+              </p>
+            </button>
+          ))}
         </div>
         <button
           onClick={onClose}
-          className="mt-6 w-full py-2 text-slate-400 hover:text-white"
+          className="mt-6 w-full rounded-[var(--p8-radius)] border border-[var(--p8-brass-line)] py-2 text-[var(--p8-vellum-dim)] transition-colors hover:text-[var(--p8-vellum)]"
         >
           Cancel
         </button>

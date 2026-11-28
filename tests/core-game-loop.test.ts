@@ -3,24 +3,49 @@ import { Program } from "@coral-xyz/anchor";
 import { PublicKey } from "@solana/web3.js";
 import { Pir8Game } from "../target/types/pir8_game";
 
+// On-chain integration test: needs a local validator + deployed chain.program.
+// `anchor test` provides both via ANCHOR_PROVIDER_URL. Under plain `pnpm test`
+// the env var is absent, so every test below registers as skipped instead of
+// throwing at collection time (AnchorProvider.env() requires the var).
+const hasValidator = Boolean(process.env.ANCHOR_PROVIDER_URL);
+const itOnChain = hasValidator ? it : it.skip;
+
 describe("PIR8 Core Game Loop", () => {
-  const provider = anchor.AnchorProvider.env();
-  anchor.setProvider(provider);
+  let provider: anchor.AnchorProvider | undefined;
+  let program: Program<Pir8Game> | undefined;
+  let globalGamePda: PublicKey | undefined;
 
-  const program = anchor.workspace.Pir8Game as Program<Pir8Game>;
-  
-  const [globalGamePda] = PublicKey.findProgramAddressSync(
-    [Buffer.from("global_game")],
-    program.programId
-  );
+  beforeAll(() => {
+    if (!hasValidator) return;
+    const p = anchor.AnchorProvider.env();
+    anchor.setProvider(p);
+    provider = p;
+    const prog = anchor.workspace.Pir8Game as Program<Pir8Game>;
+    program = prog;
+    const [pda] = PublicKey.findProgramAddressSync(
+      [Buffer.from("global_game")],
+      prog.programId
+    );
+    chain.globalGamePda = pda;
+  });
 
-  it("Initializes the global game", async () => {
+  function needChain() {
+    if (!provider || !program || !chain.globalGamePda) {
+      console.log("SKIP: on-chain test needs ANCHOR_PROVIDER_URL — run via `anchor test`.");
+      return null;
+    }
+    return { provider, program, globalGamePda };
+  }
+
+  itOnChain("Initializes the global game", async () => {
+    const chain = needChain();
+    if (!chain) return;
     try {
-      const tx = await program.methods
+      const tx = await chain.program.methods
         .initializeGame()
         .accounts({
-          game: globalGamePda,
-          authority: provider.wallet.publicKey,
+          game: chain.globalGamePda,
+          authority: chain.provider.wallet.publicKey,
           systemProgram: anchor.web3.SystemProgram.programId,
         })
         .rpc();
@@ -31,41 +56,47 @@ describe("PIR8 Core Game Loop", () => {
     }
   });
 
-  it("Player 1 joins the game", async () => {
-    const tx = await program.methods
+  itOnChain("Player 1 joins the game", async () => {
+    const chain = needChain();
+    if (!chain) return;
+    const tx = await chain.program.methods
       .joinGame()
       .accounts({
-        game: globalGamePda,
-        player: provider.wallet.publicKey,
+        game: chain.globalGamePda,
+        player: chain.provider.wallet.publicKey,
         systemProgram: anchor.web3.SystemProgram.programId,
       })
       .rpc();
     
     console.log("✅ Player 1 joined:", tx);
     
-    const gameState = await program.account.pirateGame.fetch(globalGamePda);
+    const gameState = await chain.program.account.pirateGame.fetch(chain.globalGamePda);
     console.log("Player count:", gameState.playerCount);
   });
 
-  it("Starts the game", async () => {
-    const tx = await program.methods
+  itOnChain("Starts the game", async () => {
+    const chain = needChain();
+    if (!chain) return;
+    const tx = await chain.program.methods
       .startGame()
       .accounts({
-        game: globalGamePda,
-        authority: provider.wallet.publicKey,
+        game: chain.globalGamePda,
+        authority: chain.provider.wallet.publicKey,
       })
       .rpc();
     
     console.log("✅ Game started:", tx);
     
-    const gameState = await program.account.pirateGame.fetch(globalGamePda);
+    const gameState = await chain.program.account.pirateGame.fetch(chain.globalGamePda);
     console.log("Game status:", gameState.status);
     console.log("Map size:", gameState.territoryMap.length);
     console.log("Player 0 ships:", gameState.players[0].ships.length);
   });
 
-  it("Moves a ship", async () => {
-    const gameState = await program.account.pirateGame.fetch(globalGamePda);
+  itOnChain("Moves a ship", async () => {
+    const chain = needChain();
+    if (!chain) return;
+    const gameState = await chain.program.account.pirateGame.fetch(chain.globalGamePda);
     const player = gameState.players[0];
     const ship = player.ships[0];
     
@@ -79,17 +110,17 @@ describe("PIR8 Core Game Loop", () => {
     const newX = ship.positionX + 1;
     const newY = ship.positionY;
 
-    const tx = await program.methods
+    const tx = await chain.program.methods
       .moveShip(ship.id, newX, newY, new anchor.BN(3000))
       .accounts({
-        game: globalGamePda,
-        player: provider.wallet.publicKey,
+        game: chain.globalGamePda,
+        player: chain.provider.wallet.publicKey,
       })
       .rpc();
     
     console.log("✅ Ship moved:", tx);
     
-    const updatedState = await program.account.pirateGame.fetch(globalGamePda);
+    const updatedState = await chain.program.account.pirateGame.fetch(chain.globalGamePda);
     const updatedShip = updatedState.players[0].ships[0];
     console.log("Ship after move:", {
       position: [updatedShip.positionX, updatedShip.positionY],
@@ -97,8 +128,10 @@ describe("PIR8 Core Game Loop", () => {
     });
   });
 
-  it("Claims a territory", async () => {
-    const gameState = await program.account.pirateGame.fetch(globalGamePda);
+  itOnChain("Claims a territory", async () => {
+    const chain = needChain();
+    if (!chain) return;
+    const gameState = await chain.program.account.pirateGame.fetch(chain.globalGamePda);
     const player = gameState.players[0];
     const ship = player.ships[0];
     
@@ -114,17 +147,17 @@ describe("PIR8 Core Game Loop", () => {
     });
 
     try {
-      const tx = await program.methods
+      const tx = await chain.program.methods
         .claimTerritory(ship.id)
         .accounts({
-          game: globalGamePda,
-          player: provider.wallet.publicKey,
+          game: chain.globalGamePda,
+          player: chain.provider.wallet.publicKey,
         })
         .rpc();
       
       console.log("✅ Territory claimed:", tx);
       
-      const updatedState = await program.account.pirateGame.fetch(globalGamePda);
+      const updatedState = await chain.program.account.pirateGame.fetch(chain.globalGamePda);
       const updatedTerritory = updatedState.territoryMap[territoryIndex];
       console.log("Territory after claim:", {
         owner: updatedTerritory.owner?.toString(),
@@ -134,13 +167,15 @@ describe("PIR8 Core Game Loop", () => {
     }
   });
 
-  it("Claims winnings", async () => {
+  itOnChain("Claims winnings", async () => {
+    const chain = needChain();
+    if (!chain) return;
     try {
-      const tx = await program.methods
+      const tx = await chain.program.methods
         .claimWinnings()
         .accounts({
-          game: globalGamePda,
-          player: provider.wallet.publicKey,
+          game: chain.globalGamePda,
+          player: chain.provider.wallet.publicKey,
         })
         .rpc();
       
@@ -150,18 +185,20 @@ describe("PIR8 Core Game Loop", () => {
     }
   });
 
-  it("Resets the game for next test", async () => {
-    const tx = await program.methods
+  itOnChain("Resets the game for next test", async () => {
+    const chain = needChain();
+    if (!chain) return;
+    const tx = await chain.program.methods
       .resetGame()
       .accounts({
-        game: globalGamePda,
-        authority: provider.wallet.publicKey,
+        game: chain.globalGamePda,
+        authority: chain.provider.wallet.publicKey,
       })
       .rpc();
     
     console.log("✅ Game reset:", tx);
     
-    const gameState = await program.account.pirateGame.fetch(globalGamePda);
+    const gameState = await chain.program.account.pirateGame.fetch(chain.globalGamePda);
     console.log("Player count after reset:", gameState.playerCount);
   });
 });

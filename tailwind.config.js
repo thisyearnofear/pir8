@@ -9,18 +9,22 @@ module.exports = {
   theme: {
     extend: {
       colors: {
-        'neon-cyan': '#00D9FF',
-        'neon-blue': '#0099FF',
-        'neon-magenta': '#FF006E',
-        'neon-orange': '#FF6B35',
-        'neon-purple': '#C71585',
-        'neon-gold': '#FFD700',
-        'neon-green': '#00FF9C',
-        'ocean-blue': '#006994',
-        'bg-dark-0': '#0a0e27',
-        'bg-dark-1': '#0f1629',
-        'bg-dark-2': '#151d3b',
-        'bg-dark-3': '#1a2550',
+        // Retired neon brand — deprecated aliases into the cabin palette
+        // (DESIGN.md §2). Do not use neon-* names in new code; use --p8-*
+        // tokens directly. The rgb(var(--p8-*-ch) / <alpha-value>) form keeps
+        // Tailwind opacity modifiers (/20, /50, …) working.
+        'neon-cyan': 'rgb(var(--p8-signal-ch) / <alpha-value>)',
+        'neon-blue': 'rgb(var(--p8-signal-ch) / <alpha-value>)',
+        'neon-magenta': 'rgb(var(--p8-threat-ch) / <alpha-value>)',
+        'neon-orange': 'rgb(var(--p8-lamp-ch) / <alpha-value>)',
+        'neon-purple': 'rgb(var(--p8-brass-ch) / <alpha-value>)',
+        'neon-gold': 'rgb(var(--p8-lamp-ch) / <alpha-value>)',
+        'neon-green': 'rgb(var(--p8-signal-ch) / <alpha-value>)',
+        'ocean-blue': 'rgb(var(--p8-deep-ch) / <alpha-value>)',
+        'bg-dark-0': 'rgb(var(--p8-ink-ch) / <alpha-value>)',
+        'bg-dark-1': 'rgb(var(--p8-ink-ch) / <alpha-value>)',
+        'bg-dark-2': 'rgb(var(--p8-deep-ch) / <alpha-value>)',
+        'bg-dark-3': 'rgb(var(--p8-deep-ch) / <alpha-value>)',
       },
       fontFamily: {
         mono: ['var(--font-instrument)', 'JetBrains Mono', 'monospace'],
@@ -44,7 +48,7 @@ module.exports = {
         'critical': '#dc2626',
       },
       animation: {
-        'treasure-glow': 'treasure-glow 2s ease-in-out infinite alternate',
+        'treasure-glow': 'treasure-glow 2s ease-in-out infinite alternate', // lamp glow, not neon
         'ship-rock': 'ship-rock 3s ease-in-out infinite',
         'coin-flip': 'coin-flip 0.6s ease-in-out',
         'neon-glow': 'neon-glow 2s ease-in-out infinite',
@@ -61,8 +65,8 @@ module.exports = {
       },
       keyframes: {
         'treasure-glow': {
-          '0%': { boxShadow: '0 0 5px #FFD700' },
-          '100%': { boxShadow: '0 0 20px #FFD700, 0 0 30px #FFD700' },
+          '0%': { boxShadow: '0 0 5px #F0B24A' },
+          '100%': { boxShadow: '0 0 20px #F0B24A, 0 0 30px #F0B24A' },
         },
         'ship-rock': {
           '0%, 100%': { transform: 'rotate(-1deg)' },

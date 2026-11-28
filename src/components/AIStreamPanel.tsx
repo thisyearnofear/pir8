@@ -8,12 +8,26 @@
 
 import { useRef, useEffect } from 'react';
 import { AIReasoning } from '@/lib/pirateGameEngine';
+import { Icon, type IconName } from './ui/Icon';
 
 interface AIStreamPanelProps {
   history: AIReasoning[];
   isExpanded: boolean;
   onToggle: () => void;
   className?: string;
+}
+
+/* Boundary map: engine action types → instruments. Mirrors AIReasoningPanel. */
+const ACTION_ICONS: Record<string, IconName> = {
+  claim_territory: 'claim',
+  attack: 'attack',
+  move_ship: 'move',
+  build_ship: 'build',
+  pass: 'close',
+};
+
+function actionIcon(type: string): IconName {
+  return ACTION_ICONS[type] || 'circle-dot';
 }
 
 export default function AIStreamPanel({
@@ -32,17 +46,20 @@ export default function AIStreamPanel({
   }, [history?.length]);
 
   return (
-    <div className={`bg-slate-900/90 border border-slate-700 rounded-xl overflow-hidden flex flex-col ${className}`}>
+    <div className={`flex flex-col overflow-hidden rounded-[var(--p8-radius)] border border-[var(--p8-brass-line)] bg-[var(--p8-deep)] ${className}`}>
       {/* Header */}
       <button
         onClick={onToggle}
-        className="w-full p-4 flex items-center justify-between hover:bg-slate-800/50 transition-colors bg-slate-900"
+        aria-expanded={isExpanded}
+        className="flex w-full items-center justify-between bg-[var(--p8-deep)] p-4 transition-colors hover:bg-[var(--p8-ink)]"
       >
         <div className="flex items-center gap-3">
-          <span className="text-xl">🧠</span>
+          <span className="flex h-8 w-8 items-center justify-center rounded-[var(--p8-radius)] border border-[var(--p8-brass-line)] bg-[var(--p8-ink)] text-[var(--p8-lamp)]">
+            <Icon name="brain" size={16} />
+          </span>
           <div className="text-left">
-            <h3 className="font-bold text-white text-sm">AI Thought Stream</h3>
-            <p className="text-[10px] text-amber-400 font-mono uppercase tracking-widest">
+            <h3 className="text-sm font-bold text-[var(--p8-vellum)]">AI Thought Stream</h3>
+            <p className="font-[var(--font-instrument)] text-[10px] uppercase tracking-[0.14em] text-[var(--p8-lamp)]">
               Live Reasoning
             </p>
           </div>
@@ -50,19 +67,16 @@ export default function AIStreamPanel({
 
         <div className="flex items-center gap-3">
           {history?.length > 0 && (
-            <div className="px-2 py-0.5 rounded-full bg-amber-500/20 text-amber-400 text-[10px] font-bold border border-amber-500/30">
+            <div className="rounded-full border border-[var(--p8-lamp)] bg-[var(--p8-ink)] px-2 py-0.5 text-[10px] font-bold text-[var(--p8-lamp)]">
               {history.length}
             </div>
           )}
 
-          <svg
-            className={`w-5 h-5 text-slate-400 transition-transform duration-300 ${isExpanded ? 'rotate-180' : ''}`}
-            fill="none"
-            stroke="currentColor"
-            viewBox="0 0 24 24"
-          >
-            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
-          </svg>
+          <Icon
+            name="chevron-down"
+            size={20}
+            className={`text-[var(--p8-vellum-dim)] transition-transform duration-300 ${isExpanded ? 'rotate-180' : ''}`}
+          />
         </div>
       </button>
 
@@ -70,10 +84,10 @@ export default function AIStreamPanel({
       {isExpanded && (
         <div
           ref={scrollRef}
-          className="flex-1 overflow-y-auto max-h-[400px] border-t border-slate-700 p-2 space-y-3 custom-scrollbar"
+          className="max-h-[400px] flex-1 space-y-3 overflow-y-auto border-t border-[var(--p8-brass-line)] p-2"
         >
           {!history || history.length === 0 ? (
-            <div className="py-8 text-center text-slate-500 text-xs italic">
+            <div className="py-8 text-center text-xs italic text-[var(--p8-vellum-mute)]">
               Waiting for AI to analyze the seas...
             </div>
           ) : (
@@ -91,65 +105,58 @@ function ReasoningCard({ reasoning, isLatest }: { reasoning: AIReasoning; isLate
   const { chosenOption, difficulty, thinkingTime } = reasoning;
 
   return (
-    <div className={`p-3 rounded-lg border transition-all duration-500 ${isLatest
-      ? 'bg-amber-900/20 border-amber-600/50 shadow-lg shadow-amber-900/10 animate-in slide-in-from-top'
-      : 'bg-slate-800/40 border-slate-700/50 opacity-80'
+    <div className={`rounded-[var(--p8-radius)] border p-3 transition-all duration-500 ${isLatest
+      ? 'border-[var(--p8-lamp)] bg-[var(--p8-ink)] shadow-[var(--p8-shadow-instrument)]'
+      : 'border-[var(--p8-brass-line)] bg-[var(--p8-ink)] opacity-80'
       }`}>
-      <div className="flex items-center justify-between mb-2">
+      <div className="mb-2 flex items-center justify-between">
         <div className="flex items-center gap-2">
-          <span className="text-[10px] bg-slate-700 text-slate-300 px-1.5 py-0.5 rounded font-bold uppercase tracking-tighter">
+          <span className="rounded bg-[var(--p8-deep)] px-1.5 py-0.5 text-[10px] font-bold uppercase tracking-tighter text-[var(--p8-vellum-dim)]">
             {difficulty.name}
           </span>
           {isLatest && (
-            <span className="text-[10px] text-amber-400 font-bold uppercase">
+            <span className="text-[10px] font-bold uppercase text-[var(--p8-lamp)]">
               • Current
             </span>
           )}
         </div>
-        <span className="text-[10px] text-slate-500 font-mono">{thinkingTime}ms</span>
+        <span className="font-[var(--font-instrument)] text-[10px] text-[var(--p8-vellum-mute)]">{thinkingTime}ms</span>
       </div>
 
       {chosenOption ? (
         <div className="flex items-start gap-2">
-          <span className="text-lg mt-0.5">{getActionIcon(chosenOption.type)}</span>
-          <div className="flex-1 min-w-0">
-            <div className="text-xs font-bold text-white capitalize mb-0.5">
+          <span className="mt-0.5 text-[var(--p8-signal)]">
+            <Icon name={actionIcon(chosenOption.type)} size={18} />
+          </span>
+          <div className="min-w-0 flex-1">
+            <div className="mb-0.5 text-xs font-bold capitalize text-[var(--p8-vellum)]">
               {chosenOption.type.replace('_', ' ')}
             </div>
-            <p className="text-[11px] text-slate-400 leading-relaxed italic line-clamp-2">
+            <p className="line-clamp-2 text-[11px] italic leading-relaxed text-[var(--p8-vellum-dim)]">
               &quot;{chosenOption.reason}&quot;
             </p>
             {chosenOption.target && (
-              <div className="text-[9px] text-slate-500 mt-1 font-mono uppercase">
+              <div className="mt-1 font-[var(--font-instrument)] text-[9px] uppercase text-[var(--p8-vellum-mute)]">
                 Target: {chosenOption.target}
               </div>
             )}
           </div>
-          <div className={`text-[10px] font-black px-1.5 py-0.5 rounded ${getScoreColor(chosenOption.score)}`}>
+          <div className={`rounded px-1.5 py-0.5 text-[10px] font-black ${getScoreClass(chosenOption.score)}`}>
             {chosenOption.score}
           </div>
         </div>
       ) : (
-        <div className="text-xs text-slate-500 italic">No action chosen.</div>
+        <div className="text-xs italic text-[var(--p8-vellum-mute)]">No action chosen.</div>
       )}
     </div>
   );
 }
 
-function getActionIcon(type: string): string {
-  const icons: Record<string, string> = {
-    claim_territory: "🏴‍☠️",
-    attack: "⚔️",
-    move_ship: "⛵",
-    build_ship: "🔨",
-    pass: "⏭️",
-  };
-  return icons[type] || "❓";
-}
-
-function getScoreColor(score: number): string {
-  if (score >= 90) return "text-green-400 bg-green-400/10";
-  if (score >= 70) return "text-yellow-400 bg-yellow-400/10";
-  if (score >= 50) return "text-orange-400 bg-orange-400/10";
-  return "text-red-400 bg-red-400/10";
+// Text-only accents: Tailwind cannot apply /opacity modifiers to var() hex
+// colors, so score badges carry color in the glyph, not a tinted wash.
+function getScoreClass(score: number): string {
+  if (score >= 90) return 'text-[var(--p8-signal)]';
+  if (score >= 70) return 'text-[var(--p8-vellum)]';
+  if (score >= 50) return 'text-[var(--p8-lamp)]';
+  return 'text-[var(--p8-threat)]';
 }

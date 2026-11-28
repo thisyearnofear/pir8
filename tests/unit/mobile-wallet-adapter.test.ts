@@ -13,14 +13,20 @@ import {
   type MobileWalletAdapterConfig,
 } from '@/lib/mobile/walletAdapter';
 
-// Mock the Solana Mobile Wallet Adapter
-const mockSolanaMobileWalletAdapter = jest.fn();
+// Mock the Solana Mobile Wallet Adapter.
+// The factory must not reference outer variables: jest hoists jest.mock above
+// every const, so an outer jest.fn() is still in TDZ when the factory runs.
+// Define the fns inside the factory and grab the handle via the import.
 jest.mock('@solana-mobile/wallet-adapter-mobile', () => ({
-  SolanaMobileWalletAdapter: mockSolanaMobileWalletAdapter,
+  SolanaMobileWalletAdapter: jest.fn(),
   createDefaultAddressSelector: jest.fn(() => ({})),
   createDefaultAuthorizationResultCache: jest.fn(() => ({})),
-  createDefaultWalletNotFoundHandler: jest.fn(() => {}),
+  createDefaultWalletNotFoundHandler: jest.fn(() => ({})),
 }));
+
+import { SolanaMobileWalletAdapter } from '@solana-mobile/wallet-adapter-mobile';
+
+const mockSolanaMobileWalletAdapter = SolanaMobileWalletAdapter as unknown as jest.Mock;
 
 describe('APP_IDENTITY', () => {
   it('should have correct app name', () => {

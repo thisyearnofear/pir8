@@ -1,6 +1,15 @@
 'use client';
 
 import { ViralEvent } from '../hooks/useViralSystem';
+import { Icon, type IconName } from './ui/Icon';
+
+/* Boundary map: the viral-event data layer emits a fixed set of emoji.
+   Translated to instruments at render, same as TerritoryBonusPanel. */
+const VIRAL_ICONS: Record<string, IconName> = {
+  '👑': 'crown',
+  '⚔️': 'attack',
+  '💥': 'zap',
+};
 
 interface ViralEventModalProps {
     event: ViralEvent | null;
@@ -12,54 +21,33 @@ interface ViralEventModalProps {
 export default function ViralEventModal({ event, onShare, onDismiss, isPracticeMode = false }: ViralEventModalProps) {
     if (!event) return null;
 
-    const getRarityStyles = (rarity?: string) => {
+    const getRarityAccent = (rarity?: string) => {
         switch (rarity) {
-            case 'legendary': return {
-                border: 'border-yellow-500',
-                bg: 'from-yellow-500/20 to-orange-500/20',
-                text: 'text-yellow-500'
-            };
-            case 'epic': return {
-                border: 'border-purple-500',
-                bg: 'from-purple-500/20 to-magenta-500/20',
-                text: 'text-purple-500'
-            };
-            case 'rare': return {
-                border: 'border-blue-500',
-                bg: 'from-blue-500/20 to-cyan-500/20',
-                text: 'text-blue-500'
-            };
-            default: return {
-                border: 'border-gray-500',
-                bg: 'from-gray-500/20 to-slate-500/20',
-                text: 'text-gray-400'
-            };
+            case 'legendary': return 'border-[var(--p8-lamp)] text-[var(--p8-lamp)]';
+            case 'epic': return 'border-[var(--p8-signal)] text-[var(--p8-signal)]';
+            case 'rare': return 'border-[var(--p8-signal)] text-[var(--p8-signal)]';
+            default: return 'border-[var(--p8-brass-line)] text-[var(--p8-vellum-dim)]';
         }
     };
 
-    const styles = getRarityStyles(event.rarity);
+    const accent = getRarityAccent(event.rarity);
     const isLegendary = event.rarity === 'legendary';
 
     return (
-        <div className="fixed inset-0 bg-black/80 backdrop-blur-sm flex items-center justify-center z-modal"
+        <div className="fixed inset-0 z-modal flex items-center justify-center bg-black/80"
              role="dialog" aria-modal="true">
-            <div className={`relative bg-gradient-to-br from-slate-900 via-slate-800 to-slate-900 
-                      rounded-2xl border-2 ${styles.border} p-6 max-w-md mx-4 
-                      shadow-2xl backdrop-blur-lg animate-in zoom-in duration-500
-                      ${isLegendary && !isPracticeMode ? 'animate-pulse' : ''}`}>
+            <div className={`relative mx-4 max-w-md rounded-[var(--p8-radius)] border-2 bg-[var(--p8-deep)] p-6 shadow-[var(--p8-shadow-instrument)] ${accent.split(' ')[0]}`}>
 
-                {/* Legendary Sparkles */}
+                {/* Legendary marker */}
                 {isLegendary && !isPracticeMode && (
-                    <div className="absolute inset-0 pointer-events-none overflow-hidden rounded-2xl">
-                        {[...Array(20)].map((_, i) => (
+                    <div className="pointer-events-none absolute inset-0 overflow-hidden rounded-[var(--p8-radius)]">
+                        {[...Array(12)].map((_, i) => (
                             <div
                                 key={i}
-                                className="absolute w-1 h-1 bg-yellow-400 rounded-full animate-ping"
+                                className="absolute h-1 w-1 rounded-full bg-[var(--p8-lamp)]"
                                 style={{
-                                    left: `${Math.random() * 100}%`,
-                                    top: `${Math.random() * 100}%`,
-                                    animationDelay: `${Math.random() * 2}s`,
-                                    animationDuration: `${0.5 + Math.random()}s`
+                                    left: `${(i * 83) % 100}%`,
+                                    top: `${(i * 47) % 100}%`,
                                 }}
                             />
                         ))}
@@ -67,53 +55,49 @@ export default function ViralEventModal({ event, onShare, onDismiss, isPracticeM
                 )}
 
                 {/* Header */}
-                <div className="text-center mb-6 relative z-10">
-                    <div className={`text-6xl mb-3 filter drop-shadow-2xl ${isPracticeMode ? '' : 'animate-bounce'}`}>
-                        {event.emoji}
+                <div className="relative z-10 mb-6 text-center">
+                    <div className="mb-3 flex justify-center text-[var(--p8-lamp)]">
+                        <Icon name={VIRAL_ICONS[event.emoji] || 'sparkles'} size={44} />
                     </div>
 
                     {event.rarity && (
-                        <div className={`text-xs font-bold px-3 py-1 rounded-full inline-block mb-3
-                            bg-gradient-to-r ${styles.bg} ${styles.text} border ${styles.border}`}>
+                        <div className={`mb-3 inline-block rounded-full border px-3 py-1 font-[var(--font-instrument)] text-[11px] font-bold uppercase tracking-[0.14em] ${accent}`}>
                             {event.type.toUpperCase()} • {event.rarity.toUpperCase()}
                         </div>
                     )}
 
-                    <h3 className="text-2xl font-black text-neon-gold mb-2">
+                    <h3 className="mb-2 text-2xl font-black text-[var(--p8-vellum)]">
                         {event.title}
                     </h3>
-                    <p className="text-gray-300 leading-relaxed">
+                    <p className="leading-relaxed text-[var(--p8-vellum-dim)]">
                         {event.description}
                     </p>
                 </div>
 
                 {/* Actions */}
-                <div className="flex gap-3 relative z-10">
+                <div className="relative z-10 flex gap-3">
                     <button
                         onClick={() => onShare(event, 'twitter')}
-                        className="flex-1 bg-blue-500 hover:bg-blue-600 text-white font-bold py-3 px-4 
-                       rounded-lg transition-all hover:scale-105 active:scale-95 flex items-center justify-center gap-2"
+                        className="flex flex-1 items-center justify-center gap-2 rounded-[var(--p8-radius)] border border-[var(--p8-signal)] bg-[var(--p8-ink)] px-4 py-3 font-bold text-[var(--p8-signal)] transition-colors hover:bg-[var(--p8-signal)] hover:text-[var(--p8-ink)]"
                     >
-                        <span>🐦</span>
-                        <span>Twitter</span>
+                        <Icon name="message" size={16} />
+                        <span>Share</span>
                     </button>
 
                     <button
                         onClick={() => onShare(event, 'copy')}
-                        className="flex-1 bg-gradient-to-r from-neon-magenta to-neon-orange 
-                       text-black font-bold py-3 px-4 rounded-lg
-                       hover:shadow-lg hover:scale-105 active:scale-95 transition-all flex items-center justify-center gap-2"
+                        className="flex flex-1 items-center justify-center gap-2 rounded-[var(--p8-radius)] border border-[var(--p8-lamp)] bg-[var(--p8-lamp)] px-4 py-3 font-bold text-[var(--p8-ink)] transition-colors hover:bg-[var(--p8-lamp-glow)]"
                     >
-                        <span>📋</span>
+                        <Icon name="copy" size={16} />
                         <span>Copy</span>
                     </button>
 
                     <button
                         onClick={onDismiss}
-                        className="px-4 py-3 bg-slate-600 hover:bg-slate-500 text-white 
-                       rounded-lg transition-all"
+                        aria-label="Dismiss"
+                        className="rounded-[var(--p8-radius)] border border-[var(--p8-brass-line)] bg-[var(--p8-ink)] px-4 py-3 text-[var(--p8-vellum-dim)] transition-colors hover:border-[var(--p8-brass)] hover:text-[var(--p8-vellum)]"
                     >
-                        ✕
+                        <Icon name="close" size={16} />
                     </button>
                 </div>
             </div>

@@ -1,6 +1,7 @@
 'use client';
 
 import { TerritoryCellType } from '../types/game';
+import { Icon, type IconName } from './ui/Icon';
 
 interface TerritoryTooltipProps {
   type: TerritoryCellType;
@@ -8,61 +9,78 @@ interface TerritoryTooltipProps {
   isVisible: boolean;
 }
 
-export const TERRITORY_INFO: Record<TerritoryCellType, {
-  emoji: string;
-  name: string;
-  effect: string;
-  resources: string;
-  color: string;
-}> = {
+type DriftClass = 'safe' | 'rich' | 'danger';
+
+const DRIFT_BORDER: Record<DriftClass, string> = {
+  safe: 'border-[var(--p8-signal)]',
+  rich: 'border-[var(--p8-lamp)]',
+  danger: 'border-[var(--p8-threat)]',
+};
+
+const DRIFT_T_BORDER: Record<DriftClass, string> = {
+  safe: 'border-t-[var(--p8-signal)]',
+  rich: 'border-t-[var(--p8-lamp)]',
+  danger: 'border-t-[var(--p8-threat)]',
+};
+
+export const TERRITORY_INFO: Record<
+  TerritoryCellType,
+  {
+    icon: IconName;
+    name: string;
+    effect: string;
+    resources: string;
+    drift: DriftClass;
+  }
+> = {
   water: {
-    emoji: '🌊',
+    icon: 'water',
     name: 'Water',
     effect: 'Safe passage',
     resources: 'None',
-    color: 'border-blue-400',
+    drift: 'safe',
   },
   island: {
-    emoji: '🏝️',
+    icon: 'island',
     name: 'Island',
     effect: 'Supplies generation',
     resources: '+3 supplies/turn',
-    color: 'border-green-400',
+    drift: 'rich',
   },
   port: {
-    emoji: '⚓',
+    icon: 'port',
     name: 'Port',
     effect: 'Ship building hub',
     resources: '+5 gold, +2 crew/turn',
-    color: 'border-yellow-400',
+    drift: 'rich',
   },
   treasure: {
-    emoji: '💰',
+    icon: 'treasure',
     name: 'Treasure',
     effect: 'Wealth generator',
     resources: '+10 gold/turn',
-    color: 'border-neon-gold',
+    drift: 'rich',
   },
   storm: {
-    emoji: '⛈️',
+    icon: 'storm',
     name: 'Storm',
     effect: 'Dangerous - 50% speed penalty',
     resources: '-30 health if entered',
-    color: 'border-purple-400',
+    drift: 'danger',
   },
   reef: {
-    emoji: '🪨',
+    icon: 'reef',
     name: 'Reef',
     effect: 'Hidden hazard',
     resources: '-20 health if hit',
-    color: 'border-orange-400',
+    drift: 'danger',
   },
   whirlpool: {
-    emoji: '🌀',
+    icon: 'whirlpool',
     name: 'Whirlpool',
     effect: 'Deadly trap',
     resources: '-100 health',
-    color: 'border-red-500',
+    drift: 'danger',
   },
 };
 
@@ -72,33 +90,33 @@ export default function TerritoryTooltip({ type, position, isVisible }: Territor
   const info = TERRITORY_INFO[type];
 
   return (
-    <div 
-      className={`absolute z-50 pointer-events-none transform -translate-x-1/2 -translate-y-full
-                  bg-slate-900/95 backdrop-blur-sm border-2 ${info.color} 
-                  rounded-lg p-3 shadow-xl min-w-[180px]`}
-      style={{ 
-        left: position.x, 
+    <div
+      className={`pointer-events-none absolute z-50 min-w-[180px] -translate-x-1/2 -translate-y-full transform rounded-[var(--p8-radius)] border-2 bg-[var(--p8-deep)] p-3 shadow-[var(--p8-shadow-instrument)] ${DRIFT_BORDER[info.drift]}`}
+      style={{
+        left: position.x,
         top: position.y - 8,
       }}
     >
       {/* Arrow */}
-      <div 
-        className={`absolute left-1/2 -translate-x-1/2 top-full w-0 h-0 
-                    border-l-8 border-r-8 border-t-8 
-                    border-l-transparent border-r-transparent ${info.color.replace('border-', 'border-t-')}`}
+      <div
+        className={`absolute left-1/2 top-full h-0 w-0 -translate-x-1/2 border-x-8 border-t-8 border-x-transparent ${DRIFT_T_BORDER[info.drift]}`}
       />
-      
+
       {/* Content */}
-      <div className="flex items-center gap-2 mb-2">
-        <span className="text-2xl">{info.emoji}</span>
-        <span className="font-bold text-white">{info.name}</span>
+      <div className="mb-2 flex items-center gap-2">
+        <span className="flex h-7 w-7 items-center justify-center rounded-[var(--p8-radius)] border border-[var(--p8-brass-line)] bg-[var(--p8-ink)] text-[var(--p8-lamp)]">
+          <Icon name={info.icon} size={14} />
+        </span>
+        <span className="font-bold text-[var(--p8-vellum)]">{info.name}</span>
       </div>
-      
+
       <div className="space-y-1 text-sm">
-        <div className="text-gray-300">
-          <span className="text-gray-500">Effect:</span> {info.effect}
+        <div className="text-[var(--p8-vellum-dim)]">
+          <span className="text-[var(--p8-vellum-mute)]">Effect:</span> {info.effect}
         </div>
-        <div className={`font-mono ${type === 'storm' || type === 'reef' || type === 'whirlpool' ? 'text-red-400' : 'text-neon-green'}`}>
+        <div
+          className={`font-[var(--font-instrument)] ${info.drift === 'danger' ? 'text-[var(--p8-threat)]' : 'text-[var(--p8-signal)]'}`}
+        >
           {info.resources}
         </div>
       </div>

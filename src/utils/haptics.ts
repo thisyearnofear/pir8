@@ -23,19 +23,22 @@ export type HapticIntensity = 'light' | 'medium' | 'heavy' | 'success' | 'error'
 export const HAPTIC_PATTERNS: Record<HapticIntensity, number | number[]> = {
   /** Light tap - minimal feedback for selections */
   light: 10,
-  
+
   /** Medium thump - standard feedback for actions */
   medium: 25,
-  
+
   /** Heavy impact - critical actions or errors */
   heavy: [50, 30, 50],
-  
+
   /** Success confirmation - positive feedback */
   success: [100, 50, 100],
-  
+
   /** Error alert - negative feedback */
   error: [200, 50, 200]
-} as const;
+};
+// Frozen at runtime (separate statement keeps the mutable Record type for
+// vibrate() callers while still failing loudly on accidental mutation).
+Object.freeze(HAPTIC_PATTERNS);
 
 /**
  * Check if device supports haptic feedback
@@ -43,7 +46,8 @@ export const HAPTIC_PATTERNS: Record<HapticIntensity, number | number[]> = {
  * @returns boolean - true if vibrate API is available
  */
 export function hasHapticSupport(): boolean {
-  return typeof navigator !== 'undefined' && 'vibrate' in navigator;
+  // A present-but-undefined vibrate (or any non-function) is not support.
+  return typeof navigator !== 'undefined' && typeof (navigator as any).vibrate === 'function';
 }
 
 /**

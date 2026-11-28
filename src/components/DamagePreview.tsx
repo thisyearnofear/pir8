@@ -1,6 +1,6 @@
 /**
  * DamagePreview - Show attack outcome before confirming
- * 
+ *
  * Core Principles:
  * - ENHANCEMENT: Helps players make informed decisions
  * - CLEAN: Pure calculation and display
@@ -12,6 +12,7 @@
 import { Ship } from '@/types/game';
 import { GameBalance } from '@/lib/gameBalance';
 import { getEffectiveStats } from '@/lib/shipAbilities';
+import { Icon, type IconName } from './ui/Icon';
 
 interface DamagePreviewProps {
   attacker: Ship;
@@ -21,6 +22,19 @@ interface DamagePreviewProps {
   onConfirm: () => void;
   onCancel: () => void;
   isProcessing?: boolean;
+}
+
+function shipIcon(type: string): IconName {
+  switch (type) {
+    case 'sloop':
+      return 'ship-scout';
+    case 'galleon':
+    case 'flagship':
+      return 'ship-heavy';
+    case 'frigate':
+    default:
+      return 'ship';
+  }
 }
 
 export default function DamagePreview({
@@ -73,50 +87,53 @@ export default function DamagePreview({
   const willBeDestroyed = attackerHealthAfter === 0;
 
   return (
-    <div className="damage-preview fixed inset-0 z-50 flex items-center justify-center bg-black/70 backdrop-blur-sm animate-fade-in">
-      <div className="bg-slate-900 border-2 border-red-600 rounded-xl p-6 shadow-2xl max-w-md w-full mx-4">
+    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/70">
+      <div className="mx-4 w-full max-w-md rounded-[var(--p8-radius)] border-2 border-[var(--p8-threat)] bg-[var(--p8-deep)] p-6 shadow-[var(--p8-shadow-instrument)]">
         {/* Header */}
-        <div className="text-center mb-6">
-          <h2 className="text-xl font-bold text-red-400 mb-1">⚔️ Attack Preview</h2>
-          <p className="text-sm text-gray-400">Review before engaging</p>
+        <div className="mb-6 text-center">
+          <h2 className="mb-1 flex items-center justify-center gap-2 text-xl font-bold text-[var(--p8-vellum)]">
+            <Icon name="attack" size={20} className="text-[var(--p8-threat)]" />
+            Attack Preview
+          </h2>
+          <p className="text-sm text-[var(--p8-vellum-dim)]">Review before engaging</p>
         </div>
 
         {/* Combatants */}
-        <div className="grid grid-cols-3 gap-4 mb-6">
+        <div className="mb-6 grid grid-cols-3 gap-4">
           {/* Attacker */}
           <div className="text-center">
-            <div className="text-3xl mb-2">
-              {getShipEmoji(attacker.type)}
+            <div className="mb-2 flex justify-center text-[var(--p8-signal)]">
+              <Icon name={shipIcon(attacker.type)} size={30} />
             </div>
-            <p className="text-sm font-bold text-neon-cyan capitalize">{attacker.type}</p>
+            <p className="text-sm font-bold capitalize text-[var(--p8-signal)]">{attacker.type}</p>
             <div className="mt-2">
               <HealthBar current={attacker.health} max={attacker.maxHealth} />
-              <p className="text-xs text-gray-400 mt-1">{attacker.health} HP</p>
+              <p className="mt-1 text-xs text-[var(--p8-vellum-dim)]">{attacker.health} HP</p>
             </div>
             {attackerStats.attack !== attacker.attack && (
-              <p className="text-xs text-green-400 mt-1">
+              <p className="mt-1 text-xs text-[var(--p8-signal)]">
                 ATK: {attackerStats.attack} (+buff)
               </p>
             )}
           </div>
 
           {/* Arrow */}
-          <div className="flex items-center justify-center">
-            <div className="text-4xl text-red-500 animate-pulse">→</div>
+          <div className="flex items-center justify-center text-[var(--p8-threat)]">
+            <Icon name="chevron-right" size={36} />
           </div>
 
           {/* Defender */}
           <div className="text-center">
-            <div className="text-3xl mb-2">
-              {getShipEmoji(defender.type)}
+            <div className="mb-2 flex justify-center text-[var(--p8-threat)]">
+              <Icon name={shipIcon(defender.type)} size={30} />
             </div>
-            <p className="text-sm font-bold text-red-400 capitalize">{defender.type}</p>
+            <p className="text-sm font-bold capitalize text-[var(--p8-threat)]">{defender.type}</p>
             <div className="mt-2">
               <HealthBar current={defender.health} max={defender.maxHealth} />
-              <p className="text-xs text-gray-400 mt-1">{defender.health} HP</p>
+              <p className="mt-1 text-xs text-[var(--p8-vellum-dim)]">{defender.health} HP</p>
             </div>
             {defenderStats.defense !== defender.defense && (
-              <p className="text-xs text-blue-400 mt-1">
+              <p className="mt-1 text-xs text-[var(--p8-signal)]">
                 DEF: {defenderStats.defense} (+buff)
               </p>
             )}
@@ -124,26 +141,35 @@ export default function DamagePreview({
         </div>
 
         {/* Damage Prediction */}
-        <div className="bg-slate-800/50 border border-slate-700 rounded-lg p-4 mb-4">
-          <h3 className="text-sm font-bold text-gray-300 mb-3">Expected Outcome</h3>
+        <div className="mb-4 rounded-[var(--p8-radius)] border border-[var(--p8-brass-line)] bg-[var(--p8-ink)] p-4">
+          <h3 className="mb-3 font-[var(--font-instrument)] text-[11px] uppercase tracking-[0.14em] text-[var(--p8-vellum-dim)]">
+            Expected Outcome
+          </h3>
 
           <div className="space-y-3">
             {/* Your Attack */}
             <div className="flex items-center justify-between">
-              <span className="text-sm text-gray-400">Your damage:</span>
-              <span className="text-lg font-bold text-red-400">
+              <span className="text-sm text-[var(--p8-vellum-dim)]">Your damage:</span>
+              <span className="flex items-center gap-2 text-lg font-bold text-[var(--p8-threat)]">
                 {minDamage === maxDamage ? baseDamage : `${minDamage}-${maxDamage}`}
-                {isMomentumHit && <span className="text-orange-400 ml-2">🔥(+25%)</span>}
-                <span className="text-yellow-400 ml-2">💥(15%)</span>
+                {isMomentumHit && (
+                  <span className="flex items-center gap-1 text-xs text-[var(--p8-lamp)]">
+                    <Icon name="flame" size={14} /> +25%
+                  </span>
+                )}
+                <span className="flex items-center gap-1 text-xs text-[var(--p8-lamp)]">
+                  <Icon name="zap" size={14} /> 15%
+                </span>
               </span>
             </div>
 
             <div className="flex items-center justify-between">
-              <span className="text-sm text-gray-400">Target after:</span>
+              <span className="text-sm text-[var(--p8-vellum-dim)]">Target after:</span>
               <div className="flex items-center gap-2">
                 <HealthBar current={defenderHealthAfter} max={defender.maxHealth} size="sm" />
-                <span className={`text-sm font-bold ${willDestroy ? 'text-red-500' : 'text-gray-300'}`}>
-                  {willDestroy ? '💀 DESTROYED' : `${defenderHealthAfter} HP`}
+                <span className={`flex items-center gap-1 text-sm font-bold ${willDestroy ? 'text-[var(--p8-threat)]' : 'text-[var(--p8-vellum-dim)]'}`}>
+                  {willDestroy && <Icon name="skull" size={14} />}
+                  {willDestroy ? 'DESTROYED' : `${defenderHealthAfter} HP`}
                 </span>
               </div>
             </div>
@@ -151,21 +177,24 @@ export default function DamagePreview({
             {/* Counter Attack */}
             {!willDestroy && counterDamage > 0 && (
               <>
-                <div className="border-t border-slate-700 pt-3">
-                  <p className="text-xs text-yellow-400 mb-2">⚠️ Counterattack Expected</p>
-                </div>
-                
-                <div className="flex items-center justify-between">
-                  <span className="text-sm text-gray-400">Counter damage:</span>
-                  <span className="text-lg font-bold text-orange-400">~{counterDamage}</span>
+                <div className="border-t border-[var(--p8-brass-line)] pt-3">
+                  <p className="mb-2 text-xs font-bold uppercase tracking-wider text-[var(--p8-lamp)]">
+                    Counterattack Expected
+                  </p>
                 </div>
 
                 <div className="flex items-center justify-between">
-                  <span className="text-sm text-gray-400">Your ship after:</span>
+                  <span className="text-sm text-[var(--p8-vellum-dim)]">Counter damage:</span>
+                  <span className="text-lg font-bold text-[var(--p8-lamp)]">~{counterDamage}</span>
+                </div>
+
+                <div className="flex items-center justify-between">
+                  <span className="text-sm text-[var(--p8-vellum-dim)]">Your ship after:</span>
                   <div className="flex items-center gap-2">
                     <HealthBar current={attackerHealthAfter} max={attacker.maxHealth} size="sm" />
-                    <span className={`text-sm font-bold ${willBeDestroyed ? 'text-red-500' : 'text-gray-300'}`}>
-                      {willBeDestroyed ? '💀 DESTROYED' : `${attackerHealthAfter} HP`}
+                    <span className={`flex items-center gap-1 text-sm font-bold ${willBeDestroyed ? 'text-[var(--p8-threat)]' : 'text-[var(--p8-vellum-dim)]'}`}>
+                      {willBeDestroyed && <Icon name="skull" size={14} />}
+                      {willBeDestroyed ? 'DESTROYED' : `${attackerHealthAfter} HP`}
                     </span>
                   </div>
                 </div>
@@ -175,22 +204,27 @@ export default function DamagePreview({
         </div>
 
         {/* Risk Assessment */}
-        <div className={`text-center p-2 rounded-lg mb-4 ${
-          willDestroy ? 'bg-green-900/30 border border-green-600' :
-          willBeDestroyed ? 'bg-red-900/30 border border-red-600' :
-          damagePercent > 50 ? 'bg-yellow-900/30 border border-yellow-600' :
-          'bg-slate-800/50 border border-slate-700'
+        <div className={`mb-4 rounded-[var(--p8-radius)] border p-2 text-center ${
+          willDestroy ? 'border-[var(--p8-signal)] bg-[var(--p8-ink)]' :
+          willBeDestroyed ? 'border-[var(--p8-threat)] bg-[var(--p8-ink)]' :
+          damagePercent > 50 ? 'border-[var(--p8-lamp)] bg-[var(--p8-ink)]' :
+          'border-[var(--p8-brass-line)] bg-[var(--p8-ink)]'
         }`}>
-          <p className={`text-sm font-semibold ${
-            willDestroy ? 'text-green-400' :
-            willBeDestroyed ? 'text-red-400' :
-            damagePercent > 50 ? 'text-yellow-400' :
-            'text-gray-400'
+          <p className={`flex items-center justify-center gap-2 text-sm font-semibold ${
+            willDestroy ? 'text-[var(--p8-signal)]' :
+            willBeDestroyed ? 'text-[var(--p8-threat)]' :
+            damagePercent > 50 ? 'text-[var(--p8-lamp)]' :
+            'text-[var(--p8-vellum-dim)]'
           }`}>
-            {willDestroy ? '✅ High chance of victory!' :
-             willBeDestroyed ? '❌ You will lose this fight!' :
-             damagePercent > 50 ? '⚠️ Risky - significant damage dealt' :
-             '➖ Light skirmish'}
+            {willDestroy ? (
+              <><Icon name="check" size={15} /> High chance of victory!</>
+            ) : willBeDestroyed ? (
+              <><Icon name="close" size={15} /> You will lose this fight!</>
+            ) : damagePercent > 50 ? (
+              'Risky - significant damage dealt'
+            ) : (
+              'Light skirmish'
+            )}
           </p>
         </div>
 
@@ -199,23 +233,24 @@ export default function DamagePreview({
           <button
             onClick={onCancel}
             disabled={isProcessing}
-            className="flex-1 px-4 py-3 bg-slate-700 hover:bg-slate-600 text-white font-bold rounded-lg transition-colors disabled:opacity-50"
+            className="flex-1 rounded-[var(--p8-radius)] border border-[var(--p8-brass-line)] bg-[var(--p8-ink)] px-4 py-3 font-bold text-[var(--p8-vellum-dim)] transition-colors hover:border-[var(--p8-brass)] hover:text-[var(--p8-vellum)] disabled:opacity-50"
           >
             Cancel
           </button>
           <button
             onClick={onConfirm}
             disabled={isProcessing}
-            className="flex-1 px-4 py-3 bg-gradient-to-r from-red-600 to-red-500 hover:from-red-500 hover:to-red-400 text-white font-bold rounded-lg transition-colors disabled:opacity-50 flex items-center justify-center gap-2"
+            className="flex flex-1 items-center justify-center gap-2 rounded-[var(--p8-radius)] border border-[var(--p8-lamp)] bg-[var(--p8-lamp)] px-4 py-3 font-bold text-[var(--p8-ink)] transition-colors hover:bg-[var(--p8-lamp-glow)] disabled:opacity-50"
           >
             {isProcessing ? (
               <>
-                <span className="animate-spin">⏳</span>
+                <span className="h-4 w-4 animate-spin rounded-full border-2 border-[var(--p8-ink)] border-t-transparent" />
                 Attacking...
               </>
             ) : (
               <>
-                ⚔️ Attack!
+                <Icon name="attack" size={16} />
+                Attack!
               </>
             )}
           </button>
@@ -228,27 +263,17 @@ export default function DamagePreview({
 function HealthBar({ current, max, size = 'md' }: { current: number; max: number; size?: 'sm' | 'md' }) {
   const percent = (current / max) * 100;
   const height = size === 'sm' ? 'h-1.5' : 'h-2';
-  
+
   return (
-    <div className={`w-full ${height} bg-slate-700 rounded-full overflow-hidden`}>
+    <div className={`w-full ${height} overflow-hidden rounded-full bg-[var(--p8-ink)]`}>
       <div
         className={`${height} rounded-full transition-all duration-300 ${
-          percent > 60 ? 'bg-green-500' :
-          percent > 30 ? 'bg-yellow-500' :
-          'bg-red-500'
+          percent > 60 ? 'bg-[var(--p8-signal)]' :
+          percent > 30 ? 'bg-[var(--p8-lamp)]' :
+          'bg-[var(--p8-threat)]'
         }`}
         style={{ width: `${percent}%` }}
       />
     </div>
   );
-}
-
-function getShipEmoji(type: string): string {
-  const emojis: Record<string, string> = {
-    sloop: '⛵',
-    frigate: '🚢',
-    galleon: '🛳️',
-    flagship: '🚤',
-  };
-  return emojis[type] || '🚢';
 }

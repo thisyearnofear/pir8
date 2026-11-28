@@ -2,6 +2,7 @@
 
 import { useEffect, useState, useCallback } from 'react';
 import { useMobileOptimized } from '../hooks/useMobileOptimized';
+import { Icon, type IconName } from '@/components/ui/Icon';
 
 interface ToastProps {
   message: string | null;
@@ -56,37 +57,43 @@ export function Toast({ message, type = 'info', duration = 5000, onClose }: Toas
   const getToastStyles = () => {
     const baseStyles = `
       fixed top-6 left-1/2 transform -translate-x-1/2 z-toast
-      max-w-md w-full mx-4 p-4 rounded-lg backdrop-filter backdrop-blur-lg
-      transition-all duration-300 ease-in-out font-mono border-2
+      max-w-md w-full mx-4 p-4 rounded-[var(--p8-radius)]
+      border border-[var(--p8-brass-line)] bg-[var(--p8-deep)]
+      shadow-[0_2px_8px_rgba(0,0,0,.45)]
+      transition-all duration-300 ease-in-out border-l-4
       ${isLeaving ? 'opacity-0 translate-y-[-20px]' : 'opacity-100 translate-y-0'}
     `;
 
     const typeStyles = {
-      success: 'bg-neon-cyan bg-opacity-30 border-neon-cyan text-white font-bold shadow-lg shadow-neon-cyan/50',
-      error: 'bg-neon-orange bg-opacity-30 border-neon-orange text-white font-bold shadow-lg shadow-neon-orange/50',
-      info: 'bg-neon-magenta bg-opacity-30 border-neon-magenta text-white font-bold shadow-lg shadow-neon-magenta/50',
-      loading: 'bg-neon-cyan bg-opacity-30 border-neon-cyan text-white font-bold shadow-lg shadow-neon-cyan/50'
+      success: 'border-l-[var(--p8-signal)]',
+      error: 'border-l-[var(--p8-threat)]',
+      info: 'border-l-[var(--p8-lamp)]',
+      loading: 'border-l-[var(--p8-lamp)]'
     };
 
     return `${baseStyles} ${typeStyles[type]}`;
   };
 
-  const getIcon = () => {
+  const iconName: IconName | null = (() => {
     switch (type) {
-      case 'success': return '◆';
-      case 'error': return '▲';
-      case 'loading': return '●';
-      default: return '⚓';
+      case 'success': return 'check';
+      case 'error': return 'skull';
+      case 'info': return 'anchor';
+      default: return null;
     }
-  };
+  })();
 
   return (
     <div className={getToastStyles()}>
       <div className="flex items-center justify-between">
         <div className="flex items-center space-x-3">
-          <span className="text-xl animate-pulse">{getIcon()}</span>
+          {iconName && (
+            <span className={type === 'error' ? 'text-[var(--p8-threat)]' : type === 'success' ? 'text-[var(--p8-signal)]' : 'text-[var(--p8-lamp)]'}>
+              <Icon name={iconName} size={18} strokeWidth={1.5} />
+            </span>
+          )}
           <div className="flex-1">
-            <p className="text-sm font-medium whitespace-pre-line">
+            <p className="text-sm font-medium whitespace-pre-line text-[var(--p8-vellum)]">
               {message}
             </p>
           </div>
@@ -95,10 +102,10 @@ export function Toast({ message, type = 'info', duration = 5000, onClose }: Toas
         {type !== 'loading' && (
           <button
             onClick={handleClose}
-            className="ml-3 text-lg hover:opacity-70 transition-opacity focus:outline-none"
+            className="ml-3 text-[var(--p8-vellum-dim)] hover:text-[var(--p8-vellum)] hover:opacity-100 transition-opacity focus-visible:outline-2 focus-visible:outline-[var(--p8-lamp)]"
             aria-label="Close notification"
           >
-            ×
+            <Icon name="close" size={16} strokeWidth={1.5} />
           </button>
         )}
 

@@ -168,6 +168,41 @@ pnpm run lint
 pnpm test
 ```
 
+- The full suite is green: **182 passed, 7 skipped, 0 failed** (Nov 2026).
+- `tests/core-game-loop.test.ts` is an on-chain Anchor integration test. It
+  needs a local validator plus a deployed program (`anchor test` provides
+  both via `ANCHOR_PROVIDER_URL`). Under plain `pnpm test` the env var is
+  absent and the 7 cases register as **skipped**, so unit runs stay green
+  without chain infrastructure.
+- Test failures are fixed at the source (frozen constants, strict-boolean
+  returns), never by weakening the test.
+
+### Design contract
+
+Cabin-converted surfaces are protected by a scanner — no `neon-*` utilities
+and no emoji iconography (DESIGN.md):
+
+```bash
+pnpm check-contract
+```
+
+It also runs via lint-staged on any staged change under `src/components`.
+Data-layer emoji that reaches the UI (bonus icons, viral events, AI
+difficulty names) is translated to instruments at the render boundary — see
+`TerritoryBonusPanel` `BONUS_ICONS`, `ViralEventModal` `VIRAL_ICONS`, and the
+`displayName` derivation in `src/lib/engine/ai.ts`.
+
+### Frame-time baseline (integrated graphics)
+
+Measured Nov 2026 in headless system Chrome with software rasterization
+(no GPU — the integrated-graphics worst case), sampling `requestAnimationFrame`
+deltas over 8s on the live practice game (map + chart table + AI panels):
+
+- **p50 16.7ms, p95 16.8ms, p99 ≤ 50ms**, 0–2% of frames over budget, zero
+  console errors. The 3D chart layer additionally degrades to the flat chart
+  (no crash) when WebGL context creation fails — see `ChartStage`
+  `webglAvailable()`.
+
 ### Useful manual verification paths
 
 - practice match without wallet;

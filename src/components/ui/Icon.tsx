@@ -29,6 +29,7 @@ import {
   CloudLightning,
   Coins,
   Compass,
+  Copy,
   Crown,
   Eye,
   EyeOff,
@@ -147,7 +148,8 @@ export type IconName =
   | 'trend-up'
   | 'trend-down'
   | 'circle-dot'
-  | 'box';
+  | 'box'
+  | 'copy';
 
 const registry: Record<IconName, LucideIcon> = {
   ship: Ship,
@@ -222,6 +224,7 @@ const registry: Record<IconName, LucideIcon> = {
   'trend-down': TrendingDown,
   'circle-dot': CircleDot,
   box: FileText,
+  copy: Copy,
 };
 
 export interface IconProps {

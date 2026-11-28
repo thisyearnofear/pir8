@@ -10,6 +10,7 @@ import { usePirateGame } from "@/store/gameStore";
 import { useSafeWallet } from "@/components/SafeWalletProvider";
 import { useSessionKey } from "@/hooks/useSessionKey";
 import { createPlayerFromWallet } from "@/lib/playerHelper";
+import { Icon } from "@/components/ui/Icon";
 
 export default function LobbyBrowser() {
   const {
@@ -198,35 +199,36 @@ export default function LobbyBrowser() {
   };
 
   return (
-    <div className="bg-slate-900/50 backdrop-blur-md rounded-2xl border-2 border-neon-cyan/30 p-6 w-full max-w-4xl mx-auto shadow-2xl">
+    <div className="mx-auto w-full max-w-4xl rounded-[var(--p8-radius)] border border-[var(--p8-brass-line)] bg-[var(--p8-deep)] p-6 shadow-[0_2px_8px_rgba(0,0,0,.45)]">
       {/* Error toast */}
       {localError && (
-        <div className="mb-4 p-3 bg-red-500/20 border border-red-500/50 rounded-xl text-red-300 text-sm flex items-center justify-between" role="alert">
+        <div className="mb-4 flex items-center justify-between rounded-[var(--p8-radius)] border border-[color-mix(in_srgb,var(--p8-threat)_55%,transparent)] bg-[color-mix(in_srgb,var(--p8-threat)_12%,transparent)] p-3 text-sm text-[var(--p8-vellum)]" role="alert">
           <span>{localError}</span>
-          <button onClick={() => setLocalError(null)} className="ml-2 text-red-400 hover:text-red-200" aria-label="Dismiss error">&times;</button>
+          <button onClick={() => setLocalError(null)} className="ml-2 text-[var(--p8-vellum-dim)] transition-colors hover:text-[var(--p8-vellum)] focus-visible:outline-2 focus-visible:outline-[var(--p8-lamp)]" aria-label="Dismiss error">
+            <Icon name="close" size={16} strokeWidth={1.5} />
+          </button>
         </div>
       )}
-      <div className="flex items-center justify-between mb-8">
+      <div className="mb-8 flex items-center justify-between">
         <div>
-          <h2 className="text-3xl font-black text-transparent bg-clip-text bg-gradient-to-r from-neon-cyan to-neon-blue">
-            BATTLE LOBBIES
+          <h2 className="font-[var(--font-world)] text-3xl text-[var(--p8-vellum)]">
+            Battle lobbies
           </h2>
-          <p className="text-gray-400 text-sm">
+          <p className="text-sm text-[var(--p8-vellum-dim)]">
             Find an active arena or spawn your own
           </p>
         </div>
         <button
           onClick={() => setShowCreateModal(true)}
-          className="bg-gradient-to-r from-neon-gold to-neon-orange text-black font-bold py-2 px-6 rounded-xl 
-                     hover:scale-105 active:scale-95 transition-all shadow-lg shadow-neon-gold/20"
+          className="rounded-[var(--p8-radius)] bg-[var(--p8-lamp)] px-6 py-2 text-sm font-black uppercase tracking-[0.14em] text-[#0b1418] transition hover:brightness-110 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--p8-vellum)]"
         >
-          + NEW ARENA
+          + New arena
         </button>
       </div>
 
       {/* Play Privately Toggle */}
-      <div className="mb-6 flex items-center gap-4 p-4 bg-slate-800/50 rounded-xl border border-slate-700">
-        <label className="flex items-center gap-3 cursor-pointer">
+      <div className="mb-6 flex items-center gap-4 rounded-[var(--p8-radius)] border border-[var(--p8-brass-line)] bg-[var(--p8-ink)] p-4">
+        <label className="flex cursor-pointer items-center gap-3">
           <div className="relative">
             <input
               type="checkbox"
@@ -242,66 +244,72 @@ export default function LobbyBrowser() {
               className="sr-only"
             />
             <div
-              className={`w-12 h-6 rounded-full transition-colors ${
-                privateMode ? "bg-neon-purple" : "bg-slate-600"
+              className={`h-6 w-12 rounded-full border border-[var(--p8-brass-line)] transition-colors ${
+                privateMode ? "bg-[var(--p8-lamp)]" : "bg-[var(--p8-deep)]"
               }`}
             >
               <div
-                className={`absolute top-1 w-4 h-4 bg-white rounded-full transition-transform ${
-                  privateMode ? "translate-x-7" : "translate-x-1"
+                className={`absolute top-1 h-4 w-4 rounded-full transition-transform ${
+                  privateMode ? "translate-x-7 bg-[#0b1418]" : "translate-x-1 bg-[var(--p8-vellum-dim)]"
                 }`}
               />
             </div>
           </div>
           <div>
-            <span className="text-white font-bold">Play Privately</span>
-            <p className="text-xs text-gray-400">
+            <span className="font-bold text-[var(--p8-vellum)]">Play privately</span>
+            <p className="text-xs text-[var(--p8-vellum-dim)]">
               Use session key to hide your identity
             </p>
           </div>
         </label>
         {sessionState.isActive && (
           <div className="ml-auto flex items-center gap-2">
-            <span className="w-2 h-2 bg-neon-purple rounded-full animate-pulse" />
-            <span className="text-xs text-neon-purple font-mono">
-              Session: {sessionState.publicKey?.toBase58().slice(0, 8)}...
+            <span className="h-2 w-2 rounded-full bg-[var(--p8-signal)]" />
+            <span className="font-[var(--font-instrument)] text-[11px] text-[var(--p8-vellum-dim)]">
+              Session: {sessionState.publicKey?.toBase58().slice(0, 8)}…
             </span>
           </div>
         )}
       </div>
 
       {/* Arena Type Tabs */}
-      <div className="mb-6 flex gap-2 p-1 bg-slate-800/50 rounded-xl border border-slate-700 inline-flex">
+      <div className="mb-6 inline-flex gap-2 rounded-[var(--p8-radius)] border border-[var(--p8-brass-line)] bg-[var(--p8-ink)] p-1">
         <button
           onClick={() => setArenaFilter("all")}
-          className={`px-4 py-2 rounded-lg font-bold text-sm transition-all ${
+          aria-pressed={arenaFilter === "all"}
+          className={`inline-flex items-center gap-2 rounded-[var(--p8-radius)] px-4 py-2 text-sm font-bold transition-colors focus-visible:outline-2 focus-visible:outline-[var(--p8-lamp)] ${
             arenaFilter === "all"
-              ? "bg-neon-cyan text-black"
-              : "text-gray-400 hover:text-white hover:bg-slate-700"
+              ? "bg-[var(--p8-lamp)] text-[#0b1418]"
+              : "text-[var(--p8-vellum-dim)] hover:text-[var(--p8-vellum)]"
           }`}
         >
-          🌊 PUBLIC ARENA
+          <Icon name="water" size={15} strokeWidth={1.5} />
+          Public arena
         </button>
         <button
           onClick={() => setArenaFilter("shadow")}
-          className={`px-4 py-2 rounded-lg font-bold text-sm transition-all ${
+          aria-pressed={arenaFilter === "shadow"}
+          className={`inline-flex items-center gap-2 rounded-[var(--p8-radius)] px-4 py-2 text-sm font-bold transition-colors focus-visible:outline-2 focus-visible:outline-[var(--p8-lamp)] ${
             arenaFilter === "shadow"
-              ? "bg-neon-purple text-white"
-              : "text-gray-400 hover:text-white hover:bg-slate-700"
+              ? "border border-[var(--p8-lamp)] bg-[var(--p8-ink)] text-[var(--p8-lamp)]"
+              : "text-[var(--p8-vellum-dim)] hover:text-[var(--p8-vellum)]"
           }`}
         >
-          👻 SHADOW ARENA
+          <Icon name="eye-off" size={15} strokeWidth={1.5} />
+          Shadow arena
         </button>
       </div>
 
       {/* Wallet not connected warning */}
       {!publicKey && (
-        <div className="mb-6 p-4 bg-yellow-500/10 border border-yellow-500/30 rounded-xl flex items-center justify-between">
+        <div className="mb-6 flex items-center justify-between rounded-[var(--p8-radius)] border border-[var(--p8-brass-line)] bg-[var(--p8-ink)] p-4">
           <div className="flex items-center gap-3">
-            <span className="text-2xl">⚠️</span>
+            <span className="flex h-9 w-9 items-center justify-center rounded-[var(--p8-radius)] border border-[var(--p8-brass-line)] text-[var(--p8-lamp)]">
+              <Icon name="lock" size={18} strokeWidth={1.5} />
+            </span>
             <div>
-              <p className="text-yellow-400 font-bold">Wallet Not Connected</p>
-              <p className="text-yellow-400/70 text-sm">
+              <p className="font-bold text-[var(--p8-vellum)]">Wallet not connected</p>
+              <p className="text-sm text-[var(--p8-vellum-dim)]">
                 Connect your wallet to join battles
               </p>
             </div>
@@ -312,34 +320,34 @@ export default function LobbyBrowser() {
               const event = new CustomEvent("wallet-modal-open");
               window.dispatchEvent(event);
             }}
-            className="bg-yellow-500 hover:bg-yellow-400 text-black font-bold py-2 px-4 rounded-lg text-sm transition-colors"
+            className="rounded-[var(--p8-radius)] bg-[var(--p8-lamp)] px-4 py-2 text-sm font-bold text-[#0b1418] transition hover:brightness-110 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--p8-vellum)]"
           >
-            Connect Wallet
+            Connect wallet
           </button>
         </div>
       )}
 
       {isLoading && lobbies.length === 0 ? (
         <div className="flex flex-col items-center py-12">
-          <div className="w-12 h-12 border-4 border-neon-cyan border-t-transparent rounded-full animate-spin mb-4"></div>
-          <p className="text-neon-cyan font-mono animate-pulse">
-            SCANNING SEAS...
+          <div className="mb-4 h-12 w-12 animate-spin rounded-full border-4 border-[var(--p8-brass-line)] border-t-[var(--p8-lamp)]"></div>
+          <p className="font-[var(--font-instrument)] text-[11px] uppercase tracking-[0.2em] text-[var(--p8-vellum-dim)]">
+            Scanning seas…
           </p>
         </div>
       ) : lobbies.length === 0 ? (
-        <div className="text-center py-12 bg-slate-800/30 rounded-xl border border-dashed border-slate-700">
-          <p className="text-gray-500 mb-4">
+        <div className="rounded-[var(--p8-radius)] border border-dashed border-[var(--p8-brass-line)] bg-[var(--p8-ink)] py-12 text-center">
+          <p className="mb-4 text-[var(--p8-vellum-dim)]">
             No active battles found in your sector.
           </p>
           <button
             onClick={() => setShowCreateModal(true)}
-            className="text-neon-cyan hover:underline font-bold"
+            className="font-bold text-[var(--p8-lamp)] hover:underline focus-visible:outline-2 focus-visible:outline-[var(--p8-lamp)]"
           >
             Be the first to spawn an arena →
           </button>
         </div>
       ) : (
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+        <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
           {lobbies
             .filter((lobby: any) => {
               // Shadow Arena: filter by private game or hidden flag
@@ -376,43 +384,43 @@ export default function LobbyBrowser() {
               return (
                 <div
                   key={lobby.address}
-                  className={`rounded-xl p-4 border transition-all group ${
+                  className={`rounded-[var(--p8-radius)] border p-4 transition-colors ${
                     isUserInGame
-                      ? "bg-neon-cyan/10 border-neon-cyan hover:border-neon-cyan/80"
-                      : "bg-slate-800/50 border-slate-700 hover:border-neon-cyan/50"
+                      ? "border-[var(--p8-lamp)] bg-[color-mix(in_srgb,var(--p8-lamp)_8%,transparent)]"
+                      : "border-[var(--p8-brass-line)] bg-[var(--p8-ink)] hover:border-[var(--p8-brass)]"
                   }`}
                 >
-                  <div className="flex justify-between items-start mb-4">
+                  <div className="mb-4 flex items-start justify-between">
                     <div>
-                      <div className="text-xs font-mono text-neon-cyan mb-1 flex items-center gap-2">
-                        LOBBY ID
+                      <div className="mb-1 flex items-center gap-2 font-[var(--font-instrument)] text-[11px] uppercase tracking-[0.14em] text-[var(--p8-vellum-dim)]">
+                        Lobby ID
                         {isUserInGame && (
-                          <span className="bg-neon-cyan text-black text-[10px] px-1.5 py-0.5 rounded font-bold">
-                            YOU&apos;RE IN
+                          <span className="rounded-full bg-[var(--p8-lamp)] px-1.5 py-0.5 font-[var(--font-instrument)] text-[11px] text-[#0b1418]">
+                            You&apos;re in
                           </span>
                         )}
                       </div>
-                      <div className="text-lg font-bold text-white truncate max-w-[180px]">
+                      <div className="max-w-[180px] truncate text-lg font-bold text-[var(--p8-vellum)]">
                         {lobby.address}
                       </div>
                     </div>
                     <div className="text-right">
-                      <div className="text-xs font-mono text-gray-500 mb-1">
-                        STATUS
+                      <div className="mb-1 font-[var(--font-instrument)] text-[11px] uppercase tracking-[0.14em] text-[var(--p8-vellum-mute)]">
+                        Status
                       </div>
                       <div
-                        className={`text-xs px-2 py-0.5 rounded border font-bold uppercase tracking-wider ${
+                        className={`rounded border px-2 py-0.5 font-[var(--font-instrument)] text-[11px] uppercase tracking-[0.1em] ${
                           isUserGameWaiting
-                            ? "bg-neon-cyan/30 text-neon-cyan border-neon-cyan animate-pulse"
+                            ? "border-[var(--p8-lamp)] bg-[color-mix(in_srgb,var(--p8-lamp)_14%,transparent)] text-[var(--p8-lamp)]"
                             : isJoinable
-                              ? "bg-green-500/20 text-green-400 border-green-500/30"
+                              ? "border-[color-mix(in_srgb,var(--p8-signal)_55%,transparent)] bg-[color-mix(in_srgb,var(--p8-signal)_12%,transparent)] text-[var(--p8-signal)]"
                               : statusKey === "active"
-                                ? "bg-yellow-500/20 text-yellow-400 border-yellow-500/30"
-                                : "bg-red-500/20 text-red-400 border-red-500/30"
+                                ? "border-[var(--p8-lamp)] bg-[color-mix(in_srgb,var(--p8-lamp)_12%,transparent)] text-[var(--p8-lamp)]"
+                                : "border-[color-mix(in_srgb,var(--p8-threat)_55%,transparent)] bg-[color-mix(in_srgb,var(--p8-threat)_12%,transparent)] text-[var(--p8-threat)]"
                         }`}
                       >
                         {isUserGameWaiting
-                          ? "Awaiting Opponent..."
+                          ? "Awaiting opponent…"
                           : isWaiting
                             ? `Waiting (${lobby.playerCount}/${maxPlayers})`
                             : statusKey}
@@ -430,10 +438,10 @@ export default function LobbyBrowser() {
                             (_, idx) => (
                               <div
                                 key={idx}
-                                className={`w-8 h-8 rounded-full border-2 border-slate-900 flex items-center justify-center text-xs ${
+                                className={`flex h-8 w-8 items-center justify-center rounded-full border text-xs ${
                                   idx < lobby.playerCount
-                                    ? "bg-neon-purple/50 border-neon-purple animate-pulse"
-                                    : "bg-slate-800/50 border-slate-700 border-dashed"
+                                    ? "border-[var(--p8-brass)] bg-[var(--p8-deep)] text-[var(--p8-vellum-dim)]"
+                                    : "border-dashed border-[var(--p8-brass-line)] bg-[var(--p8-ink)] text-[var(--p8-vellum-mute)]"
                                 }`}
                               >
                                 {idx < lobby.playerCount ? "?" : "+"}
@@ -449,10 +457,10 @@ export default function LobbyBrowser() {
                             .map((player: string, idx: number) => (
                               <div
                                 key={idx}
-                                className={`w-8 h-8 rounded-full border-2 border-slate-900 flex items-center justify-center text-xs ${
+                                className={`flex h-8 w-8 items-center justify-center rounded-full border font-[var(--font-instrument)] text-[11px] ${
                                   player === userWalletPk
-                                    ? "bg-neon-cyan text-black"
-                                    : "bg-slate-700"
+                                    ? "border-[var(--p8-lamp)] bg-[var(--p8-lamp)] text-[#0b1418]"
+                                    : "border-[var(--p8-brass-line)] bg-[var(--p8-deep)] text-[var(--p8-vellum-dim)]"
                                 }`}
                                 title={
                                   player === userWalletPk
@@ -460,11 +468,11 @@ export default function LobbyBrowser() {
                                     : `Player ${idx + 1}`
                                 }
                               >
-                                {player === userWalletPk ? "👤" : "🏴‍☠️"}
+                                {player.slice(0, 2).toUpperCase()}
                               </div>
                             ))}
                           {lobby.playerCount > 4 && (
-                            <div className="w-8 h-8 rounded-full bg-slate-800 border-2 border-slate-900 flex items-center justify-center text-xs text-gray-400">
+                            <div className="flex h-8 w-8 items-center justify-center rounded-full border border-[var(--p8-brass-line)] bg-[var(--p8-ink)] font-[var(--font-instrument)] text-[11px] text-[var(--p8-vellum-dim)]">
                               +{lobby.playerCount - 4}
                             </div>
                           )}
@@ -473,7 +481,7 @@ export default function LobbyBrowser() {
                           }).map((_, idx) => (
                             <div
                               key={`empty-${idx}`}
-                              className="w-8 h-8 rounded-full bg-slate-800/50 border-2 border-dashed border-slate-700 flex items-center justify-center text-xs text-slate-600"
+                              className="flex h-8 w-8 items-center justify-center rounded-full border border-dashed border-[var(--p8-brass-line)] bg-[var(--p8-ink)] text-xs text-[var(--p8-vellum-mute)]"
                             >
                               ?
                             </div>
@@ -488,11 +496,11 @@ export default function LobbyBrowser() {
                             handleStartGame(lobby.address, lobby.gameId)
                           }
                           disabled={!!startingGameId}
-                          className="bg-neon-gold hover:bg-neon-orange text-black font-bold py-1.5 px-4 rounded-lg text-sm transition-colors disabled:opacity-50 animate-pulse"
+                          className="rounded-[var(--p8-radius)] bg-[var(--p8-lamp)] px-4 py-1.5 text-sm font-bold text-[#0b1418] transition hover:brightness-110 disabled:opacity-50 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--p8-vellum)]"
                         >
                           {startingGameId === lobby.address
-                            ? "STARTING..."
-                            : "START GAME"}
+                            ? "Starting…"
+                            : "Start game"}
                         </button>
                       )}
                       <button
@@ -505,19 +513,19 @@ export default function LobbyBrowser() {
                           isUserInGame ||
                           !publicKey
                         }
-                        className="bg-neon-cyan hover:bg-neon-blue text-black font-bold py-1.5 px-4 rounded-lg text-sm transition-colors disabled:opacity-50"
+                        className="rounded-[var(--p8-radius)] border border-[var(--p8-brass-line)] bg-[var(--p8-ink)] px-4 py-1.5 text-sm font-bold text-[var(--p8-vellum)] transition-colors hover:border-[var(--p8-brass)] disabled:opacity-50 focus-visible:outline-2 focus-visible:outline-[var(--p8-lamp)]"
                       >
                         {!publicKey
-                          ? "CONNECT WALLET"
+                          ? "Connect wallet"
                           : joiningLobby === lobby.address
-                            ? "BOARDING..."
+                            ? "Boarding…"
                             : isUserInGame
                               ? isUserGameWaiting
-                                ? "WAITING..."
-                                : "IN GAME"
+                                ? "Waiting…"
+                                : "In game"
                               : isJoinable
-                                ? "BOARD SHIP"
-                                : "FULL/STARTED"}
+                                ? "Board ship"
+                                : "Full/started"}
                       </button>
                     </div>
                   </div>
@@ -529,24 +537,31 @@ export default function LobbyBrowser() {
 
       {/* Create Modal */}
       {showCreateModal && (
-        <div className="fixed inset-0 z-[100] flex items-center justify-center bg-black/80 backdrop-blur-sm p-4">
-          <div className="bg-slate-900 border-2 border-neon-gold/50 rounded-2xl p-8 max-w-md w-full shadow-2xl animate-in zoom-in-95">
-            <h3 className="text-2xl font-black text-neon-gold mb-4 uppercase">
-              SPAWN ARENA
+        <div className="fixed inset-0 z-[100] flex items-center justify-center bg-black/70 p-4" onClick={() => setShowCreateModal(false)}>
+          <div
+            className="w-full max-w-md rounded-[var(--p8-radius)] border border-[var(--p8-brass-line)] bg-[var(--p8-deep)] p-8 shadow-[0_2px_8px_rgba(0,0,0,.45)]"
+            onClick={(e) => e.stopPropagation()}
+            role="dialog"
+            aria-modal="true"
+            aria-label="Spawn arena"
+          >
+            <h3 className="mb-4 font-[var(--font-world)] text-2xl text-[var(--p8-vellum)]">
+              Spawn arena
             </h3>
-            <div className="space-y-4 mb-8">
+            <div className="mb-8 space-y-4">
               <div>
-                <label className="block text-xs font-mono text-gray-500 mb-2">
-                  GAME LOBBY SEED (NUMBER)
+                <label className="mb-2 block font-[var(--font-instrument)] text-[11px] uppercase tracking-[0.14em] text-[var(--p8-vellum-dim)]" htmlFor="lobby-seed">
+                  Game lobby seed (number)
                 </label>
                 <input
+                  id="lobby-seed"
                   type="number"
                   value={newGameId}
                   onChange={(e) => setNewGameId(parseInt(e.target.value))}
-                  className="w-full bg-slate-800 border border-slate-700 rounded-xl px-4 py-3 text-white font-mono focus:border-neon-gold outline-none transition-all"
+                  className="w-full rounded-[var(--p8-radius)] border border-[var(--p8-brass-line)] bg-[var(--p8-ink)] px-4 py-3 font-[var(--font-instrument)] text-[var(--p8-vellum)] placeholder:text-[var(--p8-vellum-mute)] focus:border-[var(--p8-lamp)] focus:outline-none"
                 />
               </div>
-              <p className="text-xs text-gray-400 italic">
+              <p className="text-xs italic text-[var(--p8-vellum-dim)]">
                 Each seed creates a unique coordinates map on the Solana ledger.
                 Share this ID with your crew or agents to join.
               </p>
@@ -554,16 +569,16 @@ export default function LobbyBrowser() {
             <div className="flex gap-3">
               <button
                 onClick={() => setShowCreateModal(false)}
-                className="flex-1 py-3 bg-slate-800 text-gray-400 font-bold rounded-xl hover:bg-slate-700 transition-all"
+                className="flex-1 rounded-[var(--p8-radius)] border border-[var(--p8-brass-line)] bg-[var(--p8-ink)] py-3 font-bold text-[var(--p8-vellum-dim)] transition-colors hover:border-[var(--p8-brass)] hover:text-[var(--p8-vellum)] focus-visible:outline-2 focus-visible:outline-[var(--p8-lamp)]"
               >
-                CANCEL
+                Cancel
               </button>
               <button
                 onClick={handleCreate}
                 disabled={isCreating}
-                className="flex-1 py-3 bg-gradient-to-r from-neon-gold to-neon-orange text-black font-bold rounded-xl hover:scale-105 active:scale-95 transition-all shadow-lg shadow-neon-gold/20 disabled:opacity-50"
+                className="flex-1 rounded-[var(--p8-radius)] bg-[var(--p8-lamp)] py-3 font-bold text-[#0b1418] transition hover:brightness-110 disabled:opacity-50 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--p8-vellum)]"
               >
-                {isCreating ? "SPAWNING..." : "START BATTLE"}
+                {isCreating ? "Spawning…" : "Start battle"}
               </button>
             </div>
           </div>

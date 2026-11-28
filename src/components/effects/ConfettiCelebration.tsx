@@ -41,7 +41,7 @@ const DEFAULT_COLORS: readonly string[] = [
 
 export function ConfettiCelebration({
   isActive = true,
-  particleCount = 150,
+  particleCount = 90,
   duration = 4000,
   colors = DEFAULT_COLORS,
   onComplete,
@@ -82,15 +82,15 @@ export function ConfettiCelebration({
     };
   }, [colors]);
 
+  // Perf: mutate in place — the old version spread a fresh object per particle
+  // per frame (150 allocs/frame) which churned the GC on integrated GPUs.
   const updateParticle = useCallback((particle: Particle): Particle => {
-    return {
-      ...particle,
-      x: particle.x + particle.vx,
-      y: particle.y + particle.vy,
-      vx: particle.vx * particle.drag,
-      vy: (particle.vy + particle.gravity) * particle.drag,
-      rotation: particle.rotation + particle.rotationSpeed,
-    };
+    particle.x += particle.vx;
+    particle.y += particle.vy;
+    particle.vx *= particle.drag;
+    particle.vy = (particle.vy + particle.gravity) * particle.drag;
+    particle.rotation += particle.rotationSpeed;
+    return particle;
   }, []);
 
   const drawParticle = useCallback((ctx: CanvasRenderingContext2D, particle: Particle) => {
@@ -99,8 +99,6 @@ export function ConfettiCelebration({
     ctx.rotate((particle.rotation * Math.PI) / 180);
     
     ctx.fillStyle = particle.color;
-    ctx.shadowColor = particle.color;
-    ctx.shadowBlur = 10;
     
     // Draw diamond shape
     ctx.beginPath();
@@ -142,9 +140,9 @@ export function ConfettiCelebration({
 
       const elapsed = Date.now() - startTimeRef.current;
       
-      // Clear canvas with fade effect for trails
-      ctx.fillStyle = 'rgba(0, 0, 0, 0.1)';
-      ctx.fillRect(0, 0, canvas.width, canvas.height);
+      // Perf: clearRect, not a translucent fade fill. The fade forced a
+      // full-screen overdraw + readback every frame and smeared the chart.
+      ctx.clearRect(0, 0, canvas.width, canvas.height);
 
       // Update and draw particles
       particlesRef.current = particlesRef.current

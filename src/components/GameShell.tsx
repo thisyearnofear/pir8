@@ -215,6 +215,12 @@ export default function GameShell() {
     handleGameEvent,
   });
 
+  // Hero CTA sails immediately at pirate difficulty: one click to a board.
+  // The difficulty menu stays available via the secondary cards.
+  const handleInstantPractice = useCallback(() => {
+    handleStartPractice("pirate");
+  }, [handleStartPractice]);
+
   useIncomingChallenge({
     handledIncomingChallenge,
     publicKey,
@@ -599,6 +605,7 @@ export default function GameShell() {
             <EmptyStateView
               isConnected={!!publicKey}
               onPracticeMode={openPracticeMenu}
+              onInstantPractice={handleInstantPractice}
               onCreateGame={handleCreateGame}
               onSpectatorMode={openSpectatorMode}
               onAIBattle={openAIBattleModal}

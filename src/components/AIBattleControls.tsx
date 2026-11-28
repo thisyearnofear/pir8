@@ -6,6 +6,7 @@
 'use client';
 
 import { useState, useEffect } from 'react';
+import { Icon } from './ui/Icon';
 
 interface AIBattleControlsProps {
   playbackSpeed: number;
@@ -50,52 +51,45 @@ export default function AIBattleControls({
 
   if (!isAIvsAIMode) return null;
 
-  const speedOptions = [
-    { value: 0.5, label: '0.5x', emoji: '🐌' },
-    { value: 1, label: '1x', emoji: '▶️' },
-    { value: 2, label: '2x', emoji: '⚡' },
-    { value: 4, label: '4x', emoji: '🚀' },
-  ];
+  const speedOptions = [0.5, 1, 2, 4];
 
   return (
-    <div className="fixed top-20 left-4 z-40 space-y-3">
+    <div className="fixed left-4 top-20 z-40 space-y-3">
       {/* Speed Controls */}
-      <div className="bg-slate-900/95 border-2 border-neon-cyan/50 rounded-xl p-4 shadow-xl backdrop-blur-sm">
-        <h3 className="text-sm font-bold text-neon-cyan uppercase mb-3 flex items-center gap-2">
-          <span>⚡</span>
+      <div className="rounded-[var(--p8-radius)] border border-[var(--p8-brass-line)] bg-[var(--p8-deep)] p-4 shadow-[var(--p8-shadow-instrument)]">
+        <h3 className="mb-3 flex items-center gap-2 font-[var(--font-instrument)] text-[11px] uppercase tracking-[0.14em] text-[var(--p8-signal)]">
+          <Icon name="gauge" size={14} />
           <span>Playback Speed</span>
         </h3>
         <div className="flex gap-2">
-          {speedOptions.map((option) => (
+          {speedOptions.map((speed) => (
             <button
-              key={option.value}
-              onClick={() => onSpeedChange(option.value)}
-              className={`px-3 py-2 rounded-lg font-bold text-sm transition-all ${playbackSpeed === option.value
-                  ? 'bg-neon-cyan text-black scale-110'
-                  : 'bg-slate-800 text-gray-300 hover:bg-slate-700'
+              key={speed}
+              onClick={() => onSpeedChange(speed)}
+              aria-pressed={playbackSpeed === speed}
+              className={`rounded-[var(--p8-radius)] px-3 py-2 font-[var(--font-instrument)] text-sm font-bold transition-colors ${playbackSpeed === speed
+                  ? 'border border-[var(--p8-signal)] bg-[var(--p8-signal)] text-[var(--p8-ink)]'
+                  : 'border border-[var(--p8-brass-line)] bg-[var(--p8-ink)] text-[var(--p8-vellum-dim)] hover:border-[var(--p8-brass)] hover:text-[var(--p8-vellum)]'
                 }`}
-              title={option.label}
+              title={`${speed}x speed`}
             >
-              <div className="text-center">
-                <div className="text-lg">{option.emoji}</div>
-                <div className="text-xs">{option.label}</div>
-              </div>
+              {speed}x
             </button>
           ))}
         </div>
       </div>
 
       {/* Live Commentary */}
-      <div className="bg-slate-900/95 border-2 border-neon-gold/50 rounded-xl p-4 shadow-xl backdrop-blur-sm max-w-xs">
-        <div className="flex items-center justify-between mb-3">
-          <h3 className="text-sm font-bold text-neon-gold uppercase flex items-center gap-2">
-            <span>📢</span>
+      <div className="max-w-xs rounded-[var(--p8-radius)] border border-[var(--p8-brass-line)] bg-[var(--p8-deep)] p-4 shadow-[var(--p8-shadow-instrument)]">
+        <div className="mb-3 flex items-center justify-between">
+          <h3 className="flex items-center gap-2 font-[var(--font-instrument)] text-[11px] uppercase tracking-[0.14em] text-[var(--p8-lamp)]">
+            <Icon name="message" size={14} />
             <span>Live Commentary</span>
           </h3>
           {onToggleReasoning && (
             <button
               onClick={onToggleReasoning}
-              className="text-xs bg-slate-800 hover:bg-slate-700 text-neon-cyan px-2 py-1 rounded border border-neon-cyan/30 transition-colors"
+              className="rounded-[var(--p8-radius)] border border-[var(--p8-brass-line)] bg-[var(--p8-ink)] px-2 py-1 text-xs text-[var(--p8-signal)] transition-colors hover:border-[var(--p8-signal)]"
             >
               View Logic
             </button>
@@ -103,16 +97,16 @@ export default function AIBattleControls({
         </div>
 
         {/* Current commentary */}
-        <div className="bg-slate-800/80 rounded-lg p-3 mb-3 border-l-4 border-neon-gold">
-          <p className="text-sm text-white font-semibold">{commentary || 'Waiting for action...'}</p>
+        <div className="mb-3 rounded-[var(--p8-radius)] border-l-2 border-l-[var(--p8-lamp)] bg-[var(--p8-ink)] p-3">
+          <p className="text-sm font-semibold text-[var(--p8-vellum)]">{commentary || 'Waiting for action...'}</p>
         </div>
 
         {/* Commentary history */}
-        <div className="space-y-2 max-h-40 overflow-y-auto">
+        <div className="max-h-40 space-y-2 overflow-y-auto">
           {commentaryHistory.slice(1).map((msg, idx) => (
             <div
               key={idx}
-              className="bg-slate-800/50 rounded p-2 text-xs text-gray-400"
+              className="rounded bg-[var(--p8-ink)] p-2 text-xs text-[var(--p8-vellum-mute)]"
             >
               {msg}
             </div>
@@ -122,23 +116,23 @@ export default function AIBattleControls({
 
       {/* AI Battle Info */}
       {gameState && (
-        <div className="bg-slate-900/95 border-2 border-neon-magenta/50 rounded-xl p-4 shadow-xl backdrop-blur-sm">
-          <h3 className="text-sm font-bold text-neon-magenta uppercase mb-3 flex items-center gap-2">
-            <span>🤖</span>
+        <div className="rounded-[var(--p8-radius)] border border-[var(--p8-brass-line)] bg-[var(--p8-deep)] p-4 shadow-[var(--p8-shadow-instrument)]">
+          <h3 className="mb-3 flex items-center gap-2 font-[var(--font-instrument)] text-[11px] uppercase tracking-[0.14em] text-[var(--p8-vellum-dim)]">
+            <Icon name="brain" size={14} />
             <span>Battle Status</span>
           </h3>
           <div className="space-y-2 text-xs">
             <div className="flex justify-between">
-              <span className="text-gray-400">Turn:</span>
-              <span className="text-white font-bold">{gameState.turnNumber}</span>
+              <span className="text-[var(--p8-vellum-mute)]">Turn:</span>
+              <span className="font-bold text-[var(--p8-vellum)]">{gameState.turnNumber}</span>
             </div>
             <div className="flex justify-between">
-              <span className="text-gray-400">Status:</span>
-              <span className="text-white font-bold capitalize">{gameState.gameStatus}</span>
+              <span className="text-[var(--p8-vellum-mute)]">Status:</span>
+              <span className="font-bold capitalize text-[var(--p8-vellum)]">{gameState.gameStatus}</span>
             </div>
             <div className="flex justify-between">
-              <span className="text-gray-400">Speed:</span>
-              <span className="text-neon-cyan font-bold">{playbackSpeed}x</span>
+              <span className="text-[var(--p8-vellum-mute)]">Speed:</span>
+              <span className="font-bold text-[var(--p8-signal)]">{playbackSpeed}x</span>
             </div>
           </div>
         </div>

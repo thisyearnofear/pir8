@@ -205,6 +205,8 @@ Current development and demonstrations should use Solana devnet/test value only.
 | [docs/DEVELOPMENT.md](./docs/DEVELOPMENT.md) | Development workflow and contributing |
 | [docs/VISION.md](./docs/VISION.md) | Project vision and roadmap |
 | [docs/MAGICBLOCK_INTEGRATION.md](./docs/MAGICBLOCK_INTEGRATION.md) | VRF weather live on devnet (request path + client loop; oracle pending); ER match sessions designed-only |
+| [docs/BYTE_MANIFEST.md](./docs/BYTE_MANIFEST.md) | Byte track upload doc: practice-skirmish API spec for machine play |
+| [docs/DEV3PACK_HACKATHON.md](./docs/DEV3PACK_HACKATHON.md) | Time-boxed Dev3pack submission assessment, live URL, track fit, and readiness gate |
 | [plans/practice-mode-privacy-design.md](./plans/practice-mode-privacy-design.md) | Practice-mode privacy education design |
 
 ---
@@ -237,11 +239,38 @@ pnpm run lint
 
 # Integration tests
 pnpm test
+
+# Cabin design contract (44 protected surfaces, also runs on staged components)
+pnpm check-contract
 ```
+
+> `tests/core-game-loop.test.ts` needs a local validator (`anchor test` sets
+> `ANCHOR_PROVIDER_URL`); without it the 7 on-chain cases skip and unit runs
+> stay green.
 
 ---
 
 ## 🎯 Current Status
+
+### Late November 2026: cabin system, quality, Byte API
+
+- **Cabin design system:** all player-visible surfaces converted to the
+  DESIGN.md instrument palette (no neon brand, no emoji iconography, Lucide
+  via `src/components/ui/Icon.tsx`). `pnpm check-contract` enforces
+  **44 protected surfaces**; `neon-*` survives only as deprecated Tailwind
+  aliases into cabin channels.
+- **Test suite green:** 182 passed / 7 skipped / 0 failed (`tsc`, `eslint`
+  clean). The on-chain Anchor suite skips gracefully without a validator.
+- **Byte track:** machine-playable practice-skirmish API (`POST`
+  `/api/byte/start`, `GET /api/byte/state`, `POST /api/byte/action`) plus
+  read-only spectator `/watch/[runId]`; upload doc `docs/BYTE_MANIFEST.md`.
+  See `docs/DEV3PACK_HACKATHON.md` for the submission gate.
+- **Measured performance:** live practice game holds p50/p95 ≈ 16.7ms frame
+  times (headless software-rasterized Chrome, 8s sample); the 3D chart
+  degrades to the flat chart instead of crashing when WebGL is unavailable.
+- Removed dead code: legacy `PirateIcons.tsx`, unreferenced
+  `TEAM_COLORS`/`TERRITORY_EMOJIS`/`SHIP_EMOJIS` maps, duplicate End Turn
+  lever, `TurnBanner`/`QuickActionsBar`.
 
 ### November 2026 documentation refresh
 
@@ -337,7 +366,7 @@ This project is licensed under the MIT License - see [LICENSE](./License.txt) fo
 
 ## 🔗 Links
 
-- **Website**: [pir8.vercel.app](https://pir8.vercel.app)
+- **Website**: [pir8app.netlify.app](https://pir8app.netlify.app/)
 - **GitHub**: [github.com/thisyearnofear/pir8](https://github.com/thisyearnofear/pir8)
 - **Twitter**: [@pir8_game](https://twitter.com/pir8_game)
 - **Discord**: Coming soon

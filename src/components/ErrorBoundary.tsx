@@ -1,6 +1,7 @@
 'use client';
 
 import React from 'react';
+import { Icon } from './ui/Icon';
 
 interface ErrorBoundaryState {
   hasError: boolean;
@@ -58,32 +59,36 @@ export class ErrorBoundary extends React.Component<ErrorBoundaryProps, ErrorBoun
 
 function DefaultErrorFallback({ error, resetError }: { error: Error; resetError: () => void }) {
   return (
-    <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-ocean-blue via-blue-900 to-slate-900">
-      <div className="pirate-card max-w-md mx-4 text-center">
-        <div className="text-6xl mb-4">🏴‍☠️</div>
-        <h2 className="text-xl font-bold text-pirate-gold mb-4">
+    <div className="flex min-h-screen items-center justify-center bg-[var(--p8-ink)]">
+      <div className="mx-4 max-w-md rounded-[var(--p8-radius)] border border-[var(--p8-threat)] bg-[var(--p8-deep)] p-6 text-center shadow-[var(--p8-shadow-instrument)]">
+        <div className="mb-4 flex justify-center text-[var(--p8-threat)]">
+          <Icon name="ship" size={44} />
+        </div>
+        <h2 className="mb-4 text-xl font-bold text-[var(--p8-vellum)]">
           Shiver me timbers!
         </h2>
-        <p className="text-gray-300 mb-6">
+        <p className="mb-6 text-[var(--p8-vellum-dim)]">
           Something went wrong on the high seas. But fear not, we&apos;ll get you back to battle!
         </p>
-        <div className="bg-red-900 bg-opacity-30 rounded-lg p-4 mb-6">
-          <p className="text-sm text-red-300 font-mono break-words">
+        <div className="mb-6 rounded-[var(--p8-radius)] border border-[var(--p8-threat)] bg-[var(--p8-ink)] p-4">
+          <p className="break-words font-[var(--font-instrument)] text-sm text-[var(--p8-threat)]">
             {error.message}
           </p>
         </div>
         <div className="space-y-3">
           <button
             onClick={resetError}
-            className="pirate-button w-full"
+            className="flex w-full items-center justify-center gap-2 rounded-[var(--p8-radius)] border border-[var(--p8-lamp)] bg-[var(--p8-lamp)] px-4 py-3 font-bold text-[var(--p8-ink)] transition-colors hover:bg-[var(--p8-lamp-glow)]"
           >
-            🔄 Set Sail Again
+            <Icon name="undo" size={16} />
+            Set Sail Again
           </button>
           <button
             onClick={() => window.location.reload()}
-            className="w-full px-4 py-2 bg-gray-700 hover:bg-gray-600 rounded-lg transition-colors text-sm"
+            className="flex w-full items-center justify-center gap-2 rounded-[var(--p8-radius)] border border-[var(--p8-brass-line)] bg-[var(--p8-ink)] px-4 py-2 text-sm text-[var(--p8-vellum-dim)] transition-colors hover:border-[var(--p8-brass)] hover:text-[var(--p8-vellum)]"
           >
-            🚢 Reload Ship
+            <Icon name="ship" size={15} />
+            Reload Ship
           </button>
         </div>
       </div>
